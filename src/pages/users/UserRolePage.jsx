@@ -1,0 +1,486 @@
+import { useState } from "react";
+import { Plus, Users, CheckCircle, Layers, Building2, Save, X, MapPin, Phone, Mail, User, Shield, Pencil, Trash2 } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
+import Card from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
+import { MOCK_USERS, ALL_ROLES, PERMISSION_MATRIX, INITIAL_BRANCHES, EMPLOYEES } from "../../data/mockData";
+
+const EMPTY_USER = { name: "", email: "", phone: "", branch: "", password: "", roles: [] };
+const EMPTY_BRANCH = { name: "", city: "", address: "", phone: "", manager: "" };
+
+export default function UserRolePage() {
+  const t = useTheme();
+  const toast = useToast();
+  const [users, setUsers] = useState(MOCK_USERS);
+  const [branches, setBranches] = useState(INITIAL_BRANCHES);
+  const [employees] = useState(EMPLOYEES);
+  const [activeTab, setActiveTab] = useState("branches");
+  const [editingUserId, setEditingUserId] = useState(null);
+
+  // User form
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [userForm, setUserForm] = useState(EMPTY_USER);
+
+  // Branch form
+  const [showBranchForm, setShowBranchForm] = useState(false);
+  const [branchForm, setBranchForm] = useState(EMPTY_BRANCH);
+  const [editingBranchId, setEditingBranchId] = useState(null);
+
+  const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+
+  // --- User actions ---
+  const toggleRole = (userId, role) =>
+    setUsers(users.map((u) =>
+      u.id === userId
+        ? { ...u, roles: u.roles.includes(role) ? u.roles.filter((r) => r !== role) : [...u.roles, role] }
+        : u
+    ));
+
+  const saveUser = () => {
+    if (!userForm.name.trim() || !userForm.email.trim()) { toast.error("নাম ও ইমেইল দিন"); return; }
+    if (!userForm.branch) { toast.error("Branch নির্বাচন করুন"); return; }
+    if (userForm.roles.length === 0) { toast.error("কমপক্ষে একটি role দিন"); return; }
+    setUsers((prev) => [...prev, {
+      id: `U-${String(prev.length + 1).padStart(3, "0")}`,
+      ...userForm,
+      status: "active",
+      lastLogin: "—",
+    }]);
+    setUserForm(EMPTY_USER);
+    setShowUserForm(false);
+    toast.success("User যোগ হয়েছে!");
+  };
+
+  const deleteUser = (id) => {
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    toast.deleted("User মুছে ফেলা হয়েছে");
+  };
+
+  // --- Branch actions ---
+  const openAddBranch = () => { setBranchForm(EMPTY_BRANCH); setEditingBranchId(null); setShowBranchForm(true); };
+  const openEditBranch = (br) => { setBranchForm({ ...br }); setEditingBranchId(br.id); setShowBranchForm(true); };
+
+  const saveBranch = () => {
+    if (!branchForm.name.trim() || !branchForm.city.trim()) { toast.error("নাম ও শহর দিন"); return; }
+    if (editingBranchId) {
+      setBranches((prev) => prev.map((b) => b.id === editingBranchId ? { ...b, ...branchForm } : b));
+      toast.updated("Branch আপডেট হয়েছে!");
+    } else {
+      setBranches((prev) => [...prev, { id: `BR-${String(prev.length + 1).padStart(3, "0")}`, ...branchForm, status: "active", createdAt: new Date().toISOString().slice(0, 10) }]);
+      toast.success("Branch তৈরি হয়েছে!");
+    }
+    setShowBranchForm(false);
+    setBranchForm(EMPTY_BRANCH);
+    setEditingBranchId(null);
+  };
+
+  const deleteBranch = (id) => {
+    const empCount = employees.filter((e) => e.branch === branches.find((b) => b.id === id)?.name).length;
+    if (empCount > 0) { toast.error(`এই branch-এ ${empCount} জন কর্মী আছেন — আগে তাদের স্থানান্তর করুন`); return; }
+    setBranches((prev) => prev.filter((b) => b.id !== id));
+    toast.deleted("Branch মুছে ফেলা হয়েছে");
+  };
+
+  // Permission matrix state (Role → Module → { read, write, del })
+  const MODULES = [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "visitors", label: "Visitors" },
+    { key: "students", label: "Students" },
+    { key: "documents", label: "Documents" },
+    { key: "accounts", label: "Accounts" },
+    { key: "reports", label: "Reports" },
+    { key: "settings", label: "Settings" },
+    { key: "users", label: "Users" },
+  ];
+  const PERM_ROLES = Object.keys(PERMISSION_MATRIX);
+  const initMatrix = () => {
+    const m = {};
+    PERM_ROLES.forEach((role) => {
+      m[role] = {};
+      MODULES.forEach(({ key }) => {
+        const has = PERMISSION_MATRIX[role]?.[key] || false;
+        const isAdmin = role === "Owner";
+        const isMgr = role === "Branch Manager";
+        m[role][key] = {
+          read: has,
+          write: has && (isAdmin || isMgr),
+          del: has && isAdmin,
+        };
+      });
+    });
+    return m;
+  };
+  const [permMatrix, setPermMatrix] = useState(initMatrix);
+  const togglePerm = (role, module, perm) => {
+    setPermMatrix((prev) => ({
+      ...prev,
+      [role]: { ...prev[role], [module]: { ...prev[role][module], [perm]: !prev[role][module][perm] } },
+    }));
+  };
+
+  const managers = employees.filter((e) => ["Owner", "Branch Manager"].includes(e.role));
+  const tabs = [
+    { key: "branches", label: "🏢 Branches" },
+    { key: "users", label: "👥 Users" },
+    { key: "permissions", label: "🔐 Permissions" },
+  ];
+
+  return (
+    <div className="space-y-5 anim-fade">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">Users & Branches</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>শাখা ব্যবস্থাপনা, ইউজার ও রোল কন্ট্রোল</p>
+        </div>
+        {activeTab === "branches" && <Button icon={Plus} onClick={openAddBranch}>নতুন Branch</Button>}
+        {activeTab === "users" && <Button icon={Plus} onClick={() => setShowUserForm(true)}>Add User</Button>}
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "মোট Branch", value: branches.filter((b) => b.status === "active").length, color: t.cyan, icon: Building2 },
+          { label: "মোট User", value: users.length, color: t.purple, icon: Users },
+          { label: "Active User", value: users.filter((u) => u.status === "active").length, color: t.emerald, icon: CheckCircle },
+          { label: "মোট Role", value: ALL_ROLES.length, color: t.amber, icon: Layers },
+        ].map((kpi, i) => (
+          <Card key={i} delay={i * 50}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
+                <p className="text-2xl font-bold mt-1" style={{ color: kpi.color }}>{kpi.value}</p>
+              </div>
+              <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: `${kpi.color}15` }}>
+                <kpi.icon size={16} style={{ color: kpi.color }} />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
+        {tabs.map((tab) => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+            style={{
+              background: activeTab === tab.key ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#ffffff") : "transparent",
+              color: activeTab === tab.key ? t.text : t.muted,
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ============ BRANCHES TAB ============ */}
+      {activeTab === "branches" && (
+        <>
+          {/* Branch form */}
+          {showBranchForm && (
+            <Card delay={0}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold">{editingBranchId ? "Branch সম্পাদনা" : "নতুন Branch তৈরি করুন"}</h3>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowBranchForm(false); setEditingBranchId(null); }}>বাতিল</Button>
+                  <Button size="xs" icon={Save} onClick={saveBranch}>সংরক্ষণ</Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch নাম *</label>
+                  <input value={branchForm.name} onChange={(e) => setBranchForm((p) => ({ ...p, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: ঢাকা (HQ), সিলেট" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শহর *</label>
+                  <input value={branchForm.city} onChange={(e) => setBranchForm((p) => ({ ...p, city: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="ঢাকা, চট্টগ্রাম..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা</label>
+                  <input value={branchForm.address} onChange={(e) => setBranchForm((p) => ({ ...p, address: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="পূর্ণ ঠিকানা..." />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
+                  <input value={branchForm.phone} onChange={(e) => setBranchForm((p) => ({ ...p, phone: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="02-XXXXXXX" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch Manager</label>
+                  <select value={branchForm.manager} onChange={(e) => setBranchForm((p) => ({ ...p, manager: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="">— নির্বাচন করুন —</option>
+                    {managers.map((m) => <option key={m.id} value={m.name}>{m.name} ({m.role})</option>)}
+                    {employees.filter((e) => !managers.includes(e)).map((e) => <option key={e.id} value={e.name}>{e.name} ({e.role})</option>)}
+                  </select>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Branch list */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {branches.map((br, i) => {
+              const branchEmployees = employees.filter((e) => e.branch === br.name);
+              const branchUsers = users.filter((u) => u.branch === br.name);
+              return (
+                <Card key={br.id} delay={i * 60}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
+                        {br.city.slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">{br.name}</p>
+                        <p className="text-[10px]" style={{ color: t.muted }}>{br.city}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => openEditBranch(br)} className="p-1.5 rounded-lg transition"
+                        style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = t.cyan} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
+                        <Pencil size={13} />
+                      </button>
+                      <button onClick={() => deleteBranch(br.id)} className="p-1.5 rounded-lg transition"
+                        style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-[11px] mb-3" style={{ color: t.textSecondary }}>
+                    {br.address && <p className="flex items-center gap-1.5"><MapPin size={10} style={{ color: t.muted }} />{br.address}</p>}
+                    {br.phone && <p className="flex items-center gap-1.5"><Phone size={10} style={{ color: t.muted }} />{br.phone}</p>}
+                    {br.manager && <p className="flex items-center gap-1.5"><User size={10} style={{ color: t.muted }} />Manager: <span className="font-medium">{br.manager}</span></p>}
+                  </div>
+
+                  <div className="flex gap-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                    <div className="flex-1 text-center">
+                      <p className="text-lg font-bold" style={{ color: t.purple }}>{branchEmployees.length}</p>
+                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>কর্মচারী</p>
+                    </div>
+                    <div className="flex-1 text-center">
+                      <p className="text-lg font-bold" style={{ color: t.cyan }}>{branchUsers.length}</p>
+                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>System User</p>
+                    </div>
+                    <div className="flex-1 text-center">
+                      <p className="text-[10px] font-bold" style={{ color: t.emerald }}>{br.status === "active" ? "Active" : "Inactive"}</p>
+                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>স্ট্যাটাস</p>
+                    </div>
+                  </div>
+
+                  {branchEmployees.length > 0 && (
+                    <div className="mt-3 pt-3 space-y-1" style={{ borderTop: `1px solid ${t.border}` }}>
+                      <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: t.muted }}>কর্মচারী তালিকা</p>
+                      {branchEmployees.map((emp) => (
+                        <div key={emp.id} className="flex items-center justify-between text-xs">
+                          <span className="font-medium">{emp.name}</span>
+                          <Badge color={emp.role === "Owner" ? t.rose : emp.role === "Branch Manager" ? t.purple : t.cyan} size="xs">{emp.role}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ============ USERS TAB ============ */}
+      {activeTab === "users" && (
+        <>
+          {/* Add User form */}
+          {showUserForm && (
+            <Card delay={0}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold">নতুন System User যোগ করুন</h3>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowUserForm(false); setUserForm(EMPTY_USER); }}>বাতিল</Button>
+                  <Button size="xs" icon={Save} onClick={saveUser}>সংরক্ষণ</Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><User size={9} className="inline mr-1" />নাম *</label>
+                  <input value={userForm.name} onChange={(e) => setUserForm((p) => ({ ...p, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="পুরো নাম" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Mail size={9} className="inline mr-1" />ইমেইল *</label>
+                  <input value={userForm.email} onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="user@agency.com" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Phone size={9} className="inline mr-1" />ফোন</label>
+                  <input value={userForm.phone} onChange={(e) => setUserForm((p) => ({ ...p, phone: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="01XXXXXXXXX" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Building2 size={9} className="inline mr-1" />Branch *</label>
+                  <select value={userForm.branch} onChange={(e) => setUserForm((p) => ({ ...p, branch: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="">— Branch নির্বাচন করুন —</option>
+                    {branches.filter((b) => b.status === "active").map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পাসওয়ার্ড</label>
+                  <input type="password" value={userForm.password} onChange={(e) => setUserForm((p) => ({ ...p, password: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="••••••••" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}><Shield size={9} className="inline mr-1" />Roles * (এক বা একাধিক)</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {ALL_ROLES.map((role) => {
+                    const has = userForm.roles.includes(role);
+                    return (
+                      <button key={role}
+                        onClick={() => setUserForm((p) => ({ ...p, roles: has ? p.roles.filter((r) => r !== role) : [...p.roles, role] }))}
+                        className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition"
+                        style={{ background: has ? `${t.emerald}20` : t.inputBg, color: has ? t.emerald : t.muted, border: `1px solid ${has ? `${t.emerald}40` : t.inputBorder}` }}>
+                        {has ? "✓ " : ""}{role}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Users list */}
+          <div className="space-y-2">
+            {users.map((user, i) => (
+              <Card key={user.id} delay={i * 40} className="!p-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-11 w-11 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
+                    {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold">{user.name}</p>
+                      <Badge color={user.status === "active" ? t.emerald : t.muted} size="xs">{user.status}</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] mt-0.5" style={{ color: t.muted }}>
+                      <span className="flex items-center gap-1"><Mail size={9} />{user.email}</span>
+                      <span className="flex items-center gap-1"><Building2 size={9} />{user.branch}</span>
+                      <span>শেষ লগিন: {user.lastLogin}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {user.roles.map((role) => (
+                        <Badge key={role} color={role === "Owner" ? t.rose : role.includes("Manager") ? t.purple : t.cyan} size="xs">{role}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="xs" onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}>
+                      Roles
+                    </Button>
+                    <button onClick={() => deleteUser(user.id)} className="p-1.5 rounded-lg transition"
+                      style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+                {editingUserId === user.id && (
+                  <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                    <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>Role ক্লিক করে assign/remove:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ALL_ROLES.map((role) => {
+                        const has = user.roles.includes(role);
+                        return (
+                          <button key={role} onClick={() => toggleRole(user.id, role)}
+                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition"
+                            style={{ background: has ? `${t.emerald}20` : t.inputBg, color: has ? t.emerald : t.muted, border: `1px solid ${has ? `${t.emerald}40` : t.inputBorder}` }}>
+                            {has ? "✓ " : ""}{role}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ============ PERMISSIONS TAB ============ */}
+      {activeTab === "permissions" && (
+        <Card delay={100}>
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h3 className="text-sm font-semibold">Permission Matrix</h3>
+              <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>R = Read, W = Write, D = Delete — ক্লিক করে toggle করুন</p>
+            </div>
+            <Button icon={Save} size="xs" onClick={() => toast.success("Permissions সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
+          </div>
+          <div className="overflow-x-auto mt-3">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                  <th className="text-left py-2 px-3 text-[10px] uppercase font-medium" style={{ color: t.muted, minWidth: 140 }}>Role</th>
+                  {MODULES.map(({ key, label }) => (
+                    <th key={key} className="text-center py-2 px-1 text-[9px] uppercase font-medium" style={{ color: t.muted, minWidth: 72 }}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {PERM_ROLES.map((role) => (
+                  <tr key={role} style={{ borderBottom: `1px solid ${t.border}` }}>
+                    <td className="py-2.5 px-3">
+                      <Badge color={role === "Owner" ? t.rose : role.includes("Manager") ? t.purple : t.cyan} size="xs">{role}</Badge>
+                    </td>
+                    {MODULES.map(({ key }) => {
+                      const cell = permMatrix[role]?.[key] || { read: false, write: false, del: false };
+                      return (
+                        <td key={key} className="py-2 px-1 text-center">
+                          <div className="flex items-center justify-center gap-0.5">
+                            {[
+                              { k: "read", label: "R", activeColor: t.emerald },
+                              { k: "write", label: "W", activeColor: t.amber },
+                              { k: "del", label: "D", activeColor: t.rose },
+                            ].map(({ k, label, activeColor }) => {
+                              const on = cell[k];
+                              return (
+                                <button key={k} onClick={() => togglePerm(role, key, k)}
+                                  className="w-5 h-5 rounded text-[8px] font-bold transition"
+                                  style={{ background: on ? `${activeColor}25` : `${t.muted}10`, color: on ? activeColor : `${t.muted}60`, border: `1px solid ${on ? `${activeColor}40` : "transparent"}` }}
+                                  title={`${role} — ${key} — ${label}`}>
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Legend */}
+          <div className="flex gap-4 mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            {[
+              { label: "Read (R)", color: t.emerald },
+              { label: "Write (W)", color: t.amber },
+              { label: "Delete (D)", color: t.rose },
+            ].map(({ label, color }) => (
+              <div key={label} className="flex items-center gap-1.5 text-[10px]" style={{ color: t.muted }}>
+                <div className="h-2.5 w-2.5 rounded" style={{ background: `${color}25`, border: `1px solid ${color}40` }} />
+                {label}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}

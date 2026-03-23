@@ -1,0 +1,1194 @@
+import { useState } from "react";
+import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, Pencil } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
+import Card from "../../components/ui/Card";
+import { Badge, StatusBadge } from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
+import { PIPELINE_STATUSES } from "../../data/students";
+import { FEE_CATEGORIES, CATEGORY_CONFIG } from "../../data/mockData";
+
+// ═══════════════════════════════════════════════
+// PIPELINE STEPS META — checklist + actions per step
+// ═══════════════════════════════════════════════
+const STEPS_META = {
+  VISITOR: {
+    icon: "🚶", nextStatus: "FOLLOW_UP", nextLabel: "ফলোআপ শুরু করুন",
+    hint: "প্রাথমিক কাউন্সেলিং শেষ হলে ফলোআপ শুরু করুন",
+    checklist: [
+      { id: "v1", text: "কাউন্সেলিং সম্পন্ন হয়েছে", req: true },
+      { id: "v2", text: "আগ্রহের দেশ ও ভিসার ধরন নির্ধারিত", req: true },
+      { id: "v3", text: "বাজেট ও সময়সীমা নিয়ে আলোচনা হয়েছে", req: false },
+      { id: "v4", text: "পরবর্তী ফলোআপ তারিখ নির্ধারিত", req: true },
+    ],
+  },
+  FOLLOW_UP: {
+    icon: "📞", nextStatus: "ENROLLED", nextLabel: "ভর্তি করুন",
+    hint: "কমপক্ষে ৩ বার ফলোআপ করুন — স্টুডেন্ট রাজি হলে ভর্তি করুন",
+    checklist: [
+      { id: "fu1", text: "কমপক্ষে ৩ বার ফলোআপ কল করা হয়েছে", req: true },
+      { id: "fu2", text: "অভিভাবকের সাথে আলোচনা হয়েছে", req: false },
+      { id: "fu3", text: "সমস্ত প্রশ্নের সঠিক উত্তর দেওয়া হয়েছে", req: true },
+      { id: "fu4", text: "ভর্তির সিদ্ধান্ত চূড়ান্ত হয়েছে", req: true },
+    ],
+  },
+  ENROLLED: {
+    icon: "✅", nextStatus: "IN_COURSE", nextLabel: "কোর্স শুরু করুন",
+    hint: "ভর্তি ফর্ম ও প্রথম কিস্তি ফি পরিশোধ হলে ব্যাচে যোগ করুন",
+    checklist: [
+      { id: "en1", text: "ভর্তির ফর্ম পূরণ ও স্বাক্ষর হয়েছে", req: true },
+      { id: "en2", text: "১ম কিস্তি কোর্স ফি পরিশোধ হয়েছে", req: true },
+      { id: "en3", text: "ব্যাচে এ্যাসাইন করা হয়েছে", req: true },
+      { id: "en4", text: "অভিভাবককে ভর্তির তথ্য জানানো হয়েছে", req: false },
+      { id: "en5", text: "ভর্তির রিসিট প্রদান করা হয়েছে", req: true },
+    ],
+  },
+  IN_COURSE: {
+    icon: "📚", nextStatus: "EXAM_PASSED", nextLabel: "পরীক্ষায় পাস হয়েছে",
+    hint: "কোর্স চলাকালীন উপস্থিতি ও JLPT/NAT পরীক্ষায় পাস নিশ্চিত করুন",
+    checklist: [
+      { id: "ic1", text: "উপস্থিতি ৮০%-এর বেশি", req: true },
+      { id: "ic2", text: "মাসিক টেস্টে পাস করেছে", req: true },
+      { id: "ic3", text: "JLPT/NAT পরীক্ষায় রেজিস্ট্রেশন হয়েছে", req: true },
+      { id: "ic4", text: "বকেয়া কোর্স ফি পরিশোধ হয়েছে", req: true },
+      { id: "ic5", text: "JLPT/NAT পরীক্ষায় পাস করেছে", req: true },
+    ],
+  },
+  EXAM_PASSED: {
+    icon: "🏆", nextStatus: "DOC_COLLECTION", nextLabel: "ডকুমেন্ট কালেকশন শুরু করুন",
+    hint: "সার্টিফিকেট পাওয়ার পর স্কুল নির্বাচন ও ডকুমেন্ট প্রস্তুত শুরু করুন",
+    checklist: [
+      { id: "ep1", text: "JLPT/NAT পাসের সার্টিফিকেট পাওয়া গেছে", req: true },
+      { id: "ep2", text: "গন্তব্য স্কুল চূড়ান্ত নির্বাচন হয়েছে", req: true },
+      { id: "ep3", text: "স্টুডেন্টকে ডকুমেন্ট চেকলিস্ট দেওয়া হয়েছে", req: true },
+      { id: "ep4", text: "স্কুলে আবেদনের সিদ্ধান্ত হয়েছে", req: true },
+    ],
+  },
+  DOC_COLLECTION: {
+    icon: "📄", nextStatus: "SCHOOL_INTERVIEW", nextLabel: "ইন্টারভিউ শিডিউল করুন",
+    hint: "সব ডকুমেন্ট সংগ্রহ ও যাচাই সম্পন্ন হলে স্কুল ইন্টারভিউ দিন",
+    checklist: [
+      { id: "dc1", text: "পাসপোর্ট (মেয়াদ কমপক্ষে ৬ মাস)", req: true },
+      { id: "dc2", text: "SSC/HSC সার্টিফিকেট ও মার্কশিট (সত্যায়িত)", req: true },
+      { id: "dc3", text: "JLPT/NAT সার্টিফিকেট", req: true },
+      { id: "dc4", text: "ব্যাংক স্টেটমেন্ট (সর্বশেষ ৩ মাস)", req: true },
+      { id: "dc5", text: "ছবি (৩.৫×৪.৫ cm, সাদা ব্যাকগ্রাউন্ড) — ৬ কপি", req: true },
+      { id: "dc6", text: "পুলিশ ক্লিয়ারেন্স সার্টিফিকেট", req: true },
+      { id: "dc7", text: "মেডিকেল সার্টিফিকেট", req: false },
+      { id: "dc8", text: "ডকুমেন্ট প্রসেসিং ফি পরিশোধ হয়েছে", req: true },
+      { id: "dc9", text: "সব ডকুমেন্ট mismatch মুক্ত ও যাচাই সম্পন্ন", req: true },
+    ],
+  },
+  SCHOOL_INTERVIEW: {
+    icon: "💻", nextStatus: "DOC_SUBMITTED", nextLabel: "ডকুমেন্ট স্কুলে জমা দিন",
+    hint: "ইন্টারভিউ পাস হলে স্কুলে ডকুমেন্ট জমা দিন",
+    checklist: [
+      { id: "si1", text: "ইন্টারভিউ তারিখ ও সময় নির্ধারিত হয়েছে", req: true },
+      { id: "si2", text: "স্কুলের সম্ভাব্য প্রশ্নোত্তর প্র্যাকটিস হয়েছে", req: true },
+      { id: "si3", text: "ইন্টারভিউ সফলভাবে সম্পন্ন হয়েছে", req: true },
+      { id: "si4", text: "স্কুল থেকে Conditional/Pre-approval পাওয়া গেছে", req: true },
+    ],
+  },
+  DOC_SUBMITTED: {
+    icon: "📤", nextStatus: "COE_RECEIVED", nextLabel: "COE পেয়েছি",
+    hint: "ডকুমেন্ট জমার পর স্কুল ২-৪ সপ্তাহে COE ইস্যু করবে",
+    checklist: [
+      { id: "ds1", text: "সব ডকুমেন্ট স্কুলে পৌঁছে গেছে", req: true },
+      { id: "ds2", text: "Submission নম্বর/রিসিট পাওয়া গেছে", req: true },
+      { id: "ds3", text: "স্কুল Recheck থাকলে দ্রুত সমাধান হয়েছে", req: false },
+    ],
+  },
+  COE_RECEIVED: {
+    icon: "🎉", nextStatus: "VISA_GRANTED", nextLabel: "ভিসা পেয়েছি",
+    hint: "⚠️ COE সাধারণত ৩ মাস valid — দ্রুত ভিসা apply করুন!",
+    checklist: [
+      { id: "coe1", text: "COE নম্বর ও মেয়াদ রেকর্ড করা হয়েছে", req: true },
+      { id: "coe2", text: "টিউশন ফি রেমিট্যান্স সম্পন্ন (ব্যাংক রিসিট সহ)", req: true },
+      { id: "coe3", text: "Health Check — Chest X-Ray সম্পন্ন", req: true },
+      { id: "coe4", text: "VFS / Visa Center appointment নেওয়া হয়েছে", req: true },
+      { id: "coe5", text: "ভিসা আবেদন ফর্ম পূরণ ও জমা হয়েছে", req: true },
+    ],
+  },
+  VISA_GRANTED: {
+    icon: "🛂", nextStatus: "ARRIVED", nextLabel: "গন্তব্যে পৌঁছেছে",
+    hint: "ভিসা পাওয়ার পর সার্ভিস চার্জ কালেক্ট ও প্রস্থান প্রস্তুতি নিন",
+    checklist: [
+      { id: "vg1", text: "ভিসা স্টিকার পাসপোর্টে লেগেছে ও যাচাই হয়েছে", req: true },
+      { id: "vg2", text: "সার্ভিস চার্জ (৫০,০০০৳) কালেক্ট হয়েছে", req: true },
+      { id: "vg3", text: "ফ্লাইট বুকিং সম্পন্ন ও কনফার্ম", req: true },
+      { id: "vg4", text: "Airport assistance arrange হয়েছে", req: false },
+      { id: "vg5", text: "Pre-departure briefing দেওয়া হয়েছে", req: true },
+      { id: "vg6", text: "জরুরি যোগাযোগ নম্বর ও স্কুল ঠিকানা দেওয়া হয়েছে", req: true },
+    ],
+  },
+  ARRIVED: {
+    icon: "✈️", nextStatus: "COMPLETED", nextLabel: "প্রক্রিয়া সম্পন্ন করুন",
+    hint: "স্টুডেন্ট সেটেল হলে ও শোকাই ফি পেলে Completed করুন",
+    checklist: [
+      { id: "ar1", text: "নিরাপদে গন্তব্যে পৌঁছানো কনফার্ম হয়েছে", req: true },
+      { id: "ar2", text: "স্কুলে রিপোর্ট সম্পন্ন হয়েছে", req: true },
+      { id: "ar3", text: "Residence Card প্রসেস শুরু হয়েছে", req: false },
+      { id: "ar4", text: "ব্যাংক একাউন্ট খোলা হয়েছে", req: false },
+      { id: "ar5", text: "শোকাই (Shokai) ফি স্কুল থেকে পাওয়া গেছে", req: false },
+    ],
+  },
+  COMPLETED: {
+    icon: "🏁", nextStatus: null, nextLabel: null,
+    hint: "🎉 সব প্রক্রিয়া সফলভাবে সম্পন্ন হয়েছে!",
+    checklist: [
+      { id: "cp1", text: "সব পেমেন্ট কালেক্ট সম্পন্ন", req: true },
+      { id: "cp2", text: "শোকাই ফি প্রাপ্ত", req: false },
+      { id: "cp3", text: "স্টুডেন্টের ফাইল আর্কাইভ করা হয়েছে", req: true },
+    ],
+  },
+};
+
+const MAIN_STEPS = PIPELINE_STATUSES.filter(s => !["CANCELLED","PAUSED"].includes(s.code));
+
+export default function StudentDetailView({ student, onBack, onUpdate, onDelete }) {
+  const t = useTheme();
+  const toast = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ ...student });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [checked, setChecked] = useState({});       // { "ENROLLED_en1": true, ... }
+  const [noteText, setNoteText] = useState("");
+  const [activityLog, setActivityLog] = useState([
+    { time: student.created, text: `Student created — ${student.source || "Walk-in"}`, type: "create" },
+  ]);
+  const [showPauseConfirm, setShowPauseConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showStepCard, setShowStepCard] = useState(false);
+
+  // ── Timeline state ──
+  const [timelineOpen, setTimelineOpen] = useState(false);
+
+  // ── Sponsor state ──
+  const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", address: "", nid: "", company_name: "", trade_license_no: "", work_address: "", tin: "", annual_income_y1: "", annual_income_y2: "", annual_income_y3: "", tax_y1: "", tax_y2: "", tax_y3: "", banks: [], tuition_jpy: "", living_jpy_monthly: "", payment_method: "Bank Transfer", exchange_rate: "" };
+  const [sponsor, setSponsor] = useState(student.sponsor || BLANK_SPONSOR);
+  const [sponsorForm, setSponsorForm] = useState(student.sponsor || BLANK_SPONSOR);
+  const [sponsorEditing, setSponsorEditing] = useState(false);
+  const [sponsorOpen, setSponsorOpen] = useState(false);
+  const [showAddBank, setShowAddBank] = useState(false);
+  const [bankForm, setBankForm] = useState({ bank_name: "", branch: "", account_no: "", balance: "", balance_date: "", name_in_statement: "", address_in_statement: "" });
+
+  const saveSponsor = () => {
+    setSponsor(sponsorForm);
+    onUpdate({ ...student, sponsor: sponsorForm });
+    setSponsorEditing(false);
+    logActivity("স্পনসর তথ্য আপডেট হয়েছে", "edit");
+    toast.updated("Sponsor");
+  };
+  const addBank = () => {
+    if (!bankForm.bank_name.trim()) { toast.error("ব্যাংকের নাম দিন"); return; }
+    const updated = { ...sponsorForm, banks: [...(sponsorForm.banks || []), { id: `bk-${Date.now()}`, ...bankForm }] };
+    setSponsorForm(updated);
+    setSponsor(updated);
+    onUpdate({ ...student, sponsor: updated });
+    setBankForm({ bank_name: "", branch: "", account_no: "", balance: "", balance_date: "", name_in_statement: "", address_in_statement: "" });
+    setShowAddBank(false);
+    toast.success("ব্যাংক যোগ হয়েছে");
+  };
+  const removeBank = (id) => {
+    const updated = { ...sponsorForm, banks: (sponsorForm.banks || []).filter(b => b.id !== id) };
+    setSponsorForm(updated);
+    setSponsor(updated);
+    onUpdate({ ...student, sponsor: updated });
+    toast.success("ব্যাংক মুছে ফেলা হয়েছে");
+  };
+  const sf = (k, v) => setSponsorForm(p => ({ ...p, [k]: v }));
+
+  // ── Fee & Payment state ──
+  const [feeItems, setFeeItems] = useState(student.fees?.items || []);
+  const [payments, setPayments] = useState(student.fees?.payments || []);
+  const [showPayForm, setShowPayForm] = useState(false);
+  const [payForm, setPayForm] = useState({ amount: "", method: "Cash", category: "", note: "" });
+  const [showFeeItemForm, setShowFeeItemForm] = useState(false);
+  const [feeItemForm, setFeeItemForm] = useState({ category: "enrollment_fee", label: "", amount: "" });
+
+  const currentStatus = student.status;
+  const currentStepIdx = MAIN_STEPS.findIndex(s => s.code === currentStatus);
+  const meta = STEPS_META[currentStatus] || STEPS_META.VISITOR;
+  const stepColor = PIPELINE_STATUSES.find(s => s.code === currentStatus)?.color || t.cyan;
+  const isTerminal = ["CANCELLED", "PAUSED"].includes(currentStatus);
+
+  // Checklist helpers
+  const toggleCheck = (itemId) => {
+    const key = `${currentStatus}_${itemId}`;
+    setChecked(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+  const isChecked = (itemId) => !!checked[`${currentStatus}_${itemId}`];
+  const requiredItems = meta.checklist.filter(c => c.req);
+  const checkedRequired = requiredItems.filter(c => isChecked(c.id)).length;
+  const allRequiredDone = checkedRequired === requiredItems.length;
+
+  const logActivity = (text, type = "action") => {
+    const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+    setActivityLog(prev => [...prev, { time: now, text, type }]);
+  };
+
+  // Status change
+  const changeStatus = (newStatus, msg) => {
+    const updated = { ...student, status: newStatus };
+    onUpdate(updated);
+    const stepLabel = PIPELINE_STATUSES.find(s => s.code === newStatus)?.label || newStatus;
+    logActivity(msg || `Status → ${stepLabel}`, "status");
+    toast.success(`${stepLabel} — আপডেট হয়েছে`);
+    setChecked({});
+  };
+
+  const goNext = () => {
+    if (meta.nextStatus) changeStatus(meta.nextStatus);
+  };
+  const goPrev = () => {
+    if (currentStepIdx > 0) changeStatus(MAIN_STEPS[currentStepIdx - 1].code, "পূর্ববর্তী ধাপে ফিরে গেছে");
+  };
+
+  const addNote = () => {
+    if (!noteText.trim()) return;
+    logActivity(noteText.trim(), "note");
+    setNoteText("");
+    toast.success("নোট যোগ হয়েছে");
+  };
+
+  // Edit
+  const handleSave = () => { onUpdate(editForm); setIsEditing(false); logActivity("তথ্য আপডেট হয়েছে", "edit"); toast.updated("Student"); };
+  const setField = (k, v) => setEditForm({ ...editForm, [k]: v });
+
+  const current = isEditing ? editForm : student;
+
+  const logIcon = { create: "🟢", status: "🔵", action: "🟡", note: "📝", edit: "✏️", payment: "💰" };
+
+  // Fee helpers
+  const taka = (n) => `৳${Number(n).toLocaleString("en-IN")}`;
+  const totalFee = feeItems.reduce((s, i) => s + i.amount, 0);
+  const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+  const balance = totalFee - totalPaid;
+  const paidPercent = totalFee > 0 ? Math.min(100, (totalPaid / totalFee) * 100) : 0;
+
+  // Per-category paid amount
+  const paidByCategory = (catId) => payments.filter(p => p.category === catId).reduce((s, p) => s + p.amount, 0);
+
+  const syncFees = (items, pays) => {
+    onUpdate({ ...student, fees: { items, payments: pays } });
+  };
+
+  const addFeeItem = () => {
+    const amount = parseInt(feeItemForm.amount, 10);
+    if (!amount || amount <= 0) { toast.error("সঠิক পরিমাণ দিন"); return; }
+    const catCfg = CATEGORY_CONFIG[feeItemForm.category];
+    const label = feeItemForm.label.trim() || catCfg?.label || feeItemForm.category;
+    const newItem = { id: `fi-${Date.now()}`, category: feeItemForm.category, label, amount };
+    const updated = [...feeItems, newItem];
+    setFeeItems(updated);
+    syncFees(updated, payments);
+    logActivity(`ফি খাত যোগ — ${label}: ${taka(amount)}`, "edit");
+    setFeeItemForm({ category: "enrollment_fee", label: "", amount: "" });
+    setShowFeeItemForm(false);
+    toast.success("ফি খাত যোগ হয়েছে");
+  };
+
+  const deleteFeeItem = (itemId) => {
+    const updated = feeItems.filter(i => i.id !== itemId);
+    setFeeItems(updated);
+    syncFees(updated, payments);
+    logActivity("ফি খাত মুছে ফেলা হয়েছে", "edit");
+  };
+
+  const addPayment = () => {
+    const amount = parseInt(payForm.amount, 10);
+    if (!amount || amount <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
+    if (!payForm.category) { toast.error("খাত নির্বাচন করুন"); return; }
+    const newP = { id: `P-${Date.now()}`, date: new Date().toISOString().slice(0, 10), amount, method: payForm.method, category: payForm.category, note: payForm.note };
+    const updated = [...payments, newP];
+    setPayments(updated);
+    syncFees(feeItems, updated);
+    const catLabel = CATEGORY_CONFIG[payForm.category]?.label || payForm.category;
+    logActivity(`পেমেন্ট — ${taka(amount)} [${catLabel}] (${payForm.method})${payForm.note ? ` — ${payForm.note}` : ""}`, "payment");
+    setPayForm({ amount: "", method: "Cash", category: "", note: "" });
+    setShowPayForm(false);
+    toast.success("পেমেন্ট যোগ হয়েছে");
+  };
+
+  const deletePayment = (pid) => {
+    const updated = payments.filter(p => p.id !== pid);
+    setPayments(updated);
+    syncFees(feeItems, updated);
+    logActivity("পেমেন্ট এন্ট্রি মুছে ফেলা হয়েছে", "edit");
+    toast.success("মুছে ফেলা হয়েছে");
+  };
+
+  return (
+    <div className="space-y-5 anim-fade">
+
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={onBack} className="p-2 rounded-xl transition"
+          onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          <ArrowLeft size={18} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-bold">{student.name_en}</h2>
+            <StatusBadge status={student.status} />
+            {student.branch && <Badge color={t.purple} size="xs">{student.branch}</Badge>}
+            {student.type === "partner" && <Badge color={t.amber} size="xs">Partner</Badge>}
+          </div>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.name_bn} • {student.id} • {student.country}</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {isEditing ? (
+            <>
+              <Button variant="ghost" size="xs" onClick={() => { setIsEditing(false); setEditForm({ ...student }); }}>Cancel</Button>
+              <Button icon={Save} size="xs" onClick={handleSave}>Save</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setIsEditing(true)}>Edit</Button>
+              <Button variant="danger" icon={Trash2} size="xs" onClick={() => setShowDeleteConfirm(true)}>Delete</Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Delete confirm ── */}
+      {showDeleteConfirm && (
+        <Card delay={0}>
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={20} style={{ color: t.rose }} />
+            <div className="flex-1">
+              <p className="text-sm font-semibold" style={{ color: t.rose }}>স্টুডেন্ট ডিলিট করবেন?</p>
+              <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.name_en} — এই অ্যাকশন undo করা যাবে না</p>
+            </div>
+            <Button variant="ghost" size="xs" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+            <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>Confirm Delete</Button>
+          </div>
+        </Card>
+      )}
+
+      {/* ══════════════════════════════════════
+          PIPELINE STEPPER
+      ══════════════════════════════════════ */}
+      <Card delay={50}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold">Pipeline Progress</h3>
+          <p className="text-[11px]" style={{ color: t.muted }}>
+            ধাপ {Math.max(currentStepIdx + 1, 1)} / {MAIN_STEPS.length}
+            {isTerminal && <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: `${t.rose}20`, color: t.rose }}>{currentStatus}</span>}
+          </p>
+        </div>
+
+        {/* Step circles */}
+        <div className="overflow-x-auto pb-2">
+          <div className="flex items-center min-w-max">
+            {MAIN_STEPS.map((step, i) => {
+              const done = i < currentStepIdx;
+              const active = i === currentStepIdx;
+              const color = step.color;
+              return (
+                <div key={step.code} className="flex items-center">
+                  <button
+                    onClick={() => !isTerminal && changeStatus(step.code, `Status → ${step.label}`)}
+                    title={step.label}
+                    className="flex flex-col items-center gap-1.5 group transition-all"
+                    style={{ minWidth: 52 }}
+                  >
+                    <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2"
+                      style={{
+                        background: done ? `${t.emerald}20` : active ? `${color}25` : t.inputBg,
+                        borderColor: done ? t.emerald : active ? color : t.inputBorder,
+                        color: done ? t.emerald : active ? color : t.muted,
+                        boxShadow: active ? `0 0 0 3px ${color}30` : "none",
+                      }}>
+                      {done ? <Check size={14} /> : i + 1}
+                    </div>
+                    <span className="text-[9px] text-center leading-tight max-w-[52px]"
+                      style={{ color: done ? t.emerald : active ? color : `${t.muted}70`, fontWeight: active ? 700 : 400 }}>
+                      {step.label}
+                    </span>
+                  </button>
+                  {i < MAIN_STEPS.length - 1 && (
+                    <div className="h-0.5 w-5 mx-0.5 shrink-0 rounded-full transition-all"
+                      style={{ background: i < currentStepIdx ? t.emerald : t.inputBorder }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+
+      {/* ══════════════════════════════════════
+          CURRENT STEP ACTION CARD
+      ══════════════════════════════════════ */}
+      {!isTerminal ? (
+        <Card delay={80}>
+          {/* Collapsible toggle header */}
+          <button
+            onClick={() => setShowStepCard(v => !v)}
+            className="w-full flex items-center justify-between gap-3 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-xl flex items-center justify-center text-lg shrink-0"
+                style={{ background: `${stepColor}15` }}>
+                {meta.icon}
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold" style={{ color: stepColor }}>
+                    {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${stepColor}15`, color: stepColor }}>
+                    {checkedRequired}/{requiredItems.length} required ✓
+                  </span>
+                  {!allRequiredDone && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.rose}15`, color: t.rose }}>
+                      {requiredItems.length - checkedRequired}টি বাকি
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{meta.hint}</p>
+              </div>
+            </div>
+            <ChevronRight size={16} style={{ color: t.muted, transform: showStepCard ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+          </button>
+
+          {!showStepCard ? null : (<div className="mt-4" style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16 }}>
+          {/* Checklist */}
+          <div className="space-y-2 mb-5">
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>এই ধাপে যা করতে হবে</p>
+            {meta.checklist.map(item => {
+              const ticked = isChecked(item.id);
+              return (
+                <button key={item.id} onClick={() => toggleCheck(item.id)}
+                  className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all"
+                  style={{ background: ticked ? `${t.emerald}10` : t.inputBg, border: `1px solid ${ticked ? `${t.emerald}30` : "transparent"}` }}>
+                  <div className="h-5 w-5 rounded-md flex items-center justify-center shrink-0 border-2 transition-all"
+                    style={{ background: ticked ? t.emerald : "transparent", borderColor: ticked ? t.emerald : t.inputBorder }}>
+                    {ticked && <Check size={11} color="#fff" />}
+                  </div>
+                  <span className="text-xs flex-1" style={{ color: ticked ? t.textSecondary : t.text, textDecoration: ticked ? "line-through" : "none" }}>
+                    {item.text}
+                  </span>
+                  {item.req && !ticked && (
+                    <span className="text-[9px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: `${t.rose}15`, color: t.rose }}>আবশ্যক</span>
+                  )}
+                  {ticked && <Check size={13} style={{ color: t.emerald, shrink: 0 }} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-center gap-2 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+            {/* Prev step */}
+            {currentStepIdx > 0 && (
+              <button onClick={goPrev}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
+                style={{ background: t.inputBg, color: t.muted, border: `1px solid ${t.inputBorder}` }}
+                onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.background = t.inputBg; }}>
+                <ChevronLeft size={13} /> পূর্ববর্তী ধাপ
+              </button>
+            )}
+
+            {/* Pause */}
+            {!["COMPLETED"].includes(currentStatus) && (
+              <button onClick={() => setShowPauseConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
+                style={{ background: `${t.amber}15`, color: t.amber, border: `1px solid ${t.amber}30` }}
+                onMouseEnter={e => e.currentTarget.style.background = `${t.amber}25`}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.amber}15`; }}>
+                ⏸ Pause
+              </button>
+            )}
+
+            {/* Cancel */}
+            {!["COMPLETED"].includes(currentStatus) && (
+              <button onClick={() => setShowCancelConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
+                style={{ background: `${t.rose}12`, color: t.rose, border: `1px solid ${t.rose}25` }}
+                onMouseEnter={e => e.currentTarget.style.background = `${t.rose}22`}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.rose}12`; }}>
+                ✕ Cancel
+              </button>
+            )}
+
+            <div className="flex-1" />
+
+            {/* Next step — main action */}
+            {meta.nextStatus && (
+              <div className="flex items-center gap-2">
+                {!allRequiredDone && (
+                  <p className="text-[10px]" style={{ color: t.rose }}>
+                    {requiredItems.length - checkedRequired}টি আবশ্যক বাকি
+                  </p>
+                )}
+                <button
+                  onClick={goNext}
+                  disabled={!allRequiredDone}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                  style={{
+                    background: allRequiredDone ? `linear-gradient(135deg, ${stepColor}, ${stepColor}cc)` : `${stepColor}20`,
+                    color: allRequiredDone ? "#fff" : `${stepColor}80`,
+                    cursor: allRequiredDone ? "pointer" : "not-allowed",
+                    boxShadow: allRequiredDone ? `0 4px 12px ${stepColor}40` : "none",
+                  }}>
+                  {meta.nextLabel} <ChevronRight size={13} />
+                </button>
+                {!allRequiredDone && (
+                  <button onClick={goNext}
+                    className="text-[10px] px-2 py-1 rounded-lg transition"
+                    style={{ background: t.inputBg, color: t.muted }}
+                    onMouseEnter={e => e.currentTarget.style.color = t.text}
+                    onMouseLeave={e => { const el = e.currentTarget; el.style.color = t.muted; }}
+                    title="Checklist ছাড়াই এগিয়ে যান">
+                    Override →
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Pause confirm */}
+          {showPauseConfirm && (
+            <div className="mt-3 p-3 rounded-xl flex items-center gap-3" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
+              <span className="text-lg">⏸</span>
+              <div className="flex-1">
+                <p className="text-xs font-semibold" style={{ color: t.amber }}>Pipeline Pause করবেন?</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>স্টুডেন্ট সাময়িক বিরতিতে যাবে — পরে Re-activate করা যাবে</p>
+              </div>
+              <button onClick={() => setShowPauseConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+              <button onClick={() => { changeStatus("PAUSED", "Pipeline pause করা হয়েছে"); setShowPauseConfirm(false); }}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.amber, color: "#fff" }}>Pause করুন</button>
+            </div>
+          )}
+
+          {/* Cancel confirm */}
+          {showCancelConfirm && (
+            <div className="mt-3 p-3 rounded-xl flex items-center gap-3" style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
+              <AlertTriangle size={16} style={{ color: t.rose }} />
+              <div className="flex-1">
+                <p className="text-xs font-semibold" style={{ color: t.rose }}>Pipeline Cancel করবেন?</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>ভবিষ্যতে Re-activate করা যাবে</p>
+              </div>
+              <button onClick={() => setShowCancelConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+              <button onClick={() => { changeStatus("CANCELLED", "Pipeline cancel করা হয়েছে"); setShowCancelConfirm(false); }}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>Cancel করুন</button>
+            </div>
+          )}
+          </div>)}
+        </Card>
+      ) : (
+        /* Terminal state (PAUSED/CANCELLED) */
+        <Card delay={80}>
+          <div className="flex items-center gap-4">
+            <div className="text-3xl">{currentStatus === "PAUSED" ? "⏸" : "❌"}</div>
+            <div className="flex-1">
+              <p className="text-sm font-bold" style={{ color: currentStatus === "PAUSED" ? t.amber : t.rose }}>
+                {currentStatus === "PAUSED" ? "সাময়িক বিরতি" : "বাদ দেওয়া হয়েছে"}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+                {currentStatus === "PAUSED" ? "পরিস্থিতি ঠিক হলে Re-activate করুন" : "কারণ নোট করুন এবং Re-activate করা যাবে"}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const prevStatus = PIPELINE_STATUSES.find(s => s.code === (student.prevStatus || "ENROLLED"))?.code || "ENROLLED";
+                changeStatus("ENROLLED", "Pipeline Re-activate করা হয়েছে");
+              }}
+              className="px-4 py-2 rounded-xl text-xs font-bold transition"
+              style={{ background: `${t.emerald}20`, color: t.emerald, border: `1px solid ${t.emerald}40` }}
+              onMouseEnter={e => e.currentTarget.style.background = `${t.emerald}30`}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.emerald}20`; }}>
+              ▶ Re-activate করুন
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {/* ══════════════════════════════════════
+          ACTIVITY LOG + NOTE
+      ══════════════════════════════════════ */}
+      <Card delay={120}>
+        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+          <MessageSquare size={14} style={{ color: t.cyan }} /> Activity Log
+        </h3>
+
+        {/* Add note */}
+        <div className="flex gap-2 mb-4">
+          <input
+            value={noteText}
+            onChange={e => setNoteText(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addNote()}
+            className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+            style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+            placeholder="নোট যোগ করুন... (Enter চাপুন)"
+          />
+          <button onClick={addNote}
+            className="px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 transition"
+            style={{ background: `${t.cyan}20`, color: t.cyan }}
+            onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}30`}
+            onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.cyan}20`; }}>
+            <Plus size={13} /> যোগ করুন
+          </button>
+        </div>
+
+        {/* Log entries */}
+        <div className="space-y-2 max-h-52 overflow-y-auto">
+          {[...activityLog].reverse().map((entry, i) => (
+            <div key={i} className="flex items-start gap-2.5 text-xs">
+              <span className="text-sm shrink-0 mt-0.5">{logIcon[entry.type] || "⚪"}</span>
+              <div className="flex-1 min-w-0">
+                <p className="leading-snug" style={{ color: entry.type === "note" ? t.text : t.textSecondary }}>{entry.text}</p>
+                <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: t.muted }}>
+                  <Clock size={9} /> {entry.time}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* ══════════════════════════════════════
+          FEE & PAYMENT
+      ══════════════════════════════════════ */}
+      <Card delay={130}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 className="text-sm font-bold flex items-center gap-2">
+            <CreditCard size={14} style={{ color: t.cyan }} /> ফি কাঠামো ও পেমেন্ট
+          </h3>
+          <div className="flex gap-2">
+            <button onClick={() => { setShowFeeItemForm(v => !v); setShowPayForm(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition"
+              style={{ background: `${t.purple}20`, color: t.purple }}
+              onMouseEnter={e => e.currentTarget.style.background = `${t.purple}30`}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.purple}20`; }}>
+              <Plus size={12} /> ফি খাত
+            </button>
+            <button onClick={() => { setShowPayForm(v => !v); setShowFeeItemForm(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition"
+              style={{ background: `${t.cyan}20`, color: t.cyan }}
+              onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}30`}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.cyan}20`; }}>
+              <Plus size={12} /> পেমেন্ট
+            </button>
+          </div>
+        </div>
+
+        {/* Summary row */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="p-3 rounded-xl" style={{ background: t.inputBg }}>
+            <p className="text-[10px] mb-1" style={{ color: t.muted }}>মোট নির্ধারিত ফি</p>
+            <p className="text-sm font-bold">{taka(totalFee)}</p>
+          </div>
+          <div className="p-3 rounded-xl" style={{ background: `${t.emerald}10`, border: `1px solid ${t.emerald}20` }}>
+            <p className="text-[10px] mb-1" style={{ color: t.muted }}>কালেক্ট হয়েছে</p>
+            <p className="text-sm font-bold" style={{ color: t.emerald }}>{taka(totalPaid)}</p>
+          </div>
+          <div className="p-3 rounded-xl" style={{ background: balance > 0 ? `${t.rose}10` : `${t.emerald}10`, border: `1px solid ${balance > 0 ? `${t.rose}20` : `${t.emerald}20`}` }}>
+            <p className="text-[10px] mb-1" style={{ color: t.muted }}>বাকি আছে</p>
+            <p className="text-sm font-bold" style={{ color: balance > 0 ? t.rose : t.emerald }}>{taka(Math.max(0, balance))}</p>
+          </div>
+        </div>
+
+        {/* Overall progress bar */}
+        <div className="mb-5">
+          <div className="flex justify-between text-[10px] mb-1" style={{ color: t.muted }}>
+            <span>সার্বিক পরিশোধ</span>
+            <span>{Math.round(paidPercent)}%</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: t.inputBg }}>
+            <div className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${paidPercent}%`, background: paidPercent >= 100 ? t.emerald : paidPercent >= 50 ? t.cyan : t.amber }} />
+          </div>
+        </div>
+
+        {/* ── Fee Structure Table (by category) ── */}
+        <div className="mb-5">
+          <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>খাত অনুযায়ী ফি বিবরণ</p>
+          {feeItems.length === 0 ? (
+            <p className="text-xs py-3 text-center" style={{ color: t.muted }}>কোনো ফি খাত নির্ধারণ করা হয়নি — "ফি খাত" বাটনে ক্লিক করুন</p>
+          ) : (
+            <div className="space-y-2">
+              {feeItems.map(item => {
+                const catCfg = CATEGORY_CONFIG[item.category] || {};
+                const paid = paidByCategory(item.category);
+                const due = item.amount - paid;
+                const pct = item.amount > 0 ? Math.min(100, (paid / item.amount) * 100) : 0;
+                return (
+                  <div key={item.id} className="p-3 rounded-xl group" style={{ background: t.inputBg }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm">{catCfg.icon || "💰"}</span>
+                      <span className="text-xs font-semibold flex-1">{item.label}</span>
+                      <span className="text-xs font-bold">{taka(item.amount)}</span>
+                      <button onClick={() => deleteFeeItem(item.id)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition"
+                        style={{ color: t.rose }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
+                        onMouseLeave={e => { const el = e.currentTarget; el.style.background = "transparent"; }}>
+                        <X size={11} />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px]" style={{ color: t.muted }}>
+                      <span style={{ color: t.emerald }}>কালেক্ট: {taka(paid)}</span>
+                      <span style={{ color: due > 0 ? t.rose : t.emerald }}>বাকি: {taka(Math.max(0, due))}</span>
+                      <div className="flex-1 h-1 rounded-full overflow-hidden ml-1" style={{ background: t.border }}>
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: catCfg.color || t.cyan }} />
+                      </div>
+                      <span>{Math.round(pct)}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Add Fee Item Form */}
+        {showFeeItemForm && (
+          <div className="p-3 rounded-xl mb-4 space-y-2.5" style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}25` }}>
+            <p className="text-xs font-semibold" style={{ color: t.purple }}>নতুন ফি খাত যোগ করুন</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি ক্যাটাগরি *</label>
+                <select value={feeItemForm.category}
+                  onChange={e => { const cat = FEE_CATEGORIES.find(c => c.id === e.target.value); setFeeItemForm(f => ({ ...f, category: e.target.value, label: cat?.label || "" })); }}
+                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                  {FEE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) *</label>
+                <input type="number" value={feeItemForm.amount}
+                  onChange={e => setFeeItemForm(f => ({ ...f, amount: e.target.value }))}
+                  placeholder="যেমন: 30000"
+                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>কাস্টম লেবেল (ঐচ্ছিক)</label>
+              <input value={feeItemForm.label}
+                onChange={e => setFeeItemForm(f => ({ ...f, label: e.target.value }))}
+                placeholder="যেমন: কোর্স ফি — ব্যাচ April 2026"
+                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowFeeItemForm(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+              <button onClick={addFeeItem} className="text-xs px-4 py-1.5 rounded-lg font-bold" style={{ background: t.purple, color: "#fff" }}>যোগ করুন</button>
+            </div>
+          </div>
+        )}
+
+        {/* Add Payment Form */}
+        {showPayForm && (
+          <div className="p-3 rounded-xl mb-4 space-y-2.5" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}25` }}>
+            <p className="text-xs font-semibold" style={{ color: t.cyan }}>নতুন পেমেন্ট এন্ট্রি</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি খাত *</label>
+                <select value={payForm.category}
+                  onChange={e => setPayForm(p => ({ ...p, category: e.target.value }))}
+                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${!payForm.category ? t.rose : t.inputBorder}`, color: t.text }}>
+                  <option value="">— খাত বেছে নিন —</option>
+                  {feeItems.length > 0
+                    ? feeItems.map(fi => <option key={fi.id} value={fi.category}>{CATEGORY_CONFIG[fi.category]?.icon} {fi.label}</option>)
+                    : FEE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)
+                  }
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) *</label>
+                <input type="number" value={payForm.amount}
+                  onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))}
+                  placeholder="20000"
+                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পদ্ধতি</label>
+                <select value={payForm.method} onChange={e => setPayForm(p => ({ ...p, method: e.target.value }))}
+                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                  {["Cash", "bKash", "Nagad", "Bank Transfer", "Rocket", "Card"].map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>নোট (ঐচ্ছিক)</label>
+                <input value={payForm.note}
+                  onChange={e => setPayForm(p => ({ ...p, note: e.target.value }))}
+                  onKeyDown={e => e.key === "Enter" && addPayment()}
+                  placeholder="যেমন: ১ম কিস্তি..."
+                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowPayForm(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+              <button onClick={addPayment} className="text-xs px-4 py-1.5 rounded-lg font-bold" style={{ background: t.cyan, color: "#fff" }}>সংরক্ষণ</button>
+            </div>
+          </div>
+        )}
+
+        {/* Payment history */}
+        <div className="space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>পেমেন্ট ইতিহাস</p>
+          {payments.length === 0 ? (
+            <p className="text-xs text-center py-3" style={{ color: t.muted }}>এখনো কোনো পেমেন্ট নেই</p>
+          ) : [...payments].reverse().map((p) => {
+            const catCfg = CATEGORY_CONFIG[p.category] || {};
+            return (
+              <div key={p.id} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs group"
+                style={{ background: t.inputBg }}>
+                <span className="text-base shrink-0">{catCfg.icon || "💰"}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold" style={{ color: t.emerald }}>{taka(p.amount)}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${catCfg.color || t.cyan}20`, color: catCfg.color || t.cyan }}>{catCfg.label || p.category}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: t.border, color: t.muted }}>{p.method}</span>
+                    {p.note && <span style={{ color: t.muted }}>{p.note}</span>}
+                  </div>
+                  <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: t.muted }}>
+                    <Clock size={9} /> {p.date}
+                  </p>
+                </div>
+                <button onClick={() => deletePayment(p.id)}
+                  className="opacity-0 group-hover:opacity-100 transition p-1 rounded"
+                  style={{ color: t.rose }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
+                  onMouseLeave={e => { const el = e.currentTarget; el.style.background = "transparent"; }}>
+                  <X size={12} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* ══════════════════════════════════════
+          STUDENT INFO (editable)
+      ══════════════════════════════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        {/* Personal */}
+        <Card delay={150}>
+          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><User size={12} /> ব্যক্তিগত তথ্য</h4>
+          <div className="space-y-2.5">
+            {[
+              { label: "নাম (EN)", key: "name_en" },
+              { label: "নাম (বাংলা)", key: "name_bn" },
+              { label: "জন্ম তারিখ", key: "dob", type: "date" },
+              { label: "লিঙ্গ", key: "gender", type: "select", options: ["Male","Female","Other"] },
+              { label: "ফোন", key: "phone" },
+              { label: "ইমেইল", key: "email" },
+            ].map(f => (
+              <div key={f.key} className="flex justify-between items-center text-xs gap-2">
+                <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
+                {isEditing ? (
+                  f.type === "select" ? (
+                    <select value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
+                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      {f.options.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input type={f.type || "text"} value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
+                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  )
+                ) : <span className="font-medium text-right">{current[f.key] || "—"}</span>}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Passport & Family */}
+        <Card delay={180}>
+          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><FileCheck size={12} /> পাসপোর্ট ও পরিবার</h4>
+          <div className="space-y-2.5">
+            {[
+              { label: "পাসপোর্ট নম্বর", key: "passport" },
+              { label: "পিতার নাম", key: "father" },
+              { label: "মাতার নাম", key: "mother" },
+            ].map(f => (
+              <div key={f.key} className="flex justify-between items-center text-xs gap-2">
+                <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
+                {isEditing ? (
+                  <input value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
+                    className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                ) : <span className="font-medium text-right">{current[f.key] || "—"}</span>}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Destination */}
+        <Card delay={210}>
+          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> গন্তব্য তথ্য</h4>
+          <div className="space-y-2.5">
+            {[
+              { label: "দেশ", key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK"] },
+              { label: "স্কুল", key: "school" },
+              { label: "ব্যাচ / Intake", key: "batch" },
+              { label: "Branch", key: "branch" },
+              { label: "সোর্স", key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral"] },
+              { label: "টাইপ", key: "type", type: "select", options: ["own","partner"] },
+              { label: "ভর্তির তারিখ", key: "created" },
+            ].map(f => (
+              <div key={f.key} className="flex justify-between items-center text-xs gap-2">
+                <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
+                {isEditing && f.key !== "created" ? (
+                  f.type === "select" ? (
+                    <select value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
+                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      {f.options.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
+                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  )
+                ) : (
+                  <span className="font-medium text-right">
+                    {f.key === "type" ? (current[f.key] === "own" ? "Own" : "Partner") : current[f.key] || "—"}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* ══════════════════════════════════════
+          TIMELINE
+      ══════════════════════════════════════ */}
+      <Card delay={215}>
+        <button onClick={() => setTimelineOpen(v => !v)} className="w-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📅</span>
+            <h3 className="text-sm font-bold">Timeline</h3>
+            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.cyan}15`, color: t.cyan }}>{activityLog.length} ইভেন্ট</span>
+          </div>
+          <ChevronRight size={16} style={{ color: t.muted, transform: timelineOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+        </button>
+
+        {timelineOpen && (
+          <div className="mt-4" style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16 }}>
+            {/* Payment events from fees */}
+            {(() => {
+              const feeEvents = payments.map(p => ({
+                time: p.date + " 00:00",
+                text: `পেমেন্ট — ৳${Number(p.amount).toLocaleString("en-IN")} [${p.category}] (${p.method})${p.note ? ` — ${p.note}` : ""}`,
+                type: "payment"
+              }));
+              const all = [...activityLog, ...feeEvents].sort((a, b) => b.time.localeCompare(a.time));
+              const TL_COLORS = { create: t.emerald, status: t.cyan, payment: t.purple, note: t.amber, edit: t.muted, action: t.muted };
+              return (
+                <div className="relative">
+                  <div className="absolute left-3.5 top-0 bottom-0 w-px" style={{ background: t.border }} />
+                  <div className="space-y-4">
+                    {all.map((entry, i) => {
+                      const color = TL_COLORS[entry.type] || t.muted;
+                      return (
+                        <div key={i} className="flex gap-4 relative pl-8">
+                          <div className="absolute left-0 h-7 w-7 rounded-full flex items-center justify-center text-xs shrink-0"
+                            style={{ background: `${color}15`, border: `2px solid ${color}40` }}>
+                            {logIcon[entry.type] || "⚪"}
+                          </div>
+                          <div className="flex-1 min-w-0 pb-1">
+                            <p className="text-xs leading-snug" style={{ color: t.text }}>{entry.text}</p>
+                            <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: t.muted }}>
+                              <Clock size={9} /> {entry.time}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </Card>
+
+      {/* ══════════════════════════════════════
+          SPONSOR SECTION
+      ══════════════════════════════════════ */}
+      <Card delay={220}>
+        <button onClick={() => setSponsorOpen(v => !v)} className="w-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base">👨‍👩‍👧</span>
+            <h3 className="text-sm font-bold">স্পনসর তথ্য</h3>
+            {sponsor.name && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${t.emerald}15`, color: t.emerald }}>{sponsor.name} ({sponsor.relationship})</span>}
+          </div>
+          <ChevronRight size={16} style={{ color: t.muted, transform: sponsorOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+        </button>
+
+        {sponsorOpen && (
+          <div className="mt-4" style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16 }}>
+            <div className="flex justify-end mb-3 gap-2">
+              {sponsorEditing ? (
+                <>
+                  <Button variant="ghost" size="xs" onClick={() => { setSponsorForm(sponsor); setSponsorEditing(false); }}>বাতিল</Button>
+                  <Button icon={Save} size="xs" onClick={saveSponsor}>সংরক্ষণ</Button>
+                </>
+              ) : (
+                <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setSponsorEditing(true)}>Edit</Button>
+              )}
+            </div>
+
+            {/* ── Basic Info ── */}
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.cyan }}>👤 মূল তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              {[
+                { label: "নাম", key: "name" },
+                { label: "সম্পর্ক", key: "relationship", type: "select", opts: ["Father","Mother","Brother","Sister","Uncle","Aunt","Other"] },
+                { label: "ফোন", key: "phone" },
+                { label: "NID", key: "nid" },
+                { label: "ঠিকানা", key: "address" },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  {sponsorEditing ? (
+                    f.type === "select" ? (
+                      <select value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                        style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                        {f.opts.map(o => <option key={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                        style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    )
+                  ) : <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* ── Business ── */}
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.purple }}>🏢 ব্যবসায়িক তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              {[
+                { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
+                { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
+                { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  {sponsorEditing ? (
+                    <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  ) : <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* ── Tax ── */}
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.amber }}>🧾 ট্যাক্স তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>TIN</label>
+                {sponsorEditing ? <input value={sponsorForm.tin || ""} onChange={e => sf("tin", e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} /> : <p className="text-xs font-medium py-1">{sponsor.tin || "—"}</p>}
+              </div>
+              {["y1","y2","y3"].map(y => (
+                <div key={y}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বার্ষিক আয় ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
+                  {sponsorEditing ? <input type="number" value={sponsorForm[`annual_income_${y}`] || ""} onChange={e => sf(`annual_income_${y}`, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} placeholder="৳" /> : <p className="text-xs font-medium py-1">{sponsor[`annual_income_${y}`] ? `৳${Number(sponsor[`annual_income_${y}`]).toLocaleString("en-IN")}` : "—"}</p>}
+                </div>
+              ))}
+              {["y1","y2","y3"].map(y => (
+                <div key={`t${y}`}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কর প্রদান ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
+                  {sponsorEditing ? <input type="number" value={sponsorForm[`tax_${y}`] || ""} onChange={e => sf(`tax_${y}`, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} placeholder="৳" /> : <p className="text-xs font-medium py-1">{sponsor[`tax_${y}`] ? `৳${Number(sponsor[`tax_${y}`]).toLocaleString("en-IN")}` : "—"}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* ── Bank Accounts ── */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: t.emerald }}>🏦 ব্যাংক অ্যাকাউন্ট</p>
+              <button onClick={() => setShowAddBank(v => !v)} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg" style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                <Plus size={10} /> ব্যাংক যোগ করুন
+              </button>
+            </div>
+            {showAddBank && (
+              <div className="p-3 rounded-xl mb-3" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                  {[
+                    { label: "ব্যাংকের নাম", key: "bank_name" }, { label: "শাখা", key: "branch" },
+                    { label: "অ্যাকাউন্ট নম্বর", key: "account_no" }, { label: "ব্যালেন্স", key: "balance" },
+                    { label: "ব্যালেন্স তারিখ", key: "balance_date", type: "date" },
+                    { label: "স্টেটমেন্টে নাম", key: "name_in_statement" },
+                    { label: "স্টেটমেন্টে ঠিকানা", key: "address_in_statement" },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                      <input type={f.type || "text"} value={bankForm[f.key] || ""} onChange={e => setBankForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        className="w-full px-2 py-1.5 rounded text-xs outline-none"
+                        style={{ background: t.card, border: `1px solid ${t.border}`, color: t.text }} />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowAddBank(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+                  <button onClick={addBank} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.emerald, color: "#fff" }}>যোগ করুন</button>
+                </div>
+              </div>
+            )}
+            <div className="space-y-2 mb-4">
+              {(sponsor.banks || []).length === 0 && <p className="text-xs py-2" style={{ color: t.muted }}>কোনো ব্যাংক অ্যাকাউন্ট নেই</p>}
+              {(sponsor.banks || []).map(b => (
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl group" style={{ background: t.inputBg }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold">{b.bank_name} — {b.branch}</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>A/C: {b.account_no} | ব্যালেন্স: ৳{Number(b.balance || 0).toLocaleString("en-IN")} ({b.balance_date})</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>{b.name_in_statement}</p>
+                  </div>
+                  <button onClick={() => removeBank(b.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded transition" style={{ color: t.rose }}>
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Japan Expense ── */}
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.rose }}>🇯🇵 জাপান খরচ</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "টিউশন ফি (JPY)", key: "tuition_jpy" },
+                { label: "মাসিক জীবনযাত্রা (JPY)", key: "living_jpy_monthly" },
+                { label: "বিনিময় হার (JPY→BDT)", key: "exchange_rate" },
+                { label: "পেমেন্ট পদ্ধতি", key: "payment_method", type: "select", opts: ["Bank Transfer","Wire Transfer","Cheque","Cash","Other"] },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  {sponsorEditing ? (
+                    f.type === "select" ? (
+                      <select value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                        {f.opts.map(o => <option key={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input type="number" value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    )
+                  ) : <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

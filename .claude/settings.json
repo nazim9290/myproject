@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(src/**)",
+      "Write(src/**)",
+      "Edit(src/**)",
+      "Read(CLAUDE.md)",
+      "Write(CLAUDE.md)",
+      "Edit(CLAUDE.md)",
+      "Read(MASTER_PROMPT.md)",
+      "Write(MASTER_PROMPT.md)",
+      "Edit(MASTER_PROMPT.md)",
+      "Read(.claude/**)",
+      "Write(.claude/**)",
+      "Edit(.claude/**)",
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(npm run lint)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add src/**)",
+      "Bash(git add CLAUDE.md)",
+      "Bash(git add MASTER_PROMPT.md)",
+      "Bash(git commit*)",
+      "Bash(git push)",
+      "Bash(git pull)",
+      "Bash(find src*)",
+      "Bash(curl -s -o /dev/null -w * http://localhost:5175)"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Write(.env*)",
+      "Edit(.env*)",
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(npm install *)",
+      "Bash(curl * http*)",
+      "Write(node_modules/**)",
+      "Write(dist/**)"
+    ]
+  },
+  "env": {
+    "PROJECT": "AgencyOS",
+    "DEV_PORT": "5175",
+    "LANG": "bn"
+  }
+}

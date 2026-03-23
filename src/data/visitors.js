@@ -1,0 +1,8 @@
+export const INITIAL_VISITORS = [
+  { id: "V-001", name: "Ariful Islam", name_bn: "আরিফুল ইসলাম", phone: "01712340001", country: "Japan", source: "Facebook", counselor: "Mina", branch: "ঢাকা (HQ)", status: "Interested", date: "2026-03-22", lastFollowUp: "2026-03-20", notes: "N5 level, April intake interested" },
+  { id: "V-002", name: "Sabrina Akter", name_bn: "সাবরিনা আক্তার", phone: "01812340002", country: "Germany", source: "Walk-in", counselor: "Sadia", branch: "ঢাকা (HQ)", status: "Thinking", date: "2026-03-21", lastFollowUp: "2026-03-21", notes: "Wants German language, budget concern" },
+  { id: "V-003", name: "Tanvir Hasan", name_bn: "তানভীর হাসান", phone: "01912340003", country: "Japan", source: "Agent (Hafiz)", counselor: "Mina", branch: "চট্টগ্রাম", status: "Interested", date: "2026-03-20", lastFollowUp: null, notes: "HSC passed, wants language course" },
+  { id: "V-004", name: "Rumana Parveen", name_bn: "রুমানা পারভীন", phone: "01612340004", country: "Korea", source: "Referral", counselor: "Sadia", branch: "সিলেট", status: "Not Interested", date: "2026-03-19", lastFollowUp: "2026-03-20", notes: "Thinks budget is too high" },
+  { id: "V-005", name: "Imran Hossain", name_bn: "ইমরান হোসেন", phone: "01512340005", country: "Japan", source: "Facebook", counselor: "Mina", branch: "চট্টগ্রাম", status: "Interested", date: "2026-03-18", lastFollowUp: null, notes: "October intake, BSc running" },
+  { id: "V-006", name: "Nafisa Jahan", name_bn: "নাফিসা জাহান", phone: "01312340006", country: "Japan", source: "Walk-in", counselor: "Sadia", branch: "ঢাকা (HQ)", status: "Enrolled", date: "2026-03-15", lastFollowUp: "2026-03-17", notes: "Enrolled — Batch A26" },
+];
