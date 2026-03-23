@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Plus, FileText, CheckCircle, Calendar, Eye, Download } from "lucide-react";
+import { Plus, FileText, CheckCircle, Calendar, Eye, Download, Save, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -8,9 +9,14 @@ import { CERT_TEMPLATES, GENERATED_CERTS } from "../../data/mockData";
 
 export default function CertificatePage({ students }) {
   const t = useTheme();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState("templates");
   const [generateFor, setGenerateFor] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState("");
+  const [generatedCerts, setGeneratedCerts] = useState(GENERATED_CERTS);
+  const [showNewTemplate, setShowNewTemplate] = useState(false);
+  const [templateForm, setTemplateForm] = useState({ name: "", name_en: "", language: "Japanese", type: "completion" });
+  const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   return (
     <div className="space-y-5 anim-fade">
@@ -19,14 +25,14 @@ export default function CertificatePage({ students }) {
           <h2 className="text-xl font-bold">Certificates</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>সার্টিফিকেট টেমপ্লেট ও জেনারেশন</p>
         </div>
-        <Button icon={Plus}>New Template</Button>
+        <Button icon={Plus} onClick={() => setShowNewTemplate(true)}>New Template</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         {[
           { label: "Templates", value: CERT_TEMPLATES.length, color: t.cyan, icon: FileText },
-          { label: "Generated", value: GENERATED_CERTS.length, color: t.emerald, icon: CheckCircle },
-          { label: "This Month", value: GENERATED_CERTS.filter((c) => c.generatedDate >= "2026-03-01").length, color: t.purple, icon: Calendar },
+          { label: "Generated", value: generatedCerts.length, color: t.emerald, icon: CheckCircle },
+          { label: "This Month", value: generatedCerts.filter((c) => c.generatedDate >= "2026-03-01").length, color: t.purple, icon: Calendar },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -41,6 +47,45 @@ export default function CertificatePage({ students }) {
           </Card>
         ))}
       </div>
+
+      {showNewTemplate && (
+        <Card delay={0}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold">নতুন Template যোগ করুন</h3>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowNewTemplate(false)}>বাতিল</Button>
+              <Button icon={Save} size="xs" onClick={() => {
+                if (!templateForm.name.trim()) { toast.error("Template নাম দিন"); return; }
+                toast.success(`"${templateForm.name}" — Template যোগ হয়েছে`);
+                setShowNewTemplate(false);
+                setTemplateForm({ name: "", name_en: "", language: "Japanese", type: "completion" });
+              }}>সংরক্ষণ</Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম (বাংলা) *</label>
+              <input value={templateForm.name} onChange={e => setTemplateForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: সমাপ্তি সার্টিফিকেট" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম (English)</label>
+              <input value={templateForm.name_en} onChange={e => setTemplateForm(p => ({ ...p, name_en: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Completion Certificate" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ভাষা</label>
+              <select value={templateForm.language} onChange={e => setTemplateForm(p => ({ ...p, language: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                <option>Japanese</option><option>English</option><option>German</option><option>Korean</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
+              <select value={templateForm.type} onChange={e => setTemplateForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                <option value="completion">Completion</option><option value="enrollment">Enrollment</option><option value="achievement">Achievement</option><option value="participation">Participation</option>
+              </select>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
@@ -72,7 +117,7 @@ export default function CertificatePage({ students }) {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <Button variant="ghost" icon={Eye} size="xs">Preview</Button>
+                  <Button variant="ghost" icon={Eye} size="xs" onClick={() => toast.info(`"${tmpl.name}" — Preview mode (Print থেকে দেখুন)`)}>Preview</Button>
                   <Button size="xs" onClick={() => { setActiveTab("generate"); setGenerateFor(tmpl.id); }}>Generate</Button>
                 </div>
               </div>
@@ -93,7 +138,7 @@ export default function CertificatePage({ students }) {
                 </tr>
               </thead>
               <tbody>
-                {GENERATED_CERTS.map((cert) => (
+                {generatedCerts.map((cert) => (
                   <tr key={cert.id} style={{ borderBottom: `1px solid ${t.border}` }}
                     onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
                     <td className="py-3 px-3"><p className="font-medium">{cert.studentName}</p><p className="text-[9px]" style={{ color: t.muted }}>{cert.studentId}</p></td>
@@ -102,8 +147,8 @@ export default function CertificatePage({ students }) {
                     <td className="py-3 px-3"><Badge color={t.emerald} size="xs">✓ Generated</Badge></td>
                     <td className="py-3 px-3">
                       <div className="flex gap-1">
-                        <button className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.cyan}15`, color: t.cyan }}>PDF</button>
-                        <button className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>Print</button>
+                        <button onClick={() => toast.exported(`${cert.certName} — ${cert.studentName} (PDF)`)} className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.cyan}15`, color: t.cyan }}>PDF</button>
+                        <button onClick={() => { window.print(); }} className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>Print</button>
                       </div>
                     </td>
                   </tr>
@@ -141,8 +186,15 @@ export default function CertificatePage({ students }) {
             <div className="mt-4 p-4 rounded-xl" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}20` }}>
               <p className="text-xs" style={{ color: t.emerald }}>✅ প্রস্তুত! নিচের বাটনে ক্লিক করে সার্টিফিকেট জেনারেট করুন।</p>
               <div className="flex gap-2 mt-3">
-                <Button icon={Download} size="sm" onClick={() => alert("সার্টিফিকেট PDF জেনারেট হচ্ছে...\n(Demo — real app এ PDF download হবে)")}>Download PDF</Button>
-                <Button variant="ghost" icon={Eye} size="sm">Preview</Button>
+                <Button icon={Download} size="sm" onClick={() => {
+                  const student = (students || []).find(s => s.id === selectedStudent);
+                  const tmpl = CERT_TEMPLATES.find(t => t.id === generateFor);
+                  const newCert = { id: `CERT-${Date.now()}`, studentId: selectedStudent, studentName: student?.name_en || "—", certName: tmpl?.name || "সার্টিফিকেট", generatedDate: new Date().toISOString().slice(0, 10) };
+                  setGeneratedCerts(prev => [newCert, ...prev]);
+                  toast.exported(`${newCert.certName} — ${newCert.studentName}`);
+                  setActiveTab("generated");
+                }}>Download PDF</Button>
+                <Button variant="ghost" icon={Eye} size="sm" onClick={() => toast.info("Preview: Print থেকে দেখুন (Ctrl+P)")}>Preview</Button>
               </div>
             </div>
           )}

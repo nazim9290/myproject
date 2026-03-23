@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, FileText, CheckCircle, AlertTriangle, ArrowLeft, Download, Check } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -8,6 +9,7 @@ import { EXCEL_TEMPLATES } from "../../data/mockData";
 
 export default function ExcelAutoFillPage({ students }) {
   const t = useTheme();
+  const toast = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [showGenerate, setShowGenerate] = useState(false);
@@ -54,7 +56,16 @@ export default function ExcelAutoFillPage({ students }) {
             <p className="text-xs" style={{ color: t.muted }}>সিলেক্টেড: <span className="font-bold" style={{ color: t.cyan }}>{selectedStudents.length}</span> জন</p>
             <div className="flex gap-2">
               <Button variant="ghost" size="xs" onClick={() => setSelectedStudents(eligibleStudents.map((s) => s.id))}>Select All</Button>
-              <Button icon={Download} size="sm" onClick={() => alert(`${selectedStudents.length} জনের Excel generate হবে — ${selectedTemplate.schoolName} format এ!\n(Demo — real app এ Excel file download হবে)`)}>
+              <Button icon={Download} size="sm" onClick={() => {
+                if (selectedStudents.length === 0) { toast.error("কমপক্ষে ১ জন স্টুডেন্ট সিলেক্ট করুন"); return; }
+                const sel = (students || []).filter(s => selectedStudents.includes(s.id));
+                const headers = selectedTemplate.mappings.map(m => m.label).join(",");
+                const rows = sel.map(s => selectedTemplate.mappings.map(m => `"${String(s[m.field] ?? "").replace(/"/g, '""')}"`).join(","));
+                const csv = headers + "\n" + rows.join("\n");
+                const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+                Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `${selectedTemplate.schoolName}_${new Date().toISOString().slice(0,10)}.csv` }).click();
+                toast.exported(`${selectedTemplate.schoolName} — ${sel.length} জনের ডেটা`);
+              }}>
                 Generate {selectedStudents.length > 0 ? `(${selectedStudents.length})` : ""}
               </Button>
             </div>

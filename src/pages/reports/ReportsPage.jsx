@@ -2,12 +2,14 @@ import { useState } from "react";
 import { TrendingUp, TrendingDown, DollarSign, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { REPORT_PIPELINE_FUNNEL, SOURCE_DATA, DROPOUT_DATA } from "../../data/mockData";
 
 export default function ReportsPage({ students }) {
   const t = useTheme();
+  const toast = useToast();
   const [activeReport, setActiveReport] = useState("funnel");
 
   const totalVisitors = 320;
@@ -22,7 +24,13 @@ export default function ReportsPage({ students }) {
           <h2 className="text-xl font-bold">Reports & Analytics</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>পারফরম্যান্স রিপোর্ট ও বিশ্লেষণ</p>
         </div>
-        <Button variant="ghost" icon={Download} size="xs">Export All</Button>
+        <Button variant="ghost" icon={Download} size="xs" onClick={() => {
+          const rows = (students || []).map(s => `"${s.id}","${s.name_en}","${s.status}","${s.country || ""}","${s.school || ""}","${s.batch || ""}","${s.source || ""}","${s.branch || ""}"`);
+          const csv = "ID,নাম,স্ট্যাটাস,দেশ,স্কুল,ব্যাচ,সোর্স,ব্রাঞ্চ\n" + rows.join("\n");
+          const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+          Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Analytics_Report_${new Date().toISOString().slice(0,10)}.csv` }).click();
+          toast.exported(`Analytics Report (${(students || []).length} students)`);
+        }}>Export All</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

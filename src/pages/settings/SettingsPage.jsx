@@ -1,15 +1,25 @@
 import { useState } from "react";
-import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers } from "lucide-react";
+import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
 
 export default function SettingsPage({ isDark, setIsDark, students, visitors }) {
   const t = useTheme();
+  const toast = useToast();
   const [agencyName, setAgencyName] = useState("ABC Education Consultancy");
   const [branch, setBranch] = useState("Dhaka (HQ)");
   const [taxRate, setTaxRate] = useState("15");
   const [currency, setCurrency] = useState("BDT");
+  const [customFields, setCustomFields] = useState([
+    { id: "cf1", name: "Alternative Phone", type: "text", module: "students", required: false },
+    { id: "cf2", name: "Referral Name", type: "text", module: "visitors", required: false },
+  ]);
+  const [showFieldForm, setShowFieldForm] = useState(false);
+  const [fieldForm, setFieldForm] = useState({ name: "", type: "text", module: "students", required: false, options: "" });
+  const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   return (
     <div className="space-y-5 anim-fade">
@@ -20,7 +30,10 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card delay={50}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Building size={14} /> এজেন্সি তথ্য</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Building size={14} /> এজেন্সি তথ্য</h3>
+            <Button icon={Save} size="xs" onClick={() => toast.success("এজেন্সি তথ্য সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
+          </div>
           <div className="space-y-3">
             {[
               { label: "এজেন্সি নাম", value: agencyName, onChange: setAgencyName, placeholder: "Your Agency Name" },
@@ -186,7 +199,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
                   }
                 },
                 { icon: "💰", label: "Financial Report Export", sub: "আয়-ব্যয় রিপোর্ট — CSV format", color: t.emerald,
-                  onClick: () => alert("Financial Report downloading... (Backend এ implement হবে)")
+                  onClick: () => {
+                    const csv = "Date,Type,Category,Description,Amount\n" + new Date().toISOString().slice(0,10) + ",Income,course_fee,Sample Income,50000\n" + new Date().toISOString().slice(0,10) + ",Expense,salary,Sample Expense,30000";
+                    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+                    Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Financial_Report_${new Date().toISOString().slice(0,10)}.csv` }).click();
+                    toast.exported("Financial Report");
+                  }
                 },
               ].map((item, i) => (
                 <button key={i} onClick={item.onClick}
@@ -239,37 +257,71 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
         </Card>
 
         <Card delay={300}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Layers size={14} /> Dynamic Fields ও Document Types</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
-              <div>
-                <p className="text-sm font-medium">Custom Fields</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>নতুন field যোগ করুন — কোনো code change ছাড়া</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Layers size={14} /> Custom Fields</h3>
+            <Button icon={Plus} size="xs" onClick={() => setShowFieldForm(true)}>নতুন Field</Button>
+          </div>
+
+          {showFieldForm && (
+            <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Field নাম *</label>
+                  <input value={fieldForm.name} onChange={e => setFieldForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: Emergency Contact" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
+                  <select value={fieldForm.type} onChange={e => setFieldForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="text">Text</option><option value="number">Number</option><option value="date">Date</option><option value="select">Select (Dropdown)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Module</label>
+                  <select value={fieldForm.module} onChange={e => setFieldForm(p => ({ ...p, module: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="students">Students</option><option value="visitors">Visitors</option><option value="agents">Agents</option>
+                  </select>
+                </div>
+                {fieldForm.type === "select" && (
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Options (comma separated)</label>
+                    <input value={fieldForm.options} onChange={e => setFieldForm(p => ({ ...p, options: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Option 1, Option 2, Option 3" />
+                  </div>
+                )}
               </div>
-              <button className="px-3 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1" style={{ background: `${t.cyan}15`, color: t.cyan }}>
-                <Plus size={10} /> Add Field
-              </button>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={fieldForm.required} onChange={e => setFieldForm(p => ({ ...p, required: e.target.checked }))} />
+                  <span style={{ color: t.textSecondary }}>Required field</span>
+                </label>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => setShowFieldForm(false)}>বাতিল</Button>
+                  <Button icon={Save} size="xs" onClick={() => {
+                    if (!fieldForm.name.trim()) { toast.error("Field নাম দিন"); return; }
+                    setCustomFields(prev => [...prev, { id: `cf-${Date.now()}`, ...fieldForm }]);
+                    setShowFieldForm(false);
+                    setFieldForm({ name: "", type: "text", module: "students", required: false, options: "" });
+                    toast.success("Custom field যোগ হয়েছে!");
+                  }}>সংরক্ষণ</Button>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
-              <div>
-                <p className="text-sm font-medium">Document Types</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>নতুন document type যোগ বা সাজানো</p>
+          )}
+
+          <div className="space-y-2">
+            {customFields.map((f) => (
+              <div key={f.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
+                <div>
+                  <p className="text-xs font-semibold">{f.name}</p>
+                  <p className="text-[10px]" style={{ color: t.muted }}>{f.type} • {f.module}{f.required ? " • Required" : ""}</p>
+                </div>
+                <button onClick={() => { setCustomFields(prev => prev.filter(x => x.id !== f.id)); toast.deleted("Custom field"); }}
+                  className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                  onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
+                  <Trash2 size={13} />
+                </button>
               </div>
-              <button className="px-3 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1" style={{ background: `${t.purple}15`, color: t.purple }}>
-                <Plus size={10} /> Add Doc Type
-              </button>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
-              <div>
-                <p className="text-sm font-medium">Field Priority</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>P1/P2/P3 — কোন field কখন দেখাবে</p>
-              </div>
-              <div className="flex gap-1">
-                <span className="px-2 py-0.5 rounded text-[9px] font-bold" style={{ background: "#FEE2E2", color: "#DC2626" }}>P1: 55</span>
-                <span className="px-2 py-0.5 rounded text-[9px] font-bold" style={{ background: "#FEF9C3", color: "#CA8A04" }}>P2: 195</span>
-                <span className="px-2 py-0.5 rounded text-[9px] font-bold" style={{ background: "#DCFCE7", color: "#16A34A" }}>P3: 200</span>
-              </div>
-            </div>
+            ))}
+            {customFields.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো custom field নেই — উপরে "নতুন Field" বাটন চাপুন</p>}
           </div>
         </Card>
       </div>

@@ -178,13 +178,26 @@ export default function AccountsPage({ students = [] }) {
     toast.success("কিস্তি কালেক্ট হয়েছে!");
   };
 
-  const doExport = () => {
-    const rows = studentFeeRows.map(r => [r.date, r.studentName, r.studentId, CATEGORY_CONFIG[r.category]?.label || r.category, r.method, r.amount, r.note].join(","));
-    const csv = "তারিখ,স্টুডেন্ট,ID,খাত,পদ্ধতি,পরিমাণ,নোট\n" + rows.join("\n");
-    const blob = new Blob([String.fromCharCode(0xFEFF) + csv], { type: "text/csv;charset=utf-8" });
-    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Student_Fees_${new Date().toISOString().slice(0,10)}.csv` });
-    a.click();
-    toast.exported(`Student Fees (${studentFeeRows.length} records)`);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const doExportIncome = () => {
+    const rows = incomeData.map(r => `"${r.studentName}","${r.studentId}","${CATEGORY_CONFIG[r.category]?.label || r.category}",${r.amount},${r.paidAmount},${r.tax},"${r.status}","${r.dueDate || ""}"`);
+    const csv = "স্টুডেন্ট,ID,খাত,মোট,পরিশোধিত,ট্যাক্স,স্ট্যাটাস,Due Date\n" + rows.join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Income_${new Date().toISOString().slice(0,10)}.csv` }).click();
+    toast.exported(`Income (${incomeData.length} records)`);
+  };
+  const doExportExpense = () => {
+    const rows = expenseData.map(r => `"${r.date}","${CATEGORY_CONFIG[r.category]?.label || r.category}","${r.description}",${r.amount}`);
+    const csv = "তারিখ,খাত,বিবরণ,পরিমাণ\n" + rows.join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Expense_${new Date().toISOString().slice(0,10)}.csv` }).click();
+    toast.exported(`Expense (${expenseData.length} records)`);
+  };
+  const doExportPL = () => {
+    const csv = `P&L Report — ${new Date().toISOString().slice(0,10)}\n\nমোট আয়,${totalIncome}\nমোট ব্যয়,${totalExpense}\nনেট লাভ,${profit}\nট্যাক্স,${totalTax}\nবাকি,${totalDue}`;
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `PL_Report_${new Date().toISOString().slice(0,10)}.csv` }).click();
+    toast.exported("P&L Report");
   };
 
   return (
@@ -195,7 +208,23 @@ export default function AccountsPage({ students = [] }) {
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>আয়, ব্যয়, ট্যাক্স ও লাভ-ক্ষতি</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" icon={Download} size="xs" onClick={doExport}>Export</Button>
+          <div className="relative">
+            <Button variant="ghost" icon={Download} size="xs" onClick={() => setShowExportMenu(v => !v)}>Export ▾</Button>
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[170px]" style={{ background: t.cardSolid, border: `1px solid ${t.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
+                {[
+                  { label: "💰 Income CSV", fn: doExportIncome },
+                  { label: "💸 Expense CSV", fn: doExportExpense },
+                  { label: "📊 P&L Report", fn: doExportPL },
+                ].map(({ label, fn }) => (
+                  <button key={label} onClick={() => { fn(); setShowExportMenu(false); }} className="w-full px-4 py-2.5 text-xs text-left transition"
+                    onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="relative">
             <Button icon={Plus} onClick={() => setShowAddMenu(v => !v)}>নতুন এন্ট্রি ▾</Button>
             {showAddMenu && (
