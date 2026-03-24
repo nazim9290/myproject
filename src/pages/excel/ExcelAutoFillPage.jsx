@@ -329,15 +329,23 @@ export default function ExcelAutoFillPage({ students }) {
     toast.exported(`${tmpl.schoolName || tmpl.school_name} — ${sel.length} জনের ডেটা`);
   };
 
-  const deleteTemplate = (tmpl) => {
-    setTemplates(prev => prev.filter(t => t.id !== tmpl.id));
-    if (tmpl.id && token() && !tmpl.id.startsWith("tmpl-")) {
-      fetch(`${API}/excel/templates/${tmpl.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token()}` },
-      }).catch(() => {});
+  // Template delete — DB + Storage থেকে remove
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const deleteTemplate = async (tmpl) => {
+    try {
+      if (tmpl.id && token() && !tmpl.id.startsWith("tmpl-")) {
+        const res = await fetch(`${API}/excel/templates/${tmpl.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token()}` },
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+      }
+      setTemplates(prev => prev.filter(t => t.id !== tmpl.id));
+      toast.success(`"${tmpl.school_name || tmpl.schoolName}" — Template ও ফাইল ডাটাবেস থেকে মুছে ফেলা হয়েছে`);
+    } catch (err) {
+      toast.error("Delete ব্যর্থ: " + err.message);
     }
-    toast.success("Template মুছে ফেলা হয়েছে");
+    setDeleteConfirmId(null);
   };
 
   // ================================================================
@@ -726,12 +734,19 @@ export default function ExcelAutoFillPage({ students }) {
                     setStudentSearch("");
                     setView("generate");
                   }}>Generate</Button>
-                  <button onClick={() => deleteTemplate(tmpl)} className="p-1.5 rounded-lg transition"
-                    style={{ color: t.muted }}
-                    onMouseEnter={e => { e.currentTarget.style.color = t.rose; e.currentTarget.style.background = `${t.rose}10`; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = t.muted; e.currentTarget.style.background = "transparent"; }}>
-                    <Trash2 size={14} />
-                  </button>
+                  {deleteConfirmId === tmpl.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => deleteTemplate(tmpl)} className="text-[10px] px-2 py-1 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(tmpl.id)} className="p-1.5 rounded-lg transition"
+                      style={{ color: t.muted }}
+                      onMouseEnter={e => { e.currentTarget.style.color = t.rose; e.currentTarget.style.background = `${t.rose}10`; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = t.muted; e.currentTarget.style.background = "transparent"; }}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             </Card>
