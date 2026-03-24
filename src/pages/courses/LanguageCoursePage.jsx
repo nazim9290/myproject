@@ -12,7 +12,7 @@ function NewBatchForm({ onSave, onCancel }) {
   const t = useTheme();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
   const [form, setForm] = useState({
-    name: "", country: "Japan", level: "N5",
+    name: "", country: "Japan", level: "N5", branch: "Main",
     startDate: "", endDate: "", capacity: "20",
     schedule: "", teacher: "",
   });
@@ -75,6 +75,12 @@ function NewBatchForm({ onSave, onCancel }) {
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শিক্ষক</label>
           <input value={form.teacher} onChange={e => set("teacher", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Tanaka Sensei..." />
+        </div>
+        <div>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
+          <select value={form.branch} onChange={e => set("branch", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+            <option value="Main">Main (HQ)</option><option value="Chattogram">চট্টগ্রাম</option><option value="Sylhet">সিলেট</option>
+          </select>
         </div>
         <div className="md:col-span-2">
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সময়সূচী</label>
