@@ -1,9 +1,35 @@
+/**
+ * api.js — Backend API Client
+ *
+ * এই ফাইলে সব API endpoint-এর function আছে, module অনুযায়ী grouped।
+ * প্রতিটি module-এ list, create, update, remove function থাকে।
+ *
+ * API URL:
+ *   - লোকাল: http://localhost:3001/api
+ *   - প্রোডাকশন: https://newbook-e2v3.onrender.com/api
+ *
+ * ব্যবহার:
+ *   import { students } from "../lib/api";
+ *   const data = await students.list({ status: "IN_COURSE" });
+ *   await students.create({ name_en: "Rahim", phone: "017..." });
+ */
+
+// ═══════════════════════════════════════════════════════
+// API Base URL — environment অনুযায়ী auto-detect
+// ═══════════════════════════════════════════════════════
 const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "https://newbook-e2v3.onrender.com/api");
 
+/** localStorage থেকে JWT token পড়ে */
 function getToken() {
   return localStorage.getItem("agencyos_token");
 }
 
+/**
+ * Base HTTP request function
+ * সব API call এই function দিয়ে যায়
+ * - JWT token automatically header-এ যোগ হয়
+ * - Error হলে throw করে
+ */
 async function request(path, options = {}) {
   const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
@@ -19,139 +45,225 @@ async function request(path, options = {}) {
   return data;
 }
 
-// Auth
+// ═══════════════════════════════════════════════════════
+// Auth — লগইন ও রেজিস্ট্রেশন
+// ═══════════════════════════════════════════════════════
 export const auth = {
+  /** Email/Password দিয়ে login → JWT token + user info পায় */
   login: (email, password) => request("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  /** নতুন staff account তৈরি (admin only) */
   register: (body) => request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
 };
 
-// Students
+// ═══════════════════════════════════════════════════════
+// Students — স্টুডেন্ট CRUD (মূল entity)
+// ═══════════════════════════════════════════════════════
 export const students = {
-  list: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return request(`/students${qs ? `?${qs}` : ""}`);
-  },
+  /** সব student আনো (search, filter, pagination support) */
+  list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/students${qs ? `?${qs}` : ""}`); },
+  /** একটি student-এর বিস্তারিত (education, exams, sponsor সহ) */
   get: (id) => request(`/students/${id}`),
+  /** নতুন student তৈরি */
   create: (body) => request("/students", { method: "POST", body: JSON.stringify(body) }),
+  /** student info আপডেট */
   update: (id, body) => request(`/students/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** student মুছে ফেলো */
   remove: (id) => request(`/students/${id}`, { method: "DELETE" }),
+  /** student-এর নতুন payment যোগ */
   addPayment: (id, body) => request(`/students/${id}/payments`, { method: "POST", body: JSON.stringify(body) }),
 };
 
-// Visitors
+// ═══════════════════════════════════════════════════════
+// Visitors — ভিজিটর/লিড ট্র্যাকিং
+// ═══════════════════════════════════════════════════════
 export const visitors = {
-  list: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return request(`/visitors${qs ? `?${qs}` : ""}`);
-  },
+  /** সব visitor আনো */
+  list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/visitors${qs ? `?${qs}` : ""}`); },
+  /** নতুন visitor তৈরি */
   create: (body) => request("/visitors", { method: "POST", body: JSON.stringify(body) }),
+  /** visitor info আপডেট */
   update: (id, body) => request(`/visitors/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** visitor কে student-এ convert করো */
   convert: (id, body = {}) => request(`/visitors/${id}/convert`, { method: "POST", body: JSON.stringify(body) }),
 };
 
-// Attendance
+// ═══════════════════════════════════════════════════════
+// Attendance — উপস্থিতি
+// ═══════════════════════════════════════════════════════
 export const attendance = {
-  get: (date, batch) => {
-    const params = new URLSearchParams({ date });
-    if (batch && batch !== "all") params.set("batch", batch);
-    return request(`/attendance?${params}`);
-  },
+  /** নির্দিষ্ট তারিখের attendance আনো (batch filter সহ) */
+  get: (date, batch) => { const p = new URLSearchParams({ date }); if (batch && batch !== "all") p.set("batch", batch); return request(`/attendance?${p}`); },
+  /** একটি তারিখের সব student-এর attendance save */
   save: (date, records) => request("/attendance/save", { method: "POST", body: JSON.stringify({ date, records }) }),
 };
 
-// Accounts
+// ═══════════════════════════════════════════════════════
+// Accounts — আয়-ব্যয় হিসাব
+// ═══════════════════════════════════════════════════════
 export const accounts = {
+  /** আয়ের তালিকা */
   getIncome: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/accounts/income${qs ? `?${qs}` : ""}`); },
+  /** নতুন আয় যোগ */
   addIncome: (body) => request("/accounts/income", { method: "POST", body: JSON.stringify(body) }),
+  /** ব্যয়ের তালিকা */
   getExpenses: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/accounts/expenses${qs ? `?${qs}` : ""}`); },
+  /** নতুন ব্যয় যোগ */
   addExpense: (body) => request("/accounts/expenses", { method: "POST", body: JSON.stringify(body) }),
+  /** পেমেন্ট তালিকা (student fee collection) */
   getPayments: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/accounts/payments${qs ? `?${qs}` : ""}`); },
+  /** নতুন পেমেন্ট যোগ */
   addPayment: (body) => request("/accounts/payments", { method: "POST", body: JSON.stringify(body) }),
 };
 
-// Schools
+// ═══════════════════════════════════════════════════════
+// Schools — ভাষা স্কুল
+// ═══════════════════════════════════════════════════════
 export const schools = {
+  /** সব স্কুলের তালিকা */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/schools${qs ? `?${qs}` : ""}`); },
+  /** নতুন স্কুল যোগ */
   create: (body) => request("/schools", { method: "POST", body: JSON.stringify(body) }),
+  /** স্কুল info আপডেট */
   update: (id, body) => request(`/schools/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** একটি স্কুলের সব submission আনো */
   getSubmissions: (id) => request(`/schools/${id}/submissions`),
+  /** নতুন submission পাঠাও */
   addSubmission: (id, body) => request(`/schools/${id}/submissions`, { method: "POST", body: JSON.stringify(body) }),
+  /** submission status আপডেট */
   updateSubmission: (subId, body) => request(`/schools/submissions/${subId}`, { method: "PATCH", body: JSON.stringify(body) }),
 };
 
-// Batches
+// ═══════════════════════════════════════════════════════
+// Batches — ভাষা কোর্স ব্যাচ
+// ═══════════════════════════════════════════════════════
 export const batches = {
+  /** সব ব্যাচের তালিকা */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/batches${qs ? `?${qs}` : ""}`); },
+  /** একটি ব্যাচের বিস্তারিত (enrolled students সহ) */
   get: (id) => request(`/batches/${id}`),
+  /** নতুন ব্যাচ তৈরি */
   create: (body) => request("/batches", { method: "POST", body: JSON.stringify(body) }),
+  /** ব্যাচ info আপডেট */
   update: (id, body) => request(`/batches/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** ব্যাচে student enroll করো */
   enroll: (id, studentId) => request(`/batches/${id}/enroll`, { method: "POST", body: JSON.stringify({ student_id: studentId }) }),
 };
 
-// Documents
+// ═══════════════════════════════════════════════════════
+// Documents — ডকুমেন্ট ম্যানেজমেন্ট
+// ═══════════════════════════════════════════════════════
 export const documents = {
+  /** ডকুমেন্ট তালিকা (student_id, status filter) */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/documents${qs ? `?${qs}` : ""}`); },
+  /** নতুন ডকুমেন্ট যোগ */
   create: (body) => request("/documents", { method: "POST", body: JSON.stringify(body) }),
+  /** ডকুমেন্ট status/info আপডেট */
   update: (id, body) => request(`/documents/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** ডকুমেন্টের extracted fields আনো */
   getFields: (id) => request(`/documents/${id}/fields`),
+  /** ডকুমেন্টে extracted fields save করো */
   saveFields: (id, fields) => request(`/documents/${id}/fields`, { method: "POST", body: JSON.stringify({ fields }) }),
+  /** একটি student-এর সব ডকুমেন্টের cross-validation চালাও */
   crossValidate: (studentId) => request(`/documents/cross-validate/${studentId}`),
 };
 
-// HR
+// ═══════════════════════════════════════════════════════
+// HR — কর্মচারী ও বেতন
+// ═══════════════════════════════════════════════════════
 export const hr = {
+  /** কর্মচারী তালিকা */
   getEmployees: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/hr/employees${qs ? `?${qs}` : ""}`); },
+  /** নতুন কর্মচারী যোগ */
   addEmployee: (body) => request("/hr/employees", { method: "POST", body: JSON.stringify(body) }),
+  /** কর্মচারী info আপডেট */
   updateEmployee: (id, body) => request(`/hr/employees/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** বেতনের ইতিহাস */
   getSalary: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/hr/salary${qs ? `?${qs}` : ""}`); },
+  /** বেতন দাও */
   paySalary: (body) => request("/hr/salary", { method: "POST", body: JSON.stringify(body) }),
 };
 
-// Tasks
+// ═══════════════════════════════════════════════════════
+// Tasks — টাস্ক ম্যানেজমেন্ট
+// ═══════════════════════════════════════════════════════
 export const tasks = {
+  /** সব টাস্ক আনো (status, priority filter) */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/tasks${qs ? `?${qs}` : ""}`); },
+  /** নতুন টাস্ক তৈরি */
   create: (body) => request("/tasks", { method: "POST", body: JSON.stringify(body) }),
+  /** টাস্ক আপডেট (status change, assign, etc.) */
   update: (id, body) => request(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** টাস্ক মুছে ফেলো */
   remove: (id) => request(`/tasks/${id}`, { method: "DELETE" }),
 };
 
-// Agents
+// ═══════════════════════════════════════════════════════
+// Agents — রেফারেল এজেন্ট
+// ═══════════════════════════════════════════════════════
 export const agents = {
+  /** সব এজেন্ট আনো */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/agents${qs ? `?${qs}` : ""}`); },
+  /** নতুন এজেন্ট যোগ */
   create: (body) => request("/agents", { method: "POST", body: JSON.stringify(body) }),
+  /** এজেন্ট info আপডেট */
   update: (id, body) => request(`/agents/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** এজেন্ট মুছে ফেলো */
   remove: (id) => request(`/agents/${id}`, { method: "DELETE" }),
 };
 
-// Calendar
+// ═══════════════════════════════════════════════════════
+// Calendar — ক্যালেন্ডার ইভেন্ট
+// ═══════════════════════════════════════════════════════
 export const calendar = {
+  /** সব ইভেন্ট আনো (month, type filter) */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/calendar${qs ? `?${qs}` : ""}`); },
+  /** নতুন ইভেন্ট তৈরি */
   create: (body) => request("/calendar", { method: "POST", body: JSON.stringify(body) }),
+  /** ইভেন্ট আপডেট */
   update: (id, body) => request(`/calendar/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** ইভেন্ট মুছে ফেলো */
   remove: (id) => request(`/calendar/${id}`, { method: "DELETE" }),
 };
 
-// Communications
+// ═══════════════════════════════════════════════════════
+// Communications — যোগাযোগ লগ
+// ═══════════════════════════════════════════════════════
 export const communications = {
+  /** সব communication log (student_id, type filter) */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/communications${qs ? `?${qs}` : ""}`); },
+  /** নতুন log যোগ (call, sms, whatsapp, meeting) */
   create: (body) => request("/communications", { method: "POST", body: JSON.stringify(body) }),
+  /** log মুছে ফেলো */
   remove: (id) => request(`/communications/${id}`, { method: "DELETE" }),
 };
 
-// Inventory
+// ═══════════════════════════════════════════════════════
+// Inventory — সম্পদ ও মালামাল
+// ═══════════════════════════════════════════════════════
 export const inventory = {
+  /** সব inventory item আনো */
   list: () => request("/inventory"),
+  /** নতুন item যোগ */
   create: (body) => request("/inventory", { method: "POST", body: JSON.stringify(body) }),
+  /** item আপডেট */
   update: (id, body) => request(`/inventory/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** item মুছে ফেলো */
   remove: (id) => request(`/inventory/${id}`, { method: "DELETE" }),
 };
 
-// Submissions
+// ═══════════════════════════════════════════════════════
+// Submissions — স্কুলে submission
+// ═══════════════════════════════════════════════════════
 export const submissions = {
+  /** সব submission আনো (school_id, student_id filter) */
   list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/submissions${qs ? `?${qs}` : ""}`); },
+  /** নতুন submission তৈরি */
   create: (body) => request("/submissions", { method: "POST", body: JSON.stringify(body) }),
+  /** submission status আপডেট */
   update: (id, body) => request(`/submissions/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 };
 
-// Health check
+// ═══════════════════════════════════════════════════════
+// Health — সার্ভার চালু আছে কিনা check
+// ═══════════════════════════════════════════════════════
 export const health = () => request("/health");
