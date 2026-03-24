@@ -403,23 +403,31 @@ function AppShell({ isDark, setIsDark }) {
 
   // ── Backend API থেকে সব data load করো ──
   const loadAllData = async () => {
+    const token = localStorage.getItem("agencyos_token");
+    console.log("[App] loadAllData called, token:", token ? "আছে (" + token.substring(0, 15) + "...)" : "নেই");
+    if (!token) { setDataLoaded(true); return; } // token ছাড়া API call করার দরকার নেই
+
     try {
       const [studRes, visRes] = await Promise.all([
         studentsApi.list({ limit: 500 }),
         visitorsApi.list({ limit: 500 }),
       ]);
       // students/visitors API response: { data: [...] } format
-      setStudents(Array.isArray(studRes) ? studRes : studRes.data || []);
-      setVisitors(Array.isArray(visRes) ? visRes : visRes.data || []);
+      const studs = Array.isArray(studRes) ? studRes : studRes.data || [];
+      const visis = Array.isArray(visRes) ? visRes : visRes.data || [];
+      console.log("[App] Loaded:", studs.length, "students,", visis.length, "visitors");
+      setStudents(studs);
+      setVisitors(visis);
     } catch (err) {
-      console.log("API থেকে data load ব্যর্থ:", err.message);
+      console.log("[App] API থেকে data load ব্যর্থ:", err.message);
     }
     setDataLoaded(true);
   };
 
+  // authUser change হলে বা প্রথমবার — data load করো
   useEffect(() => {
-    if (!authUser || dataLoaded) return;
-    loadAllData();
+    if (dataLoaded) return;
+    if (authUser) loadAllData();
   }, [authUser, dataLoaded]);
 
   // Sync authUser → currentUser
@@ -511,8 +519,11 @@ function AppShell({ isDark, setIsDark }) {
   }, [isDark]);
 
   const handleLogin = (user) => {
-    // user comes from LoginPage (either API response or mock fallback)
-    setMockUser(user);
+    // LoginPage থেকে user আসে — real login হলে AuthContext ইতিমধ্যে user set করেছে
+    // Mock login হলে (token নেই) setMockUser call করো
+    if (!localStorage.getItem("agencyos_token")) {
+      setMockUser(user);
+    }
     setCurrentUser((prev) => ({
       ...prev,
       name: user.name || prev.name,
@@ -520,6 +531,8 @@ function AppShell({ isDark, setIsDark }) {
       role: user.role || prev.role,
       branch: user.branch || prev.branch,
     }));
+    // Login-এর পর data load করো
+    setDataLoaded(false);
   };
 
   const handleLogout = () => {
