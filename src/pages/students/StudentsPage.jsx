@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, X, Plus, Download } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -15,6 +15,19 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
   const t = useTheme();
   const toast = useToast();
   const [selectedId, setSelectedId] = useState(null);
+
+  // ── Backend থেকে students load (prop empty হলে) ──
+  useEffect(() => {
+    if (students.length > 0) return;
+    api.get("/students").then(res => {
+      const data = Array.isArray(res) ? res : res.data || [];
+      if (data.length > 0) setStudents(data.map(s => ({
+        ...s, batch: s.batches?.name || s.batch || "", school: s.schools?.name_en || s.school || "",
+        passport: s.passport_number || "", father: s.father_name || "", mother: s.mother_name || "",
+        created: s.created_at?.slice(0, 10) || "",
+      })));
+    }).catch(() => {});
+  }, []);
   const [searchQ, setSearchQ] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterCountry, setFilterCountry] = useState("All");

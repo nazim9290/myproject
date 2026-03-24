@@ -197,6 +197,17 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const t = useTheme();
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
+
+  // ── Backend থেকে visitors load (prop empty হলে) ──
+  useEffect(() => {
+    if (visitors.length > 0) return; // ইতিমধ্যে data আছে
+    api.get("/visitors").then(res => {
+      const data = Array.isArray(res) ? res : res.data || [];
+      if (data.length > 0) setVisitors(data.map(v => ({
+        ...v, name_en: v.name_en || v.name, date: v.visit_date || v.date, lastFollowUp: v.last_follow_up || v.lastFollowUp,
+      })));
+    }).catch(() => {});
+  }, []);
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewTab, setViewTab] = useState("active");
   const [confirmAction, setConfirmAction] = useState(null); // {type:"convert"|"delete", visitor}
