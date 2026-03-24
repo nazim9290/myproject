@@ -8,9 +8,12 @@ import {
 
 import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NAV_ITEMS } from "./data/mockData";
 import { INITIAL_STUDENTS } from "./data/students";
 import { INITIAL_VISITORS } from "./data/visitors";
+import { students as studentsApi, visitors as visitorsApi } from "./lib/api";
+import { useAPI, api } from "./hooks/useAPI";
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -318,14 +321,14 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
   );
 }
 
-function PageRenderer({ activePage, students, setStudents, visitors, setVisitors, onConvertToStudent, isDark, setIsDark, currentUser, setCurrentUser, onLogout }) {
+function PageRenderer({ activePage, students, setStudents, visitors, setVisitors, onConvertToStudent, isDark, setIsDark, currentUser, setCurrentUser, onLogout, reloadData }) {
   switch (activePage) {
     case "dashboard":
       return <DashboardPage students={students} visitors={visitors} />;
     case "visitors":
-      return <VisitorsPage visitors={visitors} setVisitors={setVisitors} onConvertToStudent={onConvertToStudent} />;
+      return <VisitorsPage visitors={visitors} setVisitors={setVisitors} onConvertToStudent={onConvertToStudent} reloadData={reloadData} />;
     case "students":
-      return <StudentsPage students={students} setStudents={setStudents} />;
+      return <StudentsPage students={students} setStudents={setStudents} reloadData={reloadData} />;
     case "course":
       return <LanguageCoursePage students={students} />;
     case "attendance":
@@ -373,21 +376,22 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
 
 function AppShell({ isDark, setIsDark }) {
   const t = THEMES[isDark ? "dark" : "light"];
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user: authUser, login, setMockUser, logout, loading: authLoading } = useAuth();
   const [activePage, setActivePage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);   // desktop collapse
   const [mobileOpen, setMobileOpen] = useState(false); // mobile overlay
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const [students, setStudents] = useState(INITIAL_STUDENTS);
-  const [visitors, setVisitors] = useState(INITIAL_VISITORS);
+  const [students, setStudents] = useState([]);
+  const [visitors, setVisitors] = useState([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState({
-    name: "Abrar Rahman",
-    name_bn: "আব্রার রহমান",
+    name: "Admin",
+    name_bn: "অ্যাডমিন",
     email: "admin@agencyos.com",
     phone: "",
-    role: "Admin",
+    role: "owner",
     designation: "Agency Manager",
-    branch: "Dhaka Main",
+    branch: "Main",
     joined: "2026-01-01",
     notifications: true,
     language: "bn",
@@ -399,7 +403,42 @@ function AppShell({ isDark, setIsDark }) {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  const onConvertToStudent = (visitor) => {
+  // Load data from API when authenticated
+  const loadAllData = async () => {
+    try {
+      const [studRes, visRes] = await Promise.all([
+        studentsApi.list({ limit: 500 }),
+        visitorsApi.list({ limit: 500 }),
+      ]);
+      setStudents(Array.isArray(studRes) ? studRes : studRes.data || []);
+      setVisitors(Array.isArray(visRes) ? visRes : visRes.data || []);
+    } catch {
+      // API unavailable — use mock fallback
+      if (students.length === 0) setStudents(INITIAL_STUDENTS);
+      if (visitors.length === 0) setVisitors(INITIAL_VISITORS);
+    }
+    setDataLoaded(true);
+  };
+
+  useEffect(() => {
+    if (!authUser || dataLoaded) return;
+    loadAllData();
+  }, [authUser, dataLoaded]);
+
+  // Sync authUser → currentUser
+  useEffect(() => {
+    if (authUser) {
+      setCurrentUser((prev) => ({
+        ...prev,
+        name: authUser.name || prev.name,
+        email: authUser.email || prev.email,
+        role: authUser.role || prev.role,
+        branch: authUser.branch || prev.branch,
+      }));
+    }
+  }, [authUser]);
+
+  const onConvertToStudent = async (visitor) => {
     const newStudent = {
       id: `S-2026-${String(students.length + 1).padStart(3, "0")}`,
       name_en: visitor.name_en || visitor.name || "",
@@ -422,7 +461,18 @@ function AppShell({ isDark, setIsDark }) {
       docs: [],
       created: new Date().toISOString().slice(0, 10),
     };
-    setStudents((prev) => [newStudent, ...prev]);
+
+    // Try API first, fallback to local
+    try {
+      const apiStudent = await visitorsApi.convert(visitor.id, {
+        country: newStudent.country,
+        batch: newStudent.batch,
+      });
+      setStudents((prev) => [apiStudent, ...prev]);
+    } catch {
+      setStudents((prev) => [newStudent, ...prev]);
+    }
+
     setVisitors((prev) => prev.map((v) => v.id === visitor.id ? { ...v, converted: true, status: "converted" } : v));
     setActivePage("students");
   };
@@ -463,10 +513,47 @@ function AppShell({ isDark, setIsDark }) {
     return () => document.head.removeChild(style);
   }, [isDark]);
 
-  if (!isLoggedIn) {
+  const handleLogin = (user) => {
+    // user comes from LoginPage (either API response or mock fallback)
+    setMockUser(user);
+    setCurrentUser((prev) => ({
+      ...prev,
+      name: user.name || prev.name,
+      email: user.email || prev.email,
+      role: user.role || prev.role,
+      branch: user.branch || prev.branch,
+    }));
+  };
+
+  const handleLogout = () => {
+    logout();
+    setDataLoaded(false);
+    setStudents([]);
+    setVisitors([]);
+  };
+
+  // Reload data after CRUD operations
+  const reloadData = () => { setDataLoaded(false); };
+
+  if (authLoading) {
     return (
       <ThemeContext.Provider value={t}>
-        <LoginPage onLogin={() => setIsLoggedIn(true)} />
+        <div className="flex h-screen items-center justify-center" style={{ background: t.bg }}>
+          <div className="text-center anim-fade">
+            <div className="h-10 w-10 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
+              <span className="text-white font-black text-sm">A</span>
+            </div>
+            <p className="text-xs" style={{ color: t.muted }}>Loading...</p>
+          </div>
+        </div>
+      </ThemeContext.Provider>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <ThemeContext.Provider value={t}>
+        <LoginPage onLogin={handleLogin} />
       </ThemeContext.Provider>
     );
   }
@@ -515,7 +602,8 @@ function AppShell({ isDark, setIsDark }) {
               setIsDark={setIsDark}
               currentUser={currentUser}
               setCurrentUser={setCurrentUser}
-              onLogout={() => setIsLoggedIn(false)}
+              onLogout={handleLogout}
+              reloadData={reloadData}
             />
           </main>
         </div>
@@ -528,8 +616,10 @@ export default function App() {
   const [isDark, setIsDark] = useState(true);
 
   return (
-    <ToastProvider>
-      <AppShell isDark={isDark} setIsDark={setIsDark} />
-    </ToastProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <AppShell isDark={isDark} setIsDark={setIsDark} />
+      </ToastProvider>
+    </AuthProvider>
   );
 }

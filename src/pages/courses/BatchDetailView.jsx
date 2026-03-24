@@ -49,22 +49,44 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     toast.success(`${attDate} — উপস্থিতি সংরক্ষণ হয়েছে`);
   };
 
-  // Add class test
+  // Add class test — supports adding students from other batches
   const [showAddTest, setShowAddTest] = useState(false);
   const [testForm, setTestForm] = useState({ testName: "", date: today });
   const [testScores, setTestScores] = useState({});
+  const [testBatchFilter, setTestBatchFilter] = useState(batch.id);
+  const [testExtraStudents, setTestExtraStudents] = useState([]); // IDs from other batches
+
+  // All batches for filter
+  const allBatchIds = [...new Set([batch.id, ...Object.keys(BATCH_STUDENTS)])];
+
+  // Students visible in the test form: current batch + any extra from other batches
+  const testStudentList = [
+    ...bStudents.map(s => ({ ...s, fromBatch: batch.name })),
+    ...testExtraStudents.map(id => {
+      const st = allStudents.find(s => s.id === id);
+      return st ? { studentId: st.id, name: st.name_en, fromBatch: st.batch || "Other", attendance: 0, lastTest: null } : null;
+    }).filter(Boolean),
+  ];
+
+  const addExtraBatchStudents = (batchId) => {
+    const bs = BATCH_STUDENTS[batchId] || [];
+    const newIds = bs.map(s => s.studentId).filter(id => !bStudents.find(b => b.studentId === id) && !testExtraStudents.includes(id));
+    setTestExtraStudents(prev => [...prev, ...newIds]);
+  };
+
   const addTest = () => {
     if (!testForm.testName.trim()) { toast.error("টেস্টের নাম দিন"); return; }
-    const scores = bStudents.map(s => testScores[s.studentId] ? parseInt(testScores[s.studentId]) : 0);
+    const allScored = testStudentList.filter(s => testScores[s.studentId]);
+    const scores = allScored.map(s => parseInt(testScores[s.studentId]) || 0);
     const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
     const newTest = { id: `CT-${Date.now()}`, batchId: batch.id, testName: testForm.testName, date: testForm.date, avgScore: avg, scores: testScores };
     setBTests(prev => [...prev, newTest]);
-    // Update lastTest for each student
     setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
     setTestForm({ testName: "", date: today });
     setTestScores({});
+    setTestExtraStudents([]);
     setShowAddTest(false);
-    toast.success("ক্লাস টেস্ট যোগ হয়েছে");
+    toast.success(`ক্লাস টেস্ট যোগ হয়েছে (${allScored.length} জনের রেজাল্ট)`);
   };
 
   // Update exam result
@@ -287,11 +309,21 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   <input type="date" value={testForm.date} onChange={e => setTestForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
                 </div>
               </div>
-              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>প্রতি স্টুডেন্টের স্কোর (/100)</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>প্রতি স্টুডেন্টের স্কোর (/100)</p>
+                <div className="flex items-center gap-2">
+                  <select value="" onChange={e => { if (e.target.value) addExtraBatchStudents(e.target.value); }}
+                    className="px-2 py-1 rounded text-[10px] outline-none" style={is}>
+                    <option value="">+ অন্য ব্যাচ থেকে যোগ করুন</option>
+                    {allBatchIds.filter(id => id !== batch.id).map(id => <option key={id} value={id}>{id}</option>)}
+                  </select>
+                </div>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {bStudents.map(bs => (
+                {testStudentList.map(bs => (
                   <div key={bs.studentId} className="flex items-center gap-2">
                     <span className="text-xs flex-1 truncate">{bs.name}</span>
+                    {bs.fromBatch !== batch.name && <span className="text-[9px] px-1 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>{bs.fromBatch}</span>}
                     <input type="number" min="0" max="100" value={testScores[bs.studentId] || ""} onChange={e => setTestScores(p => ({ ...p, [bs.studentId]: e.target.value }))}
                       className="w-16 px-2 py-1.5 rounded-lg text-xs text-center outline-none" style={is} placeholder="—" />
                   </div>

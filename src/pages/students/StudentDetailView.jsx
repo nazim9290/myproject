@@ -886,8 +886,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
               { label: "নাম (বাংলা)", key: "name_bn" },
               { label: "জন্ম তারিখ", key: "dob", type: "date" },
               { label: "লিঙ্গ", key: "gender", type: "select", options: ["Male","Female","Other"] },
+              { label: "রক্তের গ্রুপ", key: "blood_group", type: "select", options: ["A+","A-","B+","B-","AB+","AB-","O+","O-"] },
               { label: "ফোন", key: "phone" },
               { label: "ইমেইল", key: "email" },
+              { label: "NID নম্বর", key: "nid" },
+              { label: "বর্তমান ঠিকানা", key: "present_address" },
+              { label: "স্থায়ী ঠিকানা", key: "permanent_address" },
             ].map(f => (
               <div key={f.key} className="flex justify-between items-center text-xs gap-2">
                 <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
@@ -915,6 +919,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
           <div className="space-y-2.5">
             {[
               { label: "পাসপোর্ট নম্বর", key: "passport" },
+              { label: "পাসপোর্ট মেয়াদ", key: "passport_expiry", type: "date" },
               { label: "পিতার নাম", key: "father" },
               { label: "মাতার নাম", key: "mother" },
             ].map(f => (

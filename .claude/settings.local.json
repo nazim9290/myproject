@@ -1,14 +1,17 @@
 {
   "permissions": {
+    "defaultMode": "dontAsk",
     "allow": [
-      "Bash(for f:*)",
-      "Bash(do echo:*)",
-      "Read(//c/Users/User/agency-os/**)",
-      "Bash(done)",
-      "Bash(npm run:*)",
-      "Bash(npm install:*)",
-      "WebFetch(domain:claude.ai)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5175)"
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebFetch"
+    ],
+    "additionalDirectories": [
+      "c:/Users/User/agency-os-backend"
     ]
   }
 }

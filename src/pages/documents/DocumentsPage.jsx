@@ -9,9 +9,15 @@ import StudentDocumentDetail from "./StudentDocumentDetail";
 export default function DocumentsPage({ students }) {
   const t = useTheme();
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [searchDoc, setSearchDoc] = useState("");
+  const [filterBatch, setFilterBatch] = useState("All");
 
   // Students who are in doc-relevant pipeline stages
-  const docStudents = students.filter((s) => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
+  const allDocStudents = students.filter((s) => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
+  const allBatches = ["All", ...new Set(allDocStudents.map(s => s.batch).filter(Boolean))];
+  const docStudents = allDocStudents
+    .filter(s => filterBatch === "All" || s.batch === filterBatch)
+    .filter(s => !searchDoc || (s.name_en || "").toLowerCase().includes(searchDoc.toLowerCase()) || (s.id || "").toLowerCase().includes(searchDoc.toLowerCase()));
 
   const getStudentDocs = (studentId) => INITIAL_STUDENT_DOCS[studentId] || { docs: DOC_TYPES.filter((d) => d.base).map((d) => ({ docId: d.id, status: "not_submitted", data: {} })), mismatches: [] };
 
@@ -124,9 +130,14 @@ export default function DocumentsPage({ students }) {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">Student-wise Documents</h3>
           <div className="flex items-center gap-2">
+            <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+              {allBatches.map(b => <option key={b} value={b}>{b === "All" ? "সব ব্যাচ" : b}</option>)}
+            </select>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={12} style={{ color: t.muted }} />
-              <input className="bg-transparent text-xs outline-none w-32" style={{ color: t.text }} placeholder="স্টুডেন্ট খুঁজুন..." />
+              <input value={searchDoc} onChange={e => setSearchDoc(e.target.value)} className="bg-transparent text-xs outline-none w-32" style={{ color: t.text }} placeholder="স্টুডেন্ট খুঁজুন..." />
             </div>
           </div>
         </div>

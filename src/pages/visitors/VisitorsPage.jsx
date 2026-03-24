@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { AlertCircle, Save, Plus, Download, Settings, Search, X, ArrowLeft, Phone, Edit3, Trash2, Check } from "lucide-react";
+import { AlertCircle, Save, Plus, Download, Settings, Search, X, ArrowLeft, Phone, Edit3, Trash2, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { INITIAL_BRANCHES } from "../../data/mockData";
+import { INITIAL_BRANCHES, AGENTS_DATA } from "../../data/mockData";
 import Pagination from "../../components/ui/Pagination";
 
 function NewVisitorForm({ onSave, onCancel }) {
@@ -26,19 +26,30 @@ function NewVisitorForm({ onSave, onCancel }) {
     source: "Walk-in", agent_name: "", counselor: "Mina", notes: "", next_follow_up: "",
   });
   const [errors, setErrors] = useState({});
+  const [sections, setSections] = useState({ personal: true, education: false, jpExam: false, visa: false, country: false, source: true });
+  const toggleSection = (s) => setSections({ ...sections, [s]: !sections[s] });
   const set = (k, v) => { setForm({ ...form, [k]: v }); if (errors[k]) setErrors({ ...errors, [k]: null }); };
   const setEdu = (i, f, v) => { const e = [...form.education]; e[i] = { ...e[i], [f]: v }; setForm({ ...form, education: e }); };
+  const addEdu = () => setForm({ ...form, education: [...form.education, { level: "", year: "", board: "", gpa: "", subject: "" }] });
+  const removeEdu = (i) => { if (form.education.length <= 1) return; const e = [...form.education]; e.splice(i, 1); setForm({ ...form, education: e }); };
   const toggleCountry = (c) => { const curr = form.interested_countries; if (curr.includes(c)) { if (curr.length === 1) return; set("interested_countries", curr.filter(x => x !== c)); } else { set("interested_countries", [...curr, c]); } };
   const validate = () => { const e = {}; if (!form.name.trim()) e.name = "নাম আবশ্যক"; if (!form.phone.trim()) e.phone = "ফোন আবশ্যক"; if (form.phone && !/^01\d{9}$/.test(form.phone.replace(/[- ]/g, ""))) e.phone = "সঠিক ফোন নম্বর দিন"; setErrors(e); return Object.keys(e).length === 0; };
   const save = () => { if (!validate()) { toast.error("ফর্মে ত্রুটি আছে — লাল চিহ্নিত field দেখুন"); return; } onSave({ ...form, id: `V-${Date.now()}`, status: "Interested", date: new Date().toISOString().slice(0, 10), lastFollowUp: null }); };
 
-  const SectionHeader = ({ icon, title }) => (<div className="flex items-center gap-2 pt-3 pb-1"><span className="text-sm">{icon}</span><p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: t.cyan }}>{title}</p><div className="flex-1 h-px" style={{ background: `${t.cyan}20` }} /></div>);
+  const SectionHeader = ({ icon, title, sKey }) => (
+    <button type="button" onClick={() => toggleSection(sKey)} className="w-full flex items-center gap-2 pt-3 pb-1 cursor-pointer">
+      <span className="text-sm">{icon}</span>
+      <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: t.cyan }}>{title}</p>
+      <div className="flex-1 h-px" style={{ background: `${t.cyan}20` }} />
+      {sections[sKey] ? <ChevronDown size={14} style={{ color: t.cyan }} /> : <ChevronRight size={14} style={{ color: t.muted }} />}
+    </button>
+  );
   const FieldError = ({ error }) => error ? <p className="flex items-center gap-1 mt-1 text-[10px]" style={{ color: t.rose }}><AlertCircle size={10} /> {error}</p> : null;
 
   return (
     <div className="space-y-2">
-      <SectionHeader icon="👤" title="ব্যক্তিগত তথ্য" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <SectionHeader icon="👤" title="ব্যক্তিগত তথ্য" sKey="personal" />
+      {sections.personal && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা) *</label>
         <input value={form.name} onChange={e => set("name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: errors.name ? t.rose : t.inputBorder }} placeholder="পুরো নাম" /><FieldError error={errors.name} /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English)</label>
@@ -55,25 +66,27 @@ function NewVisitorForm({ onSave, onCancel }) {
         <input value={form.address} onChange={e => set("address", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="বাড়ি, এলাকা, জেলা" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লিঙ্গ</label>
         <select value={form.gender} onChange={e => set("gender", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Male</option><option>Female</option><option>Other</option></select></div>
-      </div>
+      </div>}
 
-      <SectionHeader icon="🎓" title="শিক্ষাগত তথ্য" />
-      <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.border}` }}>
+      <SectionHeader icon="🎓" title="শিক্ষাগত তথ্য" sKey="education" />
+      {sections.education && <><div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.border}` }}>
         <table className="w-full text-xs"><thead><tr style={{ background: t.inputBg }}>
-          {["Education", "Year", "Board", "GPA", "Subject"].map(h => <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>)}
+          {["Education", "Year", "Board", "GPA", "Subject", ""].map(h => <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>)}
         </tr></thead><tbody>
           {form.education.map((edu, idx) => (<tr key={idx} style={{ borderTop: `1px solid ${t.border}` }}>
-            <td className="py-2 px-3 text-xs font-medium" style={{ color: t.textSecondary, minWidth: 140 }}>{edu.level}</td>
+            <td className="py-1.5 px-2"><input value={edu.level} onChange={e => setEdu(idx, "level", e.target.value)} className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder="SSC / HSC / Honours" /></td>
             <td className="py-1.5 px-2"><input value={edu.year} onChange={e => setEdu(idx, "year", e.target.value)} className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder="2022" /></td>
             <td className="py-1.5 px-2"><input value={edu.board} onChange={e => setEdu(idx, "board", e.target.value)} className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder="Dhaka" /></td>
             <td className="py-1.5 px-2"><input value={edu.gpa} onChange={e => setEdu(idx, "gpa", e.target.value)} className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder="5.00" /></td>
             <td className="py-1.5 px-2"><input value={edu.subject} onChange={e => setEdu(idx, "subject", e.target.value)} className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder="Science" /></td>
+            <td className="py-1.5 px-2 text-center">{form.education.length > 1 && <button onClick={() => removeEdu(idx)} className="p-1 rounded transition" style={{ color: t.rose }} onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`} onMouseLeave={e => e.currentTarget.style.background = "transparent"}><X size={12} /></button>}</td>
           </tr>))}
         </tbody></table>
       </div>
+      <button onClick={addEdu} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition" style={{ color: t.cyan, background: `${t.cyan}10` }} onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}20`} onMouseLeave={e => e.currentTarget.style.background = `${t.cyan}10`}><Plus size={12} /> শিক্ষাগত তথ্য যোগ করুন</button></>}
 
-      <SectionHeader icon="🇯🇵" title="জাপানি ভাষা পরীক্ষা" />
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <SectionHeader icon="🇯🇵" title="জাপানি ভাষা পরীক্ষা" sKey="jpExam" />
+      {sections.jpExam && <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
         <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
           <label className="text-xs" style={{ color: t.textSecondary }}>সার্টিফিকেট আছে?</label>
           <button onClick={() => set("has_jp_cert", !form.has_jp_cert)} className="relative w-10 h-5 rounded-full transition-all" style={{ background: form.has_jp_cert ? t.emerald : `${t.muted}40` }}>
@@ -97,10 +110,10 @@ function NewVisitorForm({ onSave, onCancel }) {
           <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Score</label>
           <input value={form.jp_score} onChange={e => set("jp_score", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="100" type="number" /></div>
         </>}
-      </div>
+      </div>}
 
-      <SectionHeader icon="🛂" title="ভিসার ধরন / Purpose" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <SectionHeader icon="🛂" title="ভিসার ধরন / Purpose" sKey="visa" />
+      {sections.visa && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কোন ভিসায় যেতে চান? *</label>
         <select value={form.visa_type} onChange={e => { set("visa_type", e.target.value); if (e.target.value !== "Other") setForm(prev => ({...prev, visa_type: e.target.value, visa_type_other: ""})); }} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
           <option value="Language Student">Language Student (ভাষা শিক্ষার্থী)</option>
@@ -127,10 +140,10 @@ function NewVisitorForm({ onSave, onCancel }) {
             {form.visa_type === "Dependent" && "👨‍👩‍👧 পরিবার ভিসা → স্পন্সর জাপানে থাকতে হবে"}
           </p>
         </div>}
-      </div>
+      </div>}
 
-      <SectionHeader icon="🌍" title="আগ্রহের দেশ ও Intake" />
-      <div><label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}>আগ্রহের দেশ (একাধিক নির্বাচন করুন)</label>
+      <SectionHeader icon="🌍" title="আগ্রহের দেশ ও Intake" sKey="country" />
+      {sections.country && <><div><label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}>আগ্রহের দেশ (একাধিক নির্বাচন করুন)</label>
       <div className="flex flex-wrap gap-2">
         {["Japan", "Canada", "UK", "USA", "Australia", "China", "Germany", "Korea", "Other"].map(c => {
           const sel = form.interested_countries.includes(c);
@@ -146,10 +159,10 @@ function NewVisitorForm({ onSave, onCancel }) {
           <button onClick={() => set("budget_concern", !form.budget_concern)} className="relative w-10 h-5 rounded-full transition-all" style={{ background: form.budget_concern ? t.amber : `${t.muted}40` }}>
             <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ left: form.budget_concern ? "22px" : "2px" }} /></button>
         </div>
-      </div>
+      </div></>}
 
-      <SectionHeader icon="📋" title="সোর্স ও কাউন্সেলিং" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <SectionHeader icon="📋" title="সোর্স ও কাউন্সেলিং" sKey="source" />
+      {sections.source && <><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch / শাখা *</label>
         <select value={form.branch} onChange={e => set("branch", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: !form.branch ? `${t.amber}60` : t.inputBorder }}>
           <option value="">— Branch নির্বাচন করুন —</option>
@@ -157,15 +170,20 @@ function NewVisitorForm({ onSave, onCancel }) {
         </select></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সোর্স</label>
         <select value={form.source} onChange={e => set("source", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Walk-in</option><option>Facebook</option><option>Agent</option><option>Referral</option><option>Website</option><option>YouTube</option></select></div>
-        {form.source === "Agent" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্ট</label>
-        <input value={form.agent_name} onChange={e => set("agent_name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Agent name" /></div>}
+        {form.source === "Agent" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্ট নির্বাচন করুন *</label>
+        <select value={form.agent_name} onChange={e => set("agent_name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: !form.agent_name ? `${t.amber}60` : t.inputBorder }}>
+          <option value="">— এজেন্ট সিলেক্ট করুন —</option>
+          {AGENTS_DATA.filter(a => a.status === "active").map(a => <option key={a.id} value={a.name}>{a.name} ({a.area})</option>)}
+        </select></div>}
+        {form.source === "Referral" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>রেফারার নাম / ফোন</label>
+        <input value={form.referral_info || ""} onChange={e => set("referral_info", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যিনি রেফার করেছেন তার নাম বা ফোন" /></div>}
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কাউন্সেলর</label>
         <select value={form.counselor} onChange={e => set("counselor", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Mina</option><option>Sadia</option><option>Karim</option></select></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরবর্তী ফলোআপ</label>
         <input type="date" value={form.next_follow_up} onChange={e => set("next_follow_up", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} /></div>
       </div>
       <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কাউন্সেলিং নোট</label>
-      <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="আলোচনার বিবরণ..." /></div>
+      <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="আলোচনার বিবরণ..." /></div></>}
       <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
         <p className="text-[10px]" style={{ color: t.muted }}>* চিহ্নিত field আবশ্যক</p>
         <div className="flex gap-2"><Button variant="ghost" onClick={onCancel}>Cancel</Button><Button icon={Save} onClick={save}>Save Visitor</Button></div>

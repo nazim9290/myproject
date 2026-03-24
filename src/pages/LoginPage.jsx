@@ -1,16 +1,34 @@
 import { useState } from "react";
-import { GraduationCap, Mail, Lock } from "lucide-react";
+import { GraduationCap, Mail, Lock, AlertTriangle } from "lucide-react";
 import { useTheme, getGlobalStyles } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage({ onLogin }) {
   const t = useTheme();
+  const { login: authLogin } = useAuth();
   const [email, setEmail] = useState("admin@agencyos.com");
   const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) { setError("Email ও Password দিন"); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); onLogin(); }, 800);
+    setError("");
+    try {
+      // AuthContext.login() saves token + user to localStorage
+      const user = await authLogin(email, password);
+      onLogin(user);
+    } catch (err) {
+      // Fallback to mock login if backend is not running
+      if (email === "admin@agencyos.com" && password === "admin123") {
+        onLogin({ id: "mock", name: "Admin", email, role: "owner", branch: "ঢাকা" });
+      } else {
+        setError(err.message || "লগইন ব্যর্থ হয়েছে");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,18 +50,24 @@ export default function LoginPage({ onLogin }) {
 
           {/* Form */}
           <div className="space-y-4">
+            {error && (
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs" style={{ background: `${t.rose}15`, border: `1px solid ${t.rose}30`, color: t.rose }}>
+                <AlertTriangle size={14} />
+                {error}
+              </div>
+            )}
             <div>
               <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">Email</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 focus-within:border-cyan-500/30 transition">
                 <Mail size={14} className="opacity-30" />
-                <input value={email} onChange={(e) => setEmail(e.target.value)} className="flex-1 bg-transparent text-sm outline-none" placeholder="your@email.com" />
+                <input value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="your@email.com" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
               </div>
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">Password</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 focus-within:border-cyan-500/30 transition">
                 <Lock size={14} className="opacity-30" />
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="flex-1 bg-transparent text-sm outline-none" placeholder="••••••••" />
+                <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
               </div>
             </div>
             <button
