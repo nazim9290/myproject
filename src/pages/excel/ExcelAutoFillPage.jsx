@@ -122,6 +122,10 @@ export default function ExcelAutoFillPage({ students }) {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.name.match(/\.xlsx?$/i)) { toast.error("শুধু .xlsx ফাইল আপলোড করুন"); return; }
+    if (file.name.endsWith(".xls") && !file.name.endsWith(".xlsx")) {
+      toast.error("⚠️ .xls ফরম্যাট সাপোর্ট করে না — Excel-এ খুলে Save As → .xlsx করুন");
+      return;
+    }
     setUploadFile(file);
   };
 
@@ -383,7 +387,7 @@ export default function ExcelAutoFillPage({ students }) {
                   <>
                     <Upload size={32} style={{ color: t.muted }} />
                     <p className="text-xs mt-2 font-medium">Excel ফাইল ড্র্যাগ করুন বা ক্লিক করুন</p>
-                    <p className="text-[10px] mt-1" style={{ color: t.muted }}>.xlsx ফরম্যাট • সর্বোচ্চ 10MB</p>
+                    <p className="text-[10px] mt-1" style={{ color: t.muted }}>.xlsx ফরম্যাট (⚠️ .xls নয়) • সর্বোচ্চ 10MB</p>
                   </>
                 )}
               </div>
