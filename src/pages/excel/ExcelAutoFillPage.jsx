@@ -7,7 +7,7 @@ import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 // Templates loaded from backend API only
 
-const API = window.location.hostname === "localhost" ? "http://localhost:3001/api" : "https://newbook-e2v3.onrender.com/api";
+const API = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://newbook-e2v3.onrender.com/api";
 const token = () => localStorage.getItem("agencyos_token");
 
 // All system fields grouped for mapping UI

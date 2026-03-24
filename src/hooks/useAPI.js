@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 // ═══════════════════════════════════════════════════════
 // API Base URL — লোকাল হলে localhost:3001, প্রোডাকশনে render.com
 // ═══════════════════════════════════════════════════════
-const API_URL = window.location.hostname === "localhost" ? "http://localhost:3001/api" : "https://newbook-e2v3.onrender.com/api";
+const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://newbook-e2v3.onrender.com/api";
 
 /**
  * JWT Token পড়া — localStorage থেকে

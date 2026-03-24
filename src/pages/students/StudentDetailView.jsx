@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, Pencil } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -7,6 +7,7 @@ import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { FEE_CATEGORIES, CATEGORY_CONFIG } from "../../data/mockData";
+import { api } from "../../hooks/useAPI";
 
 // ═══════════════════════════════════════════════
 // PIPELINE STEPS META — checklist + actions per step
@@ -151,6 +152,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ ...student });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // ── Dropdown options: batches ও schools backend থেকে load ──
+  const [batchOptions, setBatchOptions] = useState([]);
+  const [schoolOptions, setSchoolOptions] = useState([]);
+  useEffect(() => {
+    api.get("/batches").then(data => { if (Array.isArray(data)) setBatchOptions(data); }).catch(() => {});
+    api.get("/schools").then(data => { if (Array.isArray(data)) setSchoolOptions(data); }).catch(() => {});
+  }, []);
   const [checked, setChecked] = useState({});       // { "ENROLLED_en1": true, ... }
   const [noteText, setNoteText] = useState("");
   const [activityLog, setActivityLog] = useState([
@@ -884,13 +893,17 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
             {[
               { label: "নাম (EN)", key: "name_en" },
               { label: "নাম (বাংলা)", key: "name_bn" },
+              { label: "নাম (カタカナ)", key: "name_katakana" },
               { label: "জন্ম তারিখ", key: "dob", type: "date" },
               { label: "লিঙ্গ", key: "gender", type: "select", options: ["Male","Female","Other"] },
-              { label: "রক্তের গ্রুপ", key: "blood_group", type: "select", options: ["A+","A-","B+","B-","AB+","AB-","O+","O-"] },
+              { label: "বৈবাহিক অবস্থা", key: "marital_status", type: "select", options: ["Single","Married","Divorced","Widowed"] },
+              { label: "জাতীয়তা", key: "nationality" },
+              { label: "রক্তের গ্রুপ", key: "blood_group", type: "select", options: ["","A+","A-","B+","B-","AB+","AB-","O+","O-"] },
               { label: "ফোন", key: "phone" },
+              { label: "WhatsApp", key: "whatsapp" },
               { label: "ইমেইল", key: "email" },
               { label: "NID নম্বর", key: "nid" },
-              { label: "বর্তমান ঠিকানা", key: "present_address" },
+              { label: "বর্তমান ঠিকানা", key: "current_address" },
               { label: "স্থায়ী ঠিকানা", key: "permanent_address" },
             ].map(f => (
               <div key={f.key} className="flex justify-between items-center text-xs gap-2">
@@ -919,9 +932,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
           <div className="space-y-2.5">
             {[
               { label: "পাসপোর্ট নম্বর", key: "passport" },
+              { label: "পাসপোর্ট ইস্যু", key: "passport_issue", type: "date" },
               { label: "পাসপোর্ট মেয়াদ", key: "passport_expiry", type: "date" },
-              { label: "পিতার নাম", key: "father" },
-              { label: "মাতার নাম", key: "mother" },
+              { label: "পিতার নাম (বাংলা)", key: "father" },
+              { label: "পিতার নাম (EN)", key: "father_name_en" },
+              { label: "মাতার নাম (বাংলা)", key: "mother" },
+              { label: "মাতার নাম (EN)", key: "mother_name_en" },
             ].map(f => (
               <div key={f.key} className="flex justify-between items-center text-xs gap-2">
                 <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
@@ -939,13 +955,37 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
         <Card delay={210}>
           <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> গন্তব্য তথ্য</h4>
           <div className="space-y-2.5">
+            {/* ── দেশ ── */}
+            <div className="flex justify-between items-center text-xs gap-2">
+              <span style={{ color: t.muted }} className="shrink-0">দেশ</span>
+              {isEditing ? <select value={editForm.country || ""} onChange={e => setField("country", e.target.value)} className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                {["Japan","Germany","Korea","Canada","UK","USA","Australia","China"].map(o => <option key={o}>{o}</option>)}
+              </select> : <span className="font-medium text-right">{current.country || "—"}</span>}
+            </div>
+            {/* ── স্কুল (DB থেকে dropdown) ── */}
+            <div className="flex justify-between items-center text-xs gap-2">
+              <span style={{ color: t.muted }} className="shrink-0">স্কুল</span>
+              {isEditing ? <select value={editForm.school || ""} onChange={e => setField("school", e.target.value)} className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                <option value="">— স্কুল সিলেক্ট —</option>
+                {schoolOptions.map(s => <option key={s.id} value={s.name_en}>{s.name_en}</option>)}
+              </select> : <span className="font-medium text-right">{current.school || "—"}</span>}
+            </div>
+            {/* ── ব্যাচ (DB থেকে dropdown) ── */}
+            <div className="flex justify-between items-center text-xs gap-2">
+              <span style={{ color: t.muted }} className="shrink-0">ব্যাচ</span>
+              {isEditing ? <select value={editForm.batch || ""} onChange={e => setField("batch", e.target.value)} className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                <option value="">— ব্যাচ সিলেক্ট —</option>
+                {batchOptions.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+              </select> : <span className="font-medium text-right">{current.batch || "—"}</span>}
+            </div>
+            {/* ── বাকি fields ── */}
             {[
-              { label: "দেশ", key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK"] },
-              { label: "স্কুল", key: "school" },
-              { label: "ব্যাচ / Intake", key: "batch" },
+              { label: "Intake", key: "intake" },
+              { label: "ভিসার ধরন", key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
               { label: "Branch", key: "branch" },
-              { label: "সোর্স", key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral"] },
-              { label: "টাইপ", key: "type", type: "select", options: ["own","partner"] },
+              { label: "সোর্স", key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral","Website","YouTube"] },
+              { label: "টাইপ", key: "student_type", type: "select", options: ["own","agent","partner"] },
+              { label: "কাউন্সেলর", key: "counselor" },
               { label: "ভর্তির তারিখ", key: "created" },
             ].map(f => (
               <div key={f.key} className="flex justify-between items-center text-xs gap-2">
@@ -955,7 +995,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
                     <select value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
                       className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
                       style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                      {f.options.map(o => <option key={o}>{o}</option>)}
+                      {f.options.map(o => <option key={o} value={o}>{o || "—"}</option>)}
                     </select>
                   ) : (
                     <input value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
@@ -964,7 +1004,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
                   )
                 ) : (
                   <span className="font-medium text-right">
-                    {f.key === "type" ? (current[f.key] === "own" ? "Own" : "Partner") : current[f.key] || "—"}
+                    {f.key === "student_type" ? (current[f.key] === "own" ? "Own" : current[f.key] === "agent" ? "Agent" : "Partner") : current[f.key] || "—"}
                   </span>
                 )}
               </div>
