@@ -425,10 +425,16 @@ function AppShell({ isDark, setIsDark }) {
   };
 
   // authUser change হলে বা প্রথমবার — data load করো
+  // authLoading শেষ হওয়ার পরই data load শুরু হবে
   useEffect(() => {
-    if (dataLoaded) return;
-    if (authUser) loadAllData();
-  }, [authUser, dataLoaded]);
+    if (authLoading) return;       // auth restore চলছে, wait করো
+    if (dataLoaded) return;        // ইতিমধ্যে load হয়ে গেছে
+    if (authUser) {
+      loadAllData();               // logged in → data load
+    } else {
+      setDataLoaded(true);         // logged out → data load দরকার নেই
+    }
+  }, [authUser, authLoading, dataLoaded]);
 
   // Sync authUser → currentUser
   useEffect(() => {
