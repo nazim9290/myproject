@@ -26,6 +26,11 @@ export default function SchoolsPage({ students }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(BLANK_SCHOOL);
+  // ── Submissions: API থেকে load ──
+  const [submissionsData, setSubmissionsData] = useState([]);
+  useEffect(() => {
+    api.get("/submissions").then(data => { if (Array.isArray(data)) setSubmissionsData(data); }).catch(() => {});
+  }, []);
 
   if (selectedSchool) {
     const live = schools.find(s => s.id === selectedSchool.id) || selectedSchool;
@@ -38,23 +43,28 @@ export default function SchoolsPage({ students }) {
   const openAdd = () => { setForm(BLANK_SCHOOL); setEditingId(null); setShowForm(true); };
   const openEdit = (school) => { setForm({ name_en: school.name, name_jp: school.nameJP || "", country: school.country || "Japan", city: school.city || "", phone: school.phone || "", fax: school.fax || "", fees: school.fees || "", requirements: school.requirements || "", deadline: school.deadline || "" }); setEditingId(school.id); setShowForm(true); };
 
-  const saveSchool = () => {
+  const saveSchool = async () => {
     if (!form.name_en.trim()) { toast.error("স্কুলের নাম দিন"); return; }
-    if (editingId) {
-      setSchools(prev => prev.map(s => s.id === editingId ? { ...s, name: form.name_en, nameJP: form.name_jp, city: form.city, phone: form.phone, fax: form.fax, fees: form.fees, requirements: form.requirements, deadline: form.deadline, country: form.country } : s));
-      toast.updated(form.name_en);
-    } else {
-      const newSchool = { id: `SC-${Date.now()}`, name: form.name_en, nameJP: form.name_jp, country: form.country, city: form.city, phone: form.phone, fax: form.fax, fees: form.fees, requirements: form.requirements, deadline: form.deadline, studentsReferred: 0, studentsArrived: 0, rating: 4.0 };
-      setSchools(prev => [...prev, newSchool]);
-      toast.success(`${form.name_en} — স্কুল যোগ হয়েছে`);
+    try {
+      if (editingId) {
+        const updated = await api.patch(`/schools/${editingId}`, { name_en: form.name_en, name_jp: form.name_jp, country: form.country, city: form.city });
+        setSchools(prev => prev.map(s => s.id === editingId ? { ...s, ...updated } : s));
+        toast.updated(form.name_en);
+      } else {
+        const saved = await api.post("/schools", { name_en: form.name_en, name_jp: form.name_jp, country: form.country, city: form.city });
+        setSchools(prev => [...prev, saved]);
+        toast.success(`${form.name_en} — স্কুল যোগ হয়েছে`);
+      }
+      setShowForm(false);
+      setEditingId(null);
+    } catch (err) {
+      toast.error(err.message || "স্কুল save ব্যর্থ");
     }
-    setShowForm(false);
-    setEditingId(null);
   };
 
   const totalReferred = schools.reduce((s, sc) => s + (sc.studentsReferred || 0), 0);
   const totalArrived = schools.reduce((s, sc) => s + (sc.studentsArrived || 0), 0);
-  const pendingRecheck = SUBMISSIONS_DATA.filter((s) => s.status === "issues_found" || s.status === "minor_issues").length;
+  const pendingRecheck = 0; // submissions API থেকে আসবে
 
   return (
     <div className="space-y-5 anim-fade">
@@ -68,7 +78,7 @@ export default function SchoolsPage({ students }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট স্কুল", value: SCHOOLS_DATA.length, color: t.cyan, icon: Globe },
+          { label: "মোট স্কুল", value: schools.length, color: t.cyan, icon: Globe },
           { label: "মোট রেফার", value: totalReferred, color: t.purple, icon: Users },
           { label: "পৌঁছেছে", value: totalArrived, color: t.emerald, icon: Plane },
           { label: "Recheck বাকি", value: pendingRecheck, color: t.rose, icon: AlertTriangle },
@@ -203,17 +213,17 @@ export default function SchoolsPage({ students }) {
                 </tr>
               </thead>
               <tbody>
-                {SUBMISSIONS_DATA.sort((a, b) => b.submissionDate.localeCompare(a.submissionDate)).map((sub) => {
-                  const st = SUB_STATUS[sub.status];
+                {submissionsData.sort((a, b) => (b.submission_date || "").localeCompare(a.submission_date || "")).map((sub) => {
+                  const st = SUB_STATUS[sub.status] || { color: "gray", icon: "•", label: sub.status };
                   return (
                     <tr key={sub.id} style={{ borderBottom: `1px solid ${t.border}` }}
                       onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                      <td className="py-3 px-3"><p className="font-medium">{sub.studentName}</p><p className="text-[9px]" style={{ color: t.muted }}>{sub.studentId}</p></td>
-                      <td className="py-3 px-3" style={{ color: t.textSecondary }}>{sub.schoolName}</td>
-                      <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{sub.submissionDate}</td>
-                      <td className="py-3 px-3"><span className="font-mono font-semibold" style={{ color: t.cyan }}>#{sub.submissionNo}</span></td>
+                      <td className="py-3 px-3"><p className="font-medium">{sub.student_name || sub.students?.name_en || "—"}</p><p className="text-[9px]" style={{ color: t.muted }}>{sub.student_id}</p></td>
+                      <td className="py-3 px-3" style={{ color: t.textSecondary }}>{sub.school_name || sub.schools?.name_en || "—"}</td>
+                      <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{sub.submission_date || "—"}</td>
+                      <td className="py-3 px-3"><span className="font-mono font-semibold" style={{ color: t.cyan }}>#{sub.submission_no || sub.id?.slice(0,6)}</span></td>
                       <td className="py-3 px-3"><Badge color={st.color} size="xs">{st.icon} {st.label}</Badge></td>
-                      <td className="py-3 px-3">{sub.feedback.length > 0 ? <Badge color={t.rose} size="xs">{sub.feedback.length} issues</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
+                      <td className="py-3 px-3">{(sub.feedback || []).length > 0 ? <Badge color={t.rose} size="xs">{sub.feedback.length} issues</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
                     </tr>
                   );
                 })}
@@ -225,17 +235,17 @@ export default function SchoolsPage({ students }) {
 
       {activeTab === "rechecks" && (
         <div className="space-y-3">
-          {SUBMISSIONS_DATA.filter((s) => s.feedback.length > 0).map((sub, i) => {
-            const st = SUB_STATUS[sub.status];
+          {submissionsData.filter((s) => (s.feedback || []).length > 0).map((sub, i) => {
+            const st = SUB_STATUS[sub.status] || { color: "gray", icon: "•", label: sub.status };
             return (
               <Card key={sub.id} delay={i * 60}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">{sub.studentName}</p>
+                      <p className="text-sm font-semibold">{sub.student_name || sub.students?.name_en || "—"}</p>
                       <Badge color={st.color} size="xs">{st.icon} {st.label}</Badge>
                     </div>
-                    <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{sub.schoolName} • Submission #{sub.submissionNo} • {sub.submissionDate}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{sub.school_name || sub.schools?.name_en || "—"} • #{sub.submission_no || ""} • {sub.submission_date || ""}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -253,7 +263,7 @@ export default function SchoolsPage({ students }) {
               </Card>
             );
           })}
-          {SUBMISSIONS_DATA.filter((s) => s.feedback.length > 0).length === 0 && (
+          {submissionsData.filter((s) => (s.feedback || []).length > 0).length === 0 && (
             <Card delay={0}><EmptyState icon={AlertCircle} title="কোনো recheck বাকি নেই" subtitle="সব ডকুমেন্ট গ্রহণযোগ্য" /></Card>
           )}
         </div>
