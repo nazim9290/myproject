@@ -147,25 +147,14 @@ export default function ExcelAutoFillPage({ students }) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        // Show parsed cells for mapping
-        setParsedCells(data.allCells || []);
+        // {{placeholder}} cells from backend
         setActiveTemplate(data.template);
-
-        // Use smart mapping suggestions from backend
-        if (data.mappingSuggestions && data.mappingSuggestions.length > 0) {
-          setMappings(data.mappingSuggestions);
-        } else {
-          // Fallback: use all detected cells
-          const fallback = (data.allCells || []).map(c => ({
-            cell: c.cell,
-            label: c.label,
-            field: autoDetectField(c.label),
-          }));
-          setMappings(fallback);
-        }
+        const phs = data.placeholders || data.template?.mappings || [];
+        setMappings(phs);
+        setParsedCells(phs);
 
         setView("mapping");
-        toast.success(`"${uploadSchool}" — ${(data.labelCells || []).length} cells পাওয়া গেছে`);
+        toast.success(`"${uploadSchool}" — ${phs.length} টি {{placeholder}} পাওয়া গেছে`);
       } catch (err) {
         toast.error(err.message || "আপলোড ব্যর্থ");
       } finally {
@@ -403,8 +392,11 @@ export default function ExcelAutoFillPage({ students }) {
 
             <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}15` }}>
               <p className="text-[11px]" style={{ color: t.textSecondary }}>
-                <strong>ফাইল ছাড়াও কাজ করবে:</strong> ফাইল আপলোড না করলে ম্যানুয়ালি cell ও field mapping করতে পারবেন।
-                ফাইল আপলোড করলে সিস্টেম অটোমেটিক Excel-এর সব cell ও label detect করবে।
+                <strong>কিভাবে কাজ করে:</strong> Excel template-এ যেখানে student data বসাতে চান সেখানে <code style={{ color: t.cyan }}>{"{{name_en}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob}}"}</code>, <code style={{ color: t.cyan }}>{"{{passport_number}}"}</code> ইত্যাদি লিখুন।
+                আপলোড করলে সিস্টেম শুধু <code style={{ color: t.cyan }}>{"{{}}"}</code> cells detect করবে।
+              </p>
+              <p className="text-[10px] mt-2" style={{ color: t.muted }}>
+                উদাহরণ: <code>{"{{name_en}}"}</code> → Mohammad Rahim, <code>{"{{dob}}"}</code> → 1998-03-12, <code>{"{{father_name}}"}</code> → আব্দুল করিম
               </p>
             </div>
 
@@ -447,7 +439,7 @@ export default function ExcelAutoFillPage({ students }) {
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["Sheet", "Cell", "Excel Label (স্কুলের ফরমে যা লেখা)", "System Field (কোন ডেটা বসবে)", ""].map(h => (
+                  {["Sheet", "Cell", "Placeholder ({{...}})", "System Field (কোন ডেটা বসবে)", ""].map(h => (
                     <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                   ))}
                 </tr>
@@ -462,7 +454,9 @@ export default function ExcelAutoFillPage({ students }) {
                     </td>
                     <td className="py-2 px-3 font-mono font-bold" style={{ color: t.cyan, width: 60 }}>{m.cell}</td>
                     <td className="py-2 px-3" style={{ maxWidth: 200 }}>
-                      <span className="text-xs">{m.label}</span>
+                      <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}10`, color: t.cyan }}>
+                        {m.placeholder || `{{${m.key || m.label}}}`}
+                      </span>
                     </td>
                     <td className="py-2 px-3" style={{ minWidth: 220 }}>
                       <select value={m.field || ""} onChange={e => updateMapping(i, e.target.value)}
