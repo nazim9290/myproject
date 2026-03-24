@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Layers, Users, CheckCircle, Star, BookOpen, Calendar, User, ChevronRight, Save, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { BATCHES, BATCH_STUDENTS } from "../../data/mockData";
+import { batches as batchesApi } from "../../lib/api";
 import BatchDetailView from "./BatchDetailView";
 
 function NewBatchForm({ onSave, onCancel }) {
@@ -88,21 +88,29 @@ function NewBatchForm({ onSave, onCancel }) {
 export default function LanguageCoursePage({ students }) {
   const t = useTheme();
   const toast = useToast();
-  const [batches, setBatches] = useState(BATCHES);
-  const [batchStudents] = useState(BATCH_STUDENTS);
+  // ── ব্যাচ তালিকা: API থেকে load ──
+  const [batches, setBatches] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [activeTab, setActiveTab] = useState("students");
   const [showNewBatch, setShowNewBatch] = useState(false);
+
+  // ── প্রথম load-এ API থেকে batches আনো ──
+  useEffect(() => {
+    batchesApi.list().then(data => {
+      if (Array.isArray(data)) setBatches(data);
+    }).catch(() => {});
+  }, []);
 
   if (selectedBatch) {
     const live = batches.find(b => b.id === selectedBatch.id) || selectedBatch;
     return <BatchDetailView batch={live} students={students} onBack={() => setSelectedBatch(null)} activeTab={activeTab} setActiveTab={setActiveTab} />;
   }
 
-  const allBatchStudents = Object.values(batchStudents).flat();
-  const totalStudents = allBatchStudents.length;
-  const avgAttendance = Math.round(allBatchStudents.reduce((s, st) => s + st.attendance, 0) / Math.max(totalStudents, 1));
-  const passedExam = allBatchStudents.filter((s) => s.jlptStatus === "Passed").length;
+  // ── KPI: students prop থেকে হিসাব (mock batchStudents সরানো হয়েছে) ──
+  const enrolledStudents = (students || []).filter(s => s.batch);
+  const totalStudents = enrolledStudents.length;
+  const avgAttendance = 0; // attendance API থেকে আসবে পরে
+  const passedExam = (students || []).filter(s => s.status === "EXAM_PASSED" || s.status === "DOC_COLLECTION").length;
 
   return (
     <div className="space-y-5 anim-fade">
@@ -138,19 +146,35 @@ export default function LanguageCoursePage({ students }) {
       {showNewBatch && (
         <NewBatchForm
           onCancel={() => setShowNewBatch(false)}
-          onSave={(newBatch) => {
-            setBatches(prev => [...prev, newBatch]);
-            setShowNewBatch(false);
-            toast.success(`${newBatch.name} — Batch created!`);
+          onSave={async (newBatch) => {
+            try {
+              const saved = await batchesApi.create({
+                name: newBatch.name,
+                country: newBatch.country || "Japan",
+                level: newBatch.level || "N5",
+                start_date: newBatch.startDate || newBatch.start_date,
+                end_date: newBatch.endDate || newBatch.end_date,
+                capacity: newBatch.capacity || 20,
+                schedule: newBatch.schedule || "",
+                teacher: newBatch.teacher || "",
+                status: "active",
+              });
+              setBatches(prev => [...prev, saved]);
+              setShowNewBatch(false);
+              toast.success(`${newBatch.name} — Batch created!`);
+            } catch (err) {
+              toast.error(err.message || "Batch তৈরি ব্যর্থ");
+            }
           }}
         />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {batches.map((batch, i) => {
-          const bStudents = batchStudents[batch.id] || [];
-          const bAvgAtt = bStudents.length > 0 ? Math.round(bStudents.reduce((s, st) => s + st.attendance, 0) / bStudents.length) : 0;
-          const bPassed = bStudents.filter((s) => s.jlptStatus === "Passed").length;
+          // ── ব্যাচের students: students prop থেকে batch name মিলিয়ে ──
+          const bStudents = (students || []).filter(s => s.batch === batch.name || s.batch_id === batch.id);
+          const bAvgAtt = 0; // attendance API থেকে আসবে
+          const bPassed = bStudents.filter(s => s.status === "EXAM_PASSED").length;
           const countryColor = batch.country === "Japan" ? t.rose : batch.country === "Germany" ? t.amber : t.cyan;
           return (
             <Card key={batch.id} delay={200 + i * 60} className="cursor-pointer group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 !p-0 overflow-hidden">
