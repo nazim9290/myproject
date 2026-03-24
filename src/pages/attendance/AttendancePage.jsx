@@ -1,34 +1,92 @@
 import { useState } from "react";
+import { Save, Download } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { ATT_STATUS, ATTENDANCE_DAY } from "../../data/mockData";
+import Button from "../../components/ui/Button";
+import { ATT_STATUS, ATTENDANCE_DAY, BATCHES } from "../../data/mockData";
 
-export default function AttendancePage() {
+const ATT_CYCLE = ["present", "absent", "late"];
+
+export default function AttendancePage({ students = [] }) {
   const t = useTheme();
-  const [attData, setAttData] = useState(ATTENDANCE_DAY);
-  const [selectedDate] = useState("2026-03-22");
+  const toast = useToast();
+  const today = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedBatch, setSelectedBatch] = useState("all");
+  // attendanceLog: { [date]: { [studentId]: status } }
+  const [attendanceLog, setAttendanceLog] = useState({ "2026-03-22": Object.fromEntries(ATTENDANCE_DAY.map(a => [a.id, a.status])) });
 
-  const present = attData.filter((a) => a.status === "present").length;
-  const absent = attData.filter((a) => a.status === "absent").length;
-  const late = attData.filter((a) => a.status === "late").length;
+  // Students to show: enrolled/in_course students filtered by batch
+  const eligibleStudents = students.filter(s => ["ENROLLED", "IN_COURSE", "EXAM_PASSED", "DOC_COLLECTION", "SCHOOL_INTERVIEW", "DOC_SUBMITTED"].includes(s.status));
+  const batchOptions = ["all", ...new Set(eligibleStudents.map(s => s.batch).filter(Boolean))];
+  const filteredStudents = selectedBatch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.batch === selectedBatch);
 
-  const cycleStatus = (idx) => {
-    const order = ["present", "absent", "late"];
-    const n = [...attData];
-    const cur = order.indexOf(n[idx].status);
-    n[idx] = { ...n[idx], status: order[(cur + 1) % 3] };
-    setAttData(n);
+  // Fallback to mock data if no real students
+  const displayList = filteredStudents.length > 0 ? filteredStudents.map(s => ({ id: s.id, name: s.name_en, batch: s.batch }))
+    : ATTENDANCE_DAY.map(a => ({ id: a.id, name: a.name, batch: "Batch April 2026" }));
+
+  const todayAtt = attendanceLog[selectedDate] || {};
+  const getStatus = (id) => todayAtt[id] || "present";
+  const cycleStatus = (id) => {
+    const cur = ATT_CYCLE.indexOf(getStatus(id));
+    const next = ATT_CYCLE[(cur + 1) % ATT_CYCLE.length];
+    setAttendanceLog(prev => ({ ...prev, [selectedDate]: { ...(prev[selectedDate] || {}), [id]: next } }));
   };
+
+  const present = displayList.filter(s => getStatus(s.id) === "present").length;
+  const absent = displayList.filter(s => getStatus(s.id) === "absent").length;
+  const late = displayList.filter(s => getStatus(s.id) === "late").length;
+
+  const saveAttendance = () => {
+    toast.success(`${selectedDate} — ${displayList.length} জনের উপস্থিতি সংরক্ষণ হয়েছে (উপস্থিত: ${present}, অনুপস্থিত: ${absent}, দেরিতে: ${late})`);
+  };
+
+  const exportAttendance = () => {
+    const rows = displayList.map(s => `"${s.id}","${s.name}","${s.batch || ""}","${getStatus(s.id)}"`);
+    const csv = "ID,নাম,ব্যাচ,স্ট্যাটাস\n" + rows.join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Attendance_${selectedDate}.csv` }).click();
+    toast.exported(`Attendance (${selectedDate})`);
+  };
+
+  const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   return (
     <div className="space-y-5 anim-fade">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold">Attendance</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>দৈনিক উপস্থিতি — {selectedDate}</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>দৈনিক উপস্থিতি ব্যবস্থাপনা</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" icon={Download} size="xs" onClick={exportAttendance}>Export</Button>
+          <Button icon={Save} size="xs" onClick={saveAttendance}>সংরক্ষণ</Button>
         </div>
       </div>
+
+      {/* Date + Batch filter */}
+      <Card delay={0}>
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[150px]">
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
+            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্যাচ</label>
+            <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option value="all">সব ব্যাচ</option>
+              {batchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div className="text-xs pb-2" style={{ color: t.muted }}>
+            মোট: <span className="font-bold" style={{ color: t.text }}>{displayList.length}</span> জন
+          </div>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-3 gap-3">
         {[
@@ -36,7 +94,7 @@ export default function AttendancePage() {
           { label: "অনুপস্থিত", value: absent, color: t.rose, icon: "❌" },
           { label: "দেরিতে", value: late, color: t.amber, icon: "⏰" },
         ].map((kpi, i) => (
-          <Card key={i} delay={i * 50}>
+          <Card key={i} delay={i * 40}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
@@ -50,29 +108,37 @@ export default function AttendancePage() {
 
       <Card delay={150}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold">Batch April 2026 — {selectedDate}</h3>
-          <p className="text-xs" style={{ color: t.muted }}>ক্লিক করে status পরিবর্তন করুন</p>
+          <h3 className="text-sm font-semibold">উপস্থিতি — {selectedDate}</h3>
+          <p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে status পরিবর্তন করুন</p>
         </div>
-        <div className="space-y-1.5">
-          {attData.map((att, idx) => {
-            const st = ATT_STATUS[att.status];
-            return (
-              <button key={idx} onClick={() => cycleStatus(idx)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg transition text-left"
-                style={{ background: `${st.color}06`, border: `1px solid ${st.color}15` }}>
-                <span className="text-base">{st.icon}</span>
-                <div className="flex-1">
-                  <p className="text-xs font-medium">{att.name}</p>
-                  <p className="text-[10px]" style={{ color: t.muted }}>{att.id}</p>
-                </div>
-                <Badge color={st.color} size="xs">{st.label}</Badge>
-              </button>
-            );
-          })}
+        {displayList.length === 0 ? (
+          <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই — ব্যাচ পরিবর্তন করুন</p>
+        ) : (
+          <div className="space-y-1.5">
+            {displayList.map((student) => {
+              const status = getStatus(student.id);
+              const st = ATT_STATUS[status];
+              return (
+                <button key={student.id} onClick={() => cycleStatus(student.id)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg transition text-left"
+                  style={{ background: `${st.color}06`, border: `1px solid ${st.color}20` }}>
+                  <span className="text-base shrink-0">{st.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">{student.name}</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>{student.id}{student.batch ? ` • ${student.batch}` : ""}</p>
+                  </div>
+                  <Badge color={st.color} size="xs">{st.label}</Badge>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="flex justify-end mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+          <Button icon={Save} size="xs" onClick={saveAttendance}>সংরক্ষণ করুন</Button>
         </div>
       </Card>
 
-      <Card delay={200}>
+      <Card delay={250}>
         <h3 className="text-sm font-semibold mb-3">সাপ্তাহিক সারাংশ</h3>
         <div className="flex gap-2">
           {["Sun", "Mon", "Tue", "Wed", "Thu"].map((day, i) => {

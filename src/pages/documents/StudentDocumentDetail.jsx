@@ -8,12 +8,27 @@ import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { DOC_TYPES, DOC_STATUS_CONFIG } from "../../data/mockData";
 
 const STATUS_CYCLE = ["not_submitted", "submitted", "verified", "issue"];
+const CROSS_FIELDS = ["name_en", "father_en", "mother_en", "dob", "permanent_address"];
+
+const computeMismatches = (docsArr) => {
+  const result = [];
+  for (const field of CROSS_FIELDS) {
+    const docsWithField = docsArr.filter(d => d.data && d.data[field] && String(d.data[field]).trim());
+    if (docsWithField.length < 2) continue;
+    const values = docsWithField.map(d => String(d.data[field]).trim());
+    if (new Set(values).size > 1) {
+      result.push({ field, severity: "error", docs: docsWithField.map(d => d.docId), values });
+    }
+  }
+  return result;
+};
 
 export default function StudentDocumentDetail({ student, studentDocs, onBack, onUpdate }) {
   const t = useTheme();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState("checklist");
   const [docs, setDocs] = useState(studentDocs.docs);
+  const [mismatches, setMismatches] = useState(() => computeMismatches(studentDocs.docs));
   const [expandedDoc, setExpandedDoc] = useState(null); // docId being edited
   const [dataForms, setDataForms] = useState({});
 
@@ -36,9 +51,13 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
 
   const saveDocData = (docId) => {
     const form = dataForms[docId] || {};
-    setDocs(prev => prev.map(d => d.docId === docId ? { ...d, data: { ...d.data, ...form } } : d));
+    const newDocs = docs.map(d => d.docId === docId ? { ...d, data: { ...d.data, ...form } } : d);
+    setDocs(newDocs);
+    const newMismatches = computeMismatches(newDocs);
+    setMismatches(newMismatches);
     setExpandedDoc(null);
-    toast.success("ডকুমেন্ট তথ্য সংরক্ষণ হয়েছে");
+    const mismatchMsg = newMismatches.length > 0 ? ` • ${newMismatches.length}টি mismatch পাওয়া গেছে` : " • সব তথ্য মিলে গেছে ✓";
+    toast.success("ডকুমেন্ট তথ্য সংরক্ষণ হয়েছে" + mismatchMsg);
   };
 
   const sf = (docId, key, val) => setDataForms(p => ({ ...p, [docId]: { ...(p[docId] || {}), [key]: val } }));
@@ -89,7 +108,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
           { key: "checklist", label: "📄 Document Checklist", count: total },
-          { key: "validation", label: "🔍 Cross-Validation", count: studentDocs.mismatches.length },
+          { key: "validation", label: "🔍 Cross-Validation", count: mismatches.length },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -112,7 +131,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
           {docs.map((doc, i) => {
             const docType = DOC_TYPES.find(dt => dt.id === doc.docId);
             const statusConf = DOC_STATUS_CONFIG[doc.status];
-            const hasMismatch = studentDocs.mismatches.some(m => m.docs.includes(doc.docId));
+            const hasMismatch = mismatches.some(m => m.docs.includes(doc.docId));
             const isExpanded = expandedDoc === doc.docId;
             const form = dataForms[doc.docId] || {};
             return (
@@ -136,7 +155,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                     {doc.data && Object.keys(doc.data).length > 0 && (
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                         {Object.entries(doc.data).map(([key, val]) => {
-                          const mm = studentDocs.mismatches.some(m => m.field === key && m.docs.includes(doc.docId));
+                          const mm = mismatches.some(m => m.field === key && m.docs.includes(doc.docId));
                           const labels = { name_en: "নাম", father_en: "পিতা", mother_en: "মাতা", dob: "জন্ম", permanent_address: "ঠিকানা" };
                           return (
                             <span key={key} className="text-[10px]" style={{ color: mm ? t.rose : t.textSecondary }}>
@@ -193,7 +212,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
 
       {activeTab === "validation" && (
         <div className="space-y-3">
-          {studentDocs.mismatches.length === 0 ? (
+          {mismatches.length === 0 ? (
             <Card delay={0}>
               <div className="flex flex-col items-center py-10">
                 <CheckCircle size={40} style={{ color: t.emerald }} strokeWidth={1.2} />
@@ -202,7 +221,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
               </div>
             </Card>
           ) : (
-            studentDocs.mismatches.map((m, i) => (
+            mismatches.map((m, i) => (
               <Card key={i} delay={i * 60}>
                 <div className="flex items-start gap-3">
                   <div className="text-lg mt-0.5">{m.severity === "error" ? "🔴" : "🟡"}</div>

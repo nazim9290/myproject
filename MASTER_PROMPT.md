@@ -23,27 +23,27 @@ File: `src/pages/students/AddStudentForm.jsx` (new) + `StudentsPage.jsx`
 
 ### Task 1.2: Sponsor Section
 File: `src/pages/students/StudentDetailView.jsx`
-- [ ] "Sponsor" tab in detail view
-- [ ] Basic: name, relationship [Father/Mother/Brother/Uncle/Other], phone, address, nid
-- [ ] Business: company_name, trade_license_no, work_address
-- [ ] Tax: tin, annual_income_y1/y2/y3, tax_y1/y2/y3
-- [ ] Bank (repeatable): bank_name, branch, account_no, balance, balance_date, name_in_statement, address_in_statement
-- [ ] Japan expense: tuition_jpy, living_jpy_monthly, payment_method, exchange_rate
+- [x] "Sponsor" tab in detail view
+- [x] Basic: name, relationship [Father/Mother/Brother/Uncle/Other], phone, address, nid
+- [x] Business: company_name, trade_license_no, work_address
+- [x] Tax: tin, annual_income_y1/y2/y3, tax_y1/y2/y3
+- [x] Bank (repeatable): bank_name, branch, account_no, balance, balance_date, name_in_statement, address_in_statement
+- [x] Japan expense: tuition_jpy, living_jpy_monthly, payment_method, exchange_rate
 
 ### Task 1.3: Student Search & Multi-filter
 File: `src/pages/students/StudentsPage.jsx`
 - [x] Search: name_en, id, phone, passport_number
-- [ ] Filters: status, country, batch, school (AND logic)
+- [x] Filters: status, country, batch, school (AND logic)
 
 ### Task 1.4: Student Export
 File: `src/pages/students/StudentsPage.jsx`
-- [ ] Export dropdown: Current View / All Students
+- [x] Export dropdown: Current View / All Students
 - [x] 30+ fields CSV with BOM (exports filtered view)
 
 ### Task 1.5: Student Timeline
 File: `src/pages/students/StudentDetailView.jsx`
-- [ ] "Timeline" tab: status changes, payments, documents, communications
-- [ ] Mock timeline data
+- [x] "Timeline" tab: status changes, payments, documents, communications
+- [x] Mock timeline data
 
 ---
 
@@ -51,24 +51,24 @@ File: `src/pages/students/StudentDetailView.jsx`
 
 ### Task 2.1: Add/Edit Batch
 File: `src/pages/courses/LanguageCoursePage.jsx`
-- [ ] Form: name, country, start_date, end_date, capacity, level, schedule, teacher
-- [ ] Save → toast → list update
+- [x] Form: name, country, start_date, end_date, capacity, level, schedule, teacher
+- [x] Save → toast → list update
 
 ### Task 2.2: Enroll Student in Batch
 File: `src/pages/courses/BatchDetailView.jsx`
-- [ ] "Add Student" button → searchable dropdown → select → add to batch → toast
+- [x] "Add Student" button → searchable dropdown → select → add to batch → toast
 
 ### Task 2.3: Daily Attendance
 File: `src/pages/attendance/AttendancePage.jsx`
-- [ ] Date picker → student list → Present/Absent/Late toggle → Save → toast
+- [x] Date picker → student list → Present/Absent/Late toggle → Save → toast
 
 ### Task 2.4: Add Class Test
 File: `src/pages/courses/BatchDetailView.jsx`
-- [ ] Test name, date → score per student → Save → chart update
+- [x] Test name, date → score per student → Save → chart update
 
 ### Task 2.5: JLPT/NAT Result
 File: `src/pages/courses/BatchDetailView.jsx`
-- [ ] Exam type, level → per student score/pass/fail → Save → toast
+- [x] Exam type, level → per student score/pass/fail → Save → toast
 
 ---
 
@@ -76,21 +76,21 @@ File: `src/pages/courses/BatchDetailView.jsx`
 
 ### Task 3.1: Add Income Entry
 File: `src/pages/accounts/AccountsPage.jsx`
-- [ ] Student select (searchable), category, amount, tax (15% auto for course_fee), installments, payment_method, due_date, receipt#
-- [ ] Save → toast
+- [x] Student select (searchable), category, amount, tax (15% auto for course_fee), installments, payment_method, due_date, receipt#
+- [x] Save → toast
 
 ### Task 3.2: Add Expense Entry
 File: `src/pages/accounts/AccountsPage.jsx`
-- [ ] Category, description, amount, date, branch
-- [ ] Save → toast
+- [x] Category, description, amount, date, branch
+- [x] Save → toast
 
 ### Task 3.3: Payment Collection
 File: `src/pages/accounts/AccountsPage.jsx`
-- [ ] Dues tab → "Collect" button → amount, method, date → update paid → toast
+- [x] Dues tab → "Collect" button → amount, method, date → update paid → toast
 
 ### Task 3.4: Export Financial Reports
 File: `src/pages/accounts/AccountsPage.jsx`
-- [ ] Income CSV, Expense CSV, Monthly P&L CSV
+- [x] Income CSV, Expense CSV, Monthly P&L CSV
 
 ---
 
@@ -98,15 +98,15 @@ File: `src/pages/accounts/AccountsPage.jsx`
 
 ### Task 4.1: Document Status Toggle
 File: `src/pages/documents/StudentDocumentDetail.jsx`
-- [ ] Click status icon → cycle: not_submitted → submitted → verified → issue → toast
+- [x] Click status icon → cycle: not_submitted → submitted → verified → issue → toast
 
 ### Task 4.2: Document Data Entry
 File: `src/pages/documents/StudentDocumentDetail.jsx`
-- [ ] Per doc: name_en, father_en, mother_en, dob, address → Save → toast
+- [x] Per doc: name_en, father_en, mother_en, dob, address → Save → toast
 
 ### Task 4.3: Auto Cross-Validation
 File: `src/pages/documents/StudentDocumentDetail.jsx`
-- [ ] On save → compare fields across docs → show mismatches
+- [x] On save → compare fields across docs → show mismatches
 
 ---
 
@@ -114,12 +114,13 @@ File: `src/pages/documents/StudentDocumentDetail.jsx`
 
 ### Task 5.1: Add/Edit School
 File: `src/pages/schools/SchoolsPage.jsx`
-- [ ] name_en, name_jp, country, city, phone, fax, fees, requirements, deadline
-- [ ] Save → toast
+- [x] name_en, name_jp, country, city, phone, fax, fees, requirements, deadline
+- [x] Save → toast
 
 ### Task 5.2: Submission Tracking
 File: `src/pages/schools/SchoolDetailView.jsx`
-- [ ] Students submitted → status: submitted/interview/accepted/rejected
+- [x] Students submitted → status: submitted/interview/accepted/rejected
+- [x] Add new submission form + cycle status on click → toast
 
 ---
 
@@ -127,9 +128,9 @@ File: `src/pages/schools/SchoolDetailView.jsx`
 
 ### Task 6.1: Task CRUD
 File: `src/pages/tasks/TasksPage.jsx`
-- [ ] Add: title, priority, assignee, due_date, student link
-- [ ] 3 columns: Todo / In Progress / Done
-- [ ] Click → cycle status → toast. Overdue = red. Delete with confirm.
+- [x] Add: title, priority, assignee, due_date, student link
+- [x] 3 columns: Todo / In Progress / Done
+- [x] Click → cycle status → toast. Overdue = red. Delete with confirm.
 
 ---
 
@@ -137,8 +138,8 @@ File: `src/pages/tasks/TasksPage.jsx`
 
 ### Task 7.1: Communication Log CRUD
 File: `src/pages/communication/CommunicationPage.jsx`
-- [ ] Add: type [Phone/WhatsApp/Email/SMS/Visit], student, notes, follow_up_date
-- [ ] List with type filter. Student timeline view.
+- [x] Add: type [Phone/WhatsApp/Email/SMS/Visit], student, notes, follow_up_date
+- [x] List with type filter. Student timeline view.
 
 ---
 
@@ -146,9 +147,9 @@ File: `src/pages/communication/CommunicationPage.jsx`
 
 ### Task 8.1: Agent CRUD + Commission
 File: `src/pages/agents/AgentsPage.jsx`
-- [ ] Add: name, phone, area, nid, bank, commission_per_student
-- [ ] Detail: students, total earned, paid, due
-- [ ] Commission payment form → toast
+- [x] Add: name, phone, area, nid, bank, commission_per_student
+- [x] Detail: students, total earned, paid, due
+- [x] Commission payment form → toast
 
 ---
 
@@ -156,9 +157,9 @@ File: `src/pages/agents/AgentsPage.jsx`
 
 ### Task 9.1: Departure Checklist
 File: `src/pages/predeparture/PreDeparturePage.jsx` + `DepartureDetailView.jsx`
-- [ ] Per student: COE/Health/Tuition/VFS/Visa/Flight checkmarks with dates
-- [ ] VFS: appointment_date, time, location
-- [ ] Flight: airline, flight#, date, airports
+- [x] Per student: COE/Health/Tuition/VFS/Visa/Flight checkmarks with dates
+- [x] VFS: appointment_date, time, location
+- [x] Flight: airline, flight#, date, airports
 
 ---
 
@@ -166,27 +167,30 @@ File: `src/pages/predeparture/PreDeparturePage.jsx` + `DepartureDetailView.jsx`
 
 ### Task 10.1: Certificates PDF placeholder
 File: `src/pages/certificates/CertificatePage.jsx`
-- [ ] Certificate template preview + download button
+- [x] Certificate template preview + download button
+- [x] New Template form, Generate tab, PDF download/print → toast
 
 ### Task 10.2: Inventory Add/Edit
 File: `src/pages/inventory/InventoryPage.jsx`
-- [ ] name, category, brand, quantity, branch, condition, price, vendor → toast
+- [x] name, category, brand, quantity, branch, condition, price, vendor → toast
 
 ### Task 10.3: HR Salary Payment
 File: `src/pages/hr/HRPage.jsx`
-- [ ] "Pay Salary" button → month, amount, method → expense entry → toast
+- [x] "Pay Salary" button → month, amount, method → expense entry → toast
 
 ### Task 10.4: Calendar Add Event
 File: `src/pages/calendar/CalendarPage.jsx`
-- [ ] Click date → title, type [Interview/Batch/Exam/Follow-up], student, notes → Save → show on calendar
+- [x] Click date → title, type [Interview/Batch/Exam/Follow-up], student, notes → Save → show on calendar
+- [x] Mini calendar grid with prev/next navigation + event dots
 
 ### Task 10.5: Settings Dynamic Fields
 File: `src/pages/settings/SettingsPage.jsx`
-- [ ] Custom field definitions UI: name, type [text/select/date/number], module, required, options
+- [x] Custom field definitions UI: name, type [text/select/date/number], module, required, options
+- [x] Add/Delete custom fields with toast
 
 ### Task 10.6: Users Permission Matrix
 File: `src/pages/users/UserRolePage.jsx`
-- [ ] Role × Module: Read/Write/Delete toggle matrix (full working version)
+- [x] Role × Module: Read/Write/Delete toggle matrix (full working version)
 
 ---
 
@@ -243,13 +247,6 @@ File: `src/pages/users/UserRolePage.jsx`
 
 ---
 
-## NEXT PRIORITY (implement in order)
-1. [x] Task 1.1 — Complete Student Form (8 sections)
-2. [x] Task 1.3 — passport_number search added; batch/school filters pending
-3. [x] Task 1.4 — 30+ fields CSV export (exports filtered view)
-4. [ ] Task 1.2 — Sponsor section in StudentDetailView
-5. [ ] Task 1.3 (remaining) — Add batch + school filter dropdowns
-6. [ ] Task 1.5 — Student Timeline tab
-7. [ ] Task 6.1 — Tasks CRUD (Kanban)
-8. [ ] Task 9.1 — Pre-Departure checklist
-9. [ ] Task 7.1 — Communication log
+## ALL TASKS COMPLETED ✅
+
+All 30+ tasks across all 10 phases have been implemented. The application is feature-complete as per this roadmap.

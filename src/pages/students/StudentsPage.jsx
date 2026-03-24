@@ -23,6 +23,7 @@ export default function StudentsPage({ students, setStudents }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const selectedStudent = selectedId ? students.find((s) => s.id === selectedId) : null;
 
@@ -76,51 +77,47 @@ export default function StudentsPage({ students, setStudents }) {
           <h2 className="text-xl font-bold">Students</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>Student Pipeline Management</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="xs" icon={Download} onClick={() => {
-            const cols = [
-              { h: "ID", k: "id" },
-              { h: "Name (EN)", k: "name_en" },
-              { h: "Name (BN)", k: "name_bn" },
-              { h: "Name (Katakana)", k: "name_katakana" },
-              { h: "Phone", k: "phone" },
-              { h: "WhatsApp", k: "whatsapp" },
-              { h: "Email", k: "email" },
-              { h: "DOB", k: "dob" },
-              { h: "Gender", k: "gender" },
-              { h: "Marital Status", k: "marital_status" },
-              { h: "Nationality", k: "nationality" },
-              { h: "NID", k: "nid" },
-              { h: "Passport No", k: "passport_number" },
-              { h: "Passport Issue", k: "passport_issue" },
-              { h: "Passport Expiry", k: "passport_expiry" },
-              { h: "Permanent Address", k: "permanent_address" },
-              { h: "Current Address", k: "current_address" },
-              { h: "Visa Type", k: "visa_type" },
-              { h: "Country", k: "country" },
-              { h: "School", k: "school" },
-              { h: "Batch", k: "batch" },
-              { h: "Intake", k: "intake" },
-              { h: "Agent", k: "agent" },
-              { h: "Source", k: "source" },
-              { h: "Counselor", k: "counselor" },
-              { h: "Type", k: "type" },
-              { h: "Branch", k: "branch" },
-              { h: "Google Drive", k: "gdrive_folder_url" },
-              { h: "Status", k: "status" },
-              { h: "Created", k: "created" },
-              { h: "Notes", k: "internal_notes" },
-            ];
-            const header = cols.map(c => c.h).join(",");
-            const rows = filtered.map(s => cols.map(c => {
-              const v = String(s[c.k] ?? "").replace(/"/g, '""');
-              return `"${v}"`;
-            }).join(","));
-            const csv = header + "\n" + rows.join("\n");
-            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-            Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Students_${new Date().toISOString().slice(0,10)}.csv` }).click();
-            toast.exported(`Students (${filtered.length} records)`);
-          }}>Export</Button>
+        <div className="flex gap-2 relative">
+          <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExportMenu(p => !p)}>Export</Button>
+          {showExportMenu && (
+            <div className="absolute right-0 top-8 z-50 rounded-xl shadow-lg min-w-[200px] overflow-hidden"
+              style={{ background: t.card, border: `1px solid ${t.border}` }}>
+              {[
+                { label: `📋 Current View (${filtered.length} জন)`, data: filtered },
+                { label: `📦 All Students (${students.length} জন)`, data: students },
+              ].map((opt) => (
+                <button key={opt.label} className="w-full text-left px-4 py-2.5 text-xs transition"
+                  style={{ color: t.text }}
+                  onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  onClick={() => {
+                    const cols = [
+                      { h: "ID", k: "id" }, { h: "Name (EN)", k: "name_en" }, { h: "Name (BN)", k: "name_bn" },
+                      { h: "Name (Katakana)", k: "name_katakana" }, { h: "Phone", k: "phone" }, { h: "WhatsApp", k: "whatsapp" },
+                      { h: "Email", k: "email" }, { h: "DOB", k: "dob" }, { h: "Gender", k: "gender" },
+                      { h: "Marital Status", k: "marital_status" }, { h: "Nationality", k: "nationality" },
+                      { h: "NID", k: "nid" }, { h: "Passport No", k: "passport_number" },
+                      { h: "Passport Issue", k: "passport_issue" }, { h: "Passport Expiry", k: "passport_expiry" },
+                      { h: "Permanent Address", k: "permanent_address" }, { h: "Current Address", k: "current_address" },
+                      { h: "Visa Type", k: "visa_type" }, { h: "Country", k: "country" }, { h: "School", k: "school" },
+                      { h: "Batch", k: "batch" }, { h: "Intake", k: "intake" }, { h: "Agent", k: "agent" },
+                      { h: "Source", k: "source" }, { h: "Counselor", k: "counselor" }, { h: "Type", k: "type" },
+                      { h: "Branch", k: "branch" }, { h: "Google Drive", k: "gdrive_folder_url" },
+                      { h: "Status", k: "status" }, { h: "Created", k: "created" }, { h: "Notes", k: "internal_notes" },
+                    ];
+                    const csv = cols.map(c => c.h).join(",") + "\n" +
+                      opt.data.map(s => cols.map(c => `"${String(s[c.k] ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+                    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+                    Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Students_${new Date().toISOString().slice(0,10)}.csv` }).click();
+                    toast.exported(`Students (${opt.data.length} records)`);
+                    setShowExportMenu(false);
+                  }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <Button icon={Plus} onClick={() => setShowAddForm(true)}>Add Student</Button>
         </div>
       </div>
