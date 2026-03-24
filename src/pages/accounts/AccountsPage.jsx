@@ -6,7 +6,8 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { INCOME_DATA, EXPENSE_DATA, MONTHLY_REVENUE, CATEGORY_CONFIG, FEE_CATEGORIES } from "../../data/mockData";
+import { CATEGORY_CONFIG, FEE_CATEGORIES } from "../../data/mockData";
+import { api } from "../../hooks/useAPI";
 
 const INCOME_CATS = ["course_fee", "doc_processing", "service_charge", "partner_service"];
 const EXPENSE_CATS = ["salary", "rent", "marketing", "agent_fee", "utility", "office_supply", "misc"];
@@ -128,13 +129,17 @@ export default function AccountsPage({ students = [] }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddForm, setShowAddForm] = useState(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [incomeData, setIncomeData] = useState(INCOME_DATA);
-  const [expenseData, setExpenseData] = useState(EXPENSE_DATA);
+  const [incomeData, setIncomeData] = useState([]);
+  const [expenseData, setExpenseData] = useState([]);
 
+  // ── Backend থেকে payments ও expenses load ──
   useEffect(() => {
-    const { api } = require("../../hooks/useAPI");
-    api.get("/accounts/payments").then(data => { if (Array.isArray(data) && data.length > 0) setIncomeData(data.map(p => ({ ...p, studentName: p.students?.name_en || p.student_id, status: p.status === "paid" ? "collected" : p.status }))); }).catch(() => {});
-    api.get("/accounts/expenses").then(data => { if (Array.isArray(data) && data.length > 0) setExpenseData(data); }).catch(() => {});
+    api.get("/accounts/payments").then(data => {
+      if (Array.isArray(data)) setIncomeData(data.map(p => ({ ...p, studentName: p.students?.name_en || p.student_id, status: p.status === "paid" ? "collected" : p.status })));
+    }).catch(() => {});
+    api.get("/accounts/expenses").then(data => {
+      if (Array.isArray(data)) setExpenseData(data);
+    }).catch(() => {});
   }, []);
 
   // ── Derive student fee data from students prop ──

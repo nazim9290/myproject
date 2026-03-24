@@ -5,16 +5,18 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { AGENTS_DATA } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 export default function AgentsPage() {
   const t = useTheme();
   const toast = useToast();
-  const [agents, setAgents] = useState(AGENTS_DATA);
+  const [agents, setAgents] = useState([]);
 
+  // ── Backend থেকে agents load ──
   useEffect(() => {
-    api.get("/agents").then(data => { if (Array.isArray(data) && data.length > 0) setAgents(data.map(a => ({ ...a, students: a.students || [], commissionPerStudent: a.commission_per_student || 0 }))); }).catch(() => {});
+    api.get("/agents").then(data => {
+      if (Array.isArray(data)) setAgents(data.map(a => ({ ...a, students: a.students || [], commissionPerStudent: a.commission_per_student || 0 })));
+    }).catch(() => {});
   }, []);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });

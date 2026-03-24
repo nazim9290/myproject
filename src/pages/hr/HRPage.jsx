@@ -5,21 +5,22 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { EMPLOYEES, SALARY_HISTORY, INITIAL_BRANCHES, ALL_ROLES } from "../../data/mockData";
+import { INITIAL_BRANCHES, ALL_ROLES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 export default function HRPage() {
   const t = useTheme();
   const toast = useToast();
-  const [employees, setEmployees] = useState(EMPLOYEES);
+  const [employees, setEmployees] = useState([]);
   const [activeTab, setActiveTab] = useState("employees");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEmp, setNewEmp] = useState({ name: "", role: "", branch: "", salary: "", phone: "", email: "" });
-  const [salaryHistory, setSalaryHistory] = useState(SALARY_HISTORY || []);
+  const [salaryHistory, setSalaryHistory] = useState([]);
 
+  // ── Backend থেকে employees ও salary history load ──
   useEffect(() => {
-    api.get("/hr/employees").then(data => { if (Array.isArray(data) && data.length > 0) setEmployees(data); }).catch(() => {});
-    api.get("/hr/salary").then(data => { if (Array.isArray(data) && data.length > 0) setSalaryHistory(data); }).catch(() => {});
+    api.get("/hr/employees").then(data => { if (Array.isArray(data)) setEmployees(data); }).catch(() => {});
+    api.get("/hr/salary").then(data => { if (Array.isArray(data)) setSalaryHistory(data); }).catch(() => {});
   }, []);
   const [payingEmpId, setPayingEmpId] = useState(null);
   const [payForm, setPayForm] = useState({ month: "", amount: "", method: "Bank Transfer", note: "" });

@@ -6,16 +6,17 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
-import { INITIAL_INVENTORY, CONSUMABLE_ITEMS, INVENTORY_CATEGORIES, CONDITION_OPTIONS } from "../../data/mockData";
+import { INVENTORY_CATEGORIES, CONDITION_OPTIONS } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 export default function InventoryPage() {
   const t = useTheme();
   const toast = useToast();
-  const [items, setItems] = useState(INITIAL_INVENTORY);
+  const [items, setItems] = useState([]);
 
+  // ── Backend থেকে inventory items load ──
   useEffect(() => {
-    api.get("/inventory").then(data => { if (Array.isArray(data) && data.length > 0) setItems(data); }).catch(() => {});
+    api.get("/inventory").then(data => { if (Array.isArray(data)) setItems(data); }).catch(() => {});
   }, []);
   const [consumables] = useState(CONSUMABLE_ITEMS);
   const [activeTab, setActiveTab] = useState("assets");

@@ -5,16 +5,19 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { CALENDAR_EVENTS, EVENT_TYPES } from "../../data/mockData";
+import { EVENT_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 export default function CalendarPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
-  const [events, setEvents] = useState(CALENDAR_EVENTS);
+  const [events, setEvents] = useState([]);
 
+  // ── Backend থেকে calendar events load ──
   useEffect(() => {
-    api.get("/calendar").then(data => { if (Array.isArray(data) && data.length > 0) setEvents(data.map(e => ({ ...e, time: e.time || "", staff: "" }))); }).catch(() => {});
+    api.get("/calendar").then(data => {
+      if (Array.isArray(data)) setEvents(data.map(e => ({ ...e, time: e.time || "", staff: "" })));
+    }).catch(() => {});
   }, []);
   const [filterType, setFilterType] = useState("all");
   const [showForm, setShowForm] = useState(false);

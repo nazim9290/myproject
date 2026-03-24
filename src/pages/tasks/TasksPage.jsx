@@ -5,7 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { TASKS_DATA, PRIORITY_CONFIG, TASK_STATUS_CONFIG } from "../../data/mockData";
+import { PRIORITY_CONFIG, TASK_STATUS_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 const COLUMNS = [
@@ -17,11 +17,17 @@ const COLUMNS = [
 export default function TasksPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
-  const [tasks, setTasks] = useState(TASKS_DATA);
+  const [tasks, setTasks] = useState([]);
 
+  // ── Backend থেকে tasks load ──
   useEffect(() => {
     api.get("/tasks").then(data => {
-      if (Array.isArray(data) && data.length > 0) setTasks(data.map(tk => ({ ...tk, status: tk.status === "pending" ? "todo" : tk.status === "completed" ? "done" : tk.status })));
+      if (Array.isArray(data)) setTasks(data.map(tk => ({
+        ...tk,
+        status: tk.status === "pending" ? "todo" : tk.status === "completed" ? "done" : tk.status,
+        dueDate: tk.due_date || tk.dueDate,
+        studentName: tk.students?.name_en || "",
+      })));
     }).catch(() => {});
   }, []);
   const [showAddForm, setShowAddForm] = useState(false);

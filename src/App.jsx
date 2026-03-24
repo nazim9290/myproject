@@ -10,10 +10,8 @@ import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle } from "./context/Th
 import { ToastProvider } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NAV_ITEMS } from "./data/mockData";
-import { INITIAL_STUDENTS } from "./data/students";
-import { INITIAL_VISITORS } from "./data/visitors";
 import { students as studentsApi, visitors as visitorsApi } from "./lib/api";
-import { useAPI, api } from "./hooks/useAPI";
+import { api } from "./hooks/useAPI";
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -403,19 +401,18 @@ function AppShell({ isDark, setIsDark }) {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // Load data from API when authenticated
+  // ── Backend API থেকে সব data load করো ──
   const loadAllData = async () => {
     try {
       const [studRes, visRes] = await Promise.all([
         studentsApi.list({ limit: 500 }),
         visitorsApi.list({ limit: 500 }),
       ]);
+      // students/visitors API response: { data: [...] } format
       setStudents(Array.isArray(studRes) ? studRes : studRes.data || []);
       setVisitors(Array.isArray(visRes) ? visRes : visRes.data || []);
-    } catch {
-      // API unavailable — use mock fallback
-      if (students.length === 0) setStudents(INITIAL_STUDENTS);
-      if (visitors.length === 0) setVisitors(INITIAL_VISITORS);
+    } catch (err) {
+      console.log("API থেকে data load ব্যর্থ:", err.message);
     }
     setDataLoaded(true);
   };

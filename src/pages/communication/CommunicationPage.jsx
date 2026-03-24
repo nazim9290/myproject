@@ -7,7 +7,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
-import { COMM_LOGS, COMM_TYPES } from "../../data/mockData";
+import { COMM_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 const BLANK = { studentId: "", type: "phone", direction: "outbound", notes: "", follow_up_date: "", user: "Mina" };
@@ -15,11 +15,12 @@ const BLANK = { studentId: "", type: "phone", direction: "outbound", notes: "", 
 export default function CommunicationPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
-  const [logs, setLogs] = useState(COMM_LOGS);
+  const [logs, setLogs] = useState([]);
 
+  // ── Backend থেকে communication logs load ──
   useEffect(() => {
     api.get("/communications").then(data => {
-      if (Array.isArray(data) && data.length > 0) setLogs(data.map(c => ({
+      if (Array.isArray(data)) setLogs(data.map(c => ({
         id: c.id, studentId: c.student_id, studentName: c.students?.name_en || "", type: c.type, direction: c.direction,
         notes: c.notes, follow_up_date: c.follow_up_date, date: c.created_at?.slice(0, 10), user: "Staff"
       })));
