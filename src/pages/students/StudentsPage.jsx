@@ -9,8 +9,9 @@ import { PIPELINE_STATUSES } from "../../data/students";
 import Pagination from "../../components/ui/Pagination";
 import StudentDetailView from "./StudentDetailView";
 import AddStudentForm from "./AddStudentForm";
+import { api } from "../../hooks/useAPI";
 
-export default function StudentsPage({ students, setStudents }) {
+export default function StudentsPage({ students, setStudents, reloadData }) {
   const t = useTheme();
   const toast = useToast();
   const [selectedId, setSelectedId] = useState(null);
@@ -32,11 +33,13 @@ export default function StudentsPage({ students, setStudents }) {
       <StudentDetailView
         student={selectedStudent}
         onBack={() => setSelectedId(null)}
-        onUpdate={(updated) => {
+        onUpdate={async (updated) => {
+          try { await api.patch(`/students/${updated.id}`, updated); } catch {}
           setStudents(students.map((s) => s.id === updated.id ? updated : s));
           toast.updated("Student");
         }}
-        onDelete={(id) => {
+        onDelete={async (id) => {
+          try { await api.del(`/students/${id}`); } catch {}
           setStudents(students.filter((s) => s.id !== id));
           setSelectedId(null);
           toast.deleted("Student");
@@ -140,8 +143,13 @@ export default function StudentsPage({ students, setStudents }) {
         <AddStudentForm
           studentsCount={students.length}
           onCancel={() => setShowAddForm(false)}
-          onSave={(newStudent) => {
-            setStudents(prev => [newStudent, ...prev]);
+          onSave={async (newStudent) => {
+            try {
+              const saved = await api.post("/students", newStudent);
+              setStudents(prev => [saved, ...prev]);
+            } catch {
+              setStudents(prev => [newStudent, ...prev]);
+            }
             setShowAddForm(false);
             toast.success(`${newStudent.name_en} — Student added!`);
           }}

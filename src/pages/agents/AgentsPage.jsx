@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, DollarSign, Save, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -6,11 +6,16 @@ import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { AGENTS_DATA } from "../../data/mockData";
+import { api } from "../../hooks/useAPI";
 
 export default function AgentsPage() {
   const t = useTheme();
   const toast = useToast();
   const [agents, setAgents] = useState(AGENTS_DATA);
+
+  useEffect(() => {
+    api.get("/agents").then(data => { if (Array.isArray(data) && data.length > 0) setAgents(data.map(a => ({ ...a, students: a.students || [], commissionPerStudent: a.commission_per_student || 0 }))); }).catch(() => {});
+  }, []);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
   const [payingAgentId, setPayingAgentId] = useState(null);
@@ -58,9 +63,11 @@ export default function AgentsPage() {
             <h3 className="text-sm font-bold">নতুন Agent যোগ করুন</h3>
             <div className="flex gap-2">
               <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
-              <Button icon={Save} size="xs" onClick={() => {
+              <Button icon={Save} size="xs" onClick={async () => {
                 if (!form.name.trim() || !form.phone.trim()) { toast.error("নাম ও ফোন দিন"); return; }
-                setAgents(prev => [...prev, { id: `AG-${Date.now()}`, ...form, commissionPerStudent: parseInt(form.commissionPerStudent) || 10000, status: "active", students: [], commissionPaid: 0 }]);
+                const newAgent = { name: form.name, phone: form.phone, area: form.area, nid: form.nid, bank_name: form.bank, commission_per_student: parseInt(form.commissionPerStudent) || 10000, status: "active" };
+                try { const saved = await api.post("/agents", newAgent); setAgents(prev => [...prev, { ...saved, students: [], commissionPerStudent: saved.commission_per_student }]); }
+                catch { setAgents(prev => [...prev, { id: `AG-${Date.now()}`, ...form, commissionPerStudent: parseInt(form.commissionPerStudent) || 10000, status: "active", students: [] }]); }
                 setForm({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
                 setShowForm(false);
                 toast.success("Agent যোগ হয়েছে!");

@@ -7,6 +7,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { INITIAL_BRANCHES, AGENTS_DATA } from "../../data/mockData";
 import Pagination from "../../components/ui/Pagination";
+import { api } from "../../hooks/useAPI";
 
 function NewVisitorForm({ onSave, onCancel }) {
   const t = useTheme();
@@ -192,7 +193,7 @@ function NewVisitorForm({ onSave, onCancel }) {
   );
 }
 
-export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent }) {
+export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent, reloadData }) {
   const t = useTheme();
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
@@ -247,7 +248,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const needFU = nonEnrolled.filter(v => (v.status==="Interested"||v.status==="Thinking") && daysDiff(v.lastFollowUp||v.date) > 3).length;
 
   // === ACTIONS ===
-  const updateVisitor = (id, updates) => {
+  const updateVisitor = async (id, updates) => {
+    try { await api.patch(`/visitors/${id}`, updates); } catch {}
     setVisitors(visitors.map(v => v.id === id ? {...v, ...updates} : v));
   };
 
@@ -269,7 +271,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
     toast.success(v.name + " — Enrolled! Added to Students");
   };
 
-  const doDelete = (v) => {
+  const doDelete = async (v) => {
+    try { await api.del(`/visitors/${v.id}`); } catch {}
     setVisitors(visitors.filter(x => x.id !== v.id));
     setConfirmAction(null);
     setDetailId(null);
@@ -510,7 +513,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       </div></Card>}
 
       {showForm && <Card delay={0}><h3 className="text-sm font-semibold mb-4">+ New Visitor</h3>
-        <NewVisitorForm onSave={(v)=>{setVisitors([v,...visitors]);setShowForm(false);toast.created("Visitor");}} onCancel={()=>setShowForm(false)}/></Card>}
+        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch{setVisitors([v,...visitors]);}setShowForm(false);toast.created("Visitor");}} onCancel={()=>setShowForm(false)}/></Card>}
 
       <Card delay={100}>
         <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {filtered.length} জন ভিজিটর</p>

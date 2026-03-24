@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, ClipboardList, Clock, CheckCircle, AlertTriangle, Check, Save, X, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { TASKS_DATA, PRIORITY_CONFIG, TASK_STATUS_CONFIG } from "../../data/mockData";
+import { api } from "../../hooks/useAPI";
 
 const COLUMNS = [
   { key: "todo",        label: "করতে হবে",  icon: ClipboardList, colorKey: "muted"   },
@@ -17,6 +18,12 @@ export default function TasksPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
   const [tasks, setTasks] = useState(TASKS_DATA);
+
+  useEffect(() => {
+    api.get("/tasks").then(data => {
+      if (Array.isArray(data) && data.length > 0) setTasks(data.map(tk => ({ ...tk, status: tk.status === "pending" ? "todo" : tk.status === "completed" ? "done" : tk.status })));
+    }).catch(() => {});
+  }, []);
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [newTask, setNewTask] = useState({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "" });
@@ -26,36 +33,34 @@ export default function TasksPage({ students = [] }) {
   const doneCount       = tasks.filter(tk => tk.status === "done").length;
   const overdueCount    = tasks.filter(tk => tk.status !== "done" && tk.dueDate && new Date(tk.dueDate) < new Date()).length;
 
-  const cycleStatus = (id) => {
+  const cycleStatus = async (id) => {
     setTasks(prev => prev.map(tk => {
       if (tk.id !== id) return tk;
       const next = tk.status === "todo" ? "in_progress" : tk.status === "in_progress" ? "done" : "todo";
+      const apiStatus = next === "todo" ? "pending" : next === "done" ? "completed" : "in_progress";
+      api.patch(`/tasks/${id}`, { status: apiStatus }).catch(() => {});
       toast.updated(TASK_STATUS_CONFIG[next]?.label || next);
       return { ...tk, status: next };
     }));
   };
 
-  const addTask = () => {
+  const addTask = async () => {
     if (!newTask.title.trim()) { toast.error("টাস্কের বিবরণ দিন"); return; }
     const student = students.find(s => s.id === newTask.studentId);
-    setTasks(prev => [{
-      id: `T-${Date.now()}`,
-      title: newTask.title,
-      assignee: newTask.assignee || "—",
-      assigneeRole: "Staff",
-      priority: newTask.priority,
-      dueDate: newTask.dueDate,
-      status: "todo",
-      autoCreated: false,
-      studentName: student?.name_en || "",
-      studentId: newTask.studentId,
-    }, ...prev]);
+    const payload = { title: newTask.title, priority: newTask.priority, due_date: newTask.dueDate || null, student_id: newTask.studentId || null, status: "pending" };
+    try {
+      const saved = await api.post("/tasks", payload);
+      setTasks(prev => [{ ...saved, status: "todo", studentName: student?.name_en || "", dueDate: saved.due_date }, ...prev]);
+    } catch {
+      setTasks(prev => [{ id: `T-${Date.now()}`, title: newTask.title, priority: newTask.priority, dueDate: newTask.dueDate, status: "todo", studentName: student?.name_en || "" }, ...prev]);
+    }
     setNewTask({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "" });
     setShowAddForm(false);
     toast.success("টাস্ক যোগ হয়েছে!");
   };
 
-  const deleteTask = (id) => {
+  const deleteTask = async (id) => {
+    try { await api.del(`/tasks/${id}`); } catch {}
     setTasks(prev => prev.filter(tk => tk.id !== id));
     setDeleteId(null);
     toast.success("টাস্ক মুছে ফেলা হয়েছে");

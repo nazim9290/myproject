@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import { SCHOOLS_DATA, SUBMISSIONS_DATA, SUB_STATUS } from "../../data/mockData";
 import SchoolDetailView from "./SchoolDetailView";
+import { api } from "../../hooks/useAPI";
 
 const BLANK_SCHOOL = { name_en: "", name_jp: "", country: "Japan", city: "", phone: "", fax: "", fees: "", requirements: "", deadline: "" };
 
@@ -15,6 +16,10 @@ export default function SchoolsPage({ students }) {
   const t = useTheme();
   const toast = useToast();
   const [schools, setSchools] = useState(SCHOOLS_DATA);
+
+  useEffect(() => {
+    api.get("/schools").then(data => { if (Array.isArray(data) && data.length > 0) setSchools(data); }).catch(() => {});
+  }, []);
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [activeTab, setActiveTab] = useState("schools");
   const [showForm, setShowForm] = useState(false);

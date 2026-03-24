@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Phone, Save, X, Search, Trash2, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import { COMM_LOGS, COMM_TYPES } from "../../data/mockData";
+import { api } from "../../hooks/useAPI";
 
 const BLANK = { studentId: "", type: "phone", direction: "outbound", notes: "", follow_up_date: "", user: "Mina" };
 
@@ -15,6 +16,15 @@ export default function CommunicationPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
   const [logs, setLogs] = useState(COMM_LOGS);
+
+  useEffect(() => {
+    api.get("/communications").then(data => {
+      if (Array.isArray(data) && data.length > 0) setLogs(data.map(c => ({
+        id: c.id, studentId: c.student_id, studentName: c.students?.name_en || "", type: c.type, direction: c.direction,
+        notes: c.notes, follow_up_date: c.follow_up_date, date: c.created_at?.slice(0, 10), user: "Staff"
+      })));
+    }).catch(() => {});
+  }, []);
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);

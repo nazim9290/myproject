@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, DollarSign, Clock, FileText, Download, Plus, Save, X, Check } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
@@ -130,6 +130,12 @@ export default function AccountsPage({ students = [] }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [incomeData, setIncomeData] = useState(INCOME_DATA);
   const [expenseData, setExpenseData] = useState(EXPENSE_DATA);
+
+  useEffect(() => {
+    const { api } = require("../../hooks/useAPI");
+    api.get("/accounts/payments").then(data => { if (Array.isArray(data) && data.length > 0) setIncomeData(data.map(p => ({ ...p, studentName: p.students?.name_en || p.student_id, status: p.status === "paid" ? "collected" : p.status }))); }).catch(() => {});
+    api.get("/accounts/expenses").then(data => { if (Array.isArray(data) && data.length > 0) setExpenseData(data); }).catch(() => {});
+  }, []);
 
   // ── Derive student fee data from students prop ──
   const studentFeeRows = students.flatMap(s =>
