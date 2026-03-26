@@ -15,7 +15,7 @@ const BLANK_SCHOOL = {
   contact_person: "", contact_email: "", contact_phone: "",
   shoukai_fee: "", tuition_y1: "", tuition_y2: "", admission_fee: "",
   min_jp_level: "", interview_type: "", has_dormitory: false,
-  deadline_april: "", deadline_october: "",
+  intakes: [], // [{month: "April", deadline: "2026-01-15"}, ...]
   gdrive_url: "", website: "", notes: "",
 };
 
@@ -54,7 +54,10 @@ export default function SchoolsPage({ students }) {
       contact_person: school.contact_person || "", contact_email: school.contact_email || "", contact_phone: school.contact_phone || "",
       shoukai_fee: school.shoukai_fee || "", tuition_y1: school.tuition_y1 || "", tuition_y2: school.tuition_y2 || "", admission_fee: school.admission_fee || "",
       min_jp_level: school.min_jp_level || "", interview_type: school.interview_type || "", has_dormitory: school.has_dormitory || false,
-      deadline_april: school.deadline_april || "", deadline_october: school.deadline_october || "",
+      intakes: school.intakes || (school.deadline_april || school.deadline_october ? [
+        ...(school.deadline_april ? [{ month: "April", deadline: school.deadline_april }] : []),
+        ...(school.deadline_october ? [{ month: "October", deadline: school.deadline_october }] : []),
+      ] : []),
       gdrive_url: school.gdrive_url || "", website: school.website || "", notes: school.notes || "",
     });
     setEditingId(school.id); setShowForm(true);
@@ -234,17 +237,48 @@ export default function SchoolsPage({ students }) {
                 </div>
               </div>
 
-              {/* ── Deadlines ── */}
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>ডেডলাইন</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>April Intake ডেডলাইন</label>
-                  <input type="date" value={form.deadline_april || ""} onChange={e => sf("deadline_april", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+              {/* ── Intakes (Dynamic) ── */}
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>ইন্টেক ও ডেডলাইন</p>
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {["January", "April", "July", "October"].map(month => {
+                    const intakes = form.intakes || [];
+                    const exists = intakes.find(i => i.month === month);
+                    return (
+                      <button key={month} onClick={() => {
+                        if (exists) {
+                          sf("intakes", intakes.filter(i => i.month !== month));
+                        } else {
+                          sf("intakes", [...intakes, { month, deadline: "" }]);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                      style={{
+                        background: exists ? `${t.amber}15` : t.inputBg,
+                        border: `1px solid ${exists ? t.amber : t.inputBorder}`,
+                        color: exists ? t.amber : t.muted,
+                      }}>
+                        {exists ? "✓ " : ""}{month}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>October Intake ডেডলাইন</label>
-                  <input type="date" value={form.deadline_october || ""} onChange={e => sf("deadline_october", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
-                </div>
+                {(form.intakes || []).length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {(form.intakes || []).map((intake, idx) => (
+                      <div key={intake.month} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: t.inputBg }}>
+                        <span className="text-xs font-medium w-20" style={{ color: t.amber }}>{intake.month}</span>
+                        <input type="date" value={intake.deadline || ""} onChange={e => {
+                          const updated = [...(form.intakes || [])];
+                          updated[idx] = { ...updated[idx], deadline: e.target.value };
+                          sf("intakes", updated);
+                        }} className="flex-1 px-2 py-1 rounded text-xs outline-none" style={is} />
+                        <span className="text-[9px]" style={{ color: t.muted }}>ডেডলাইন</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(form.intakes || []).length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>ইন্টেক সিলেক্ট করুন — January, April, July, October</p>}
               </div>
 
               {/* ── Notes ── */}
