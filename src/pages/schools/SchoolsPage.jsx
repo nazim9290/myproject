@@ -10,7 +10,14 @@ import { SUB_STATUS } from "../../data/mockData";
 import SchoolDetailView from "./SchoolDetailView";
 import { api } from "../../hooks/useAPI";
 
-const BLANK_SCHOOL = { name_en: "", name_jp: "", country: "Japan", city: "", phone: "", fax: "", fees: "", requirements: "", deadline: "" };
+const BLANK_SCHOOL = {
+  name_en: "", name_jp: "", country: "Japan", city: "",
+  contact_person: "", contact_email: "", contact_phone: "",
+  shoukai_fee: "", tuition_y1: "", tuition_y2: "", admission_fee: "",
+  min_jp_level: "", interview_type: "", has_dormitory: false,
+  deadline_april: "", deadline_october: "",
+  gdrive_url: "", website: "", notes: "",
+};
 
 export default function SchoolsPage({ students }) {
   const t = useTheme();
@@ -41,17 +48,33 @@ export default function SchoolsPage({ students }) {
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   const openAdd = () => { setForm(BLANK_SCHOOL); setEditingId(null); setShowForm(true); };
-  const openEdit = (school) => { setForm({ name_en: school.name, name_jp: school.nameJP || "", country: school.country || "Japan", city: school.city || "", phone: school.phone || "", fax: school.fax || "", fees: school.fees || "", requirements: school.requirements || "", deadline: school.deadline || "" }); setEditingId(school.id); setShowForm(true); };
+  const openEdit = (school) => {
+    setForm({
+      name_en: school.name_en || "", name_jp: school.name_jp || "", country: school.country || "Japan", city: school.city || "",
+      contact_person: school.contact_person || "", contact_email: school.contact_email || "", contact_phone: school.contact_phone || "",
+      shoukai_fee: school.shoukai_fee || "", tuition_y1: school.tuition_y1 || "", tuition_y2: school.tuition_y2 || "", admission_fee: school.admission_fee || "",
+      min_jp_level: school.min_jp_level || "", interview_type: school.interview_type || "", has_dormitory: school.has_dormitory || false,
+      deadline_april: school.deadline_april || "", deadline_october: school.deadline_october || "",
+      gdrive_url: school.gdrive_url || "", website: school.website || "", notes: school.notes || "",
+    });
+    setEditingId(school.id); setShowForm(true);
+  };
+  const [deleteSchoolId, setDeleteSchoolId] = useState(null);
 
   const saveSchool = async () => {
     if (!form.name_en.trim()) { toast.error("স্কুলের নাম দিন"); return; }
+    const payload = { ...form };
+    if (payload.shoukai_fee) payload.shoukai_fee = Number(payload.shoukai_fee) || 0;
+    if (payload.tuition_y1) payload.tuition_y1 = Number(payload.tuition_y1) || 0;
+    if (payload.tuition_y2) payload.tuition_y2 = Number(payload.tuition_y2) || 0;
+    if (payload.admission_fee) payload.admission_fee = Number(payload.admission_fee) || 0;
     try {
       if (editingId) {
-        const updated = await api.patch(`/schools/${editingId}`, { name_en: form.name_en, name_jp: form.name_jp, country: form.country, city: form.city });
+        const updated = await api.patch(`/schools/${editingId}`, payload);
         setSchools(prev => prev.map(s => s.id === editingId ? { ...s, ...updated } : s));
         toast.updated(form.name_en);
       } else {
-        const saved = await api.post("/schools", { name_en: form.name_en, name_jp: form.name_jp, country: form.country, city: form.city });
+        const saved = await api.post("/schools", payload);
         setSchools(prev => [...prev, saved]);
         toast.success(`${form.name_en} — স্কুল যোগ হয়েছে`);
       }
@@ -122,35 +145,112 @@ export default function SchoolsPage({ students }) {
                   <Button icon={Save} size="xs" onClick={saveSchool}>সংরক্ষণ</Button>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* ── Basic Info ── */}
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>মূল তথ্য</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 {[
-                  { label: "নাম (English) *", key: "name_en" },
-                  { label: "নাম (Japanese)", key: "name_jp" },
-                  { label: "শহর", key: "city" },
-                  { label: "ফোন", key: "phone" },
-                  { label: "ফ্যাক্স", key: "fax" },
-                  { label: "ভর্তি ডেডলাইন", key: "deadline", type: "date" },
+                  { label: "নাম (English)", key: "name_en", required: true },
+                  { label: "নাম (Japanese)", key: "name_jp", placeholder: "東京ギャラクシー日本語学校" },
+                  { label: "শহর", key: "city", placeholder: "Tokyo" },
                 ].map(f => (
                   <div key={f.key}>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                    <input type={f.type || "text"} value={form[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label} {f.required && <span className="req-star">*</span>}</label>
+                    <input value={form[f.key] || ""} onChange={e => sf(f.key, e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.placeholder || ""} />
                   </div>
                 ))}
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>দেশ</label>
                   <select value={form.country} onChange={e => sf("country", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option>Japan</option><option>Germany</option><option>Korea</option><option>Canada</option>
+                    <option>Japan</option><option>Germany</option><option>Korea</option><option>Canada</option><option>Australia</option><option>UK</option>
                   </select>
                 </div>
-                <div className="md:col-span-2">
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ভর্তির শর্তাবলী</label>
-                  <textarea value={form.requirements || ""} onChange={e => sf("requirements", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="JLPT N4, শিক্ষাগত যোগ্যতা..." />
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ওয়েবসাইট</label>
+                  <input value={form.website || ""} onChange={e => sf("website", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="https://..." />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফি (JPY)</label>
-                  <input value={form.fees || ""} onChange={e => sf("fees", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="600000" />
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কেইয়াকু / ডকুমেন্ট ফোল্ডার</label>
+                  <input value={form.gdrive_url || ""} onChange={e => sf("gdrive_url", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Google Drive link..." />
                 </div>
+              </div>
+
+              {/* ── Contact ── */}
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.purple }}>যোগাযোগ</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>যোগাযোগ ব্যক্তি</label>
+                  <input value={form.contact_person || ""} onChange={e => sf("contact_person", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Tanaka San" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>
+                  <input type="email" value={form.contact_email || ""} onChange={e => sf("contact_email", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="info@school.jp" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
+                  <input value={form.contact_phone || ""} onChange={e => sf("contact_phone", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="+81-3-XXXX-XXXX" />
+                </div>
+              </div>
+
+              {/* ── Fees & Requirements ── */}
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.emerald }}>ফি ও শর্তাবলী</p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শোকাই ফি (¥)</label>
+                  <input type="number" value={form.shoukai_fee || ""} onChange={e => sf("shoukai_fee", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="50000" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টিউশন ১ম বছর (¥)</label>
+                  <input type="number" value={form.tuition_y1 || ""} onChange={e => sf("tuition_y1", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="700000" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টিউশন ২য় বছর (¥)</label>
+                  <input type="number" value={form.tuition_y2 || ""} onChange={e => sf("tuition_y2", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="650000" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ভর্তি ফি (¥)</label>
+                  <input type="number" value={form.admission_fee || ""} onChange={e => sf("admission_fee", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="50000" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ন্যূনতম JP লেভেল</label>
+                  <select value={form.min_jp_level || ""} onChange={e => sf("min_jp_level", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="">—</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>NAT 5</option><option>NAT 4</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইন্টারভিউ ধরন</label>
+                  <select value={form.interview_type || ""} onChange={e => sf("interview_type", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="">—</option><option>Online</option><option>In-person</option><option>Written + Online</option><option>None</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3 pt-5">
+                  <label className="text-xs" style={{ color: t.muted }}>ডরমিটরি আছে?</label>
+                  <button onClick={() => sf("has_dormitory", !form.has_dormitory)}
+                    className="w-10 h-5 rounded-full transition-all relative"
+                    style={{ background: form.has_dormitory ? t.emerald : t.inputBorder }}>
+                    <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all" style={{ left: form.has_dormitory ? 22 : 2 }} />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Deadlines ── */}
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>ডেডলাইন</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>April Intake ডেডলাইন</label>
+                  <input type="date" value={form.deadline_april || ""} onChange={e => sf("deadline_april", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>October Intake ডেডলাইন</label>
+                  <input type="date" value={form.deadline_october || ""} onChange={e => sf("deadline_october", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                </div>
+              </div>
+
+              {/* ── Notes ── */}
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট / মন্তব্য</label>
+                <textarea value={form.notes || ""} onChange={e => sf("notes", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="বিশেষ তথ্য, শর্ত, চুক্তি ইত্যাদি..." />
               </div>
             </Card>
           )}
@@ -168,7 +268,18 @@ export default function SchoolsPage({ students }) {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Badge color={countryColor} size="xs">{school.country}</Badge>
-                      <button onClick={() => openEdit(school)} className="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }}>✏️</button>
+                      <button onClick={() => openEdit(school)} className="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }} title="Edit">✏️</button>
+                      {deleteSchoolId === school.id ? (
+                        <div className="flex gap-1 ml-1">
+                          <button onClick={async () => {
+                            try { await api.del(`/schools/${school.id}`); setSchools(prev => prev.filter(s => s.id !== school.id)); toast.success("স্কুল মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); }
+                            setDeleteSchoolId(null);
+                          }} className="text-[9px] px-2 py-0.5 rounded" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
+                          <button onClick={() => setDeleteSchoolId(null)} className="text-[9px] px-1" style={{ color: t.muted }}>না</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteSchoolId(school.id)} className="p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }} title="Delete">🗑️</button>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] mb-3" style={{ color: t.textSecondary }}>
