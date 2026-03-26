@@ -12,6 +12,35 @@ import { api } from "../../hooks/useAPI";
 const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://newbook-e2v3.onrender.com/api";
 const token = () => localStorage.getItem("agencyos_token");
 
+// Interview List-এ available columns — user select/deselect করবে
+const INTERVIEW_COLUMNS = [
+  { key: "no", label: "No." },
+  { key: "family_name", label: "Family Name" },
+  { key: "given_name", label: "Given Name" },
+  { key: "full_name", label: "Full Name" },
+  { key: "gender", label: "Gender" },
+  { key: "dob_age", label: "DOB (Age)" },
+  { key: "nationality", label: "Nationality" },
+  { key: "education", label: "Education" },
+  { key: "gpa", label: "GPA" },
+  { key: "jp_level", label: "JP Level/Score" },
+  { key: "jp_study_hours", label: "JP Study Hours" },
+  { key: "occupation", label: "Occupation" },
+  { key: "past_visa", label: "Past Visa/Immigration" },
+  { key: "sponsor", label: "Sponsor (Income)" },
+  { key: "sponsor_relation", label: "Sponsor Relation" },
+  { key: "passport_no", label: "Passport No" },
+  { key: "phone", label: "Phone" },
+  { key: "email", label: "Email" },
+  { key: "address", label: "Address" },
+  { key: "intended_semester", label: "Intended Semester" },
+  { key: "coe_applied", label: "COE Applied?" },
+  { key: "textbook_lesson", label: "Textbook Lesson" },
+  { key: "goal", label: "Goal after Graduation" },
+];
+
+const DEFAULT_COLS = ["no", "family_name", "given_name", "gender", "dob_age", "education", "gpa", "jp_level", "sponsor", "sponsor_relation"];
+
 export default function SchoolDetailView({ school, students, onBack }) {
   const t = useTheme();
   const toast = useToast();
@@ -66,6 +95,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [agencyName, setAgencyName] = useState("");
   const [generating, setGenerating] = useState(false);
   const [interviewSearch, setInterviewSearch] = useState("");
+  const [staffName, setStaffName] = useState("");
+  const [interviewCols, setInterviewCols] = useState(DEFAULT_COLS);
 
   const allStudents = (students || []).filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
   const interviewFiltered = interviewSearch
@@ -80,7 +111,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
       const res = await fetch(`${API_URL}/schools/${school.id}/interview-list`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ student_ids: selectedForInterview, format: interviewFormat, agency_name: agencyName }),
+        body: JSON.stringify({ student_ids: selectedForInterview, format: interviewFormat, agency_name: agencyName, staff_name: staffName, columns: interviewCols }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
       const blob = await res.blob();
@@ -162,10 +193,39 @@ export default function SchoolDetailView({ school, students, onBack }) {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্সি নাম</label>
+              <input value={agencyName} onChange={e => setAgencyName(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Your Agency Name" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ নাম (লিংকস্টাফ)</label>
+              <input value={staffName} onChange={e => setStaffName(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="担当者名" />
+            </div>
+          </div>
+
+          {/* Column selection */}
           <div className="mb-3">
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্সি নাম</label>
-            <input value={agencyName} onChange={e => setAgencyName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Your Agency Name" />
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কোন কোন column দরকার (click করে select/deselect)</label>
+            <div className="flex flex-wrap gap-1.5">
+              {INTERVIEW_COLUMNS.map(col => {
+                const selected = interviewCols.includes(col.key);
+                return (
+                  <button key={col.key} onClick={() => setInterviewCols(prev =>
+                    selected ? prev.filter(k => k !== col.key) : [...prev, col.key]
+                  )} className="px-2 py-1 rounded text-[10px] transition"
+                  style={{
+                    background: selected ? `${t.cyan}15` : t.inputBg,
+                    border: `1px solid ${selected ? t.cyan : t.inputBorder}`,
+                    color: selected ? t.cyan : t.muted,
+                  }}>
+                    {selected ? "✓ " : ""}{col.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 mb-3">
