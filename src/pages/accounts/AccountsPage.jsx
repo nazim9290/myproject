@@ -142,36 +142,30 @@ export default function AccountsPage({ students = [] }) {
     }).catch(() => {});
   }, []);
 
-  // ── Derive student fee data from students prop ──
+  // ── Student fee data — students prop থেকে (যদি fees embedded থাকে) ──
   const studentFeeRows = (students || []).flatMap(s =>
     (s.fees?.payments || []).map(p => ({
-      paymentId: p.id,
-      studentId: s.id,
-      studentName: s.name_en,
-      date: p.date,
-      amount: p.amount,
-      category: p.category,
-      method: p.method,
-      note: p.note || "",
+      paymentId: p.id, studentId: s.id, studentName: s.name_en,
+      date: p.date || "", amount: p.amount || 0, category: p.category, method: p.method, note: p.note || "",
     }))
-  ).sort((a, b) => b.date.localeCompare(a.date));
+  ).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
-  // Per-student summary: total due vs collected
-  const studentFeeSummary = students.map(s => {
-    const totalDue = (s.fees?.items || []).reduce((sum, i) => sum + i.amount, 0);
-    const totalCollected = (s.fees?.payments || []).reduce((sum, p) => sum + p.amount, 0);
+  // Per-student summary
+  const studentFeeSummary = (students || []).map(s => {
+    const totalDue = (s.fees?.items || []).reduce((sum, i) => sum + (i.amount || 0), 0);
+    const totalCollected = (s.fees?.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
     return { id: s.id, name: s.name_en, status: s.status, branch: s.branch, totalDue, totalCollected, balance: totalDue - totalCollected };
   });
 
-  // Category breakdown of student collections
   const catBreakdown = {};
   studentFeeRows.forEach(r => { catBreakdown[r.category] = (catBreakdown[r.category] || 0) + r.amount; });
 
   const studentCollected = studentFeeRows.reduce((s, r) => s + r.amount, 0);
   const studentDue = studentFeeSummary.reduce((s, r) => s + Math.max(0, r.balance), 0);
 
-  const totalIncome = incomeData.reduce((s, i) => s + i.paidAmount, 0) + studentCollected;
-  const totalExpense = expenseData.reduce((s, e) => s + e.amount, 0);
+  // income API data: paid_amount (DB) বা paidAmount (legacy)
+  const totalIncome = incomeData.reduce((s, i) => s + (i.paid_amount || i.paidAmount || i.amount || 0), 0) + studentCollected;
+  const totalExpense = expenseData.reduce((s, e) => s + (e.amount || 0), 0);
   const totalDue = incomeData.reduce((s, i) => s + (i.amount - i.paidAmount), 0) + studentDue;
   const totalTax = incomeData.filter((i) => i.status === "paid" || i.status === "partial").reduce((s, i) => s + i.tax, 0);
   const profit = totalIncome - totalExpense;
