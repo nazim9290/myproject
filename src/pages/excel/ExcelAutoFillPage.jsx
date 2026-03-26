@@ -119,6 +119,13 @@ export default function ExcelAutoFillPage({ students }) {
   const [view, setView] = useState("list"); // list | upload | mapping | generate
   const [activeTemplate, setActiveTemplate] = useState(null);
 
+  // Schools list for dropdown
+  const [schoolsList, setSchoolsList] = useState([]);
+  useEffect(() => {
+    fetch(`${API}/schools`, { headers: { Authorization: `Bearer ${token()}` } })
+      .then(r => r.json()).then(data => { if (Array.isArray(data)) setSchoolsList(data); }).catch(() => {});
+  }, []);
+
   // Upload state
   const [uploading, setUploading] = useState(false);
   const [uploadSchool, setUploadSchool] = useState("");
@@ -158,7 +165,7 @@ export default function ExcelAutoFillPage({ students }) {
   };
 
   const doUpload = async () => {
-    if (!uploadSchool.trim()) { toast.error("স্কুলের নাম দিন"); return; }
+    if (!uploadSchool) { toast.error("স্কুল সিলেক্ট করুন — স্কুল ছাড়া রিজুইমি হবে না"); return; }
 
     // Try API upload first
     if (uploadFile && token()) {
@@ -385,10 +392,13 @@ export default function ExcelAutoFillPage({ students }) {
         <Card delay={50}>
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুলের নাম <span className="req-star">*</span></label>
-              <input value={uploadSchool} onChange={e => setUploadSchool(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}
-                placeholder="e.g. Tokyo Galaxy Japanese School" />
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুল সিলেক্ট করুন <span className="req-star">*</span></label>
+              <select value={uploadSchool} onChange={e => setUploadSchool(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ ...is, borderColor: !uploadSchool ? t.rose + "40" : t.inputBorder }}>
+                <option value="">— স্কুল সিলেক্ট করুন —</option>
+                {schoolsList.map(s => <option key={s.id} value={s.name_en}>{s.name_en}{s.name_jp ? ` (${s.name_jp})` : ""}</option>)}
+              </select>
+              {!uploadSchool && <p className="text-[10px] mt-1" style={{ color: t.rose }}>স্কুল ছাড়া রিজুইমি তৈরি হবে না</p>}
             </div>
 
             {/* File Upload Area */}
