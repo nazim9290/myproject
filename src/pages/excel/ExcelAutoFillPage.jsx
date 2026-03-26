@@ -133,12 +133,15 @@ export default function ExcelAutoFillPage({ students }) {
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
+  const [filterBatch, setFilterBatch] = useState("all");
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
   const eligibleStudents = (students || []).filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
+  const batchList = [...new Set(eligibleStudents.map(s => s.batch).filter(Boolean))];
+  const batchFiltered = filterBatch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.batch === filterBatch);
   const filteredStudents = studentSearch
-    ? eligibleStudents.filter(s => (s.name_en || "").toLowerCase().includes(studentSearch.toLowerCase()) || s.id.toLowerCase().includes(studentSearch.toLowerCase()))
-    : eligibleStudents;
+    ? batchFiltered.filter(s => (s.name_en || "").toLowerCase().includes(studentSearch.toLowerCase()) || s.id.toLowerCase().includes(studentSearch.toLowerCase()))
+    : batchFiltered;
 
   // ================================================================
   // STEP 1: UPLOAD
@@ -577,14 +580,20 @@ export default function ExcelAutoFillPage({ students }) {
         </div>
 
         <Card delay={50}>
-          {/* Search */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+          {/* Search + Batch Filter */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={14} style={{ color: t.muted }} />
               <input value={studentSearch} onChange={e => setStudentSearch(e.target.value)}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
                 placeholder="স্টুডেন্ট খুঁজুন..." />
             </div>
+            <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setSelectedStudents([]); }}
+              className="px-3 py-2 rounded-xl text-xs outline-none"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+              <option value="all">সব ব্যাচ</option>
+              {batchList.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
             <Button variant="ghost" size="xs" onClick={() => setSelectedStudents(
               selectedStudents.length === filteredStudents.length ? [] : filteredStudents.map(s => s.id)
             )}>
