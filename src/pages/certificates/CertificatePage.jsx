@@ -40,12 +40,48 @@ export default function CertificatePage({ students }) {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  // Mapping — upload-এর পর placeholder → system field map
+  const [detectedPlaceholders, setDetectedPlaceholders] = useState([]);
+  const [mappings, setMappings] = useState({}); // { "studentName": "name_en", "নাম": "name_bn" }
+
   // Generate
   const [selectedStudent, setSelectedStudent] = useState("");
   const [generating, setGenerating] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
   const [filterBatch, setFilterBatch] = useState("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  // System fields for mapping dropdown
+  const SYSTEM_FIELDS = [
+    { group: "ব্যক্তিগত", fields: [
+      { key: "name_en", label: "নাম (English)" }, { key: "name_en:first", label: "নাম → First Name" }, { key: "name_en:last", label: "নাম → Last Name" },
+      { key: "name_bn", label: "নাম (বাংলা)" }, { key: "name_katakana", label: "নাম (カタカナ)" },
+      { key: "dob", label: "জন্ম তারিখ (Full)" }, { key: "dob:year", label: "জন্ম → Year" }, { key: "dob:month", label: "জন্ম → Month" }, { key: "dob:day", label: "জন্ম → Day" },
+      { key: "age", label: "বয়স" }, { key: "gender", label: "লিঙ্গ" }, { key: "nationality", label: "জাতীয়তা" },
+      { key: "marital_status", label: "বৈবাহিক অবস্থা" }, { key: "blood_group", label: "রক্তের গ্রুপ" },
+      { key: "phone", label: "ফোন" }, { key: "email", label: "ইমেইল" },
+    ]},
+    { group: "পাসপোর্ট / NID", fields: [
+      { key: "passport_number", label: "পাসপোর্ট নম্বর" }, { key: "nid", label: "NID" },
+      { key: "passport_issue", label: "পাসপোর্ট ইস্যু" }, { key: "passport_expiry", label: "পাসপোর্ট মেয়াদ" },
+    ]},
+    { group: "ঠিকানা", fields: [
+      { key: "permanent_address", label: "স্থায়ী ঠিকানা" }, { key: "current_address", label: "বর্তমান ঠিকানা" },
+    ]},
+    { group: "পরিবার", fields: [
+      { key: "father_name", label: "পিতার নাম" }, { key: "father_name_en", label: "পিতার নাম (EN)" },
+      { key: "mother_name", label: "মাতার নাম" }, { key: "mother_name_en", label: "মাতার নাম (EN)" },
+      { key: "father_dob", label: "পিতার জন্ম তারিখ" }, { key: "mother_dob", label: "মাতার জন্ম তারিখ" },
+      { key: "father_occupation", label: "পিতার পেশা" }, { key: "mother_occupation", label: "মাতার পেশা" },
+    ]},
+    { group: "স্পন্সর", fields: [
+      { key: "sponsor_name", label: "স্পন্সরের নাম" }, { key: "sponsor_phone", label: "স্পন্সর ফোন" },
+      { key: "sponsor_address", label: "স্পন্সর ঠিকানা" }, { key: "sponsor_relationship", label: "সম্পর্ক" },
+    ]},
+    { group: "অন্যান্য", fields: [
+      { key: "country", label: "দেশ" }, { key: "today", label: "আজকের তারিখ" }, { key: "today_jp", label: "আজকের তারিখ (JP)" },
+    ]},
+  ];
 
   useEffect(() => {
     api.get("/docgen/templates").then(data => {
@@ -60,7 +96,7 @@ export default function CertificatePage({ students }) {
     ? batchFiltered.filter(s => (s.name_en || "").toLowerCase().includes(studentSearch.toLowerCase()) || s.id.toLowerCase().includes(studentSearch.toLowerCase()))
     : batchFiltered;
 
-  // ── Upload ──
+  // ── Upload → detect placeholders → go to mapping ──
   const doUpload = async () => {
     if (!uploadName.trim()) { toast.error("Template নাম দিন"); return; }
     if (!uploadFile) { toast.error(".docx ফাইল সিলেক্ট করুন"); return; }
@@ -73,11 +109,45 @@ export default function CertificatePage({ students }) {
       const res = await fetch(`${API_URL}/docgen/upload`, { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setTemplates(prev => [data.template, ...prev]);
-      toast.success(`"${uploadName}" — ${data.placeholders.length} টি placeholder পাওয়া গেছে`);
-      setView("list"); setUploadName(""); setUploadFile(null);
+
+      // Detected placeholders → mapping step
+      const phs = data.placeholders || [];
+      setDetectedPlaceholders(phs);
+      setActiveTemplate(data.template);
+
+      // Auto-map: placeholder key === system field হলে auto-select
+      const autoMap = {};
+      const allKeys = SYSTEM_FIELDS.flatMap(g => g.fields.map(f => f.key));
+      phs.forEach(p => { if (allKeys.includes(p.key)) autoMap[p.key] = p.key; });
+      setMappings(autoMap);
+
+      setView("mapping");
+      toast.success(`"${uploadName}" — ${phs.length} টি placeholder পাওয়া গেছে`);
     } catch (err) { toast.error(err.message); }
     setUploading(false);
+  };
+
+  // ── Save mapping to DB ──
+  const saveMapping = async () => {
+    const mapped = detectedPlaceholders.map(p => ({
+      ...p,
+      field: mappings[p.key] || p.key,
+    }));
+    try {
+      await fetch(`${API_URL}/docgen/templates/${activeTemplate.id}/mapping`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ placeholders: mapped }),
+      });
+      const updated = { ...activeTemplate, placeholders: mapped, total_fields: mapped.length };
+      setActiveTemplate(updated);
+      setTemplates(prev => {
+        const exists = prev.find(t => t.id === updated.id);
+        return exists ? prev.map(t => t.id === updated.id ? updated : t) : [updated, ...prev];
+      });
+      toast.success(`${Object.values(mappings).filter(Boolean).length} fields mapping সংরক্ষণ হয়েছে`);
+      setView("list");
+    } catch { toast.error("Mapping save ব্যর্থ"); }
   };
 
   // ── Generate ──
@@ -153,6 +223,68 @@ export default function CertificatePage({ students }) {
             <Button icon={Upload} onClick={doUpload} disabled={uploading}>{uploading ? "আপলোড হচ্ছে..." : "আপলোড"}</Button>
           </div>
         </div>
+      </Card>
+    </div>
+  );
+
+  // ══════════ MAPPING VIEW ══════════
+  if (view === "mapping" && activeTemplate) return (
+    <div className="space-y-5 anim-fade">
+      <div className="flex items-center gap-4">
+        <button onClick={() => setView("upload")} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
+        <div className="flex-1">
+          <h2 className="text-xl font-bold">Field Mapping — {activeTemplate.name}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>প্রতিটি placeholder-কে সিস্টেম field-এ ম্যাপ করুন • Mapped: {Object.values(mappings).filter(Boolean).length}/{detectedPlaceholders.length}</p>
+        </div>
+        <Button icon={Download} onClick={saveMapping}>সংরক্ষণ ({Object.values(mappings).filter(Boolean).length})</Button>
+      </div>
+
+      <Card delay={50}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                {["Placeholder", "System Field (কোন ডেটা বসবে)", ""].map(h => (
+                  <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {detectedPlaceholders.map((p, i) => (
+                <tr key={i} style={{ borderBottom: `1px solid ${t.border}` }}
+                  onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <td className="py-2.5 px-3">
+                    <span className="font-mono px-2 py-1 rounded text-[11px]" style={{ background: `${t.cyan}10`, color: t.cyan }}>
+                      {p.placeholder || `{{${p.key}}}`}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3" style={{ minWidth: 250 }}>
+                    <select value={mappings[p.key] || ""} onChange={e => setMappings(prev => ({ ...prev, [p.key]: e.target.value }))}
+                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                      style={{ ...is, borderColor: mappings[p.key] ? `${t.emerald}60` : t.inputBorder }}>
+                      <option value="">— field সিলেক্ট করুন —</option>
+                      {SYSTEM_FIELDS.map(g => (
+                        <optgroup key={g.group} label={`── ${g.group} ──`}>
+                          {g.fields.map(f => <option key={f.key} value={f.key}>{f.label} ({f.key})</option>)}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="py-2.5 px-3 text-center" style={{ width: 40 }}>
+                    {mappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {detectedPlaceholders.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-xs" style={{ color: t.muted }}>কোনো {"{{placeholder}}"} পাওয়া যায়নি — Word ফাইলে {"{{name_en}}"} ইত্যাদি লিখুন</p>
+          </div>
+        )}
       </Card>
     </div>
   );
