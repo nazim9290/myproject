@@ -63,7 +63,7 @@ const NAV_ICONS = {
   settings: Settings,
 };
 
-function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile }) {
+function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts }) {
   const w = collapsed ? 64 : 220;
   const visible = isMobile ? mobileOpen : true;
 
@@ -119,11 +119,7 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
           {NAV_ITEMS.map((item) => {
             const Icon = NAV_ICONS[item.key] || Home;
             const active = activePage === item.key;
-            // Dynamic badges — real data থেকে count
-            const dynamicBadge = item.key === "visitors" ? (visitors.filter(v => ["interested", "new", "contacted", "Interested"].includes(v.status)).length || null)
-              : item.key === "tasks" ? (null) // tasks count পরে API থেকে আসবে
-              : item.badge;
-            item = { ...item, badge: dynamicBadge };
+            const badge = badgeCounts?.[item.key] || null;
             return (
               <button
                 key={item.key}
@@ -145,16 +141,16 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
                 {!collapsed && (
                   <>
                     <span className="text-xs flex-1 truncate">{item.label}</span>
-                    {item.badge ? (
+                    {badge ? (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: "#06b6d420", color: "#06b6d4" }}>
-                        {item.badge}
+                        {badge}
                       </span>
                     ) : null}
                   </>
                 )}
-                {collapsed && item.badge ? (
+                {collapsed && badge ? (
                   <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 rounded-full text-[8px] font-bold flex items-center justify-center" style={{ background: "#06b6d4", color: "#fff" }}>
-                    {item.badge}
+                    {badge}
                   </span>
                 ) : null}
               </button>
@@ -595,6 +591,9 @@ function AppShell({ isDark, setIsDark }) {
           mobileOpen={mobileOpen}
           setMobileOpen={setMobileOpen}
           isMobile={isMobile}
+          badgeCounts={{
+            visitors: visitors.filter(v => ["interested", "new", "contacted", "Interested"].includes(v.status)).length || null,
+          }}
         />
 
         <div
