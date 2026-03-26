@@ -23,19 +23,17 @@ export default function SchoolsPage({ students }) {
   const t = useTheme();
   const toast = useToast();
   const [schools, setSchools] = useState([]);
-
-  // ── Backend থেকে schools load ──
-  useEffect(() => {
-    api.get("/schools").then(data => { if (Array.isArray(data)) setSchools(data); }).catch(() => {});
-  }, []);
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [activeTab, setActiveTab] = useState("schools");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(BLANK_SCHOOL);
-  // ── Submissions: API থেকে load ──
   const [submissionsData, setSubmissionsData] = useState([]);
+  const [deleteSchoolId, setDeleteSchoolId] = useState(null);
+
+  // ── Backend থেকে load ──
   useEffect(() => {
+    api.get("/schools").then(data => { if (Array.isArray(data)) setSchools(data); }).catch(() => {});
     api.get("/submissions").then(data => { if (Array.isArray(data)) setSubmissionsData(data); }).catch(() => {});
   }, []);
 
@@ -62,7 +60,6 @@ export default function SchoolsPage({ students }) {
     });
     setEditingId(school.id); setShowForm(true);
   };
-  const [deleteSchoolId, setDeleteSchoolId] = useState(null);
 
   const saveSchool = async () => {
     if (!form.name_en.trim()) { toast.error("স্কুলের নাম দিন"); return; }
