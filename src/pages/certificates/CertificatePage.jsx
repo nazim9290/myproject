@@ -39,6 +39,13 @@ export default function CertificatePage({ students }) {
   const [uploadCategory, setUploadCategory] = useState("translation");
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [linkedDocType, setLinkedDocType] = useState(""); // template-কে কোন doc type-এর সাথে link
+
+  // Doc types from DB (Admin-defined document types with custom fields)
+  const [docTypes, setDocTypes] = useState([]);
+  useEffect(() => {
+    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch(() => {});
+  }, []);
 
   // Mapping — upload-এর পর placeholder → system field map
   const [detectedPlaceholders, setDetectedPlaceholders] = useState([]);
@@ -341,17 +348,33 @@ export default function CertificatePage({ students }) {
             ))}
           </div>
           <div className="flex justify-end mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               if (!selectedStudent) { toast.error("স্টুডেন্ট সিলেক্ট করুন"); return; }
-              // Student profile data দিয়ে docData pre-fill (user চাইলে override করতে পারবে)
+
+              // 1. Student profile data
               const stu = eligibleStudents.find(s => s.id === selectedStudent) || {};
               const prefill = {};
               (activeTemplate.placeholders || []).forEach(p => {
                 const k = p.key;
-                // Student profile-এ match থাকলে pre-fill
                 if (stu[k]) prefill[k] = stu[k];
                 else if (stu[p.field]) prefill[k] = stu[p.field];
               });
+
+              // 2. Saved document data from DB (Documents module-এ input করা data)
+              // Template-র linked doc type থেকে, অথবা সব doc type check
+              try {
+                const allDocData = await api.get(`/docdata/student/${selectedStudent}`);
+                if (Array.isArray(allDocData)) {
+                  allDocData.forEach(dd => {
+                    const saved = dd.field_data || {};
+                    // Saved document fields → prefill (overrides student profile)
+                    Object.entries(saved).forEach(([key, val]) => {
+                      if (val) prefill[key] = val;
+                    });
+                  });
+                }
+              } catch { /* no saved data */ }
+
               setDocData(prefill);
               setGenerateStep("fill");
             }} disabled={!selectedStudent}>পরবর্তী →</Button>
@@ -389,6 +412,37 @@ export default function CertificatePage({ students }) {
                 />
               </div>
             ))}
+          </div>
+
+          {/* Save data to Documents module */}
+          <div className="mt-3 p-3 rounded-lg" style={{ background: `${t.emerald}08`, border: `1px solid ${t.emerald}15` }}>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px]" style={{ color: t.textSecondary }}>
+                এই data Documents মডিউলে save করুন — পরে আবার ব্যবহার করা যাবে
+              </p>
+              <button onClick={async () => {
+                // Find matching doc type from template name
+                const matchType = docTypes.find(dt =>
+                  activeTemplate.name.toLowerCase().includes(dt.name.toLowerCase()) ||
+                  (dt.name_bn && activeTemplate.name.includes(dt.name_bn))
+                );
+                if (!matchType) {
+                  toast.error("এই template-র জন্য কোনো Document Type পাওয়া যায়নি — Administration-এ যোগ করুন");
+                  return;
+                }
+                try {
+                  await api.post("/docdata/save", {
+                    student_id: selectedStudent,
+                    doc_type_id: matchType.id,
+                    field_data: docData,
+                  });
+                  toast.success(`${matchType.name_bn || matchType.name} — data সংরক্ষণ হয়েছে`);
+                } catch (err) { toast.error(err.message); }
+              }}
+              className="px-3 py-1.5 rounded-lg text-[10px] font-medium" style={{ background: t.emerald, color: "#fff" }}>
+                Documents-এ Save
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-between items-center mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
