@@ -171,8 +171,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
               { label: "ঠিকানা", value: school.address },
               { label: "যোগাযোগ", value: school.contact },
               { label: "ওয়েবসাইট", value: school.website },
-              { label: "শোকাই ফি/জন", value: school.shoukaiPerStudent > 0 ? `${school.currency} ${school.shoukaiPerStudent.toLocaleString()}` : "N/A" },
-              { label: "Health Tests", value: school.healthRequired.length > 0 ? school.healthRequired.join(", ") : "কোনো requirement নেই" },
+              { label: "শোকাই ফি/জন", value: school.shoukai_fee ? `¥${Number(school.shoukai_fee).toLocaleString()}` : "N/A" },
+              { label: "ন্যূনতম JP লেভেল", value: school.min_jp_level || "—" },
             ].map((f) => (
               <div key={f.label} className="flex justify-between text-xs">
                 <span style={{ color: t.muted }}>{f.label}</span>
