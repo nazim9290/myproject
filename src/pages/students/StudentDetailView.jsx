@@ -762,7 +762,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
             <p className="text-xs font-semibold" style={{ color: t.purple }}>নতুন ফি খাত যোগ করুন</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি ক্যাটাগরি *</label>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি ক্যাটাগরি <span className="req-star">*</span></label>
                 <select value={feeItemForm.category}
                   onChange={e => { const cat = FEE_CATEGORIES.find(c => c.id === e.target.value); setFeeItemForm(f => ({ ...f, category: e.target.value, label: cat?.label || "" })); }}
                   className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
@@ -771,7 +771,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
                 </select>
               </div>
               <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) *</label>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
                 <input type="number" value={feeItemForm.amount}
                   onChange={e => setFeeItemForm(f => ({ ...f, amount: e.target.value }))}
                   placeholder="যেমন: 30000"
@@ -800,7 +800,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
             <p className="text-xs font-semibold" style={{ color: t.cyan }}>নতুন পেমেন্ট এন্ট্রি</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি খাত *</label>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি খাত <span className="req-star">*</span></label>
                 <select value={payForm.category}
                   onChange={e => setPayForm(p => ({ ...p, category: e.target.value }))}
                   className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
@@ -813,7 +813,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete 
                 </select>
               </div>
               <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) *</label>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
                 <input type="number" value={payForm.amount}
                   onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))}
                   placeholder="20000"

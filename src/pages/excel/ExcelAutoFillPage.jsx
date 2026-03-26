@@ -357,7 +357,7 @@ export default function ExcelAutoFillPage({ students }) {
         <Card delay={50}>
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুলের নাম *</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুলের নাম <span className="req-star">*</span></label>
               <input value={uploadSchool} onChange={e => setUploadSchool(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}
                 placeholder="e.g. Tokyo Galaxy Japanese School" />

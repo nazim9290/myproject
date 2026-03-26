@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2 } from "lucide-react";
-import { useTheme } from "../../context/ThemeContext";
+import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type } from "lucide-react";
+import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
@@ -9,6 +9,7 @@ import Button from "../../components/ui/Button";
 export default function SettingsPage({ isDark, setIsDark, students, visitors }) {
   const t = useTheme();
   const toast = useToast();
+  const { labelSettings, updateLabelSettings } = useLabelSettings();
   const [agencyName, setAgencyName] = useState("ABC Education Consultancy");
   const [branch, setBranch] = useState("Dhaka (HQ)");
   const [taxRate, setTaxRate] = useState("15");
@@ -256,6 +257,59 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
           </div>
         </Card>
 
+        {/* ── লেবেল ফন্ট ও কালার সেটিংস ── */}
+        <Card delay={280}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Type size={14} /> লেবেল ডিজাইন সেটিংস</h3>
+            <Button icon={Save} size="xs" onClick={() => toast.success("লেবেল সেটিংস সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেবেল ফন্ট সাইজ</label>
+              <select value={labelSettings.labelSize} onChange={e => updateLabelSettings({ labelSize: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                <option value="9px">৯px (ছোট)</option>
+                <option value="10px">১০px (ডিফল্ট)</option>
+                <option value="11px">১১px</option>
+                <option value="12px">১২px (মাঝারি)</option>
+                <option value="13px">১৩px</option>
+                <option value="14px">১৪px (বড়)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেবেল ফন্ট কালার</label>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { label: "ডিফল্ট", value: "", color: t.muted },
+                  { label: "সাদা", value: "#e2e8f0", color: "#e2e8f0" },
+                  { label: "সায়ান", value: "#06b6d4", color: "#06b6d4" },
+                  { label: "বেগুনি", value: "#a855f7", color: "#a855f7" },
+                  { label: "সবুজ", value: "#22c55e", color: "#22c55e" },
+                  { label: "হলুদ", value: "#eab308", color: "#eab308" },
+                ].map(c => (
+                  <button key={c.label} onClick={() => updateLabelSettings({ labelColor: c.value })}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] transition"
+                    style={{
+                      background: labelSettings.labelColor === c.value ? `${c.color}20` : "transparent",
+                      border: `1px solid ${labelSettings.labelColor === c.value ? c.color : t.border}`,
+                      color: c.color,
+                    }}>
+                    <span className="w-3 h-3 rounded-full" style={{ background: c.color }} />
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 p-3 rounded-lg" style={{ background: t.inputBg }}>
+            <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: t.muted }}>প্রিভিউ</p>
+            <label style={{ fontSize: labelSettings.labelSize, color: labelSettings.labelColor || t.muted }} className="uppercase tracking-wider font-medium">
+              স্টুডেন্টের নাম <span className="req-star">*</span>
+            </label>
+          </div>
+        </Card>
+
         <Card delay={300}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2"><Layers size={14} /> Custom Fields</h3>
@@ -266,7 +320,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
             <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Field নাম *</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Field নাম <span className="req-star">*</span></label>
                   <input value={fieldForm.name} onChange={e => setFieldForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: Emergency Contact" />
                 </div>
                 <div>

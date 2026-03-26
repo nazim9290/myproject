@@ -51,13 +51,13 @@ function NewVisitorForm({ onSave, onCancel }) {
     <div className="space-y-2">
       <SectionHeader icon="👤" title="ব্যক্তিগত তথ্য" sKey="personal" />
       {sections.personal && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা) *</label>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা) <span className="req-star">*</span></label>
         <input value={form.name} onChange={e => set("name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: errors.name ? t.rose : t.inputBorder }} placeholder="পুরো নাম" /><FieldError error={errors.name} /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English)</label>
         <input value={form.name_en} onChange={e => set("name_en", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Full Name" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>জন্ম তারিখ</label>
         <input type="date" value={form.dob} onChange={e => set("dob", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} /></div>
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন *</label>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন <span className="req-star">*</span></label>
         <input value={form.phone} onChange={e => set("phone", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: errors.phone ? t.rose : t.inputBorder }} placeholder="01XXXXXXXXX" /><FieldError error={errors.phone} /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অভিভাবকের ফোন</label>
         <input value={form.guardian_phone} onChange={e => set("guardian_phone", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="01XXXXXXXXX" /></div>
@@ -104,7 +104,7 @@ function NewVisitorForm({ onSave, onCancel }) {
             <option value="TopJ">Top J (実用日本語)</option>
             <option value="Other">Other</option>
           </select></div>
-          {form.jp_exam_type === "Other" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.rose }}>কোন পরীক্ষা? *</label>
+          {form.jp_exam_type === "Other" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.rose }}>কোন পরীক্ষা? <span className="req-star">*</span></label>
           <input value={form.jp_exam_type_other} onChange={e => set("jp_exam_type_other", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{...is, borderColor: `${t.rose}40`}} placeholder="পরীক্ষার নাম লিখুন" /></div>}
           <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Level</label>
           <select value={form.jp_level} onChange={e => set("jp_level", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option></select></div>
@@ -115,7 +115,7 @@ function NewVisitorForm({ onSave, onCancel }) {
 
       <SectionHeader icon="🛂" title="ভিসার ধরন / Purpose" sKey="visa" />
       {sections.visa && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কোন ভিসায় যেতে চান? *</label>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কোন ভিসায় যেতে চান? <span className="req-star">*</span></label>
         <select value={form.visa_type} onChange={e => { set("visa_type", e.target.value); if (e.target.value !== "Other") setForm(prev => ({...prev, visa_type: e.target.value, visa_type_other: ""})); }} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
           <option value="Language Student">Language Student (ভাষা শিক্ষার্থী)</option>
           <option value="SSW">SSW — Specified Skilled Worker (特定技能)</option>
@@ -127,7 +127,7 @@ function NewVisitorForm({ onSave, onCancel }) {
           <option value="Dependent">Dependent Visa (家族滞在)</option>
           <option value="Other">Other (অন্যান্য)</option>
         </select></div>
-        {form.visa_type === "Other" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.rose }}>কোন ভিসা? *</label>
+        {form.visa_type === "Other" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.rose }}>কোন ভিসা? <span className="req-star">*</span></label>
         <input value={form.visa_type_other} onChange={e => set("visa_type_other", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{...is, borderColor: `${t.rose}40`}} placeholder="ভিসার ধরন লিখুন" /></div>}
         {form.visa_type && form.visa_type !== "Other" && <div className="flex items-center p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}15` }}>
           <p className="text-[11px]" style={{ color: t.textSecondary }}>
@@ -164,14 +164,14 @@ function NewVisitorForm({ onSave, onCancel }) {
 
       <SectionHeader icon="📋" title="সোর্স ও কাউন্সেলিং" sKey="source" />
       {sections.source && <><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch / শাখা *</label>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch / শাখা <span className="req-star">*</span></label>
         <select value={form.branch} onChange={e => set("branch", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: !form.branch ? `${t.amber}60` : t.inputBorder }}>
           <option value="">— Branch নির্বাচন করুন —</option>
           {INITIAL_BRANCHES.filter(b => b.status === "active").map(b => <option key={b.id} value={b.name}>{b.name} ({b.city})</option>)}
         </select></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সোর্স</label>
         <select value={form.source} onChange={e => set("source", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Walk-in</option><option>Facebook</option><option>Agent</option><option>Referral</option><option>Website</option><option>YouTube</option></select></div>
-        {form.source === "Agent" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্ট নির্বাচন করুন *</label>
+        {form.source === "Agent" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্ট নির্বাচন করুন <span className="req-star">*</span></label>
         <select value={form.agent_name} onChange={e => set("agent_name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: !form.agent_name ? `${t.amber}60` : t.inputBorder }}>
           <option value="">— এজেন্ট সিলেক্ট করুন —</option>
           {AGENTS_DATA.filter(a => a.status === "active").map(a => <option key={a.id} value={a.name}>{a.name} ({a.area})</option>)}

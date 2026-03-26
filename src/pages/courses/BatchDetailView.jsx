@@ -301,7 +301,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
               </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টেস্টের নাম *</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টেস্টের নাম <span className="req-star">*</span></label>
                   <input value={testForm.testName} onChange={e => setTestForm(p => ({ ...p, testName: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Weekly Test 1..." />
                 </div>
                 <div>

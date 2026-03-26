@@ -6,7 +6,7 @@ import {
   Menu, X, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
-import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle } from "./context/ThemeContext";
+import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle, useLabelSettings } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NAV_ITEMS } from "./data/mockData";
@@ -521,6 +521,10 @@ function AppShell({ isDark, setIsDark }) {
     document.body.style.background = t.bg;
     document.body.style.color = t.text;
     document.body.style.fontFamily = "'DM Sans', 'Noto Sans Bengali', sans-serif";
+    // Admin label settings → CSS variables inject
+    const ls = JSON.parse(localStorage.getItem("agencybook_label_settings") || "{}");
+    document.documentElement.style.setProperty("--ab-label-size", ls.labelSize || "10px");
+    document.documentElement.style.setProperty("--ab-label-color", ls.labelColor || t.muted);
     return () => document.head.removeChild(style);
   }, [isDark]);
 

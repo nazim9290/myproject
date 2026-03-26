@@ -1,4 +1,27 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+
+// ── Admin-configurable label settings (localStorage-এ persist) ──
+const DEFAULT_LABEL_SETTINGS = {
+  labelColor: "",        // empty = theme default (t.muted)
+  labelSize: "10px",     // default label font size
+};
+
+function loadLabelSettings() {
+  try {
+    const saved = localStorage.getItem("agencybook_label_settings");
+    return saved ? { ...DEFAULT_LABEL_SETTINGS, ...JSON.parse(saved) } : DEFAULT_LABEL_SETTINGS;
+  } catch { return DEFAULT_LABEL_SETTINGS; }
+}
+
+export function useLabelSettings() {
+  const [settings, setSettings] = useState(loadLabelSettings);
+  const update = (newSettings) => {
+    const merged = { ...settings, ...newSettings };
+    setSettings(merged);
+    localStorage.setItem("agencybook_label_settings", JSON.stringify(merged));
+  };
+  return { labelSettings: settings, updateLabelSettings: update };
+}
 
 export const THEMES = {
   dark: {
@@ -91,6 +114,16 @@ export const getGlobalStyles = (t) => `
   .anim-slide { animation: slideIn 0.35s ease forwards; }
   select, input { color: ${t.text}; }
   select option { background: ${t.cardSolid}; color: ${t.text}; }
+  /* Required field * mark লাল দেখাবে — label-এ, placeholder-এ, সবখানে */
+  label .req-star, .req-star { color: ${t.rose} !important; font-weight: 700; }
+  /* Label settings — admin customizable */
+  .ab-label {
+    font-size: var(--ab-label-size, 10px);
+    color: var(--ab-label-color, ${t.muted});
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
 `;
 
 export function ThemeToggle({ isDark, onToggle }) {

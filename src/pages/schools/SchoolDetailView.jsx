@@ -112,7 +112,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
           <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট <span className="req-star">*</span></label>
                 <select value={addForm.studentId} onChange={e => setAddForm(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                   <option value="">— বাছুন —</option>
                   {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}

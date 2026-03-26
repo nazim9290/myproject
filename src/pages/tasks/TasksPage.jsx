@@ -119,7 +119,7 @@ export default function TasksPage({ students = [] }) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-3">
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টাস্কের বিবরণ *</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টাস্কের বিবরণ <span className="req-star">*</span></label>
               <input value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কী করতে হবে..." />
             </div>
             <div>

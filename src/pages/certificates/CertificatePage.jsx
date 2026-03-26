@@ -64,7 +64,7 @@ export default function CertificatePage({ students }) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম (বাংলা) *</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম (বাংলা) <span className="req-star">*</span></label>
               <input value={templateForm.name} onChange={e => setTemplateForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: সমাপ্তি সার্টিফিকেট" />
             </div>
             <div>

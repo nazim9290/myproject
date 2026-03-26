@@ -142,7 +142,7 @@ export default function CommunicationPage({ students = [] }) {
               <input type="date" value={form.follow_up_date} onChange={e => sf("follow_up_date", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} min={today} />
             </div>
             <div className="md:col-span-3">
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট *</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট <span className="req-star">*</span></label>
               <textarea value={form.notes} onChange={e => sf("notes", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="কথোপকথনের সারসংক্ষেপ..." />
             </div>
           </div>

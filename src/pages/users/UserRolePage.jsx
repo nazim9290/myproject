@@ -189,12 +189,12 @@ export default function UserRolePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch নাম *</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch নাম <span className="req-star">*</span></label>
                   <input value={branchForm.name} onChange={(e) => setBranchForm((p) => ({ ...p, name: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: ঢাকা (HQ), সিলেট" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শহর *</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শহর <span className="req-star">*</span></label>
                   <input value={branchForm.city} onChange={(e) => setBranchForm((p) => ({ ...p, city: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="ঢাকা, চট্টগ্রাম..." />
                 </div>
@@ -305,12 +305,12 @@ export default function UserRolePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><User size={9} className="inline mr-1" />নাম *</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><User size={9} className="inline mr-1" />নাম <span className="req-star">*</span></label>
                   <input value={userForm.name} onChange={(e) => setUserForm((p) => ({ ...p, name: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="পুরো নাম" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Mail size={9} className="inline mr-1" />ইমেইল *</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Mail size={9} className="inline mr-1" />ইমেইল <span className="req-star">*</span></label>
                   <input value={userForm.email} onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="user@agency.com" />
                 </div>
@@ -320,7 +320,7 @@ export default function UserRolePage() {
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="01XXXXXXXXX" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Building2 size={9} className="inline mr-1" />Branch *</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Building2 size={9} className="inline mr-1" />Branch <span className="req-star">*</span></label>
                   <select value={userForm.branch} onChange={(e) => setUserForm((p) => ({ ...p, branch: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option value="">— Branch নির্বাচন করুন —</option>

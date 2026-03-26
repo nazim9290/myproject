@@ -102,7 +102,7 @@ export default function HRPage() {
               </div>
             ))}
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পদবি / Role *</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পদবি / Role <span className="req-star">*</span></label>
               <select value={newEmp.role} onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
@@ -111,7 +111,7 @@ export default function HRPage() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch *</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch <span className="req-star">*</span></label>
               <select value={newEmp.branch} onChange={(e) => setNewEmp({ ...newEmp, branch: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>

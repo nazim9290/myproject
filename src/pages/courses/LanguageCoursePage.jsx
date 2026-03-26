@@ -43,7 +43,7 @@ function NewBatchForm({ onSave, onCancel }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্যাচের নাম *</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্যাচের নাম <span className="req-star">*</span></label>
           <input value={form.name} onChange={e => set("name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.name ? t.rose : t.inputBorder }} placeholder="Batch April 2026..." />
           {err.name && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.name}</p>}
         </div>
@@ -60,7 +60,7 @@ function NewBatchForm({ onSave, onCancel }) {
           </select>
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শুরুর তারিখ *</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শুরুর তারিখ <span className="req-star">*</span></label>
           <input type="date" value={form.startDate} onChange={e => set("startDate", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.startDate ? t.rose : t.inputBorder }} />
           {err.startDate && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.startDate}</p>}
         </div>

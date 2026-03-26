@@ -70,7 +70,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
         {type === "income" ? (
           <>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্টের নাম *</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্টের নাম <span className="req-star">*</span></label>
               <input value={form.studentName} onChange={e => set("studentName", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.studentName ? t.rose : t.inputBorder }} placeholder="Student name..." />
               {err.studentName && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.studentName}</p>}
             </div>
@@ -81,14 +81,14 @@ function AddEntryForm({ type, onSave, onCancel }) {
           </>
         ) : (
           <div className="md:col-span-2">
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ *</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ <span className="req-star">*</span></label>
             <input value={form.description} onChange={e => set("description", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.description ? t.rose : t.inputBorder }} placeholder="খরচের বিবরণ..." />
             {err.description && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.description}</p>}
           </div>
         )}
 
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) *</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
           <input type="number" value={form.amount} onChange={e => set("amount", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.amount ? t.rose : t.inputBorder }} placeholder="45000" />
           {err.amount && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.amount}</p>}
           {type === "income" && INCOME_CATS.includes(form.category) && form.amount && (
