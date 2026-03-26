@@ -308,7 +308,13 @@ export default function AccountsPage({ students = [] }) {
           <Card className="col-span-12 lg:col-span-8" delay={200}>
             <h3 className="text-sm font-semibold mb-4">Monthly P&L</h3>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={MONTHLY_REVENUE}>
+              <BarChart data={(() => {
+                // API data থেকে monthly P&L generate
+                const months = {};
+                incomeData.forEach(i => { const m = (i.date || i.created_at || "").slice(0, 7); if (m) { months[m] = months[m] || { month: m, income: 0, expense: 0 }; months[m].income += (i.paid_amount || i.amount || 0); }});
+                expenseData.forEach(e => { const m = (e.date || e.created_at || "").slice(0, 7); if (m) { months[m] = months[m] || { month: m, income: 0, expense: 0 }; months[m].expense += (e.amount || 0); }});
+                return Object.values(months).sort((a, b) => a.month.localeCompare(b.month)).slice(-6);
+              })()}>
                 <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} />
                 <XAxis dataKey="month" tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 100000).toFixed(0)}L`} />
