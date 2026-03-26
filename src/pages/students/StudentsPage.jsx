@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, X, Plus, Download } from "lucide-react";
+import { Search, X, Plus, Download, Upload, ArrowLeft, Check, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -35,6 +35,95 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
   const [filterBatch, setFilterBatch] = useState("All");
   const [filterSchool, setFilterSchool] = useState("All");
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // ── Excel Import state ──
+  const [showImport, setShowImport] = useState(false);
+  const [importStep, setImportStep] = useState("upload"); // upload | mapping | preview | done
+  const [importFile, setImportFile] = useState(null);
+  const [importHeaders, setImportHeaders] = useState([]);
+  const [importPreview, setImportPreview] = useState([]);
+  const [importTotal, setImportTotal] = useState(0);
+  const [importMapping, setImportMapping] = useState({});
+  const [importSuggestions, setImportSuggestions] = useState({});
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const importFileRef = useState(null)[1];
+
+  const SYSTEM_FIELDS = [
+    { key: "", label: "— Skip —" },
+    { key: "name_en", label: "নাম (English)" }, { key: "name_bn", label: "নাম (বাংলা)" },
+    { key: "phone", label: "ফোন" }, { key: "email", label: "ইমেইল" },
+    { key: "dob", label: "জন্ম তারিখ" }, { key: "gender", label: "লিঙ্গ" },
+    { key: "passport_number", label: "পাসপোর্ট" }, { key: "nid", label: "NID" },
+    { key: "father_name", label: "পিতার নাম" }, { key: "mother_name", label: "মাতার নাম" },
+    { key: "permanent_address", label: "স্থায়ী ঠিকানা" }, { key: "current_address", label: "বর্তমান ঠিকানা" },
+    { key: "country", label: "দেশ" }, { key: "school", label: "স্কুল" },
+    { key: "batch", label: "ব্যাচ" }, { key: "branch", label: "ব্রাঞ্চ" },
+    { key: "status", label: "স্ট্যাটাস" }, { key: "source", label: "সোর্স" },
+    { key: "student_type", label: "টাইপ" }, { key: "intake", label: "Intake" },
+    { key: "nationality", label: "জাতীয়তা" }, { key: "blood_group", label: "রক্তের গ্রুপ" },
+    { key: "whatsapp", label: "WhatsApp" }, { key: "visa_type", label: "ভিসার ধরন" },
+  ];
+
+  // Excel file upload → parse headers
+  const handleImportUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImportFile(file);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await api.upload("/students/import/parse", formData);
+      setImportHeaders(res.headers || []);
+      setImportPreview(res.preview || []);
+      setImportTotal(res.totalRows || 0);
+      setImportSuggestions(res.suggestions || {});
+      // Auto-mapping from suggestions
+      const autoMap = {};
+      (res.headers || []).forEach(h => { if (res.suggestions[h]) autoMap[h] = res.suggestions[h]; });
+      setImportMapping(autoMap);
+      setImportStep("mapping");
+    } catch (err) {
+      toast.error("Parse ব্যর্থ: " + err.message);
+    }
+  };
+
+  // Confirm import → send mapped data
+  const doImport = async () => {
+    const mapped = Object.entries(importMapping).filter(([_, v]) => v);
+    if (mapped.length === 0) { toast.error("কমপক্ষে ১টি column ম্যাপ করুন"); return; }
+
+    setImporting(true);
+    try {
+      // Build student records from preview + all rows (backend parsed)
+      // Re-parse full file and map
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const parsed = await api.upload("/students/import/parse", formData);
+
+      // Full data: parse all rows using mapping
+      const allRows = [];
+      // parsed.preview has only 5 rows, but totalRows has full count
+      // For now use preview data to build mapped students
+      // Better: backend should return all rows — let's send mapping to backend
+
+      // Actually, let's build student objects from preview (all data)
+      // Frontend has importFile — re-upload with mapping for full import
+      const formData2 = new FormData();
+      formData2.append("file", importFile);
+      formData2.append("mapping", JSON.stringify(importMapping));
+
+      // Use a different approach: parse on backend, map, and insert
+      const res = await api.upload("/students/import/mapped", formData2);
+      setImportResult(res);
+      setImportStep("done");
+      toast.success(res.message || `${res.success} জন import সফল`);
+      if (reloadData) reloadData();
+    } catch (err) {
+      toast.error("Import ব্যর্থ: " + err.message);
+    }
+    setImporting(false);
+  };
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -134,6 +223,7 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
             </div>
           )}
 
+          <Button variant="ghost" icon={Upload} onClick={() => { setShowImport(true); setImportStep("upload"); setImportFile(null); setImportResult(null); }}>Excel Import</Button>
           <Button icon={Plus} onClick={() => setShowAddForm(true)}>Add Student</Button>
         </div>
       </div>
@@ -169,6 +259,136 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
         />
       )}
 
+      {/* ══════════ EXCEL IMPORT MODAL ══════════ */}
+      {showImport && (
+        <Card delay={0}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              {importStep !== "upload" && <button onClick={() => setImportStep(importStep === "done" ? "upload" : importStep === "preview" ? "mapping" : "upload")} className="p-1.5 rounded-lg" style={{ background: t.inputBg }}><ArrowLeft size={14} /></button>}
+              <div>
+                <h3 className="text-sm font-bold flex items-center gap-2"><Upload size={14} /> Excel থেকে Student Import</h3>
+                <p className="text-[10px]" style={{ color: t.muted }}>
+                  {importStep === "upload" && "Step 1: Excel ফাইল আপলোড করুন"}
+                  {importStep === "mapping" && `Step 2: Column Mapping — ${importTotal} জন student পাওয়া গেছে`}
+                  {importStep === "done" && "Import সম্পন্ন"}
+                </p>
+              </div>
+            </div>
+            <button onClick={() => setShowImport(false)} className="p-1.5 rounded-lg" style={{ color: t.muted }}><X size={16} /></button>
+          </div>
+
+          {/* Step 1: Upload */}
+          {importStep === "upload" && (
+            <div>
+              <input type="file" accept=".xlsx" onChange={handleImportUpload} className="hidden" id="import-file" />
+              <label htmlFor="import-file"
+                className="flex flex-col items-center justify-center p-10 rounded-xl cursor-pointer border-2 border-dashed transition"
+                style={{ borderColor: t.inputBorder, background: t.inputBg }}>
+                <Upload size={36} style={{ color: t.muted }} />
+                <p className="text-sm font-medium mt-3">Excel ফাইল আপলোড করুন</p>
+                <p className="text-[10px] mt-1" style={{ color: t.muted }}>.xlsx ফরম্যাট — প্রথম row header হতে হবে</p>
+              </label>
+              <div className="mt-3 p-3 rounded-lg" style={{ background: `${t.cyan}08` }}>
+                <p className="text-[11px]" style={{ color: t.textSecondary }}>
+                  <strong>নিয়ম:</strong> Excel-এর প্রথম row-তে column header থাকতে হবে (যেমন: Name, Phone, DOB, Passport ইত্যাদি)।
+                  বাকি row-গুলোতে student data থাকবে। সিস্টেম অটো column detect করবে।
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Column Mapping */}
+          {importStep === "mapping" && (
+            <div>
+              <div className="overflow-x-auto mb-4">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>Excel Column</th>
+                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>→ System Field</th>
+                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>Sample Data</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importHeaders.map(h => (
+                      <tr key={h} style={{ borderBottom: `1px solid ${t.border}` }}>
+                        <td className="py-2 px-3 font-medium">{h}</td>
+                        <td className="py-2 px-3">
+                          <select value={importMapping[h] || ""} onChange={e => setImportMapping(prev => ({ ...prev, [h]: e.target.value }))}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                            style={{ background: t.inputBg, border: `1px solid ${importMapping[h] ? `${t.emerald}60` : t.inputBorder}`, color: t.text }}>
+                            {SYSTEM_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}{f.key ? ` (${f.key})` : ""}</option>)}
+                          </select>
+                        </td>
+                        <td className="py-2 px-3" style={{ color: t.muted }}>{importPreview[0]?.[h] || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Preview */}
+              <div className="mb-3 p-3 rounded-lg" style={{ background: t.inputBg }}>
+                <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>Data Preview (প্রথম {importPreview.length} জন)</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[10px]">
+                    <thead>
+                      <tr>{Object.entries(importMapping).filter(([_, v]) => v).map(([_, v]) => (
+                        <th key={v} className="text-left py-1 px-2 font-medium" style={{ color: t.cyan }}>{v}</th>
+                      ))}</tr>
+                    </thead>
+                    <tbody>
+                      {importPreview.map((row, i) => (
+                        <tr key={i} style={{ borderBottom: `1px solid ${t.border}` }}>
+                          {Object.entries(importMapping).filter(([_, v]) => v).map(([excelCol, _]) => (
+                            <td key={excelCol} className="py-1 px-2">{row[excelCol] || "—"}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <p className="text-xs" style={{ color: t.muted }}>
+                  মোট: <strong style={{ color: t.text }}>{importTotal}</strong> জন •
+                  ম্যাপ: <strong style={{ color: t.emerald }}>{Object.values(importMapping).filter(Boolean).length}</strong> columns
+                </p>
+                <Button icon={Check} onClick={doImport} disabled={importing}>
+                  {importing ? "Import হচ্ছে..." : `${importTotal} জন Import করুন`}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Done */}
+          {importStep === "done" && importResult && (
+            <div className="text-center py-6">
+              <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" style={{ background: `${t.emerald}15` }}>
+                <Check size={32} style={{ color: t.emerald }} />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Import সম্পন্ন!</h3>
+              <p className="text-sm" style={{ color: t.textSecondary }}>{importResult.message}</p>
+              <div className="flex justify-center gap-6 mt-4">
+                <div><p className="text-2xl font-bold" style={{ color: t.emerald }}>{importResult.success}</p><p className="text-[10px]" style={{ color: t.muted }}>সফল</p></div>
+                {importResult.failed > 0 && <div><p className="text-2xl font-bold" style={{ color: t.rose }}>{importResult.failed}</p><p className="text-[10px]" style={{ color: t.muted }}>ব্যর্থ</p></div>}
+              </div>
+              {importResult.errors?.length > 0 && (
+                <div className="mt-4 text-left">
+                  {importResult.errors.map((e, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs p-2 rounded-lg mb-1" style={{ background: `${t.rose}08` }}>
+                      <AlertTriangle size={12} style={{ color: t.rose }} />
+                      <span>Row {e.row}: {e.name} — {e.error}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button className="mt-6" onClick={() => { setShowImport(false); if (reloadData) reloadData(); }}>বন্ধ করুন</Button>
+            </div>
+          )}
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
