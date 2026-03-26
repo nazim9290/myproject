@@ -280,6 +280,54 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
           {/* Step 1: Upload */}
           {importStep === "upload" && (
             <div>
+              {/* ── Template Download ── */}
+              <div className="mb-4 p-4 rounded-xl flex items-center justify-between" style={{ background: `${t.emerald}08`, border: `1px solid ${t.emerald}20` }}>
+                <div>
+                  <p className="text-xs font-semibold flex items-center gap-2"><Download size={14} style={{ color: t.emerald }} /> Sample Template ডাউনলোড করুন</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>এই ফাইলে সব column header আছে — ডাটা বসিয়ে আপলোড করুন। <span style={{ color: t.rose }}>*</span> চিহ্নিত column বাধ্যতামূলক।</p>
+                </div>
+                <button onClick={() => {
+                  // Template Excel generate with headers + instructions
+                  const cols = [
+                    { h: "Name *", w: 25, note: "বাধ্যতামূলক — English-এ পুরো নাম" },
+                    { h: "Name (বাংলা)", w: 25, note: "ঐচ্ছিক — বাংলায় নাম" },
+                    { h: "Phone *", w: 15, note: "বাধ্যতামূলক — 01XXXXXXXXX" },
+                    { h: "Email", w: 22, note: "ঐচ্ছিক" },
+                    { h: "Date of Birth", w: 15, note: "YYYY-MM-DD format" },
+                    { h: "Gender", w: 10, note: "Male / Female / Other" },
+                    { h: "Passport No", w: 15, note: "পাসপোর্ট নম্বর" },
+                    { h: "NID", w: 18, note: "জাতীয় পরিচয়পত্র নম্বর" },
+                    { h: "Father Name", w: 20, note: "পিতার নাম" },
+                    { h: "Mother Name", w: 20, note: "মাতার নাম" },
+                    { h: "Address", w: 30, note: "স্থায়ী ঠিকানা" },
+                    { h: "Country", w: 12, note: "Japan / Germany / Korea" },
+                    { h: "Branch", w: 12, note: "Main / Chattogram / Sylhet" },
+                    { h: "Source", w: 12, note: "Facebook / Walk-in / Agent / Referral" },
+                    { h: "Blood Group", w: 10, note: "A+ / B+ / O+ / AB+ ইত্যাদি" },
+                    { h: "WhatsApp", w: 15, note: "WhatsApp নম্বর (আলাদা হলে)" },
+                    { h: "Nationality", w: 12, note: "Bangladeshi" },
+                    { h: "Visa Type", w: 15, note: "Language Student / SSW / TITP" },
+                  ];
+                  // CSV fallback (সহজ — কোনো library দরকার নেই)
+                  const bom = "\uFEFF";
+                  const header = cols.map(c => c.h).join(",");
+                  const notes = cols.map(c => `"${c.note}"`).join(",");
+                  const sample = '"Mohammad Rahim","মোহাম্মদ রহিম","01811111111","rahim@gmail.com","1998-03-12","Male","BK1234567","1998123456789","Abdul Karim","Fatema Begum","Comilla, Bangladesh","Japan","Main","Facebook","B+","01811111111","Bangladeshi","Language Student"';
+                  const csv = bom + header + "\n" + notes + "\n" + sample;
+                  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                  Object.assign(document.createElement("a"), {
+                    href: URL.createObjectURL(blob),
+                    download: "AgencyBook_Student_Import_Template.csv"
+                  }).click();
+                  toast.success("Template ডাউনলোড হয়েছে — Excel-এ খুলুন, ডাটা বসান, .xlsx হিসেবে save করুন");
+                }}
+                className="px-4 py-2 rounded-lg text-xs font-medium transition shrink-0"
+                style={{ background: t.emerald, color: "#fff" }}>
+                  Template ডাউনলোড
+                </button>
+              </div>
+
+              {/* ── File Upload ── */}
               <input type="file" accept=".xlsx" onChange={handleImportUpload} className="hidden" id="import-file" />
               <label htmlFor="import-file"
                 className="flex flex-col items-center justify-center p-10 rounded-xl cursor-pointer border-2 border-dashed transition"
@@ -290,8 +338,8 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
               </label>
               <div className="mt-3 p-3 rounded-lg" style={{ background: `${t.cyan}08` }}>
                 <p className="text-[11px]" style={{ color: t.textSecondary }}>
-                  <strong>নিয়ম:</strong> Excel-এর প্রথম row-তে column header থাকতে হবে (যেমন: Name, Phone, DOB, Passport ইত্যাদি)।
-                  বাকি row-গুলোতে student data থাকবে। সিস্টেম অটো column detect করবে।
+                  <strong>নিয়ম:</strong> প্রথম row = column header, দ্বিতীয় row থেকে student data।
+                  <span style={{ color: t.rose }}> * </span>চিহ্নিত column (Name, Phone) অবশ্যই থাকতে হবে।
                 </p>
               </div>
             </div>
