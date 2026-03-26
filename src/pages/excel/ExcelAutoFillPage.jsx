@@ -11,10 +11,20 @@ const API = window.location.hostname === "localhost" ? "http://localhost:5000/ap
 const token = () => localStorage.getItem("agencyos_token");
 
 // All system fields grouped for mapping UI
+// key-তে :year, :month, :day, :first, :last suffix দিলে sub-part বসবে
 const SYSTEM_FIELDS = [
   { group: "ব্যক্তিগত", fields: [
-    { key: "name_en", label: "নাম (English)" }, { key: "name_bn", label: "নাম (বাংলা)" },
-    { key: "name_katakana", label: "নাম (カタカナ)" }, { key: "dob", label: "জন্ম তারিখ" },
+    { key: "name_en", label: "নাম (Full English)" },
+    { key: "name_en:first", label: "নাম → First Name" },
+    { key: "name_en:last", label: "নাম → Last Name" },
+    { key: "name_bn", label: "নাম (বাংলা)" },
+    { key: "name_katakana", label: "নাম (カタカナ)" },
+    { key: "name_katakana:first", label: "カタカナ → First" },
+    { key: "name_katakana:last", label: "カタカナ → Last" },
+    { key: "dob", label: "জন্ম তারিখ (Full)" },
+    { key: "dob:year", label: "জন্ম → শুধু Year" },
+    { key: "dob:month", label: "জন্ম → শুধু Month" },
+    { key: "dob:day", label: "জন্ম → শুধু Day" },
     { key: "age", label: "বয়স" }, { key: "gender", label: "লিঙ্গ" },
     { key: "marital_status", label: "বৈবাহিক অবস্থা" }, { key: "nationality", label: "জাতীয়তা" },
     { key: "blood_group", label: "রক্তের গ্রুপ" }, { key: "phone", label: "ফোন" },
@@ -22,7 +32,14 @@ const SYSTEM_FIELDS = [
   ]},
   { group: "পাসপোর্ট / NID", fields: [
     { key: "nid", label: "NID নম্বর" }, { key: "passport_number", label: "পাসপোর্ট নম্বর" },
-    { key: "passport_issue", label: "পাসপোর্ট ইস্যু" }, { key: "passport_expiry", label: "পাসপোর্ট মেয়াদ" },
+    { key: "passport_issue", label: "পাসপোর্ট ইস্যু (Full)" },
+    { key: "passport_issue:year", label: "পাসপোর্ট ইস্যু → Year" },
+    { key: "passport_issue:month", label: "পাসপোর্ট ইস্যু → Month" },
+    { key: "passport_issue:day", label: "পাসপোর্ট ইস্যু → Day" },
+    { key: "passport_expiry", label: "পাসপোর্ট মেয়াদ (Full)" },
+    { key: "passport_expiry:year", label: "পাসপোর্ট মেয়াদ → Year" },
+    { key: "passport_expiry:month", label: "পাসপোর্ট মেয়াদ → Month" },
+    { key: "passport_expiry:day", label: "পাসপোর্ট মেয়াদ → Day" },
   ]},
   { group: "ঠিকানা", fields: [
     { key: "permanent_address", label: "স্থায়ী ঠিকানা" }, { key: "current_address", label: "বর্তমান ঠিকানা" },
@@ -30,8 +47,16 @@ const SYSTEM_FIELDS = [
   { group: "পরিবার", fields: [
     { key: "father_name", label: "পিতার নাম (বাংলা)" }, { key: "father_name_en", label: "পিতার নাম (EN)" },
     { key: "mother_name", label: "মাতার নাম (বাংলা)" }, { key: "mother_name_en", label: "মাতার নাম (EN)" },
-    { key: "father_dob", label: "পিতার জন্ম তারিখ" }, { key: "father_occupation", label: "পিতার পেশা" },
-    { key: "mother_dob", label: "মাতার জন্ম তারিখ" }, { key: "mother_occupation", label: "মাতার পেশা" },
+    { key: "father_dob", label: "পিতার জন্ম তারিখ (Full)" },
+    { key: "father_dob:year", label: "পিতার জন্ম → Year" },
+    { key: "father_dob:month", label: "পিতার জন্ম → Month" },
+    { key: "father_dob:day", label: "পিতার জন্ম → Day" },
+    { key: "father_occupation", label: "পিতার পেশা" },
+    { key: "mother_dob", label: "মাতার জন্ম তারিখ (Full)" },
+    { key: "mother_dob:year", label: "মাতার জন্ম → Year" },
+    { key: "mother_dob:month", label: "মাতার জন্ম → Month" },
+    { key: "mother_dob:day", label: "মাতার জন্ম → Day" },
+    { key: "mother_occupation", label: "মাতার পেশা" },
   ]},
   { group: "শিক্ষা", fields: [
     { key: "edu_ssc_school", label: "SSC স্কুল" }, { key: "edu_ssc_year", label: "SSC সন" },
