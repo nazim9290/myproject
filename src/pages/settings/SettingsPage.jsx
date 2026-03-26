@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText } from "lucide-react";
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import { api } from "../../hooks/useAPI";
 
 // ── Administration ট্যাব কনফিগ ──
 const ADMIN_TABS = [
   { key: "agency", label: "এজেন্সি তথ্য", icon: Building },
   { key: "appearance", label: "ডিজাইন ও থিম", icon: Palette },
+  { key: "doc_types", label: "ডকুমেন্ট টাইপ", icon: FileText },
   { key: "pipeline", label: "পাইপলাইন সেটিংস", icon: GitBranch },
   { key: "branches", label: "ব্রাঞ্চ ম্যানেজমেন্ট", icon: Globe },
   { key: "notifications", label: "নোটিফিকেশন", icon: Bell },
@@ -62,6 +64,18 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
     batchStart: true,
     documentPending: false,
   });
+
+  // ── Document Types management ──
+  const [docTypes, setDocTypes] = useState([]);
+  const [showDocTypeForm, setShowDocTypeForm] = useState(false);
+  const [docTypeForm, setDocTypeForm] = useState({ name: "", name_bn: "", category: "personal" });
+  const [docTypeFields, setDocTypeFields] = useState([]); // [{key, label, label_en, type}]
+  const [editingDocTypeId, setEditingDocTypeId] = useState(null);
+  const [deleteDocTypeId, setDeleteDocTypeId] = useState(null);
+
+  useEffect(() => {
+    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch(() => {});
+  }, []);
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
@@ -396,6 +410,121 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
                 <span>{opt.icon}</span> {opt.label}
               </button>
             ))}
+          </div>
+        </Card>
+      </div>}
+
+      {/* ── ডকুমেন্ট টাইপ ম্যানেজমেন্ট ── */}
+      {activeTab === "doc_types" && <div className="space-y-5">
+        <Card delay={50}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><FileText size={14} /> ডকুমেন্ট টাইপ তালিকা</h3>
+            <Button icon={Plus} size="xs" onClick={() => { setShowDocTypeForm(true); setEditingDocTypeId(null); setDocTypeForm({ name: "", name_bn: "", category: "personal" }); setDocTypeFields([]); }}>নতুন টাইপ</Button>
+          </div>
+
+          {/* Add/Edit Form */}
+          {showDocTypeForm && (
+            <div className="mb-4 p-4 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English) <span className="req-star">*</span></label>
+                  <input value={docTypeForm.name} onChange={e => setDocTypeForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Birth Certificate" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
+                  <input value={docTypeForm.name_bn} onChange={e => setDocTypeForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="জন্ম সনদ" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+                  <select value={docTypeForm.category} onChange={e => setDocTypeForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="personal">ব্যক্তিগত</option>
+                    <option value="academic">একাডেমিক</option>
+                    <option value="financial">আর্থিক</option>
+                    <option value="other">অন্যান্য</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Fields */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>Custom Fields ({docTypeFields.length})</label>
+                  <button onClick={() => setDocTypeFields(prev => [...prev, { key: "", label: "", label_en: "", type: "text" }])}
+                    className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>+ Field যোগ</button>
+                </div>
+                <div className="space-y-2">
+                  {docTypeFields.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input value={f.key} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], key: e.target.value }; setDocTypeFields(u); }}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="key (e.g. BirthRegNo)" />
+                      <input value={f.label} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label: e.target.value }; setDocTypeFields(u); }}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="লেবেল (বাংলা)" />
+                      <input value={f.label_en} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label_en: e.target.value }; setDocTypeFields(u); }}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Label (English)" />
+                      <select value={f.type} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], type: e.target.value }; setDocTypeFields(u); }}
+                        className="px-2 py-1.5 rounded-lg text-xs outline-none w-20" style={is}>
+                        <option value="text">Text</option><option value="date">Date</option><option value="select">Select</option>
+                      </select>
+                      <button onClick={() => setDocTypeFields(prev => prev.filter((_, j) => j !== i))} style={{ color: t.muted }}><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="xs" icon={X} onClick={() => setShowDocTypeForm(false)}>বাতিল</Button>
+                <Button size="xs" icon={Save} onClick={async () => {
+                  if (!docTypeForm.name.trim()) { toast.error("নাম দিন"); return; }
+                  try {
+                    if (editingDocTypeId) {
+                      const updated = await api.patch(`/docdata/types/${editingDocTypeId}`, { ...docTypeForm, fields: docTypeFields });
+                      setDocTypes(prev => prev.map(d => d.id === editingDocTypeId ? updated : d));
+                      toast.updated(docTypeForm.name);
+                    } else {
+                      const saved = await api.post("/docdata/types", { ...docTypeForm, fields: docTypeFields });
+                      setDocTypes(prev => [...prev, saved]);
+                      toast.success(`${docTypeForm.name} — যোগ হয়েছে`);
+                    }
+                    setShowDocTypeForm(false);
+                  } catch (err) { toast.error(err.message); }
+                }}>সংরক্ষণ</Button>
+              </div>
+            </div>
+          )}
+
+          {/* List */}
+          <div className="space-y-2">
+            {docTypes.map(dt => (
+              <div key={dt.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: t.inputBg }}>
+                <div className="flex items-center gap-3">
+                  <FileText size={14} style={{ color: dt.category === "personal" ? t.cyan : dt.category === "academic" ? t.purple : t.amber }} />
+                  <div>
+                    <p className="text-xs font-semibold">{dt.name_bn || dt.name} <span className="font-normal" style={{ color: t.muted }}>({dt.name})</span></p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>{(dt.fields || []).length} fields • {dt.category}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => {
+                    setEditingDocTypeId(dt.id);
+                    setDocTypeForm({ name: dt.name, name_bn: dt.name_bn || "", category: dt.category || "personal" });
+                    setDocTypeFields(dt.fields || []);
+                    setShowDocTypeForm(true);
+                  }} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan }}>Edit</button>
+                  {deleteDocTypeId === dt.id ? (
+                    <div className="flex gap-1">
+                      <button onClick={async () => {
+                        try { await api.del(`/docdata/types/${dt.id}`); setDocTypes(prev => prev.filter(d => d.id !== dt.id)); toast.success("মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); }
+                        setDeleteDocTypeId(null);
+                      }} className="text-[10px] px-2 py-1 rounded-lg" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
+                      <button onClick={() => setDeleteDocTypeId(null)} className="text-[10px] px-2 py-1" style={{ color: t.muted }}>না</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteDocTypeId(dt.id)} style={{ color: t.muted }}><Trash2 size={13} /></button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {docTypes.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো document type নেই</p>}
           </div>
         </Card>
       </div>}
