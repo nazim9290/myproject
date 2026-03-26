@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, FileText, Plus, Save, X, Download, Search, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, FileText, Plus, Save, X, Download, Search, Users, AlertTriangle, CheckCircle, Clock, Send } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -46,8 +46,17 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const toast = useToast();
   const [subs, setSubs] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addForm, setAddForm] = useState({ studentId: "", status: "submitted", submissionNo: "" });
-  const schoolStudents = (students || []).filter((s) => s.school === school.name_en || subs.some((sub) => sub.studentId === s.id));
+  const [addForm, setAddForm] = useState({ studentId: "", status: "submitted", submissionNo: "", intake: "" });
+  const [showFeedbackForm, setShowFeedbackForm] = useState(null); // submission id
+  const [feedbackForm, setFeedbackForm] = useState({ doc: "", issue: "", severity: "warning" });
+  const schoolStudents = (students || []).filter((s) => s.school === school.name_en || subs.some((sub) => sub.student_id === s.id));
+
+  // Load submissions from API
+  useEffect(() => {
+    api.get(`/submissions?school_id=${school.id}`).then(data => {
+      if (Array.isArray(data)) setSubs(data);
+    }).catch(() => {});
+  }, [school.id]);
   const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
@@ -91,36 +100,71 @@ export default function SchoolDetailView({ school, students, onBack }) {
     setGenerating(false);
   };
 
-  const cycleStatus = (subId) => {
-    const order = Object.keys(SUB_STATUS);
-    setSubs(prev => prev.map(s => {
-      if (s.id !== subId) return s;
-      const idx = order.indexOf(s.status);
-      const next = order[(idx + 1) % order.length];
-      toast.success(`${s.studentName} → ${SUB_STATUS[next].label}`);
-      return { ...s, status: next };
-    }));
+  // Status config
+  const STATUS_CONFIG = {
+    submitted: { label: "সাবমিট", color: t.cyan, icon: Send },
+    under_review: { label: "রিভিউ চলছে", color: t.amber, icon: Clock },
+    issues_found: { label: "সমস্যা পাওয়া", color: t.rose, icon: AlertTriangle },
+    resubmitted: { label: "পুনরায় সাবমিট", color: t.purple, icon: Send },
+    accepted: { label: "গৃহীত", color: t.emerald, icon: CheckCircle },
+    interview_scheduled: { label: "ইন্টারভিউ", color: t.amber, icon: Clock },
+    coe_received: { label: "COE পেয়েছে", color: t.emerald, icon: CheckCircle },
+    rejected: { label: "প্রত্যাখ্যাত", color: t.rose, icon: X },
   };
 
-  const addSubmission = () => {
-    if (!addForm.studentId) { toast.error("স্টুডেন্ট সিলেক্ট করুন"); return; }
-    const student = students.find(s => s.id === addForm.studentId);
-    const newSub = {
-      id: `SUB-${Date.now()}`,
-      studentId: addForm.studentId,
-      studentName: student?.name_en || "—",
-      schoolId: school.id,
-      schoolName: school.name_en,
-      submissionDate: new Date().toISOString().slice(0, 10),
-      submissionNo: parseInt(addForm.submissionNo) || (subs.filter(s => s.studentId === addForm.studentId).length + 1),
-      status: addForm.status,
-      feedback: [],
-    };
-    setSubs(prev => [newSub, ...prev]);
-    setShowAddForm(false);
-    setAddForm({ studentId: "", status: "submitted", submissionNo: "" });
-    toast.success(`${student?.name_en} — Submission যোগ হয়েছে`);
+  // Status change via API
+  const changeStatus = async (subId, newStatus) => {
+    try {
+      const updated = await api.patch(`/submissions/${subId}`, { status: newStatus });
+      setSubs(prev => prev.map(s => s.id === subId ? { ...s, ...updated } : s));
+      toast.success(`Status → ${STATUS_CONFIG[newStatus]?.label || newStatus}`);
+    } catch (err) { toast.error(err.message); }
   };
+
+  // Add submission via API
+  const addSubmission = async () => {
+    if (!addForm.studentId) { toast.error("স্টুডেন্ট সিলেক্ট করুন"); return; }
+    try {
+      const saved = await api.post("/submissions", {
+        school_id: school.id,
+        student_id: addForm.studentId,
+        submission_number: parseInt(addForm.submissionNo) || (subs.filter(s => s.student_id === addForm.studentId).length + 1),
+        intake: addForm.intake || "",
+        status: addForm.status || "submitted",
+      });
+      setSubs(prev => [saved, ...prev]);
+      setShowAddForm(false);
+      setAddForm({ studentId: "", status: "submitted", submissionNo: "", intake: "" });
+      toast.success("Submission যোগ হয়েছে");
+    } catch (err) { toast.error(err.message); }
+  };
+
+  // Add feedback (recheck issue)
+  const addFeedback = async (subId) => {
+    if (!feedbackForm.doc || !feedbackForm.issue) { toast.error("Document ও সমস্যা লিখুন"); return; }
+    try {
+      const updated = await api.post(`/submissions/${subId}/feedback`, feedbackForm);
+      setSubs(prev => prev.map(s => s.id === subId ? { ...s, ...updated } : s));
+      setShowFeedbackForm(null);
+      setFeedbackForm({ doc: "", issue: "", severity: "warning" });
+      toast.success("Recheck issue যোগ হয়েছে");
+    } catch (err) { toast.error(err.message); }
+  };
+
+  // Resolve feedback
+  const resolveFeedback = async (subId, fbIdx) => {
+    try {
+      const updated = await api.patch(`/submissions/${subId}/feedback/${fbIdx}/resolve`, {});
+      setSubs(prev => prev.map(s => s.id === subId ? { ...s, ...updated } : s));
+      toast.success("Issue resolved!");
+    } catch (err) { toast.error(err.message); }
+  };
+
+  // KPI calculations
+  const totalSubs = subs.length;
+  const issuesSubs = subs.filter(s => s.status === "issues_found").length;
+  const acceptedSubs = subs.filter(s => ["accepted", "coe_received"].includes(s.status)).length;
+  const pendingRechecks = subs.reduce((sum, s) => sum + (s.feedback || []).filter(f => !f.resolved).length, 0);
 
   return (
     <div className="space-y-5 anim-fade">
@@ -264,59 +308,138 @@ export default function SchoolDetailView({ school, students, onBack }) {
         </Card>
       </div>
 
-      <Card delay={150}>
+      {/* ═══ SUBMISSION KPI ═══ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "মোট সাবমিশন", value: totalSubs, color: t.cyan },
+          { label: "গৃহীত", value: acceptedSubs, color: t.emerald },
+          { label: "সমস্যা আছে", value: issuesSubs, color: t.rose },
+          { label: "Recheck বাকি", value: pendingRechecks, color: t.amber },
+        ].map((kpi, i) => (
+          <Card key={i} delay={150 + i * 30}>
+            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
+            <p className="text-2xl font-bold mt-1" style={{ color: kpi.color }}>{kpi.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* ═══ SUBMISSIONS LIST ═══ */}
+      <Card delay={250}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Submission History</h3>
           <Button icon={Plus} size="xs" onClick={() => setShowAddForm(true)}>নতুন Submission</Button>
         </div>
 
+        {/* Add form */}
         {showAddForm && (
           <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
               <div>
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট <span className="req-star">*</span></label>
                 <select value={addForm.studentId} onChange={e => setAddForm(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                   <option value="">— বাছুন —</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
+                  {(students || []).filter(s => !["VISITOR", "CANCELLED"].includes(s.status)).map(s => <option key={s.id} value={s.id}>{s.name_en}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্ট্যাটাস</label>
-                <select value={addForm.status} onChange={e => setAddForm(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                  {Object.entries(SUB_STATUS).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Intake</label>
+                <select value={addForm.intake} onChange={e => setAddForm(p => ({ ...p, intake: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                  <option value="">—</option><option>April 2026</option><option>July 2026</option><option>October 2026</option><option>January 2027</option>
                 </select>
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Submission #</label>
                 <input type="number" value={addForm.submissionNo} onChange={e => setAddForm(p => ({ ...p, submissionNo: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="1" />
               </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>বাতিল</Button>
-              <Button icon={Save} size="xs" onClick={addSubmission}>যোগ করুন</Button>
+              <div className="flex items-end gap-2">
+                <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>বাতিল</Button>
+                <Button icon={Save} size="xs" onClick={addSubmission}>যোগ</Button>
+              </div>
             </div>
           </div>
         )}
 
-        {subs.length === 0 ? <EmptyState icon={FileText} title="কোনো সাবমিশন নেই" /> : (
+        {/* Submissions list */}
+        {subs.length === 0 ? <EmptyState icon={FileText} title="কোনো সাবমিশন নেই" subtitle="উপরে নতুন Submission যোগ করুন" /> : (
           <div className="space-y-3">
-            {subs.sort((a, b) => b.submissionDate.localeCompare(a.submissionDate)).map((sub) => {
-              const st = SUB_STATUS[sub.status] || SUB_STATUS.submitted;
+            {subs.map(sub => {
+              const st = STATUS_CONFIG[sub.status] || STATUS_CONFIG.submitted;
+              const StIcon = st.icon;
+              const feedbacks = sub.feedback || [];
+              const unresolvedCount = feedbacks.filter(f => !f.resolved).length;
+
               return (
-                <div key={sub.id} className="flex items-center gap-4 p-3 rounded-xl" style={{ border: `1px solid ${t.border}` }}>
-                  <button onClick={() => cycleStatus(sub.id)} title="ক্লিক করে status পরিবর্তন করুন"
-                    className="text-lg transition-transform hover:scale-110 shrink-0" style={{ cursor: "pointer" }}>
-                    {st.icon}
-                  </button>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-semibold">{sub.studentName}</p>
-                      <span className="text-[10px] font-mono" style={{ color: t.cyan }}>#{sub.submissionNo}</span>
+                <div key={sub.id} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${unresolvedCount > 0 ? t.rose + "40" : t.border}` }}>
+                  {/* Main row */}
+                  <div className="flex items-center gap-4 p-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${st.color}15` }}>
+                      <StIcon size={14} style={{ color: st.color }} />
                     </div>
-                    <p className="text-[10px]" style={{ color: t.muted }}>{sub.submissionDate}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-semibold">{sub.students?.name_en || sub.student_id}</p>
+                        <span className="text-[10px] font-mono" style={{ color: t.cyan }}>#{sub.submission_number || 1}</span>
+                        {sub.intake && <span className="text-[10px]" style={{ color: t.muted }}>{sub.intake}</span>}
+                      </div>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{sub.submission_date || "—"}{sub.recheck_count > 0 ? ` • ${sub.recheck_count}x recheck` : ""}</p>
+                    </div>
+
+                    {/* Status dropdown */}
+                    <select value={sub.status} onChange={e => changeStatus(sub.id, e.target.value)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-medium outline-none"
+                      style={{ background: `${st.color}15`, color: st.color, border: `1px solid ${st.color}30` }}>
+                      {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                    </select>
+
+                    {unresolvedCount > 0 && <Badge color={t.rose} size="xs">{unresolvedCount} issues</Badge>}
+
+                    <button onClick={() => setShowFeedbackForm(showFeedbackForm === sub.id ? null : sub.id)}
+                      className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.amber, background: `${t.amber}10` }}>
+                      + Issue
+                    </button>
                   </div>
-                  <Badge color={st.color} size="xs">{st.label}</Badge>
-                  {sub.feedback.length > 0 && <Badge color={t.rose} size="xs">{sub.feedback.length} issues</Badge>}
+
+                  {/* Feedback form */}
+                  {showFeedbackForm === sub.id && (
+                    <div className="px-3 pb-3">
+                      <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                          <input value={feedbackForm.doc} onChange={e => setFeedbackForm(p => ({ ...p, doc: e.target.value }))}
+                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Document নাম (যেমন: Birth Cert)" />
+                          <input value={feedbackForm.issue} onChange={e => setFeedbackForm(p => ({ ...p, issue: e.target.value }))}
+                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="সমস্যা কী?" />
+                          <div className="flex gap-2">
+                            <select value={feedbackForm.severity} onChange={e => setFeedbackForm(p => ({ ...p, severity: e.target.value }))}
+                              className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                              <option value="warning">⚠ Warning</option><option value="error">🔴 Error</option>
+                            </select>
+                            <Button size="xs" onClick={() => addFeedback(sub.id)}>যোগ</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Feedback list */}
+                  {feedbacks.length > 0 && (
+                    <div className="px-3 pb-3 space-y-1">
+                      {feedbacks.map((fb, fbIdx) => (
+                        <div key={fbIdx} className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
+                          style={{ background: fb.resolved ? `${t.emerald}08` : `${fb.severity === "error" ? t.rose : t.amber}08` }}>
+                          <span>{fb.resolved ? "✅" : fb.severity === "error" ? "🔴" : "⚠️"}</span>
+                          <span className="font-medium" style={{ color: fb.resolved ? t.emerald : fb.severity === "error" ? t.rose : t.amber }}>{fb.doc}</span>
+                          <span className="flex-1" style={{ color: t.textSecondary }}>{fb.issue}</span>
+                          <span className="text-[9px]" style={{ color: t.muted }}>{fb.date}</span>
+                          {!fb.resolved && (
+                            <button onClick={() => resolveFeedback(sub.id, fbIdx)}
+                              className="text-[10px] px-2 py-0.5 rounded" style={{ color: t.emerald, background: `${t.emerald}10` }}>
+                              Resolve
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
