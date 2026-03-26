@@ -83,6 +83,44 @@ export default function DocumentsPage({ students }) {
   // ══════════ DOC TYPE FIELD FORM ══════════
   if (selectedStudent && activeDocType) {
     const fields = activeDocType.fields || [];
+    const normalFields = fields.filter(f => f.type !== "repeatable");
+    const repeatableField = fields.find(f => f.type === "repeatable");
+
+    // Repeatable members from fieldValues
+    const members = fieldValues._members || [];
+    const addMember = () => {
+      const blank = {};
+      (repeatableField?.subfields || []).forEach(sf => { blank[sf.key] = ""; });
+      setFieldValues(prev => ({ ...prev, _members: [...(prev._members || []), blank] }));
+    };
+    const removeMember = (idx) => {
+      setFieldValues(prev => ({ ...prev, _members: (prev._members || []).filter((_, i) => i !== idx) }));
+    };
+    const updateMember = (idx, key, val) => {
+      setFieldValues(prev => {
+        const updated = [...(prev._members || [])];
+        updated[idx] = { ...updated[idx], [key]: val };
+        return { ...prev, _members: updated };
+      });
+    };
+
+    // Save: flatten members into MemberN_Key format for Doc Generator compatibility
+    const saveWithFlatten = async () => {
+      const flat = { ...fieldValues };
+      // Flatten _members array → Member1_Name, Member2_Name, etc.
+      (fieldValues._members || []).forEach((m, i) => {
+        Object.entries(m).forEach(([k, v]) => { flat[`Member${i + 1}_${k}`] = v; });
+      });
+      setSaving(true);
+      try {
+        await api.post("/docdata/save", { student_id: selectedStudent.id, doc_type_id: activeDocType.id, field_data: flat });
+        toast.success(`${activeDocType.name_bn || activeDocType.name} — ডাটা সংরক্ষণ হয়েছে`);
+        await loadStudentDocs(selectedStudent.id);
+        setActiveDocType(null);
+      } catch (err) { toast.error(err.message); }
+      setSaving(false);
+    };
+
     return (
       <div className="space-y-5 anim-fade">
         <div className="flex items-center gap-4">
@@ -91,12 +129,13 @@ export default function DocumentsPage({ students }) {
             <h2 className="text-xl font-bold">{activeDocType.name_bn || activeDocType.name}</h2>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.name_en} ({selectedStudent.id}) — ডকুমেন্টের তথ্য পূরণ করুন</p>
           </div>
-          <Button icon={Save} onClick={saveDocData} disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}</Button>
+          <Button icon={Save} onClick={saveWithFlatten} disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}</Button>
         </div>
 
+        {/* Normal fields */}
         <Card delay={50}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {fields.map((f, i) => (
+            {normalFields.map(f => (
               <div key={f.key}>
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
                   {f.label} <span className="text-[9px] font-normal" style={{ color: t.textSecondary }}>({f.label_en})</span>
@@ -104,20 +143,58 @@ export default function DocumentsPage({ students }) {
                 {f.type === "select" ? (
                   <select value={fieldValues[f.key] || ""} onChange={e => setFieldValues(prev => ({ ...prev, [f.key]: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="">— সিলেক্ট করুন —</option>
+                    <option value="">— সিলেক্ট —</option>
                     {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 ) : (
-                  <input type={f.type === "date" ? "date" : "text"}
-                    value={fieldValues[f.key] || ""}
+                  <input type={f.type === "date" ? "date" : "text"} value={fieldValues[f.key] || ""}
                     onChange={e => setFieldValues(prev => ({ ...prev, [f.key]: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}
-                    placeholder={f.label_en} />
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.label_en} />
                 )}
               </div>
             ))}
           </div>
         </Card>
+
+        {/* Repeatable members section */}
+        {repeatableField && (
+          <Card delay={100}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">{repeatableField.label} ({members.length} জন)</h3>
+              <Button size="xs" icon={Plus} onClick={addMember}>সদস্য যোগ করুন</Button>
+            </div>
+
+            {members.length === 0 && (
+              <div className="text-center py-6" style={{ color: t.muted }}>
+                <p className="text-xs">কোনো সদস্য যোগ হয়নি — উপরে "সদস্য যোগ করুন" বাটন চাপুন</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {members.map((member, idx) => (
+                <div key={idx} className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold" style={{ color: t.cyan }}>সদস্য {idx + 1}</p>
+                    <button onClick={() => removeMember(idx)} className="text-[10px] px-2 py-1 rounded-lg transition"
+                      style={{ color: t.muted }} onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {(repeatableField.subfields || []).map(sf => (
+                      <div key={sf.key}>
+                        <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{sf.label}</label>
+                        <input type={sf.type === "date" ? "date" : "text"} value={member[sf.key] || ""}
+                          onChange={e => updateMember(idx, sf.key, e.target.value)}
+                          className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder={sf.label_en} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
     );
   }
