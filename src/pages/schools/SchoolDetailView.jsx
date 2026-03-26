@@ -186,8 +186,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
           <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: t.muted }}>পরিসংখ্যান</h4>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "মোট রেফার", value: school.studentsReferred, color: t.cyan },
-              { label: "পৌঁছেছে", value: school.studentsArrived, color: t.emerald },
+              { label: "মোট রেফার", value: school.studentsReferred || schoolStudents.length, color: t.cyan },
+              { label: "পৌঁছেছে", value: school.studentsArrived || 0, color: t.emerald },
               { label: "সাবমিশন", value: subs.length, color: t.purple },
               { label: "Accepted", value: subs.filter((s) => ["accepted", "forwarded_immigration", "coe_received"].includes(s.status)).length, color: t.emerald },
             ].map((s) => (
