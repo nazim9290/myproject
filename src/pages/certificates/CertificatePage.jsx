@@ -51,6 +51,10 @@ export default function CertificatePage({ students }) {
   const [filterBatch, setFilterBatch] = useState("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
+  // Document-specific data input — প্রতিটি placeholder-র জন্য user data দেবে
+  const [docData, setDocData] = useState({}); // { "RegistrationNo": "12345", "IssueDate": "2020-01-01" }
+  const [generateStep, setGenerateStep] = useState("student"); // student | fill
+
   // System fields for mapping dropdown
   const SYSTEM_FIELDS = [
     { group: "ব্যক্তিগত", fields: [
@@ -150,14 +154,19 @@ export default function CertificatePage({ students }) {
     } catch { toast.error("Mapping save ব্যর্থ"); }
   };
 
-  // ── Generate ──
+  // ── Generate — student profile + document-specific data উভয়ই পাঠায় ──
   const doGenerate = async (format = "docx") => {
     if (!selectedStudent) { toast.error("একজন স্টুডেন্ট সিলেক্ট করুন"); return; }
     setGenerating(true);
     try {
       const res = await fetch(`${API_URL}/docgen/generate`, {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ template_id: activeTemplate.id, student_id: selectedStudent, format }),
+        body: JSON.stringify({
+          template_id: activeTemplate.id,
+          student_id: selectedStudent,
+          format,
+          doc_data: docData, // document-specific data (Registration No, Issue Date ইত্যাদি)
+        }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
       const blob = await res.blob();
@@ -289,57 +298,114 @@ export default function CertificatePage({ students }) {
     </div>
   );
 
-  // ══════════ GENERATE VIEW ══════════
+  // ══════════ GENERATE VIEW — Step 1: Student Select, Step 2: Document Data Fill ══════════
   if (view === "generate" && activeTemplate) return (
     <div className="space-y-5 anim-fade">
       <div className="flex items-center gap-4">
-        <button onClick={() => { setView("list"); setSelectedStudent(""); }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
+        <button onClick={() => {
+          if (generateStep === "fill") { setGenerateStep("student"); }
+          else { setView("list"); setSelectedStudent(""); setDocData({}); setGenerateStep("student"); }
+        }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
         <div>
           <h2 className="text-xl font-bold">Generate — {activeTemplate.name}</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{activeTemplate.total_fields} placeholders • স্টুডেন্ট সিলেক্ট করুন</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+            {generateStep === "student" ? "Step 1: স্টুডেন্ট সিলেক্ট করুন" : "Step 2: ডকুমেন্টের তথ্য পূরণ করুন"}
+          </p>
         </div>
       </div>
-      <Card delay={50}>
-        <div className="mb-4">
-          <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>Placeholders</p>
-          <div className="flex flex-wrap gap-1.5">
-            {(activeTemplate.placeholders || []).map((p, i) => (
-              <span key={i} className="px-2 py-1 rounded text-[10px] font-mono" style={{ background: `${t.cyan}10`, color: t.cyan }}>{p.placeholder || `{{${p.key}}}`}</span>
+
+      {/* Step 1: Student Select */}
+      {generateStep === "student" && (
+        <Card delay={50}>
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <Search size={14} style={{ color: t.muted }} />
+              <input value={studentSearch} onChange={e => setStudentSearch(e.target.value)} className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }} placeholder="স্টুডেন্ট খুঁজুন..." />
+            </div>
+            <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)} className="px-3 py-2 rounded-xl text-xs outline-none" style={is}>
+              <option value="all">সব ব্যাচ</option>
+              {batchList.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1 max-h-[350px] overflow-y-auto">
+            {filteredStudents.map(s => (
+              <div key={s.id} onClick={() => setSelectedStudent(s.id)} className="flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition"
+                style={{ background: selectedStudent === s.id ? `${t.cyan}10` : "transparent", border: `1px solid ${selectedStudent === s.id ? t.cyan : "transparent"}` }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: selectedStudent === s.id ? t.cyan : t.muted }}>
+                    {selectedStudent === s.id && <div className="w-2 h-2 rounded-full" style={{ background: t.cyan }} />}
+                  </div>
+                  <div><p className="text-xs font-medium">{s.name_en}</p><p className="text-[10px]" style={{ color: t.muted }}>{s.id} • {s.batch || "—"}</p></div>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
-            <Search size={14} style={{ color: t.muted }} />
-            <input value={studentSearch} onChange={e => setStudentSearch(e.target.value)} className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }} placeholder="স্টুডেন্ট খুঁজুন..." />
+          <div className="flex justify-end mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <Button onClick={() => {
+              if (!selectedStudent) { toast.error("স্টুডেন্ট সিলেক্ট করুন"); return; }
+              // Student profile data দিয়ে docData pre-fill (user চাইলে override করতে পারবে)
+              const stu = eligibleStudents.find(s => s.id === selectedStudent) || {};
+              const prefill = {};
+              (activeTemplate.placeholders || []).forEach(p => {
+                const k = p.key;
+                // Student profile-এ match থাকলে pre-fill
+                if (stu[k]) prefill[k] = stu[k];
+                else if (stu[p.field]) prefill[k] = stu[p.field];
+              });
+              setDocData(prefill);
+              setGenerateStep("fill");
+            }} disabled={!selectedStudent}>পরবর্তী →</Button>
           </div>
-          <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)} className="px-3 py-2 rounded-xl text-xs outline-none" style={is}>
-            <option value="all">সব ব্যাচ</option>
-            {batchList.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-        </div>
-        <div className="space-y-1 max-h-[350px] overflow-y-auto">
-          {filteredStudents.map(s => (
-            <div key={s.id} onClick={() => setSelectedStudent(s.id)} className="flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition"
-              style={{ background: selectedStudent === s.id ? `${t.cyan}10` : "transparent", border: `1px solid ${selectedStudent === s.id ? t.cyan : "transparent"}` }}>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: selectedStudent === s.id ? t.cyan : t.muted }}>
-                  {selectedStudent === s.id && <div className="w-2 h-2 rounded-full" style={{ background: t.cyan }} />}
-                </div>
-                <div><p className="text-xs font-medium">{s.name_en}</p><p className="text-[10px]" style={{ color: t.muted }}>{s.id} • {s.batch || "—"}</p></div>
+        </Card>
+      )}
+
+      {/* Step 2: Document Data Fill — প্রতিটি placeholder-র জন্য input */}
+      {generateStep === "fill" && (
+        <Card delay={50}>
+          <div className="mb-4 p-3 rounded-lg" style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}15` }}>
+            <p className="text-xs">
+              <strong>স্টুডেন্ট:</strong> {eligibleStudents.find(s => s.id === selectedStudent)?.name_en} ({selectedStudent})
+            </p>
+            <p className="text-[10px] mt-1" style={{ color: t.muted }}>
+              ডকুমেন্টের তথ্য পূরণ করুন — student profile থেকে match থাকলে auto-fill হয়েছে, প্রয়োজনে পরিবর্তন করুন
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {(activeTemplate.placeholders || []).map((p, i) => (
+              <div key={i}>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
+                  <span className="font-mono px-1.5 py-0.5 rounded mr-2" style={{ background: `${t.cyan}10`, color: t.cyan }}>
+                    {p.placeholder || `{{${p.key}}}`}
+                  </span>
+                  {p.key}
+                </label>
+                <input
+                  value={docData[p.key] || ""}
+                  onChange={e => setDocData(prev => ({ ...prev, [p.key]: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={is}
+                  placeholder={`${p.key} এর মান লিখুন...`}
+                />
               </div>
-            </div>
-          ))}
-          {filteredStudents.length === 0 && <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট পাওয়া যায়নি</p>}
-        </div>
-        <div className="flex justify-between items-center mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-          <p className="text-xs" style={{ color: t.muted }}>{selectedStudent ? eligibleStudents.find(s => s.id === selectedStudent)?.name_en : "স্টুডেন্ট সিলেক্ট করুন"}</p>
-          <div className="flex gap-2">
-            <Button variant="ghost" icon={Download} onClick={() => doGenerate("docx")} disabled={!selectedStudent || generating}>.docx</Button>
-            <Button icon={Download} onClick={() => doGenerate("pdf")} disabled={!selectedStudent || generating}>.pdf</Button>
+            ))}
           </div>
-        </div>
-      </Card>
+
+          <div className="flex justify-between items-center mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <p className="text-[10px]" style={{ color: t.muted }}>
+              পূরণ: {Object.values(docData).filter(Boolean).length}/{(activeTemplate.placeholders || []).length} fields
+            </p>
+            <div className="flex gap-2">
+              <Button variant="ghost" icon={Download} onClick={() => doGenerate("docx")} disabled={generating}>
+                {generating ? "তৈরি হচ্ছে..." : ".docx ডাউনলোড"}
+              </Button>
+              <Button icon={Download} onClick={() => doGenerate("pdf")} disabled={generating}>
+                .pdf ডাউনলোড
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 
