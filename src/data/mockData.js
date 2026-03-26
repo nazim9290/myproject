@@ -519,7 +519,7 @@ export const NAV_ITEMS = [
   { key: "documents", label: "Documents" },
   { key: "schools", label: "Schools" },
   { key: "excel", label: "Resume Builder" },
-  { key: "certificates", label: "Certificates" },
+  { key: "certificates", label: "Doc Generator" },
   { key: "departure", label: "Pre-Departure" },
   { key: "tasks", label: "Tasks", badge: 4 },
   { key: "communication", label: "Communication" },
