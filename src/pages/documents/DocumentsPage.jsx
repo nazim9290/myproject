@@ -184,9 +184,19 @@ export default function DocumentsPage({ students }) {
                     {(repeatableField.subfields || []).map(sf => (
                       <div key={sf.key}>
                         <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{sf.label}</label>
-                        <input type={sf.type === "date" ? "date" : "text"} value={member[sf.key] || ""}
-                          onChange={e => updateMember(idx, sf.key, e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder={sf.label_en} />
+                        {sf.key === "Relation" ? (
+                          <select value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                            <option value="">— সিলেক্ট —</option>
+                            {["SELF", "Father", "Mother", "Brother", "Sister", "Spouse", "Son", "Daughter", "Grandfather", "Grandmother", "Uncle", "Aunt", "Other"].map(r => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input type={sf.type === "date" ? "date" : "text"} value={member[sf.key] || ""}
+                            onChange={e => updateMember(idx, sf.key, e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder={sf.label_en} />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -225,8 +235,46 @@ export default function DocumentsPage({ students }) {
               <Card key={dt.id} delay={i * 50} className="cursor-pointer group hover:-translate-y-1 transition-all duration-300">
                 <div onClick={() => {
                   setActiveDocType(dt);
-                  // Pre-fill from saved data
-                  setFieldValues(saved?.field_data || {});
+
+                  if (saved?.field_data && Object.keys(saved.field_data).length > 0) {
+                    // আগে save করা data থাকলে সেটা দেখাও
+                    setFieldValues(saved.field_data);
+                  } else {
+                    // প্রথমবার — student profile থেকে auto-fill
+                    const s = selectedStudent;
+                    const autoFill = {};
+
+                    // Common field auto-mapping: doc field key → student profile key
+                    const profileMap = {
+                      Name: s.name_en, DOB: s.dob, Gender: s.gender,
+                      FatherName: s.father_name || s.father, MotherName: s.mother_name || s.mother,
+                      PermanentAddress: s.permanent_address, PresentAddress: s.current_address,
+                      Nationality: s.nationality || "Bangladeshi", District: s.district || "",
+                      // Passport
+                      PassportNo: s.passport_number || s.passport, BirthPlace: s.birth_place || "",
+                      IssueDate: s.passport_issue || "", ExpiryDate: s.passport_expiry || "",
+                      // NID
+                      NIDNo: s.nid, BloodGroup: s.blood_group,
+                      Address: s.permanent_address,
+                      // Birth cert
+                      BirthRegNo: s.nid, // NID = birth reg no in many cases
+                    };
+
+                    (dt.fields || []).forEach(f => {
+                      if (f.type === "repeatable") {
+                        // Auto-fill first member = self, second = father, third = mother
+                        autoFill._members = [
+                          { Name: s.name_en || "", Relation: "SELF", DOB: s.dob || "", PresentAddr: s.current_address || "", PermanentAddr: s.permanent_address || "" },
+                          { Name: s.father_name || s.father || "", Relation: "Father", DOB: "", PresentAddr: s.current_address || "", PermanentAddr: s.permanent_address || "" },
+                          { Name: s.mother_name || s.mother || "", Relation: "Mother", DOB: "", PresentAddr: s.current_address || "", PermanentAddr: s.permanent_address || "" },
+                        ];
+                      } else if (profileMap[f.key]) {
+                        autoFill[f.key] = profileMap[f.key];
+                      }
+                    });
+
+                    setFieldValues(autoFill);
+                  }
                 }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
