@@ -295,7 +295,7 @@ export default function ExcelAutoFillPage({ students }) {
           // Small delay between downloads so browser doesn't block
           if (selectedStudents.length > 1) await new Promise(r => setTimeout(r, 500));
         }
-        toast.exported(`${name} — ${downloaded} জনের রিজুইমি ডাউনলোড হয়েছে`);
+        toast.exported(`${name} — ${downloaded} জনের Resume ডাউনলোড হয়েছে`);
         setGenerating(false);
         return;
       } catch (err) {
@@ -544,7 +544,7 @@ export default function ExcelAutoFillPage({ students }) {
             <ArrowLeft size={18} />
           </button>
           <div className="flex-1">
-            <h2 className="text-xl font-bold">রিজুইমি Generate — {activeTemplate.school_name || activeTemplate.schoolName}</h2>
+            <h2 className="text-xl font-bold">Resume Generate — {activeTemplate.school_name || activeTemplate.schoolName}</h2>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>
               {(activeTemplate.mappings || []).filter(m => m.field).length} fields mapped • স্টুডেন্ট সিলেক্ট করুন → ডাউনলোড
             </p>
@@ -627,7 +627,7 @@ export default function ExcelAutoFillPage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">Excel Auto-fill (রিজুইমি)</h2>
+          <h2 className="text-xl font-bold">Resume Builder (রিজুইমি তৈরি)</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>স্কুলের Excel ফরম্যাটে স্টুডেন্ট ডেটা অটো বসান</p>
         </div>
         <Button icon={Upload} onClick={() => { setView("upload"); setUploadSchool(""); setUploadFile(null); }}>

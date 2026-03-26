@@ -518,7 +518,7 @@ export const NAV_ITEMS = [
   { key: "attendance", label: "Attendance" },
   { key: "documents", label: "Documents" },
   { key: "schools", label: "Schools" },
-  { key: "excel", label: "Excel Auto-fill" },
+  { key: "excel", label: "Resume Builder" },
   { key: "certificates", label: "Certificates" },
   { key: "departure", label: "Pre-Departure" },
   { key: "tasks", label: "Tasks", badge: 4 },
