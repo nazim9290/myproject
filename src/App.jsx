@@ -283,7 +283,7 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
                       onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
                       onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                     >
-                      <div className="h-2 w-2 rounded-full mt-1.5 shrink-0" style={{ background: alert.color }} />
+                      <span className="text-sm mt-0.5 shrink-0">{alert.icon || "🔔"}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium leading-snug">{alert.label}</p>
                         <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{alert.sub}</p>
@@ -489,30 +489,87 @@ function AppShell({ isDark, setIsDark }) {
     setActivePage("students");
   };
 
-  const [dismissedIds, setDismissedIds] = useState(new Set());
-  const dismissAlert = (id) => setDismissedIds((prev) => new Set([...prev, id]));
-  const dismissAll = () => setDismissedIds((prev) => new Set([...prev, ...allAlertItems.map((a) => a.id)]));
+  // ── Notifications — localStorage-এ persist (refresh করলেও dismissed থাকবে) ──
+  const [dismissedIds, setDismissedIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("agencybook_dismissed_alerts") || "[]")); }
+    catch { return new Set(); }
+  });
+  const dismissAlert = (id) => {
+    setDismissedIds(prev => {
+      const next = new Set([...prev, id]);
+      localStorage.setItem("agencybook_dismissed_alerts", JSON.stringify([...next]));
+      return next;
+    });
+  };
+  const dismissAll = () => {
+    setDismissedIds(prev => {
+      const next = new Set([...prev, ...allAlertItems.map(a => a.id)]);
+      localStorage.setItem("agencybook_dismissed_alerts", JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   const today = new Date().toISOString().slice(0, 10);
+  const in60days = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const in7days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   const allAlertItems = [
+    // 1. Follow-up বাকি — visitor follow-up date পার হয়ে গেছে
     ...visitors
-      .filter((v) => !v.converted && ["interested", "thinking", "follow_up", "Interested", "Thinking", "Follow Up"].includes(v.status) && v.lastFollowUp && v.lastFollowUp < today)
-      .slice(0, 4)
-      .map((v) => ({ id: `fu-${v.id}`, label: `Follow-up বাকি: ${v.name_en || v.name}`, sub: `শেষ যোগাযোগ: ${v.lastFollowUp}`, color: "#f59e0b" })),
+      .filter(v => !v.converted && ["interested", "thinking", "follow_up", "Interested", "Thinking", "Follow Up", "new", "contacted"].includes(v.status) && v.lastFollowUp && v.lastFollowUp < today)
+      .map(v => ({ id: `fu-${v.id}`, type: "follow_up", label: `Follow-up বাকি: ${v.name_en || v.name}`, sub: `শেষ যোগাযোগ: ${v.lastFollowUp}`, color: "#f59e0b", icon: "📞" })),
+
+    // 2. ডকুমেন্ট দরকার
     ...students
-      .filter((s) => s.status === "DOC_COLLECTION")
-      .map((s) => ({ id: `doc-${s.id}`, label: `ডকুমেন্ট দরকার: ${s.name_en}`, sub: "DOC_COLLECTION — দ্রুত সংগ্রহ করুন", color: "#a855f7" })),
+      .filter(s => s.status === "DOC_COLLECTION")
+      .map(s => ({ id: `doc-${s.id}`, type: "document", label: `ডকুমেন্ট দরকার: ${s.name_en}`, sub: "দ্রুত সংগ্রহ করুন", color: "#a855f7", icon: "📄" })),
+
+    // 3. COE পেয়েছে — Health Check করুন
     ...students
-      .filter((s) => s.status === "COE_RECEIVED")
-      .map((s) => ({ id: `coe-${s.id}`, label: `COE পেয়েছে: ${s.name_en}`, sub: "Health Check শিডিউল করুন", color: "#06b6d4" })),
+      .filter(s => s.status === "COE_RECEIVED")
+      .map(s => ({ id: `coe-${s.id}`, type: "coe", label: `COE পেয়েছে: ${s.name_en}`, sub: "Health Check শিডিউল করুন", color: "#06b6d4", icon: "📋" })),
+
+    // 4. ইন্টারভিউ পেন্ডিং
     ...students
-      .filter((s) => s.status === "SCHOOL_INTERVIEW")
-      .map((s) => ({ id: `si-${s.id}`, label: `ইন্টারভিউ শিডিউল করুন: ${s.name_en}`, sub: "School Interview পেন্ডিং", color: "#c084fc" })),
+      .filter(s => s.status === "SCHOOL_INTERVIEW")
+      .map(s => ({ id: `si-${s.id}`, type: "interview", label: `ইন্টারভিউ: ${s.name_en}`, sub: "School Interview শিডিউল করুন", color: "#c084fc", icon: "🎤" })),
+
+    // 5. ভিসা পেয়েছে — Pre-Departure শুরু করুন
     ...students
-      .filter((s) => s.status === "VISA_GRANTED")
-      .map((s) => ({ id: `vg-${s.id}`, label: `ভিসা পেয়েছে: ${s.name_en}`, sub: "Pre-Departure শুরু করুন", color: "#10b981" })),
+      .filter(s => s.status === "VISA_GRANTED")
+      .map(s => ({ id: `vg-${s.id}`, type: "visa", label: `ভিসা পেয়েছে: ${s.name_en}`, sub: "Pre-Departure শুরু করুন", color: "#10b981", icon: "✈️" })),
+
+    // 6. পাসপোর্ট মেয়াদ শেষ — ৬০ দিনের মধ্যে
+    ...students
+      .filter(s => s.passport_expiry && s.passport_expiry <= in60days && s.passport_expiry >= today)
+      .map(s => ({ id: `pp-${s.id}`, type: "passport", label: `পাসপোর্ট মেয়াদ: ${s.name_en}`, sub: `মেয়াদ: ${s.passport_expiry}`, color: "#ef4444", icon: "🛂" })),
+
+    // 7. পাসপোর্ট মেয়াদ শেষ হয়ে গেছে
+    ...students
+      .filter(s => s.passport_expiry && s.passport_expiry < today)
+      .map(s => ({ id: `ppe-${s.id}`, type: "passport_expired", label: `পাসপোর্ট মেয়াদ শেষ: ${s.name_en}`, sub: `মেয়াদ শেষ: ${s.passport_expiry} — নবায়ন করুন!`, color: "#dc2626", icon: "🚨" })),
+
+    // 8. পেমেন্ট বাকি — student-এর fee balance আছে
+    ...students
+      .filter(s => s.fees?.items && s.fees.items.length > 0)
+      .filter(s => {
+        const due = (s.fees?.items || []).reduce((sum, i) => sum + (i.amount || 0), 0);
+        const paid = (s.fees?.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+        return due - paid > 0;
+      })
+      .slice(0, 5)
+      .map(s => {
+        const due = (s.fees?.items || []).reduce((sum, i) => sum + (i.amount || 0), 0);
+        const paid = (s.fees?.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+        return { id: `pay-${s.id}`, type: "payment", label: `পেমেন্ট বাকি: ${s.name_en}`, sub: `বাকি: ৳${(due - paid).toLocaleString("en-IN")}`, color: "#f59e0b", icon: "💰" };
+      }),
+
+    // 9. DOC_SUBMITTED — response অপেক্ষায়
+    ...students
+      .filter(s => s.status === "DOC_SUBMITTED")
+      .map(s => ({ id: `ds-${s.id}`, type: "doc_submitted", label: `Response অপেক্ষা: ${s.name_en}`, sub: "ডকুমেন্ট পাঠানো হয়েছে — স্কুলের response অপেক্ষায়", color: "#64748b", icon: "⏳" })),
   ];
-  const alertItems = allAlertItems.filter((a) => !dismissedIds.has(a.id));
+  const alertItems = allAlertItems.filter(a => !dismissedIds.has(a.id));
   const sidebarW = isMobile ? 0 : (collapsed ? 64 : 220);
 
   useEffect(() => {
