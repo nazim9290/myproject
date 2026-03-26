@@ -512,7 +512,7 @@ export const SALARY_HISTORY = [
 // Nav items
 export const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard" },
-  { key: "visitors", label: "Visitors", badge: 3 },
+  { key: "visitors", label: "Visitors" },
   { key: "students", label: "Students" },
   { key: "course", label: "Language Course" },
   { key: "attendance", label: "Attendance" },
@@ -521,7 +521,7 @@ export const NAV_ITEMS = [
   { key: "excel", label: "Resume Builder" },
   { key: "certificates", label: "Doc Generator" },
   { key: "departure", label: "Pre-Departure" },
-  { key: "tasks", label: "Tasks", badge: 4 },
+  { key: "tasks", label: "Tasks" },
   { key: "communication", label: "Communication" },
   { key: "agents", label: "Agents" },
   { key: "partners", label: "Partners (B2B)" },

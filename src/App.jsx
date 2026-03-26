@@ -119,6 +119,11 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
           {NAV_ITEMS.map((item) => {
             const Icon = NAV_ICONS[item.key] || Home;
             const active = activePage === item.key;
+            // Dynamic badges — real data থেকে count
+            const dynamicBadge = item.key === "visitors" ? (visitors.filter(v => ["interested", "new", "contacted", "Interested"].includes(v.status)).length || null)
+              : item.key === "tasks" ? (null) // tasks count পরে API থেকে আসবে
+              : item.badge;
+            item = { ...item, badge: dynamicBadge };
             return (
               <button
                 key={item.key}
@@ -495,7 +500,7 @@ function AppShell({ isDark, setIsDark }) {
   const today = new Date().toISOString().slice(0, 10);
   const allAlertItems = [
     ...visitors
-      .filter((v) => !v.converted && ["Interested", "Thinking", "Follow Up"].includes(v.status) && v.lastFollowUp && v.lastFollowUp < today)
+      .filter((v) => !v.converted && ["interested", "thinking", "follow_up", "Interested", "Thinking", "Follow Up"].includes(v.status) && v.lastFollowUp && v.lastFollowUp < today)
       .slice(0, 4)
       .map((v) => ({ id: `fu-${v.id}`, label: `Follow-up বাকি: ${v.name_en || v.name}`, sub: `শেষ যোগাযোগ: ${v.lastFollowUp}`, color: "#f59e0b" })),
     ...students
