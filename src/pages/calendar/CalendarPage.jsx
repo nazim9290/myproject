@@ -206,7 +206,7 @@ export default function CalendarPage({ students = [] }) {
               </div>
               <div className="ml-11 space-y-2">
                 {events.map((ev) => {
-                  const et = EVENT_TYPES[ev.type];
+                  const et = EVENT_TYPES[ev.type] || { icon: "📅", label: ev.type || "Event", color: t.cyan };
                   return (
                     <div key={ev.id} className="flex items-start gap-3 p-3 rounded-xl transition-all" style={{ background: `${et.color}06`, border: `1px solid ${et.color}15` }}>
                       <span className="text-lg">{et.icon}</span>
