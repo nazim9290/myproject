@@ -103,7 +103,7 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: "#fff" }}>AgencyOS</p>
+              <p className="text-sm font-bold truncate" style={{ color: "#fff" }}>AgencyBook</p>
               <p className="text-[9px] truncate" style={{ color: "rgba(255,255,255,0.35)" }}>Study Abroad CRM</p>
             </div>
           )}

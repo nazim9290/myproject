@@ -44,7 +44,7 @@ export default function LoginPage({ onLogin }) {
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-3" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
               <GraduationCap size={28} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">AgencyOS</h1>
+            <h1 className="text-xl font-bold tracking-tight">AgencyBook</h1>
             <p className="text-xs opacity-40 mt-1">Study Abroad Management System</p>
           </div>
 

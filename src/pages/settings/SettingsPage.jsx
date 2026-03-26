@@ -170,7 +170,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
                     const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a"); a.href = url;
-                    a.download = `AgencyOS_Full_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+                    a.download = `AgencyBook_Full_Backup_${new Date().toISOString().slice(0, 10)}.json`;
                     a.click(); URL.revokeObjectURL(url);
                   }
                 },
