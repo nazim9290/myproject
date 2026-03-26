@@ -143,7 +143,7 @@ export default function AccountsPage({ students = [] }) {
   }, []);
 
   // ── Derive student fee data from students prop ──
-  const studentFeeRows = students.flatMap(s =>
+  const studentFeeRows = (students || []).flatMap(s =>
     (s.fees?.payments || []).map(p => ({
       paymentId: p.id,
       studentId: s.id,

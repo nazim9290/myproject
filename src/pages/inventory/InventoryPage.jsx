@@ -6,7 +6,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
-import { INVENTORY_CATEGORIES, CONDITION_OPTIONS } from "../../data/mockData";
+import { INVENTORY_CATEGORIES, CONDITION_OPTIONS, CONSUMABLE_ITEMS } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 export default function InventoryPage() {
@@ -14,9 +14,18 @@ export default function InventoryPage() {
   const toast = useToast();
   const [items, setItems] = useState([]);
 
-  // ── Backend থেকে inventory items load ──
+  // ── Backend থেকে inventory items load — DB fields → frontend fields map ──
   useEffect(() => {
-    api.get("/inventory").then(data => { if (Array.isArray(data)) setItems(data); }).catch(() => {});
+    api.get("/inventory").then(data => {
+      if (Array.isArray(data)) setItems(data.map(i => ({
+        ...i,
+        price: i.unit_price || i.price || 0,
+        quantity: i.quantity || 1,
+        brand: i.brand || "",
+        model: i.model || "",
+        vendor: i.vendor || "",
+      })));
+    }).catch(() => {});
   }, []);
   const [consumables] = useState(CONSUMABLE_ITEMS);
   const [activeTab, setActiveTab] = useState("assets");
