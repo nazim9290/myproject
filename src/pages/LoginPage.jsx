@@ -6,10 +6,17 @@ import { useAuth } from "../context/AuthContext";
 export default function LoginPage({ onLogin }) {
   const t = useTheme();
   const { login: authLogin } = useAuth();
-  const [email, setEmail] = useState("admin@agencyos.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Auto-logout হলে message দেখাও
+  const logoutReason = localStorage.getItem("agencyos_logout_reason");
+  if (logoutReason && !error) {
+    localStorage.removeItem("agencyos_logout_reason");
+    setTimeout(() => setError(logoutReason === "idle" ? "নিষ্ক্রিয়তার কারণে অটো লগআউট হয়েছে — আবার লগইন করুন" : "সেশন মেয়াদ শেষ — আবার লগইন করুন"), 0);
+  }
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) { setError("Email ও Password দিন"); return; }
