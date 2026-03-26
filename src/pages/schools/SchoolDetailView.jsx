@@ -54,39 +54,6 @@ export default function SchoolDetailView({ school, students, onBack }) {
   // ── Active section: interview | resume | null ──
   const [activeSection, setActiveSection] = useState(null);
 
-  // ── Resume Template state ──
-  const [schoolTemplates, setSchoolTemplates] = useState([]);
-  const [showResumeUpload, setShowResumeUpload] = useState(false);
-  const [resumeFile, setResumeFile] = useState(null);
-  const [resumeUploading, setResumeUploading] = useState(false);
-  const resumeFileRef = { current: null };
-
-  // Load school's resume templates
-  useState(() => {
-    fetch(`${API_URL}/excel/templates?school_id=${school.id}`, { headers: { Authorization: `Bearer ${token()}` } })
-      .then(r => r.json()).then(data => { if (Array.isArray(data)) setSchoolTemplates(data.filter(t => t.school_name === school.name_en || t.school_id === school.id)); })
-      .catch(() => {});
-  }, []);
-
-  // Upload resume template linked to this school
-  const uploadResumeTemplate = async () => {
-    if (!resumeFile) { toast.error(".xlsx ফাইল দিন"); return; }
-    setResumeUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", resumeFile);
-      formData.append("school_name", school.name_en);
-      const res = await fetch(`${API_URL}/excel/upload-template`, {
-        method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setSchoolTemplates(prev => [...prev, data.template]);
-      toast.success(`Resume template আপলোড হয়েছে — ${(data.placeholders || []).length} placeholders`);
-      setShowResumeUpload(false); setResumeFile(null);
-    } catch (err) { toast.error(err.message); }
-    setResumeUploading(false);
-  };
 
   // ── Interview List state ──
   const showInterviewList = activeSection === "interview";
@@ -169,14 +136,9 @@ export default function SchoolDetailView({ school, students, onBack }) {
           </div>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{school.name_jp} • {school.city}</p>
         </div>
-        <div className="flex gap-2">
-          <Button icon={FileText} size="xs" variant={activeSection === "resume" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "resume" ? null : "resume")}>
-            Resume Template
-          </Button>
-          <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
-            Interview List
-          </Button>
-        </div>
+        <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
+          Interview List
+        </Button>
       </div>
 
       {/* ══════════ INTERVIEW LIST GENERATOR ══════════ */}
@@ -261,65 +223,6 @@ export default function SchoolDetailView({ school, students, onBack }) {
             <Button icon={Download} onClick={generateInterviewList} disabled={generating || !selectedForInterview.length}>
               {generating ? "তৈরি হচ্ছে..." : `.xlsx ডাউনলোড (${interviewFormat})`}
             </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* ══════════ RESUME TEMPLATE SECTION ══════════ */}
-      {activeSection === "resume" && (
-        <Card delay={0}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold flex items-center gap-2"><FileText size={14} /> Resume Template — {school.name_en}</h3>
-            <Button size="xs" icon={Plus} onClick={() => setShowResumeUpload(true)}>Template আপলোড</Button>
-          </div>
-
-          {/* Upload form */}
-          {showResumeUpload && (
-            <div className="mb-4 p-4 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
-              <p className="text-xs mb-3" style={{ color: t.muted }}>
-                Excel template-এ <code style={{ color: t.cyan }}>{"{{name_en}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob}}"}</code> ইত্যাদি placeholder লিখুন — .xlsx format
-              </p>
-              <input type="file" accept=".xlsx" onChange={e => setResumeFile(e.target.files[0])} ref={el => resumeFileRef.current = el}
-                className="text-xs mb-3" style={{ color: t.text }} />
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="xs" onClick={() => { setShowResumeUpload(false); setResumeFile(null); }}>বাতিল</Button>
-                <Button size="xs" icon={Save} onClick={uploadResumeTemplate} disabled={resumeUploading}>
-                  {resumeUploading ? "আপলোড হচ্ছে..." : "আপলোড"}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Template list */}
-          {schoolTemplates.length > 0 ? (
-            <div className="space-y-2">
-              {schoolTemplates.map(tmpl => (
-                <div key={tmpl.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: t.inputBg }}>
-                  <div className="flex items-center gap-3">
-                    <FileText size={14} style={{ color: t.cyan }} />
-                    <div>
-                      <p className="text-xs font-semibold">{tmpl.file_name}</p>
-                      <p className="text-[10px]" style={{ color: t.muted }}>{tmpl.total_fields || 0} fields • {tmpl.mapped_fields || 0} mapped</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <a href={`/excel`} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>
-                      Mapping & Generate →
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-center py-4" style={{ color: t.muted }}>
-              এই স্কুলের কোনো resume template নেই — উপরে আপলোড করুন
-            </p>
-          )}
-
-          <div className="mt-3 p-2 rounded-lg" style={{ background: `${t.cyan}05` }}>
-            <p className="text-[10px]" style={{ color: t.muted }}>
-              এখানে আপলোড করা template সাইডবারের <strong>Resume Builder</strong>-এও দেখাবে — আলাদা করে আপলোড করার দরকার নেই
-            </p>
           </div>
         </Card>
       )}
