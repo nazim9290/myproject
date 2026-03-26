@@ -67,10 +67,14 @@ export default function SchoolsPage({ students }) {
   const saveSchool = async () => {
     if (!form.name_en.trim()) { toast.error("স্কুলের নাম দিন"); return; }
     const payload = { ...form };
-    if (payload.shoukai_fee) payload.shoukai_fee = Number(payload.shoukai_fee) || 0;
-    if (payload.tuition_y1) payload.tuition_y1 = Number(payload.tuition_y1) || 0;
-    if (payload.tuition_y2) payload.tuition_y2 = Number(payload.tuition_y2) || 0;
-    if (payload.admission_fee) payload.admission_fee = Number(payload.admission_fee) || 0;
+    // Empty string → null for numeric fields (DB rejects "")
+    ["shoukai_fee", "tuition_y1", "tuition_y2", "admission_fee"].forEach(k => {
+      payload[k] = payload[k] ? Number(payload[k]) : null;
+    });
+    // Empty string → null for optional text fields
+    ["contact_person", "contact_email", "contact_phone", "website", "gdrive_url", "notes", "min_jp_level", "interview_type"].forEach(k => {
+      if (payload[k] === "") payload[k] = null;
+    });
     try {
       if (editingId) {
         const updated = await api.patch(`/schools/${editingId}`, payload);
