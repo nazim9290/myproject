@@ -25,9 +25,9 @@ export default function CalendarPage({ students = [] }) {
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
 
   const today = new Date().toISOString().slice(0, 10);
-  const sorted = [...events].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  const sorted = [...events].sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.time || "").localeCompare(b.time || ""));
   const filtered = filterType === "all" ? sorted : sorted.filter((e) => e.type === filterType);
-  const grouped = filtered.reduce((acc, ev) => { (acc[ev.date] = acc[ev.date] || []).push(ev); return acc; }, {});
+  const grouped = filtered.reduce((acc, ev) => { if (ev.date) { (acc[ev.date] = acc[ev.date] || []).push(ev); } return acc; }, {});
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
   const weekEndStr = weekEnd.toISOString().slice(0, 10);
   const thisWeek = Object.keys(grouped).filter((d) => d >= today && d <= weekEndStr).length;
