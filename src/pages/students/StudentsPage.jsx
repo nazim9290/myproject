@@ -154,11 +154,11 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     );
   }
 
-  const countries = ["All", ...new Set(students.map((s) => s.country).filter(Boolean))];
+  const countries = ["All", ...new Set(students.map((s) => (s.country || "").trim()).filter(Boolean))];
   const statuses = ["All", ...PIPELINE_STATUSES.map((s) => s.code)];
-  const branches = ["All", ...new Set(students.map((s) => s.branch).filter(Boolean))];
-  const batches = ["All", ...new Set(students.map((s) => s.batch).filter(Boolean))];
-  const schools = ["All", ...new Set(students.map((s) => s.school).filter(Boolean))];
+  const branches = ["All", ...new Set(students.map((s) => (s.branch || "").trim()).filter(Boolean))];
+  const batches = ["All", ...new Set(students.map((s) => (s.batch || "").trim()).filter(Boolean))];
+  const schools = ["All", ...new Set(students.map((s) => (s.school || "").trim()).filter(Boolean))];
 
   const filtered = students.filter((s) => {
     const q = searchQ.toLowerCase();
@@ -433,10 +433,10 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         <select value={filterCountry} onChange={e => { setFilterCountry(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
           {countries.map(c => <option key={c} value={c}>{c === "All" ? "All Countries" : c}</option>)}
         </select>
-        <select value={filterBranch} onChange={e => { setFilterBranch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${filterBranch !== "All" ? t.cyan : t.inputBorder}`, color: filterBranch !== "All" ? t.cyan : t.text }}>
+        <select value={filterBranch} onChange={e => { setFilterBranch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: filterBranch !== "All" ? t.cyan : t.text }}>
           {branches.map(b => <option key={b} value={b}>{b === "All" ? "সব Branch" : b}</option>)}
         </select>
-        <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${filterBatch !== "All" ? t.amber : t.inputBorder}`, color: filterBatch !== "All" ? t.amber : t.text }}>
+        <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: filterBatch !== "All" ? t.amber : t.text }}>
           {batches.map(b => <option key={b} value={b}>{b === "All" ? "সব Batch" : b}</option>)}
         </select>
         <select value={filterSchool} onChange={e => { setFilterSchool(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${filterSchool !== "All" ? t.emerald : t.inputBorder}`, color: filterSchool !== "All" ? t.emerald : t.text }}>
