@@ -169,7 +169,7 @@ export default function LanguageCoursePage({ students }) {
               setShowNewBatch(false);
               toast.success(`${newBatch.name} — ব্যাচ তৈরি হয়েছে!`);
             } catch (err) {
-              toast.error(err.message || "Batch তৈরি ব্যর্থ");
+              toast.error(err.message || "ব্যাচ তৈরি ব্যর্থ");
             }
           }}
         />

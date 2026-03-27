@@ -78,7 +78,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
               {err.studentName && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.studentName}</p>}
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Student ID</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট ID</label>
               <input value={form.studentId} onChange={e => set("studentId", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="S-2026-001" />
             </div>
           </>
@@ -111,7 +111,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Due তারিখ</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিশোধের তারিখ</label>
               <input type="date" value={form.dueDate} onChange={e => set("dueDate", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
             </div>
           </>
@@ -242,7 +242,7 @@ export default function AccountsPage({ students = [] }) {
         </div>
         <div className="flex gap-2">
           <div className="relative">
-            <Button variant="ghost" icon={Download} size="xs" onClick={() => setShowExportMenu(v => !v)}>Export ▾</Button>
+            <Button variant="ghost" icon={Download} size="xs" onClick={() => setShowExportMenu(v => !v)}>এক্সপোর্ট ▾</Button>
             {showExportMenu && (
               <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[170px]" style={{ background: t.cardSolid, border: `1px solid ${t.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
                 {[
