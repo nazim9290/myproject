@@ -426,14 +426,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
           <Search size={13} style={{ color: t.muted }} />
-          <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setPage(1); }} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder="Search name, phone, ID..." />
+          <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setPage(1); }} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder="নাম, ফোন, ID দিয়ে খুঁজুন..." />
           {searchQ && <button onClick={() => setSearchQ("")}><X size={12} style={{ color: t.muted }} /></button>}
         </div>
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-          {statuses.map(s => <option key={s} value={s}>{s === "All" ? "All Statuses" : PIPELINE_STATUSES.find(p => p.code === s)?.label || s}</option>)}
+          {statuses.map(s => <option key={s} value={s}>{s === "All" ? "সব স্ট্যাটাস" : PIPELINE_STATUSES.find(p => p.code === s)?.label || s}</option>)}
         </select>
         <select value={filterCountry} onChange={e => { setFilterCountry(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-          {countries.map(c => <option key={c} value={c}>{c === "All" ? "All Countries" : c}</option>)}
+          {countries.map(c => <option key={c} value={c}>{c === "All" ? "সব দেশ" : c}</option>)}
         </select>
         <select value={filterBranch} onChange={e => { setFilterBranch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: filterBranch !== "All" ? t.cyan : t.text }}>
           {branches.map(b => <option key={b} value={b}>{b === "All" ? "সব Branch" : b}</option>)}
