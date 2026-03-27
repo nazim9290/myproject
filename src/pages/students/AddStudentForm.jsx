@@ -150,74 +150,74 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
       <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: `1px solid ${t.border}` }}>
         <div>
           <h3 className="text-sm font-bold">নতুন স্টুডেন্ট এন্ট্রি</h3>
-          <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>Student Registration Form — সব section পূরণ করুন</p>
+          <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>স্টুডেন্ট রেজিস্ট্রেশন ফর্ম — সব সেকশন পূরণ করুন</p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="xs" onClick={onCancel}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={save}>Save Student</Button>
+          <Button icon={Save} size="xs" onClick={save}>স্টুডেন্ট সংরক্ষণ</Button>
         </div>
       </div>
 
       <div className="space-y-1">
 
         {/* ══ SECTION 1: PERSONAL ══════════════════════════ */}
-        <SectionHeader icon="👤" title="Personal Information" badge={null} open={open.personal} onToggle={() => toggle("personal")} />
+        <SectionHeader icon="👤" title="ব্যক্তিগত তথ্য" badge={null} open={open.personal} onToggle={() => toggle("personal")} />
         {open.personal && (
           <div className="pl-2 pb-3 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Name (English)" required error={errors.name_en}>
+              <Field label="নাম (ইংরেজি)" required error={errors.name_en}>
                 <input value={form.name_en} onChange={e => set("name_en", e.target.value)} placeholder="FULL NAME IN CAPS" {...inp({ style: { ...is, borderColor: errors.name_en ? t.rose : t.inputBorder } })} />
               </Field>
               <Field label="নাম (বাংলা)">
                 <input value={form.name_bn} onChange={e => set("name_bn", e.target.value)} placeholder="পুরো নাম বাংলায়" {...inp()} />
               </Field>
-              <Field label="Name (Katakana)">
+              <Field label="নাম (কাতাকানা)">
                 <input value={form.name_katakana} onChange={e => set("name_katakana", e.target.value)} placeholder="カタカナ" {...inp()} />
               </Field>
-              <Field label="Phone" required error={errors.phone}>
+              <Field label="ফোন" required error={errors.phone}>
                 <input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="01XXXXXXXXX" {...inp({ style: { ...is, borderColor: errors.phone ? t.rose : t.inputBorder } })} />
               </Field>
-              <Field label="WhatsApp">
+              <Field label="হোয়াটসঅ্যাপ">
                 <input value={form.whatsapp} onChange={e => set("whatsapp", e.target.value)} placeholder="01XXXXXXXXX (if different)" {...inp()} />
               </Field>
-              <Field label="Email">
+              <Field label="ইমেইল">
                 <input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="email@example.com" {...inp()} />
               </Field>
-              <Field label="Date of Birth">
+              <Field label="জন্ম তারিখ">
                 <input type="date" value={form.dob} onChange={e => set("dob", e.target.value)} {...inp()} />
               </Field>
-              <Field label="Gender">
-                {sel(["Male", "Female", "Other"], form.gender, v => set("gender", v))}
+              <Field label="লিঙ্গ">
+                {sel([{v:"Male",l:"পুরুষ"}, {v:"Female",l:"মহিলা"}, {v:"Other",l:"অন্যান্য"}], form.gender, v => set("gender", v))}
               </Field>
-              <Field label="Marital Status">
-                {sel(["Single", "Married", "Divorced", "Widowed"], form.marital_status, v => set("marital_status", v))}
+              <Field label="বৈবাহিক অবস্থা">
+                {sel([{v:"Single",l:"অবিবাহিত"}, {v:"Married",l:"বিবাহিত"}, {v:"Divorced",l:"তালাকপ্রাপ্ত"}, {v:"Widowed",l:"বিধবা/বিপত্নীক"}], form.marital_status, v => set("marital_status", v))}
               </Field>
-              <Field label="Nationality">
+              <Field label="জাতীয়তা">
                 <input value={form.nationality} onChange={e => set("nationality", e.target.value)} placeholder="Bangladeshi" {...inp()} />
               </Field>
-              <Field label="NID Number">
+              <Field label="এনআইডি নম্বর">
                 <input value={form.nid} onChange={e => set("nid", e.target.value)} placeholder="17-digit NID" {...inp()} />
               </Field>
-              <Field label="Passport Number">
+              <Field label="পাসপোর্ট নম্বর">
                 <input value={form.passport_number} onChange={e => set("passport_number", e.target.value)} placeholder="A12345678" {...inp()} />
               </Field>
-              <Field label="Passport Issue Date">
+              <Field label="পাসপোর্ট ইস্যু তারিখ">
                 <input type="date" value={form.passport_issue} onChange={e => set("passport_issue", e.target.value)} {...inp()} />
               </Field>
-              <Field label="Passport Expiry Date">
+              <Field label="পাসপোর্ট মেয়াদ শেষ">
                 <input type="date" value={form.passport_expiry} onChange={e => set("passport_expiry", e.target.value)} {...inp()} />
               </Field>
             </div>
-            <Field label="Permanent Address">
+            <Field label="স্থায়ী ঠিকানা">
               <textarea value={form.permanent_address} onChange={e => set("permanent_address", e.target.value)}
                 rows={2} placeholder="Village, Upazila, District..."
                 className="w-full px-2 py-1.5 rounded-lg text-xs outline-none resize-none" style={is} />
             </Field>
             <div className="flex items-center gap-2 mb-1">
-              <label className="text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>Current Address</label>
+              <label className="text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>বর্তমান ঠিকানা</label>
               <label className="flex items-center gap-1 cursor-pointer text-[10px]" style={{ color: t.muted }}>
                 <input type="checkbox" checked={form.same_as_permanent} onChange={e => set("same_as_permanent", e.target.checked)} />
-                Same as permanent
+                স্থায়ী ঠিকানার মতো
               </label>
             </div>
             {!form.same_as_permanent && (
@@ -229,14 +229,14 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
         )}
 
         {/* ══ SECTION 2: EDUCATION ════════════════════════ */}
-        <SectionHeader icon="🎓" title="Education" badge={form.education.length} open={open.education} onToggle={() => toggle("education")} />
+        <SectionHeader icon="🎓" title="শিক্ষা" badge={form.education.length} open={open.education} onToggle={() => toggle("education")} />
         {open.education && (
           <div className="pl-2 pb-3">
             <div className="overflow-x-auto">
               <table className="w-full text-xs min-w-[640px]">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {["Level", "Institution", "Year", "Board", "GPA", "Group", ""].map(h => (
+                    {["স্তর", "প্রতিষ্ঠান", "সাল", "বোর্ড", "জিপিএ", "গ্রুপ", ""].map(h => (
                       <th key={h} className="text-left py-2 px-2 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                     ))}
                   </tr>
@@ -261,15 +261,15 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                 </tbody>
               </table>
             </div>
-            {addBtn("Add Education", () => addRow("education", BLANK_EDU))}
+            {addBtn("শিক্ষা যোগ করুন", () => addRow("education", BLANK_EDU))}
           </div>
         )}
 
         {/* ══ SECTION 3: EMPLOYMENT ═══════════════════════ */}
-        <SectionHeader icon="💼" title="Employment History" badge={form.employment.length || null} open={open.employment} onToggle={() => toggle("employment")} />
+        <SectionHeader icon="💼" title="কর্মসংস্থান ইতিহাস" badge={form.employment.length || null} open={open.employment} onToggle={() => toggle("employment")} />
         {open.employment && (
           <div className="pl-2 pb-3">
-            {form.employment.length === 0 && <p className="text-[11px] py-2" style={{ color: t.muted }}>No employment record added.</p>}
+            {form.employment.length === 0 && <p className="text-[11px] py-2" style={{ color: t.muted }}>কোনো কর্মসংস্থান রেকর্ড নেই।</p>}
             {form.employment.map(row => (
               <div key={row.id} className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
                 <Field label="Company"><input value={row.company} onChange={e => updateRow("employment", row.id, "company", e.target.value)} placeholder="Company Name" {...inp()} /></Field>
@@ -281,15 +281,15 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                 </div>
               </div>
             ))}
-            {addBtn("Add Employment", () => addRow("employment", BLANK_EMP))}
+            {addBtn("কর্মসংস্থান যোগ করুন", () => addRow("employment", BLANK_EMP))}
           </div>
         )}
 
         {/* ══ SECTION 4: JP STUDY ══════════════════════════ */}
-        <SectionHeader icon="🇯🇵" title="Japanese Study History" badge={form.jp_study.length || null} open={open.jpStudy} onToggle={() => toggle("jpStudy")} />
+        <SectionHeader icon="🇯🇵" title="জাপানি ভাষা শিক্ষার ইতিহাস" badge={form.jp_study.length || null} open={open.jpStudy} onToggle={() => toggle("jpStudy")} />
         {open.jpStudy && (
           <div className="pl-2 pb-3">
-            {form.jp_study.length === 0 && <p className="text-[11px] py-2" style={{ color: t.muted }}>No Japanese study record added.</p>}
+            {form.jp_study.length === 0 && <p className="text-[11px] py-2" style={{ color: t.muted }}>কোনো জাপানি শিক্ষা রেকর্ড নেই।</p>}
             {form.jp_study.map(row => (
               <div key={row.id} className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
                 <Field label="Institution"><input value={row.institution} onChange={e => updateRow("jp_study", row.id, "institution", e.target.value)} placeholder="Institute name" {...inp()} /></Field>
@@ -301,15 +301,15 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                 </div>
               </div>
             ))}
-            {addBtn("Add JP Study", () => addRow("jp_study", BLANK_STUDY))}
+            {addBtn("জাপানি শিক্ষা যোগ করুন", () => addRow("jp_study", BLANK_STUDY))}
           </div>
         )}
 
         {/* ══ SECTION 5: JP EXAM ═══════════════════════════ */}
-        <SectionHeader icon="📝" title="Japanese Exam Results" badge={form.jp_exams.length || null} open={open.jpExam} onToggle={() => toggle("jpExam")} />
+        <SectionHeader icon="📝" title="জাপানি পরীক্ষার ফলাফল" badge={form.jp_exams.length || null} open={open.jpExam} onToggle={() => toggle("jpExam")} />
         {open.jpExam && (
           <div className="pl-2 pb-3">
-            {form.jp_exams.length === 0 && <p className="text-[11px] py-2" style={{ color: t.muted }}>No exam result added.</p>}
+            {form.jp_exams.length === 0 && <p className="text-[11px] py-2" style={{ color: t.muted }}>কোনো পরীক্ষার ফলাফল নেই।</p>}
             {form.jp_exams.map(row => (
               <div key={row.id} className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
                 <Field label="Exam Type">
@@ -334,12 +334,12 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                 </div>
               </div>
             ))}
-            {addBtn("Add Exam Result", () => addRow("jp_exams", BLANK_EXAM))}
+            {addBtn("পরীক্ষার ফলাফল যোগ করুন", () => addRow("jp_exams", BLANK_EXAM))}
           </div>
         )}
 
         {/* ══ SECTION 6: VISA & DESTINATION ════════════════ */}
-        <SectionHeader icon="🌍" title="Visa & Destination" badge={null} open={open.destination} onToggle={() => toggle("destination")} />
+        <SectionHeader icon="🌍" title="ভিসা ও গন্তব্য" badge={null} open={open.destination} onToggle={() => toggle("destination")} />
         {open.destination && (
           <div className="pl-2 pb-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -377,8 +377,8 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
               </Field>
               <Field label="Type">
                 <select value={form.type} onChange={e => set("type", e.target.value)} className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                  <option value="own">Own Student</option>
-                  <option value="partner">Partner Agency</option>
+                  <option value="own">নিজস্ব স্টুডেন্ট</option>
+                  <option value="partner">পার্টনার এজেন্সি</option>
                 </select>
               </Field>
               <Field label="Branch" required error={errors.branch}>
@@ -396,24 +396,24 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
         )}
 
         {/* ══ SECTION 7: GOOGLE DRIVE ══════════════════════ */}
-        <SectionHeader icon="📁" title="Google Drive" badge={null} open={open.drive} onToggle={() => toggle("drive")} />
+        <SectionHeader icon="📁" title="গুগল ড্রাইভ" badge={null} open={open.drive} onToggle={() => toggle("drive")} />
         {open.drive && (
           <div className="pl-2 pb-3">
-            <Field label="Google Drive Folder URL">
+            <Field label="গুগল ড্রাইভ ফোল্ডার URL">
               <input value={form.gdrive_folder_url} onChange={e => set("gdrive_folder_url", e.target.value)}
                 placeholder="https://drive.google.com/drive/folders/..." {...inp()} />
             </Field>
             {form.gdrive_folder_url && (
               <a href={form.gdrive_folder_url} target="_blank" rel="noreferrer"
                 className="text-[10px] mt-1 inline-block" style={{ color: t.cyan }}>
-                Open Drive Folder →
+                ড্রাইভ ফোল্ডার খুলুন →
               </a>
             )}
           </div>
         )}
 
         {/* ══ SECTION 8: NOTES ════════════════════════════ */}
-        <SectionHeader icon="📌" title="Internal Notes" badge={null} open={open.notes} onToggle={() => toggle("notes")} />
+        <SectionHeader icon="📌" title="অভ্যন্তরীণ নোট" badge={null} open={open.notes} onToggle={() => toggle("notes")} />
         {open.notes && (
           <div className="pl-2 pb-3">
             <textarea value={form.internal_notes} onChange={e => set("internal_notes", e.target.value)}
@@ -427,7 +427,7 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
       {/* Footer save button */}
       <div className="flex justify-end gap-2 pt-4 mt-2" style={{ borderTop: `1px solid ${t.border}` }}>
         <Button variant="ghost" size="xs" onClick={onCancel}>বাতিল</Button>
-        <Button icon={Save} size="xs" onClick={save}>Save Student</Button>
+        <Button icon={Save} size="xs" onClick={save}>স্টুডেন্ট সংরক্ষণ</Button>
       </div>
     </Card>
   );

@@ -48,10 +48,10 @@ export default function AgentsPage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Agents</h2>
+          <h2 className="text-xl font-bold">এজেন্ট</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>এজেন্ট ও শোকাই ফি ম্যানেজমেন্ট</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowForm(true)}>Add Agent</Button>
+        <Button icon={Plus} onClick={() => setShowForm(true)}>এজেন্ট যোগ করুন</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -89,7 +89,7 @@ export default function AgentsPage() {
                 setForm({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
                 setShowForm(false);
                 toast.success("Agent যোগ হয়েছে!");
-              }}>Save</Button>
+              }}>সংরক্ষণ</Button>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

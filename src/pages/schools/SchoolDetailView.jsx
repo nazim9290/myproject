@@ -14,29 +14,29 @@ const token = () => localStorage.getItem("agencyos_token");
 
 // Interview List-এ available columns — user select/deselect করবে
 const INTERVIEW_COLUMNS = [
-  { key: "no", label: "No." },
-  { key: "family_name", label: "Family Name" },
-  { key: "given_name", label: "Given Name" },
-  { key: "full_name", label: "Full Name" },
-  { key: "gender", label: "Gender" },
-  { key: "dob_age", label: "DOB (Age)" },
-  { key: "nationality", label: "Nationality" },
-  { key: "education", label: "Education" },
-  { key: "gpa", label: "GPA" },
-  { key: "jp_level", label: "JP Level/Score" },
-  { key: "jp_study_hours", label: "JP Study Hours" },
-  { key: "occupation", label: "Occupation" },
-  { key: "past_visa", label: "Past Visa/Immigration" },
-  { key: "sponsor", label: "Sponsor (Income)" },
-  { key: "sponsor_relation", label: "Sponsor Relation" },
-  { key: "passport_no", label: "Passport No" },
-  { key: "phone", label: "Phone" },
-  { key: "email", label: "Email" },
-  { key: "address", label: "Address" },
-  { key: "intended_semester", label: "Intended Semester" },
-  { key: "coe_applied", label: "COE Applied?" },
-  { key: "textbook_lesson", label: "Textbook Lesson" },
-  { key: "goal", label: "Goal after Graduation" },
+  { key: "no", label: "ক্রমিক" },
+  { key: "family_name", label: "পদবি" },
+  { key: "given_name", label: "নাম" },
+  { key: "full_name", label: "পুরো নাম" },
+  { key: "gender", label: "লিঙ্গ" },
+  { key: "dob_age", label: "জন্ম তারিখ (বয়স)" },
+  { key: "nationality", label: "জাতীয়তা" },
+  { key: "education", label: "শিক্ষাগত যোগ্যতা" },
+  { key: "gpa", label: "জিপিএ" },
+  { key: "jp_level", label: "জেপি লেভেল/স্কোর" },
+  { key: "jp_study_hours", label: "জেপি অধ্যয়ন ঘণ্টা" },
+  { key: "occupation", label: "পেশা" },
+  { key: "past_visa", label: "পূর্ববর্তী ভিসা/ইমিগ্রেশন" },
+  { key: "sponsor", label: "স্পন্সর (আয়)" },
+  { key: "sponsor_relation", label: "স্পন্সর সম্পর্ক" },
+  { key: "passport_no", label: "পাসপোর্ট নং" },
+  { key: "phone", label: "ফোন" },
+  { key: "email", label: "ইমেইল" },
+  { key: "address", label: "ঠিকানা" },
+  { key: "intended_semester", label: "ইনটেক সেমিস্টার" },
+  { key: "coe_applied", label: "COE আবেদন?" },
+  { key: "textbook_lesson", label: "পাঠ্যবইয়ের পাঠ" },
+  { key: "goal", label: "গ্র্যাজুয়েশনের পর লক্ষ্য" },
 ];
 
 const DEFAULT_COLS = ["no", "family_name", "given_name", "gender", "dob_age", "education", "gpa", "jp_level", "sponsor", "sponsor_relation"];
@@ -135,19 +135,19 @@ export default function SchoolDetailView({ school, students, onBack }) {
       setSubs(prev => [saved, ...prev]);
       setShowAddForm(false);
       setAddForm({ studentId: "", status: "submitted", submissionNo: "", intake: "" });
-      toast.success("Submission যোগ হয়েছে");
+      toast.success("সাবমিশন যোগ হয়েছে");
     } catch (err) { toast.error(err.message); }
   };
 
   // Add feedback (recheck issue)
   const addFeedback = async (subId) => {
-    if (!feedbackForm.doc || !feedbackForm.issue) { toast.error("Document ও সমস্যা লিখুন"); return; }
+    if (!feedbackForm.doc || !feedbackForm.issue) { toast.error("ডকুমেন্ট ও সমস্যা লিখুন"); return; }
     try {
       const updated = await api.post(`/submissions/${subId}/feedback`, feedbackForm);
       setSubs(prev => prev.map(s => s.id === subId ? { ...s, ...updated } : s));
       setShowFeedbackForm(null);
       setFeedbackForm({ doc: "", issue: "", severity: "warning" });
-      toast.success("Recheck issue যোগ হয়েছে");
+      toast.success("রিচেক সমস্যা যোগ হয়েছে");
     } catch (err) { toast.error(err.message); }
   };
 
@@ -156,7 +156,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
     try {
       const updated = await api.patch(`/submissions/${subId}/feedback/${fbIdx}/resolve`, {});
       setSubs(prev => prev.map(s => s.id === subId ? { ...s, ...updated } : s));
-      toast.success("Issue resolved!");
+      toast.success("সমস্যা সমাধান হয়েছে!");
     } catch (err) { toast.error(err.message); }
   };
 
@@ -181,7 +181,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{school.name_jp} • {school.city}</p>
         </div>
         <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
-          Interview List
+          ইন্টারভিউ তালিকা
         </Button>
       </div>
 
@@ -189,7 +189,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
       {showInterviewList && (
         <Card delay={0}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold flex items-center gap-2"><Users size={14} /> Interview Student List — {school.name_en}</h3>
+            <h3 className="text-sm font-bold flex items-center gap-2"><Users size={14} /> ইন্টারভিউ স্টুডেন্ট তালিকা — {school.name_en}</h3>
             <div className="flex items-center gap-2">
               <select value={interviewFormat} onChange={e => setInterviewFormat(e.target.value)}
                 className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
@@ -243,7 +243,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
             <button onClick={() => setSelectedForInterview(
               selectedForInterview.length === interviewFiltered.length ? [] : interviewFiltered.map(s => s.id)
             )} className="text-[10px] px-3 py-2 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>
-              {selectedForInterview.length === interviewFiltered.length ? "Deselect All" : "Select All"}
+              {selectedForInterview.length === interviewFiltered.length ? "সব বাদ দিন" : "সব নির্বাচন"}
             </button>
           </div>
 
@@ -297,7 +297,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
               { label: "মোট রেফার", value: school.studentsReferred || schoolStudents.length, color: t.cyan },
               { label: "পৌঁছেছে", value: school.studentsArrived || 0, color: t.emerald },
               { label: "সাবমিশন", value: subs.length, color: t.purple },
-              { label: "Accepted", value: subs.filter((s) => ["accepted", "forwarded_immigration", "coe_received"].includes(s.status)).length, color: t.emerald },
+              { label: "গৃহীত", value: subs.filter((s) => ["accepted", "forwarded_immigration", "coe_received"].includes(s.status)).length, color: t.emerald },
             ].map((s) => (
               <div key={s.label} className="text-center p-3 rounded-xl" style={{ background: `${s.color}08` }}>
                 <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -314,7 +314,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
           { label: "মোট সাবমিশন", value: totalSubs, color: t.cyan },
           { label: "গৃহীত", value: acceptedSubs, color: t.emerald },
           { label: "সমস্যা আছে", value: issuesSubs, color: t.rose },
-          { label: "Recheck বাকি", value: pendingRechecks, color: t.amber },
+          { label: "রিচেক বাকি", value: pendingRechecks, color: t.amber },
         ].map((kpi, i) => (
           <Card key={i} delay={150 + i * 30}>
             <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
@@ -326,8 +326,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
       {/* ═══ SUBMISSIONS LIST ═══ */}
       <Card delay={250}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold">Submission History</h3>
-          <Button icon={Plus} size="xs" onClick={() => setShowAddForm(true)}>নতুন Submission</Button>
+          <h3 className="text-sm font-semibold">সাবমিশন ইতিহাস</h3>
+          <Button icon={Plus} size="xs" onClick={() => setShowAddForm(true)}>নতুন সাবমিশন</Button>
         </div>
 
         {/* Add form */}
@@ -342,13 +342,13 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Intake</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইনটেক</label>
                 <select value={addForm.intake} onChange={e => setAddForm(p => ({ ...p, intake: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                   <option value="">—</option><option>April 2026</option><option>July 2026</option><option>October 2026</option><option>January 2027</option>
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Submission #</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সাবমিশন #</label>
                 <input type="number" value={addForm.submissionNo} onChange={e => setAddForm(p => ({ ...p, submissionNo: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="1" />
               </div>
               <div className="flex items-end gap-2">
@@ -360,7 +360,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
         )}
 
         {/* Submissions list */}
-        {subs.length === 0 ? <EmptyState icon={FileText} title="কোনো সাবমিশন নেই" subtitle="উপরে নতুন Submission যোগ করুন" /> : (
+        {subs.length === 0 ? <EmptyState icon={FileText} title="কোনো সাবমিশন নেই" subtitle="উপরে নতুন সাবমিশন যোগ করুন" /> : (
           <div className="space-y-3">
             {subs.map(sub => {
               const st = STATUS_CONFIG[sub.status] || STATUS_CONFIG.submitted;
@@ -391,11 +391,11 @@ export default function SchoolDetailView({ school, students, onBack }) {
                       {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select>
 
-                    {unresolvedCount > 0 && <Badge color={t.rose} size="xs">{unresolvedCount} issues</Badge>}
+                    {unresolvedCount > 0 && <Badge color={t.rose} size="xs">{unresolvedCount} সমস্যা</Badge>}
 
                     <button onClick={() => setShowFeedbackForm(showFeedbackForm === sub.id ? null : sub.id)}
                       className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.amber, background: `${t.amber}10` }}>
-                      + Issue
+                      + সমস্যা
                     </button>
                   </div>
 
@@ -411,7 +411,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                           <div className="flex gap-2">
                             <select value={feedbackForm.severity} onChange={e => setFeedbackForm(p => ({ ...p, severity: e.target.value }))}
                               className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                              <option value="warning">⚠ Warning</option><option value="error">🔴 Error</option>
+                              <option value="warning">⚠ সতর্কতা</option><option value="error">🔴 ত্রুটি</option>
                             </select>
                             <Button size="xs" onClick={() => addFeedback(sub.id)}>যোগ</Button>
                           </div>
@@ -433,7 +433,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                           {!fb.resolved && (
                             <button onClick={() => resolveFeedback(sub.id, fbIdx)}
                               className="text-[10px] px-2 py-0.5 rounded" style={{ color: t.emerald, background: `${t.emerald}10` }}>
-                              Resolve
+                              সমাধান
                             </button>
                           )}
                         </div>

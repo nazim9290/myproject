@@ -79,7 +79,7 @@ export default function TasksPage({ students = [] }) {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">Tasks</h2>
+          <h2 className="text-xl font-bold">টাস্ক</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>টাস্ক ও অ্যাসাইনমেন্ট ম্যানেজমেন্ট</p>
         </div>
         <Button icon={Plus} onClick={() => setShowAddForm(v => !v)}>নতুন টাস্ক</Button>
@@ -91,7 +91,7 @@ export default function TasksPage({ students = [] }) {
           { label: "করতে হবে", value: todoCount,       color: t.muted,   icon: ClipboardList },
           { label: "চলছে",     value: inProgressCount, color: t.amber,   icon: Clock         },
           { label: "সম্পন্ন", value: doneCount,        color: t.emerald, icon: CheckCircle   },
-          { label: "Overdue",  value: overdueCount,     color: t.rose,    icon: AlertTriangle },
+          { label: "সময় পার",  value: overdueCount,     color: t.rose,    icon: AlertTriangle },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -132,11 +132,11 @@ export default function TasksPage({ students = [] }) {
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অগ্রাধিকার</label>
               <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+                <option value="high">জরুরি</option><option value="medium">মাঝারি</option><option value="low">সাধারণ</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Due তারিখ</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষ তারিখ</label>
               <input type="date" value={newTask.dueDate} onChange={e => setNewTask(p => ({ ...p, dueDate: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
             </div>
             <div className="md:col-span-2">

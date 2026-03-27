@@ -37,10 +37,10 @@ export default function CalendarPage({ students = [] }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Calendar</h2>
+          <h2 className="text-xl font-bold">ক্যালেন্ডার</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>অ্যাপয়েন্টমেন্ট, ইন্টারভিউ ও শিডিউল</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowForm(true)}>New Event</Button>
+        <Button icon={Plus} onClick={() => setShowForm(true)}>নতুন ইভেন্ট</Button>
       </div>
 
       {showForm && (() => {
@@ -48,7 +48,7 @@ export default function CalendarPage({ students = [] }) {
         return (
           <Card delay={0}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold">নতুন Event</h3>
+              <h3 className="text-sm font-bold">নতুন ইভেন্ট</h3>
               <div className="flex gap-2">
                 <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
                 <Button icon={Save} size="xs" onClick={() => {
@@ -58,7 +58,7 @@ export default function CalendarPage({ students = [] }) {
                   setForm({ title: "", type: "interview", date: new Date().toISOString().slice(0, 10), time: "10:00", staff: "", studentId: "", notes: "" });
                   setShowForm(false);
                   toast.success("Event যোগ হয়েছে!");
-                }}>Save</Button>
+                }}>সংরক্ষণ</Button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -80,7 +80,7 @@ export default function CalendarPage({ students = [] }) {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Staff</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
                 <select value={form.staff} onChange={e => setForm(p => ({ ...p, staff: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                   <option value="">—</option><option>Mina</option><option>Sadia</option><option>Karim</option>
                 </select>
@@ -106,7 +106,7 @@ export default function CalendarPage({ students = [] }) {
         {[
           { label: "এই সপ্তাহে", value: thisWeek + " দিনে event", color: t.cyan, icon: Calendar },
           { label: "মোট Event", value: events.length, color: t.purple, icon: ClipboardList },
-          { label: "Deadlines", value: deadlines, color: t.rose, icon: AlertTriangle },
+          { label: "ডেডলাইন", value: deadlines, color: t.rose, icon: AlertTriangle },
           { label: "আগামী Interview", value: events.filter((e) => e.type === "interview").length, color: t.amber, icon: Users },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>

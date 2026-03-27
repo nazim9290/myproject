@@ -49,7 +49,7 @@ export default function AdminPortalPreview({ students = [] }) {
           style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}25` }}>
           <Eye size={16} style={{ color: t.amber }} />
           <div className="flex-1">
-            <p className="text-xs font-semibold" style={{ color: t.amber }}>Admin Preview Mode</p>
+            <p className="text-xs font-semibold" style={{ color: t.amber }}>অ্যাডমিন প্রিভিউ মোড</p>
             <p className="text-[10px]" style={{ color: t.muted }}>
               আপনি দেখছেন <strong style={{ color: t.text }}>{selected.name_en}</strong> স্টুডেন্ট পোর্টালে কী দেখে
             </p>

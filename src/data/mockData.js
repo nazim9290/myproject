@@ -159,12 +159,12 @@ export const CATEGORY_CONFIG = {
   visa_fee:       { label: "ভিসা ফি", color: "#c084fc", icon: "🛂" },
   service_charge: { label: "সার্ভিস চার্জ", color: "#22c55e", icon: "💼" },
   shokai_fee:     { label: "শোকাই ফি", color: "#f472b6", icon: "🎌" },
-  partner_service:{ label: "Partner Service", color: "#eab308", icon: "🤝" },
+  partner_service:{ label: "পার্টনার সার্ভিস", color: "#eab308", icon: "🤝" },
   other_income:   { label: "অন্যান্য আয়", color: "#94a3b8", icon: "💰" },
   salary:         { label: "বেতন", color: "#f472b6", icon: "👥" },
   rent:           { label: "ভাড়া", color: "#fb923c", icon: "🏢" },
   marketing:      { label: "মার্কেটিং", color: "#60a5fa", icon: "📢" },
-  agent_fee:      { label: "Agent Fee", color: "#fbbf24", icon: "🕵️" },
+  agent_fee:      { label: "এজেন্ট ফি", color: "#fbbf24", icon: "🕵️" },
   utility:        { label: "ইউটিলিটি", color: "#34d399", icon: "⚡" },
   office_supply:  { label: "অফিস সাপ্লাই", color: "#c084fc", icon: "🖨️" },
   misc:           { label: "অন্যান্য ব্যয়", color: "#94a3b8", icon: "📦" },
@@ -230,7 +230,7 @@ export const TASKS_DATA = [
   { id: "T-008", title: "Kamal এর Health Test Schedule করো", assignee: "Sadia", assigneeRole: "Follow-up", studentId: "S-2026-002", studentName: "Kamal Hossain", priority: "high", status: "todo", dueDate: "2026-03-23", autoCreated: true, trigger: "COE_RECEIVED" },
 ];
 
-export const PRIORITY_CONFIG = { high: { label: "High", color: "#f43f5e" }, medium: { label: "Medium", color: "#eab308" }, low: { label: "Low", color: "#06b6d4" } };
+export const PRIORITY_CONFIG = { high: { label: "জরুরি", color: "#f43f5e" }, medium: { label: "মাঝারি", color: "#eab308" }, low: { label: "সাধারণ", color: "#06b6d4" } };
 export const TASK_STATUS_CONFIG = { todo: { label: "করতে হবে", color: "#94a3b8" }, in_progress: { label: "চলছে", color: "#eab308" }, done: { label: "সম্পন্ন", color: "#22c55e" } };
 
 // Agents module
@@ -287,14 +287,14 @@ export const CALENDAR_EVENTS = [
 ];
 
 export const EVENT_TYPES = {
-  interview: { label: "Interview", color: "#c084fc", icon: "💻" },
-  vfs: { label: "VFS", color: "#06b6d4", icon: "🛂" },
-  deadline: { label: "Deadline", color: "#f43f5e", icon: "⏰" },
-  health: { label: "Health", color: "#22c55e", icon: "🏥" },
-  finance: { label: "Finance", color: "#eab308", icon: "💰" },
-  meeting: { label: "Meeting", color: "#60a5fa", icon: "🏢" },
-  exam: { label: "Exam", color: "#a855f7", icon: "📝" },
-  flight: { label: "Flight", color: "#f472b6", icon: "✈️" },
+  interview: { label: "ইন্টারভিউ", color: "#c084fc", icon: "💻" },
+  vfs: { label: "ভিএফএস", color: "#06b6d4", icon: "🛂" },
+  deadline: { label: "ডেডলাইন", color: "#f43f5e", icon: "⏰" },
+  health: { label: "স্বাস্থ্য", color: "#22c55e", icon: "🏥" },
+  finance: { label: "আর্থিক", color: "#eab308", icon: "💰" },
+  meeting: { label: "মিটিং", color: "#60a5fa", icon: "🏢" },
+  exam: { label: "পরীক্ষা", color: "#a855f7", icon: "📝" },
+  flight: { label: "ফ্লাইট", color: "#f472b6", icon: "✈️" },
 };
 
 // Partner agency module
@@ -442,7 +442,7 @@ export const COMM_LOGS = [
   { id: "CL-06", studentName: "Nasrin Sultana", type: "whatsapp", direction: "outbound", summary: "Airport checklist পাঠানো হয়েছে", user: "Karim", date: "2026-03-22", time: "08:00" },
   { id: "CL-07", studentName: "Rafiqul Islam", type: "sms", direction: "outbound", summary: "ক্লাস টেস্ট সময়সূচি", user: "Tanaka", date: "2026-03-19", time: "16:00" },
 ];
-export const COMM_TYPES = { phone: { icon: "📞", label: "Phone", color: "#22c55e" }, whatsapp: { icon: "💬", label: "WhatsApp", color: "#25d366" }, email: { icon: "📧", label: "Email", color: "#06b6d4" }, sms: { icon: "📱", label: "SMS", color: "#a855f7" }, office_visit: { icon: "🏢", label: "Visit", color: "#eab308" } };
+export const COMM_TYPES = { phone: { icon: "📞", label: "ফোন", color: "#22c55e" }, whatsapp: { icon: "💬", label: "হোয়াটসঅ্যাপ", color: "#25d366" }, email: { icon: "📧", label: "ইমেইল", color: "#06b6d4" }, sms: { icon: "📱", label: "এসএমএস", color: "#a855f7" }, office_visit: { icon: "🏢", label: "সাক্ষাৎ", color: "#eab308" } };
 
 // Attendance module
 export const ATT_STATUS = { present: { label: "উপস্থিত", color: "#22c55e", icon: "✅" }, absent: { label: "অনুপস্থিত", color: "#f43f5e", icon: "❌" }, late: { label: "দেরিতে", color: "#eab308", icon: "⏰" } };
@@ -456,7 +456,7 @@ export const ATTENDANCE_DAY = [
 ];
 
 // Inventory module
-export const INVENTORY_CATEGORIES = ["Electronics", "Furniture", "Books & Materials", "Office Supplies", "Appliances", "Software", "Other"];
+export const INVENTORY_CATEGORIES = ["ইলেকট্রনিক্স", "আসবাবপত্র", "বই ও উপকরণ", "স্টেশনারি", "যন্ত্রপাতি", "সফটওয়্যার", "অন্যান্য"];
 export const CONDITION_OPTIONS = [
   { value: "new", label: "নতুন", color: "#22c55e", icon: "🟢" },
   { value: "good", label: "ভালো", color: "#06b6d4", icon: "🔵" },
@@ -511,28 +511,28 @@ export const SALARY_HISTORY = [
 
 // Nav items
 export const NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "visitors", label: "Visitors" },
-  { key: "students", label: "Students" },
-  { key: "course", label: "Language Course" },
-  { key: "attendance", label: "Attendance" },
-  { key: "documents", label: "Documents" },
-  { key: "schools", label: "Schools" },
-  { key: "excel", label: "Resume Builder" },
-  { key: "certificates", label: "Doc Generator" },
-  { key: "departure", label: "Pre-Departure" },
-  { key: "tasks", label: "Tasks" },
-  { key: "communication", label: "Communication" },
-  { key: "agents", label: "Agents" },
-  { key: "partners", label: "Partners (B2B)" },
-  { key: "accounts", label: "Accounts" },
-  { key: "inventory", label: "Inventory" },
-  { key: "hr", label: "HR & Employees" },
-  { key: "reports", label: "Reports" },
-  { key: "calendar", label: "Calendar" },
-  { key: "users", label: "Users & Roles" },
-  { key: "portal", label: "Student Portal" },
-  { key: "settings", label: "Settings" },
+  { key: "dashboard", label: "ড্যাশবোর্ড" },
+  { key: "visitors", label: "ভিজিটর" },
+  { key: "students", label: "স্টুডেন্ট" },
+  { key: "course", label: "ভাষা কোর্স" },
+  { key: "attendance", label: "উপস্থিতি" },
+  { key: "documents", label: "ডকুমেন্টস" },
+  { key: "schools", label: "স্কুল" },
+  { key: "excel", label: "এক্সেল অটোফিল" },
+  { key: "certificates", label: "সার্টিফিকেট" },
+  { key: "departure", label: "প্রি-ডিপার্চার" },
+  { key: "tasks", label: "টাস্ক" },
+  { key: "communication", label: "যোগাযোগ" },
+  { key: "agents", label: "এজেন্ট" },
+  { key: "partners", label: "পার্টনার এজেন্সি" },
+  { key: "accounts", label: "হিসাব" },
+  { key: "inventory", label: "ইনভেন্টরি" },
+  { key: "hr", label: "এইচআর ও বেতন" },
+  { key: "reports", label: "রিপোর্ট" },
+  { key: "calendar", label: "ক্যালেন্ডার" },
+  { key: "users", label: "ইউজার ও রোল" },
+  { key: "portal", label: "স্টুডেন্ট পোর্টাল" },
+  { key: "settings", label: "সেটিংস" },
   { key: "help", label: "সাহায্য" },
-  { key: "super-admin", label: "Super Admin" },
+  { key: "super-admin", label: "সুপার অ্যাডমিন" },
 ];

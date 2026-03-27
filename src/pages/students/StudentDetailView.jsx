@@ -177,6 +177,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     setFeeItems(updated);
     syncFees(updated, payments);
     logActivity("ফি খাত মুছে ফেলা হয়েছে", "edit");
+    toast.success("ফি আইটেম মুছে ফেলা হয়েছে");
   };
 
   const addPayment = () => {
@@ -224,13 +225,13 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         <div className="flex gap-2 flex-wrap">
           {isEditing ? (
             <>
-              <Button variant="ghost" size="xs" onClick={() => { setIsEditing(false); setEditForm({ ...student }); }}>Cancel</Button>
-              <Button icon={Save} size="xs" onClick={handleSave}>Save</Button>
+              <Button variant="ghost" size="xs" onClick={() => { setIsEditing(false); setEditForm({ ...student }); }}>বাতিল</Button>
+              <Button icon={Save} size="xs" onClick={handleSave}>সংরক্ষণ</Button>
             </>
           ) : (
             <>
-              <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setIsEditing(true)}>Edit</Button>
-              <Button variant="danger" icon={Trash2} size="xs" onClick={() => setShowDeleteConfirm(true)}>Delete</Button>
+              <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setIsEditing(true)}>সম্পাদনা</Button>
+              <Button variant="danger" icon={Trash2} size="xs" onClick={() => setShowDeleteConfirm(true)}>মুছুন</Button>
             </>
           )}
         </div>
@@ -245,8 +246,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               <p className="text-sm font-semibold" style={{ color: t.rose }}>স্টুডেন্ট ডিলিট করবেন?</p>
               <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.name_en} — এই অ্যাকশন undo করা যাবে না</p>
             </div>
-            <Button variant="ghost" size="xs" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
-            <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>Confirm Delete</Button>
+            <Button variant="ghost" size="xs" onClick={() => setShowDeleteConfirm(false)}>বাতিল</Button>
+            <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>নিশ্চিত মুছুন</Button>
           </div>
         </Card>
       )}
@@ -339,7 +340,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       ══════════════════════════════════════ */}
       <Card delay={50}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold">Pipeline Progress</h3>
+          <h3 className="text-sm font-bold">পাইপলাইন অগ্রগতি</h3>
           <p className="text-[11px]" style={{ color: t.muted }}>
             ধাপ {Math.max(currentStepIdx + 1, 1)} / {MAIN_STEPS.length}
             {isTerminal && <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: `${t.rose}20`, color: t.rose }}>{currentStatus}</span>}
@@ -407,7 +408,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label}
                   </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${stepColor}15`, color: stepColor }}>
-                    {checkedRequired}/{requiredItems.length} required ✓
+                    {checkedRequired}/{requiredItems.length} আবশ্যক ✓
                   </span>
                   {!allRequiredDone && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.rose}15`, color: t.rose }}>
@@ -467,7 +468,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 style={{ background: `${t.amber}15`, color: t.amber, border: `1px solid ${t.amber}30` }}
                 onMouseEnter={e => e.currentTarget.style.background = `${t.amber}25`}
                 onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.amber}15`; }}>
-                ⏸ Pause
+                ⏸ বিরতি
               </button>
             )}
 
@@ -478,7 +479,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 style={{ background: `${t.rose}12`, color: t.rose, border: `1px solid ${t.rose}25` }}
                 onMouseEnter={e => e.currentTarget.style.background = `${t.rose}22`}
                 onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.rose}12`; }}>
-                ✕ Cancel
+                ✕ বাতিল
               </button>
             )}
 
@@ -511,7 +512,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     onMouseEnter={e => e.currentTarget.style.color = t.text}
                     onMouseLeave={e => { const el = e.currentTarget; el.style.color = t.muted; }}
                     title="Checklist ছাড়াই এগিয়ে যান">
-                    Override →
+                    ওভাররাইড →
                   </button>
                 )}
               </div>
@@ -523,12 +524,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="mt-3 p-3 rounded-xl flex items-center gap-3" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
               <span className="text-lg">⏸</span>
               <div className="flex-1">
-                <p className="text-xs font-semibold" style={{ color: t.amber }}>Pipeline Pause করবেন?</p>
+                <p className="text-xs font-semibold" style={{ color: t.amber }}>পাইপলাইন বিরতি দেবেন?</p>
                 <p className="text-[10px]" style={{ color: t.muted }}>স্টুডেন্ট সাময়িক বিরতিতে যাবে — পরে Re-activate করা যাবে</p>
               </div>
               <button onClick={() => setShowPauseConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
-              <button onClick={() => { changeStatus("PAUSED", "Pipeline pause করা হয়েছে"); setShowPauseConfirm(false); }}
-                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.amber, color: "#fff" }}>Pause করুন</button>
+              <button onClick={() => { changeStatus("PAUSED", "পাইপলাইন বিরতি দেওয়া হয়েছে"); setShowPauseConfirm(false); }}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.amber, color: "#fff" }}>বিরতি দিন</button>
             </div>
           )}
 
@@ -537,12 +538,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="mt-3 p-3 rounded-xl flex items-center gap-3" style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
               <AlertTriangle size={16} style={{ color: t.rose }} />
               <div className="flex-1">
-                <p className="text-xs font-semibold" style={{ color: t.rose }}>Pipeline Cancel করবেন?</p>
+                <p className="text-xs font-semibold" style={{ color: t.rose }}>পাইপলাইন বাতিল করবেন?</p>
                 <p className="text-[10px]" style={{ color: t.muted }}>ভবিষ্যতে Re-activate করা যাবে</p>
               </div>
               <button onClick={() => setShowCancelConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
-              <button onClick={() => { changeStatus("CANCELLED", "Pipeline cancel করা হয়েছে"); setShowCancelConfirm(false); }}
-                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>Cancel করুন</button>
+              <button onClick={() => { changeStatus("CANCELLED", "পাইপলাইন বাতিল করা হয়েছে"); setShowCancelConfirm(false); }}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>বাতিল করুন</button>
             </div>
           )}
           </div>)}
@@ -580,7 +581,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       ══════════════════════════════════════ */}
       <Card delay={120}>
         <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-          <MessageSquare size={14} style={{ color: t.cyan }} /> Activity Log
+          <MessageSquare size={14} style={{ color: t.cyan }} /> কার্যকলাপ লগ
         </h3>
 
         {/* Add note */}
@@ -1046,7 +1047,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   <Button icon={Save} size="xs" onClick={saveSponsor}>সংরক্ষণ</Button>
                 </>
               ) : (
-                <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setSponsorEditing(true)}>Edit</Button>
+                <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setSponsorEditing(true)}>সম্পাদনা</Button>
               )}
             </div>
 

@@ -46,7 +46,7 @@ export default function HRPage() {
   const handleAdd = () => {
     if (!newEmp.name.trim()) { toast.error("নাম দিন"); return; }
     if (!newEmp.role) { toast.error("পদবি নির্বাচন করুন"); return; }
-    if (!newEmp.branch) { toast.error("Branch নির্বাচন করুন"); return; }
+    if (!newEmp.branch) { toast.error("ব্রাঞ্চ নির্বাচন করুন"); return; }
     const emp = {
       id: `EMP-${String(employees.length + 1).padStart(3, "0")}`,
       ...newEmp,
@@ -55,7 +55,7 @@ export default function HRPage() {
       joinDate: new Date().toISOString().slice(0, 10),
       leaves: { total: 18, used: 0 },
     };
-    setEmployees([...employees, emp]);
+    setEmployees(prev => [...prev, emp]);
     setNewEmp({ name: "", role: "", branch: "", salary: "", phone: "", email: "" });
     setShowAddForm(false);
     toast.success("কর্মচারী যোগ হয়েছে!");
@@ -65,18 +65,18 @@ export default function HRPage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">HR & Payroll</h2>
+          <h2 className="text-xl font-bold">এইচআর ও বেতন</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>কর্মী ব্যবস্থাপনা ও বেতন</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>Add Employee</Button>
+        <Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>কর্মী যোগ করুন</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "মোট কর্মী", value: employees.length, color: t.cyan, Icon: Users },
-          { label: "Active", value: activeEmps.length, color: t.emerald, Icon: CheckCircle },
+          { label: "সক্রিয়", value: activeEmps.length, color: t.emerald, Icon: CheckCircle },
           { label: "মাসিক বেতন", value: `৳${totalSalary.toLocaleString()}`, color: t.amber, Icon: DollarSign },
-          { label: "Branches", value: [...new Set(employees.map((e) => e.branch))].length, color: t.purple, Icon: Building },
+          { label: "ব্রাঞ্চ", value: [...new Set(employees.map((e) => e.branch))].length, color: t.purple, Icon: Building },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -115,7 +115,7 @@ export default function HRPage() {
               </div>
             ))}
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পদবি / Role <span className="req-star">*</span></label>
+              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পদবি <span className="req-star">*</span></label>
               <select value={newEmp.role} onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
@@ -124,11 +124,11 @@ export default function HRPage() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch <span className="req-star">*</span></label>
+              <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ <span className="req-star">*</span></label>
               <select value={newEmp.branch} onChange={(e) => setNewEmp({ ...newEmp, branch: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                <option value="">— Branch নির্বাচন করুন —</option>
+                <option value="">— ব্রাঞ্চ নির্বাচন করুন —</option>
                 {branches.map((b) => <option key={b.id} value={b.name}>{b.name} ({b.city})</option>)}
               </select>
             </div>
@@ -149,8 +149,8 @@ export default function HRPage() {
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
             style={{
-              background: activeTab === tab.key ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#ffffff") : "transparent",
-              color: activeTab === tab.key ? t.text : t.muted,
+              background: activeTab === tab.key ? `${t.cyan}15` : "transparent",
+              color: activeTab === tab.key ? t.cyan : t.muted,
             }}>
             {tab.label}
           </button>
@@ -175,11 +175,11 @@ export default function HRPage() {
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                   <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                   <SortHeader label="পদবি" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                   <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ফোন</th>
                   <SortHeader label="যোগদান" sortKey="joinDate" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                   <SortHeader label="বেতন" sortKey="salary" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                 </tr>
               </thead>
               <tbody>
@@ -202,7 +202,7 @@ export default function HRPage() {
                     <td className="py-3 px-4" style={{ color: t.muted }}>{emp.joinDate || "—"}</td>
                     <td className="py-3 px-4 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
                     <td className="py-3 px-4">
-                      <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status}</Badge>
+                      <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
                     </td>
                   </tr>
                 ))}
@@ -225,9 +225,9 @@ export default function HRPage() {
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                     <SortHeader label="কর্মী" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <SortHeader label="পদবি" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                    <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <SortHeader label="মূল বেতন" sortKey="salary" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                    <SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}></th>
                   </tr>
                 </thead>
@@ -241,7 +241,7 @@ export default function HRPage() {
                       <td className="py-2.5 px-3" style={{ color: t.muted }}>{emp.branch}</td>
                       <td className="py-2.5 px-3 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
                       <td className="py-2.5 px-3">
-                        <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status}</Badge>
+                        <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
                       </td>
                       <td className="py-2.5 px-3">
                         {emp.status === "active" && (
@@ -342,7 +342,7 @@ export default function HRPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-bold font-mono" style={{ color: t.emerald }}>৳{(rec.amount || rec.totalSalary || 0).toLocaleString()}</p>
-                      <Badge color={rec.paid ? t.emerald : t.amber} size="xs">{rec.paid ? "Paid" : "Pending"}</Badge>
+                      <Badge color={rec.paid ? t.emerald : t.amber} size="xs">{rec.paid ? "পরিশোধিত" : "বকেয়া"}</Badge>
                     </div>
                   </div>
                 ))}
@@ -364,7 +364,7 @@ export default function HRPage() {
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                     <SortHeader label="কর্মী" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <SortHeader label="পদবি" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                    <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>মোট ছুটি</th>
                     <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ব্যবহৃত</th>
                     <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>বাকি</th>

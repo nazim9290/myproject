@@ -68,11 +68,11 @@ export default function AttendancePage({ students = [] }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">Attendance</h2>
+          <h2 className="text-xl font-bold">উপস্থিতি</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>দৈনিক উপস্থিতি ব্যবস্থাপনা</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" icon={Download} size="xs" onClick={exportAttendance}>Export</Button>
+          <Button variant="ghost" icon={Download} size="xs" onClick={exportAttendance}>এক্সপোর্ট</Button>
           <Button icon={Save} size="xs" onClick={saveAttendance}>সংরক্ষণ</Button>
         </div>
       </div>
@@ -128,7 +128,7 @@ export default function AttendancePage({ students = [] }) {
       <Card delay={150}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">উপস্থিতি — {selectedDate}</h3>
-          <p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে status পরিবর্তন করুন</p>
+          <p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে স্ট্যাটাস পরিবর্তন করুন</p>
         </div>
         {displayList.length === 0 ? (
           <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই — ব্যাচ বা সার্চ পরিবর্তন করুন</p>
@@ -175,7 +175,7 @@ export default function AttendancePage({ students = [] }) {
       <Card delay={250}>
         <h3 className="text-sm font-semibold mb-3">সাপ্তাহিক সারাংশ</h3>
         <div className="flex gap-2">
-          {["Sun", "Mon", "Tue", "Wed", "Thu"].map((day, i) => {
+          {["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ"].map((day, i) => {
             const pct = [88, 92, 75, 85, 83][i];
             return (
               <div key={day} className="flex-1 text-center p-2 rounded-lg" style={{ background: t.inputBg }}>

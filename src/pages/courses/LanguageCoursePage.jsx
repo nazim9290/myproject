@@ -38,7 +38,7 @@ function NewBatchForm({ onSave, onCancel }) {
         <h3 className="text-sm font-bold">নতুন ব্যাচ তৈরি করুন</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={save}>Save Batch</Button>
+          <Button icon={Save} size="xs" onClick={save}>ব্যাচ সংরক্ষণ</Button>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -122,10 +122,10 @@ export default function LanguageCoursePage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Language Course</h2>
+          <h2 className="text-xl font-bold">ভাষা কোর্স</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>ব্যাচ, অ্যাটেনডেন্স, পরীক্ষা ও ফলাফল</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowNewBatch(true)}>New Batch</Button>
+        <Button icon={Plus} onClick={() => setShowNewBatch(true)}>নতুন ব্যাচ</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -167,7 +167,7 @@ export default function LanguageCoursePage({ students }) {
               });
               setBatches(prev => [...prev, saved]);
               setShowNewBatch(false);
-              toast.success(`${newBatch.name} — Batch created!`);
+              toast.success(`${newBatch.name} — ব্যাচ তৈরি হয়েছে!`);
             } catch (err) {
               toast.error(err.message || "Batch তৈরি ব্যর্থ");
             }
@@ -196,7 +196,7 @@ export default function LanguageCoursePage({ students }) {
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     {[
-                      { icon: Users, text: `${bStudents.length}/${batch.capacity} students` },
+                      { icon: Users, text: `${bStudents.length}/${batch.capacity} শিক্ষার্থী` },
                       { icon: BookOpen, text: batch.level },
                       { icon: Calendar, text: batch.startDate || "—" },
                       { icon: User, text: batch.teacher || "—" },
