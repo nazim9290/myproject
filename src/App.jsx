@@ -3,7 +3,7 @@ import {
   Home, Users, GraduationCap, BookOpen, ClipboardList, FileText, Building,
   FileCheck, Award, Plane, CheckCircle, Phone, Briefcase, Globe, DollarSign,
   Package, TrendingUp, Calendar, Lock, User, Settings, Bell, Search,
-  Menu, X, ChevronLeft, ChevronRight, HelpCircle,
+  Menu, X, ChevronLeft, ChevronRight, HelpCircle, Shield,
 } from "lucide-react";
 
 import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle, useLabelSettings } from "./context/ThemeContext";
@@ -39,6 +39,7 @@ import UserRolePage from "./pages/users/UserRolePage";
 import StudentPortalPage from "./pages/portal/StudentPortalPage";
 import StudentLoginPage from "./pages/portal/StudentLoginPage";
 import AdminPortalPreview from "./pages/portal/AdminPortalPreview";
+import SuperAdminPage from "./pages/superadmin/SuperAdminPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import HelpPage from "./pages/help/HelpPage";
@@ -68,6 +69,7 @@ const NAV_ICONS = {
   portal: User,
   settings: Settings,
   help: HelpCircle,
+  "super-admin": Shield,
 };
 
 function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts, canAccessPage }) {
@@ -381,6 +383,8 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
       return <SettingsPage isDark={isDark} setIsDark={setIsDark} students={students} visitors={visitors} stepConfigs={stepConfigs} updateStepConfigs={updateStepConfigs} />;
     case "help":
       return <HelpPage />;
+    case "super-admin":
+      return <SuperAdminPage />;
     case "profile":
       return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} onLogout={onLogout} isDark={isDark} setIsDark={setIsDark} />;
     default:

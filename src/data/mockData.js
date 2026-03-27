@@ -534,4 +534,5 @@ export const NAV_ITEMS = [
   { key: "portal", label: "Student Portal" },
   { key: "settings", label: "Settings" },
   { key: "help", label: "সাহায্য" },
+  { key: "super-admin", label: "Super Admin" },
 ];

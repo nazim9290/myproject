@@ -11,6 +11,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 // ── Default Permission Matrix (offline fallback) ──
 const DEFAULT_PERMISSIONS = {
+  super_admin:        { dashboard: "rwd", visitors: "rwd", students: "rwd", documents: "rwd", accounts: "rwd", reports: "rwd", settings: "rwd", users: "rwd", schools: "rwd", course: "rwd", attendance: "rwd", hr: "rwd", agents: "rwd", partners: "rwd", inventory: "rwd", calendar: "rwd", communication: "rwd", tasks: "rwd", help: "r", portal: "r", "super-admin": "rwd" },
   owner:              { dashboard: "rwd", visitors: "rwd", students: "rwd", documents: "rwd", accounts: "rwd", reports: "rwd", settings: "rwd", users: "rwd", schools: "rwd", course: "rwd", attendance: "rwd", hr: "rwd", agents: "rwd", partners: "rwd", inventory: "rwd", calendar: "rwd", communication: "rwd", tasks: "rwd", help: "r", portal: "r" },
   branch_manager:     { dashboard: "rw",  visitors: "rwd", students: "rwd", documents: "rwd", accounts: "rw",  reports: "r",   settings: "",   users: "",    schools: "rw",  course: "rw",  attendance: "rw",  hr: "r",   agents: "rw",  partners: "rw",  inventory: "rw",  calendar: "rw",  communication: "rw",  tasks: "rwd", help: "r", portal: "r" },
   counselor:          { dashboard: "r",   visitors: "rw",  students: "rw",  documents: "r",   accounts: "",    reports: "",    settings: "",   users: "",    schools: "r",   course: "",    attendance: "",    hr: "",    agents: "",    partners: "",    inventory: "",    calendar: "r",   communication: "rw",  tasks: "rw",  help: "r", portal: "" },
@@ -31,6 +32,7 @@ const NAV_MODULE_MAP = {
   agents: "agents", partners: "partners", accounts: "accounts",
   inventory: "inventory", hr: "hr", reports: "reports", calendar: "calendar",
   users: "users", portal: "portal", settings: "settings", help: "help",
+  "super-admin": "super-admin",
 };
 
 function normalizeRole(role) {
