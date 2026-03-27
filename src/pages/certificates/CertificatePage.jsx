@@ -13,7 +13,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
 
-const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://demo-api.agencybook.net/api";
+import { API_URL } from "../../lib/api";
 const token = () => localStorage.getItem("agencyos_token");
 
 const CATEGORIES = [

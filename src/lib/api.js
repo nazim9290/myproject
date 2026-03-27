@@ -17,7 +17,11 @@
 // ═══════════════════════════════════════════════════════
 // API Base URL — environment অনুযায়ী auto-detect
 // ═══════════════════════════════════════════════════════
-const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://demo-api.agencybook.net/api");
+// Centralized API URL — সব ফাইলে এখান থেকে import করতে হবে
+export const API_URL = import.meta.env.VITE_API_URL || (
+  window.location.hostname === "localhost" ? "http://localhost:5000/api"
+  : `https://${window.location.hostname.replace(/^demo\./, "demo-api.")}/api`
+);
 
 /** localStorage থেকে JWT token পড়ে */
 function getToken() {

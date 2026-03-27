@@ -11,9 +11,9 @@
 import { useState, useEffect, useCallback } from "react";
 
 // ═══════════════════════════════════════════════════════
-// API Base URL — লোকাল হলে localhost:3001, প্রোডাকশনে render.com
+// API Base URL — api.js থেকে centralized
 // ═══════════════════════════════════════════════════════
-const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://demo-api.agencybook.net/api";
+import { API_URL } from "../lib/api";
 
 /**
  * JWT Token পড়া — localStorage থেকে

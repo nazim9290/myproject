@@ -12,6 +12,7 @@ import useSortable from "../../hooks/useSortable";
 import StudentDetailView from "./StudentDetailView";
 import AddStudentForm from "./AddStudentForm";
 import { api } from "../../hooks/useAPI";
+import { API_URL } from "../../lib/api";
 
 export default function StudentsPage({ students, setStudents, reloadData, stepConfigs }) {
   const t = useTheme();
@@ -293,7 +294,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                 </div>
                 <button onClick={async () => {
                   try {
-                    const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://demo-api.agencybook.net/api";
+                    // API_URL top-level import থেকে আসছে
                     const tk = localStorage.getItem("agencyos_token");
                     const res = await fetch(`${API_URL}/students/import/template`, { headers: { Authorization: `Bearer ${tk}` } });
                     const blob = await res.blob();

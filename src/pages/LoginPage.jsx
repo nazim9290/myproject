@@ -6,11 +6,15 @@ import { useAuth } from "../context/AuthContext";
 export default function LoginPage({ onLogin }) {
   const t = useTheme();
   const { login: authLogin } = useAuth();
-  // ── Remember Me — localStorage থেকে saved credentials load ──
-  const saved = localStorage.getItem("agencybook_remember");
-  const remembered = saved ? JSON.parse(saved) : null;
-  const [email, setEmail] = useState(remembered?.email || "");
-  const [password, setPassword] = useState(remembered?.password || "");
+  // ── Remember Me — base64 encode করে localStorage-এ রাখা (plaintext নয়) ──
+  const remembered = (() => {
+    try {
+      const s = localStorage.getItem("agencybook_remember");
+      return s ? JSON.parse(atob(s)) : null;
+    } catch { return null; }
+  })();
+  const [email, setEmail] = useState(remembered?.e || "");
+  const [password, setPassword] = useState(remembered?.p || "");
   const [rememberMe, setRememberMe] = useState(!!remembered);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,20 +33,15 @@ export default function LoginPage({ onLogin }) {
     try {
       // AuthContext.login() saves token + user to localStorage
       const user = await authLogin(email, password);
-      // Remember Me — সফল লগইনের পর credentials save/remove
+      // Remember Me — সফল লগইনের পর credentials encode করে save
       if (rememberMe) {
-        localStorage.setItem("agencybook_remember", JSON.stringify({ email, password }));
+        localStorage.setItem("agencybook_remember", btoa(JSON.stringify({ e: email, p: password })));
       } else {
         localStorage.removeItem("agencybook_remember");
       }
       onLogin(user);
     } catch (err) {
-      // Fallback to mock login if backend is not running
-      if (email === "admin@agencyos.com" && password === "admin123") {
-        onLogin({ id: "mock", name: "Admin", email, role: "owner", branch: "ঢাকা" });
-      } else {
-        setError(err.message || "লগইন ব্যর্থ হয়েছে");
-      }
+      setError(err.message || "লগইন ব্যর্থ হয়েছে");
     } finally {
       setLoading(false);
     }
