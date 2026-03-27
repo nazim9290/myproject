@@ -382,10 +382,10 @@ export default function UserRolePage() {
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="01XXXXXXXXX" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Building2 size={9} className="inline mr-1" />Branch <span className="req-star">*</span></label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Building2 size={9} className="inline mr-1" />ব্রাঞ্চ <span className="req-star">*</span></label>
                   <select value={userForm.branch} onChange={(e) => setUserForm((p) => ({ ...p, branch: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="">— Branch নির্বাচন করুন —</option>
+                    <option value="">— ব্রাঞ্চ নির্বাচন করুন —</option>
                     {branches.filter((b) => b.status === "active").map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
                   </select>
                 </div>

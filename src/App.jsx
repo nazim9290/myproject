@@ -92,7 +92,7 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
         style={{
           width: w,
           background: t.sidebar,
-          borderRight: `1px solid rgba(255,255,255,0.05)`,
+          borderRight: `1px solid ${t.border}`,
           transition: "width 0.25s ease, transform 0.25s ease",
           transform: visible ? "translateX(0)" : "translateX(-100%)",
           boxShadow: isMobile && mobileOpen ? "4px 0 32px rgba(0,0,0,0.4)" : "none",
@@ -102,22 +102,22 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
         {/* Logo */}
         <div
           className="flex items-center gap-2.5 px-4 shrink-0"
-          style={{ height: 60, borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ height: 60, borderBottom: `1px solid ${t.border}` }}
         >
           <div
             className="shrink-0 h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black"
-            style={{ background: "linear-gradient(135deg, #06b6d4, #a855f7)" }}
+            style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}
           >
             <span style={{ color: "#fff" }}>A</span>
           </div>
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-bold truncate" style={{ color: "#fff" }}>AgencyBook</p>
-              <p className="text-[9px] truncate" style={{ color: "rgba(255,255,255,0.35)" }}>স্টুডেন্ট ও এজেন্সি ম্যানেজমেন্ট</p>
+              <p className="text-[9px] truncate" style={{ color: t.muted }}>স্টুডেন্ট ও এজেন্সি ম্যানেজমেন্ট</p>
             </div>
           )}
           {isMobile && (
-            <button className="ml-auto p-1 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} onClick={() => setMobileOpen(false)}>
+            <button className="ml-auto p-1 shrink-0" style={{ color: t.muted }} onClick={() => setMobileOpen(false)}>
               <X size={16} />
             </button>
           )}
@@ -151,14 +151,14 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
                   <>
                     <span className="text-xs flex-1 truncate">{item.label}</span>
                     {badge ? (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: "#06b6d420", color: "#06b6d4" }}>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: `${t.cyan}20`, color: t.cyan }}>
                         {badge}
                       </span>
                     ) : null}
                   </>
                 )}
                 {collapsed && badge ? (
-                  <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 rounded-full text-[8px] font-bold flex items-center justify-center" style={{ background: "#06b6d4", color: "#fff" }}>
+                  <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 rounded-full text-[8px] font-bold flex items-center justify-center" style={{ background: t.cyan, color: "#fff" }}>
                     {badge}
                   </span>
                 ) : null}
@@ -169,12 +169,12 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
 
         {/* Desktop collapse toggle */}
         {!isMobile && (
-          <div className="shrink-0 p-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="shrink-0 p-2" style={{ borderTop: `1px solid ${t.border}` }}>
             <button
               onClick={() => setCollapsed((v) => !v)}
               className="w-full flex items-center justify-center p-2 rounded-lg transition-all"
-              style={{ color: "rgba(255,255,255,0.35)" }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+              style={{ color: t.muted }}
+              onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
@@ -254,7 +254,7 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
             {alertItems.length > 0 && (
               <span
                 className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
-                style={{ background: "#ef4444", color: "#fff" }}
+                style={{ background: t.rose, color: "#fff" }}
               >
                 {alertItems.length > 9 ? "9+" : alertItems.length}
               </span>
@@ -267,7 +267,7 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
               style={{ background: t.card, border: `1px solid ${t.border}` }}
             >
               <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${t.border}` }}>
-                <p className="text-xs font-bold">Notifications {alertItems.length > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ background: "#ef444420", color: "#ef4444" }}>{alertItems.length}</span>}</p>
+                <p className="text-xs font-bold">Notifications {alertItems.length > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ background: `${t.rose}20`, color: t.rose }}>{alertItems.length}</span>}</p>
                 {alertItems.length > 0 && (
                   <button
                     className="text-[10px] px-2 py-1 rounded-lg transition"
@@ -318,7 +318,7 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
         {/* Profile avatar */}
         <button
           className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ml-1 transition hover:scale-110"
-          style={{ background: "linear-gradient(135deg, #06b6d4, #a855f7)", color: "#fff" }}
+          style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})`, color: "#fff" }}
           title={currentUser?.name || "Profile"}
           onClick={() => setActivePage("profile")}
         >
@@ -555,37 +555,37 @@ function AppShell({ isDark, setIsDark }) {
     // 1. Follow-up বাকি — visitor follow-up date পার হয়ে গেছে
     ...visitors
       .filter(v => !v.converted && ["interested", "thinking", "follow_up", "Interested", "Thinking", "Follow Up", "new", "contacted"].includes(v.status) && v.lastFollowUp && v.lastFollowUp < today)
-      .map(v => ({ id: `fu-${v.id}`, type: "follow_up", label: `Follow-up বাকি: ${v.name_en || v.name}`, sub: `শেষ যোগাযোগ: ${v.lastFollowUp}`, color: "#f59e0b", icon: "📞" })),
+      .map(v => ({ id: `fu-${v.id}`, type: "follow_up", label: `Follow-up বাকি: ${v.name_en || v.name}`, sub: `শেষ যোগাযোগ: ${v.lastFollowUp}`, color: t.amber, icon: "📞" })),
 
     // 2. ডকুমেন্ট দরকার
     ...students
       .filter(s => s.status === "DOC_COLLECTION")
-      .map(s => ({ id: `doc-${s.id}`, type: "document", label: `ডকুমেন্ট দরকার: ${s.name_en}`, sub: "দ্রুত সংগ্রহ করুন", color: "#a855f7", icon: "📄" })),
+      .map(s => ({ id: `doc-${s.id}`, type: "document", label: `ডকুমেন্ট দরকার: ${s.name_en}`, sub: "দ্রুত সংগ্রহ করুন", color: t.purple, icon: "📄" })),
 
     // 3. COE পেয়েছে — Health Check করুন
     ...students
       .filter(s => s.status === "COE_RECEIVED")
-      .map(s => ({ id: `coe-${s.id}`, type: "coe", label: `COE পেয়েছে: ${s.name_en}`, sub: "Health Check শিডিউল করুন", color: "#06b6d4", icon: "📋" })),
+      .map(s => ({ id: `coe-${s.id}`, type: "coe", label: `COE পেয়েছে: ${s.name_en}`, sub: "Health Check শিডিউল করুন", color: t.cyan, icon: "📋" })),
 
     // 4. ইন্টারভিউ পেন্ডিং
     ...students
       .filter(s => s.status === "SCHOOL_INTERVIEW")
-      .map(s => ({ id: `si-${s.id}`, type: "interview", label: `ইন্টারভিউ: ${s.name_en}`, sub: "School Interview শিডিউল করুন", color: "#c084fc", icon: "🎤" })),
+      .map(s => ({ id: `si-${s.id}`, type: "interview", label: `ইন্টারভিউ: ${s.name_en}`, sub: "School Interview শিডিউল করুন", color: t.purple, icon: "🎤" })),
 
     // 5. ভিসা পেয়েছে — Pre-Departure শুরু করুন
     ...students
       .filter(s => s.status === "VISA_GRANTED")
-      .map(s => ({ id: `vg-${s.id}`, type: "visa", label: `ভিসা পেয়েছে: ${s.name_en}`, sub: "Pre-Departure শুরু করুন", color: "#10b981", icon: "✈️" })),
+      .map(s => ({ id: `vg-${s.id}`, type: "visa", label: `ভিসা পেয়েছে: ${s.name_en}`, sub: "Pre-Departure শুরু করুন", color: t.emerald, icon: "✈️" })),
 
     // 6. পাসপোর্ট মেয়াদ শেষ — ৬০ দিনের মধ্যে
     ...students
       .filter(s => s.passport_expiry && s.passport_expiry <= in60days && s.passport_expiry >= today)
-      .map(s => ({ id: `pp-${s.id}`, type: "passport", label: `পাসপোর্ট মেয়াদ: ${s.name_en}`, sub: `মেয়াদ: ${s.passport_expiry}`, color: "#ef4444", icon: "🛂" })),
+      .map(s => ({ id: `pp-${s.id}`, type: "passport", label: `পাসপোর্ট মেয়াদ: ${s.name_en}`, sub: `মেয়াদ: ${s.passport_expiry}`, color: t.rose, icon: "🛂" })),
 
     // 7. পাসপোর্ট মেয়াদ শেষ হয়ে গেছে
     ...students
       .filter(s => s.passport_expiry && s.passport_expiry < today)
-      .map(s => ({ id: `ppe-${s.id}`, type: "passport_expired", label: `পাসপোর্ট মেয়াদ শেষ: ${s.name_en}`, sub: `মেয়াদ শেষ: ${s.passport_expiry} — নবায়ন করুন!`, color: "#dc2626", icon: "🚨" })),
+      .map(s => ({ id: `ppe-${s.id}`, type: "passport_expired", label: `পাসপোর্ট মেয়াদ শেষ: ${s.name_en}`, sub: `মেয়াদ শেষ: ${s.passport_expiry} — নবায়ন করুন!`, color: t.rose, icon: "🚨" })),
 
     // 8. পেমেন্ট বাকি — student-এর fee balance আছে
     ...students
@@ -599,13 +599,13 @@ function AppShell({ isDark, setIsDark }) {
       .map(s => {
         const due = (s.fees?.items || []).reduce((sum, i) => sum + (i.amount || 0), 0);
         const paid = (s.fees?.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-        return { id: `pay-${s.id}`, type: "payment", label: `পেমেন্ট বাকি: ${s.name_en}`, sub: `বাকি: ৳${(due - paid).toLocaleString("en-IN")}`, color: "#f59e0b", icon: "💰" };
+        return { id: `pay-${s.id}`, type: "payment", label: `পেমেন্ট বাকি: ${s.name_en}`, sub: `বাকি: ৳${(due - paid).toLocaleString("en-IN")}`, color: t.amber, icon: "💰" };
       }),
 
     // 9. DOC_SUBMITTED — response অপেক্ষায়
     ...students
       .filter(s => s.status === "DOC_SUBMITTED")
-      .map(s => ({ id: `ds-${s.id}`, type: "doc_submitted", label: `Response অপেক্ষা: ${s.name_en}`, sub: "ডকুমেন্ট পাঠানো হয়েছে — স্কুলের response অপেক্ষায়", color: "#64748b", icon: "⏳" })),
+      .map(s => ({ id: `ds-${s.id}`, type: "doc_submitted", label: `Response অপেক্ষা: ${s.name_en}`, sub: "ডকুমেন্ট পাঠানো হয়েছে — স্কুলের response অপেক্ষায়", color: t.muted, icon: "⏳" })),
   ];
   const alertItems = allAlertItems.filter(a => !dismissedIds.has(a.id));
   const sidebarW = isMobile ? 0 : (collapsed ? 64 : 220);
@@ -657,7 +657,7 @@ function AppShell({ isDark, setIsDark }) {
         <div className="flex h-screen items-center justify-center" style={{ background: t.bg }}>
           <div className="text-center anim-fade">
             <div className="h-12 w-12 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
-              <span className="text-white font-black text-base">A</span>
+              <span className="font-black text-base" style={{ color: "#fff" }}>A</span>
             </div>
             <div className="h-1 w-32 mx-auto rounded-full overflow-hidden mb-3" style={{ background: `${t.muted}20` }}>
               <div className="h-full rounded-full skeleton-shimmer" style={{ width: "60%", background: t.cyan }} />

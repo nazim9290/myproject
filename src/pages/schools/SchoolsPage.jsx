@@ -145,7 +145,7 @@ export default function SchoolsPage({ students }) {
         ].map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200"
-            style={{ background: activeTab === tab.key ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#ffffff") : "transparent", color: activeTab === tab.key ? t.text : t.muted, boxShadow: activeTab === tab.key && t.mode === "light" ? "0 1px 3px rgba(0,0,0,0.08)" : "none" }}>
+            style={{ background: activeTab === tab.key ? `${t.cyan}15` : "transparent", color: activeTab === tab.key ? t.cyan : t.muted }}>
             {tab.label}
           </button>
         ))}
