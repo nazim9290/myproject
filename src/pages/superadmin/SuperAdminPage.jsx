@@ -186,6 +186,19 @@ export default function SuperAdminPage() {
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্সির নাম *</label>
               <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="ABC Education" />
+              {/* ── Prefix Preview — নামের আদ্যক্ষর দিয়ে ID prefix ── */}
+              {form.name.trim() && (() => {
+                const words = form.name.replace(/[^\x20-\x7E]/g, "").trim().split(/[\s\-_&]+/).filter(w => w.length > 0);
+                const pfx = words.length >= 3 ? words.map(w => w[0]).join("").toUpperCase().slice(0, 4)
+                  : words.length === 2 ? (words[0].slice(0, 2) + words[1][0]).toUpperCase()
+                  : (words[0] || "").slice(0, 3).toUpperCase();
+                return pfx ? (
+                  <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: t.cyan }}>
+                    ID Prefix: <span className="font-mono font-bold px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}15` }}>{pfx}</span>
+                    <span style={{ color: t.muted }}>→ {pfx}-S-2026-001</span>
+                  </p>
+                ) : null;
+              })()}
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
