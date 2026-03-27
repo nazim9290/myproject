@@ -74,7 +74,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
           <>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্টের নাম <span className="req-star">*</span></label>
-              <input value={form.studentName} onChange={e => set("studentName", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.studentName ? t.rose : t.inputBorder }} placeholder="Student name..." />
+              <input value={form.studentName} onChange={e => set("studentName", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.studentName ? t.rose : t.inputBorder }} placeholder="স্টুডেন্টের নাম..." />
               {err.studentName && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.studentName}</p>}
             </div>
             <div>
