@@ -434,7 +434,7 @@ export default function AccountsPage({ students = [] }) {
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                           <SortHeader label="স্টুডেন্ট" sortKey="name" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
-                          <SortHeader label="Branch" sortKey="branch" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
                           <SortHeader label="মোট নির্ধারিত" sortKey="totalDue" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
                           <SortHeader label="কালেক্ট হয়েছে" sortKey="totalCollected" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
                           <SortHeader label="বাকি" sortKey="balance" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />

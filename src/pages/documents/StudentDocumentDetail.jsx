@@ -56,7 +56,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
     const newMismatches = computeMismatches(newDocs);
     setMismatches(newMismatches);
     setExpandedDoc(null);
-    const mismatchMsg = newMismatches.length > 0 ? ` • ${newMismatches.length}টি mismatch পাওয়া গেছে` : " • সব তথ্য মিলে গেছে ✓";
+    const mismatchMsg = newMismatches.length > 0 ? ` • ${newMismatches.length}টি অমিল পাওয়া গেছে` : " • সব তথ্য মিলে গেছে ✓";
     toast.success("ডকুমেন্ট তথ্য সংরক্ষণ হয়েছে" + mismatchMsg);
   };
 
@@ -146,7 +146,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold">{docType?.name || doc.docId}</p>
-                      {hasMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>⚠ Mismatch</span>}
+                      {hasMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>⚠ অমিল</span>}
                       {!docType?.base && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>শর্তসাপেক্ষ</span>}
                     </div>
                     <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
@@ -217,7 +217,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
               <div className="flex flex-col items-center py-10">
                 <CheckCircle size={40} style={{ color: t.emerald }} strokeWidth={1.2} />
                 <p className="text-sm font-semibold mt-3" style={{ color: t.emerald }}>সব ডকুমেন্টে তথ্য মিলে গেছে!</p>
-                <p className="text-xs mt-1" style={{ color: t.muted }}>কোনো mismatch পাওয়া যায়নি</p>
+                <p className="text-xs mt-1" style={{ color: t.muted }}>কোনো অমিল পাওয়া যায়নি</p>
               </div>
             </Card>
           ) : (

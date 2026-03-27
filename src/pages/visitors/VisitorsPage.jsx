@@ -468,7 +468,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         <div><h2 className="text-xl font-bold">ভিজিটর</h2><p className="text-xs mt-0.5" style={{color:t.muted}}>ভিজিটর ও ফলো-আপ ব্যবস্থাপনা</p></div>
         <div className="flex gap-2">
           <div className="relative">
-            <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExport(!showExport)}>Export ▾</Button>
+            <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExport(!showExport)}>এক্সপোর্ট ▾</Button>
             {showExport && <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[220px]" style={{background:t.cardSolid,border:"1px solid "+t.border,boxShadow:"0 8px 30px rgba(0,0,0,0.25)"}}>
               <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold" style={{color:t.muted,borderBottom:"1px solid "+t.border}}>ভিজিটর CSV এক্সপোর্ট</div>
               <button onClick={() => doExport("filtered")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
@@ -488,7 +488,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[{l:"Active",v:activeList.length,c:t.cyan},{l:"Today",v:todayCount,c:t.emerald},{l:"Follow-up Due",v:needFU,c:needFU>0?t.rose:t.muted},{l:"Enrolled",v:enrolledCount,c:t.purple},{l:"Archive",v:archiveList.length,c:t.muted}].map((s,i)=>
+        {[{l:"সক্রিয়",v:activeList.length,c:t.cyan},{l:"আজ",v:todayCount,c:t.emerald},{l:"ফলো-আপ বাকি",v:needFU,c:needFU>0?t.rose:t.muted},{l:"ভর্তি হয়েছে",v:enrolledCount,c:t.purple},{l:"আর্কাইভ",v:archiveList.length,c:t.muted}].map((s,i)=>
           <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.inputBg}}><p className="text-lg font-bold" style={{color:s.c}}>{s.v}</p><p className="text-[10px]" style={{color:t.muted}}>{s.l}</p></div>
         )}
       </div>
