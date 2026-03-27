@@ -3,13 +3,14 @@ import {
   Home, Users, GraduationCap, BookOpen, ClipboardList, FileText, Building,
   FileCheck, Award, Plane, CheckCircle, Phone, Briefcase, Globe, DollarSign,
   Package, TrendingUp, Calendar, Lock, User, Settings, Bell, Search,
-  Menu, X, ChevronLeft, ChevronRight,
+  Menu, X, ChevronLeft, ChevronRight, HelpCircle,
 } from "lucide-react";
 
 import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle, useLabelSettings } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NAV_ITEMS } from "./data/mockData";
+import { DEFAULT_STEPS_META } from "./data/pipelineSteps";
 import { students as studentsApi, visitors as visitorsApi } from "./lib/api";
 import { api } from "./hooks/useAPI";
 
@@ -37,6 +38,8 @@ import UserRolePage from "./pages/users/UserRolePage";
 import StudentPortalPage from "./pages/portal/StudentPortalPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+import HelpPage from "./pages/help/HelpPage";
+import PageSkeleton from "./components/ui/PageSkeleton";
 
 const NAV_ICONS = {
   dashboard: Home,
@@ -61,6 +64,7 @@ const NAV_ICONS = {
   users: Lock,
   portal: User,
   settings: Settings,
+  help: HelpCircle,
 };
 
 function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts }) {
@@ -320,14 +324,20 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
   );
 }
 
-function PageRenderer({ activePage, students, setStudents, visitors, setVisitors, onConvertToStudent, isDark, setIsDark, currentUser, setCurrentUser, onLogout, reloadData }) {
+function PageRenderer({ activePage, students, setStudents, visitors, setVisitors, onConvertToStudent, isDark, setIsDark, currentUser, setCurrentUser, onLogout, reloadData, stepConfigs, updateStepConfigs, dataLoaded }) {
+  // ডাটা লোড হচ্ছে এমন পেজে Skeleton দেখাও
+  const DATA_PAGES = ["dashboard", "visitors", "students", "course", "attendance", "documents", "schools", "departure", "accounts", "reports", "calendar", "communication"];
+  if (!dataLoaded && DATA_PAGES.includes(activePage)) {
+    return <PageSkeleton type="table" />;
+  }
+
   switch (activePage) {
     case "dashboard":
       return <DashboardPage students={students} visitors={visitors} />;
     case "visitors":
       return <VisitorsPage visitors={visitors} setVisitors={setVisitors} onConvertToStudent={onConvertToStudent} reloadData={reloadData} />;
     case "students":
-      return <StudentsPage students={students} setStudents={setStudents} reloadData={reloadData} />;
+      return <StudentsPage students={students} setStudents={setStudents} reloadData={reloadData} stepConfigs={stepConfigs} />;
     case "course":
       return <LanguageCoursePage students={students} />;
     case "attendance":
@@ -365,7 +375,9 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "portal":
       return <StudentPortalPage />;
     case "settings":
-      return <SettingsPage isDark={isDark} setIsDark={setIsDark} students={students} visitors={visitors} />;
+      return <SettingsPage isDark={isDark} setIsDark={setIsDark} students={students} visitors={visitors} stepConfigs={stepConfigs} updateStepConfigs={updateStepConfigs} />;
+    case "help":
+      return <HelpPage />;
     case "profile":
       return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} onLogout={onLogout} isDark={isDark} setIsDark={setIsDark} />;
     default:
@@ -383,6 +395,18 @@ function AppShell({ isDark, setIsDark }) {
   const [students, setStudents] = useState([]);
   const [visitors, setVisitors] = useState([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+
+  // ── Pipeline step configs — Admin dynamic checklist (localStorage persist) ──
+  const [stepConfigs, setStepConfigs] = useState(() => {
+    try {
+      const saved = localStorage.getItem("agencybook_step_configs");
+      return saved ? JSON.parse(saved) : DEFAULT_STEPS_META;
+    } catch { return DEFAULT_STEPS_META; }
+  });
+  const updateStepConfigs = (newConfigs) => {
+    setStepConfigs(newConfigs);
+    localStorage.setItem("agencybook_step_configs", JSON.stringify(newConfigs));
+  };
   const [currentUser, setCurrentUser] = useState({
     name: "Admin",
     name_bn: "অ্যাডমিন",
@@ -618,10 +642,13 @@ function AppShell({ isDark, setIsDark }) {
       <ThemeContext.Provider value={t}>
         <div className="flex h-screen items-center justify-center" style={{ background: t.bg }}>
           <div className="text-center anim-fade">
-            <div className="h-10 w-10 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
-              <span className="text-white font-black text-sm">A</span>
+            <div className="h-12 w-12 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
+              <span className="text-white font-black text-base">A</span>
             </div>
-            <p className="text-xs" style={{ color: t.muted }}>Loading...</p>
+            <div className="h-1 w-32 mx-auto rounded-full overflow-hidden mb-3" style={{ background: `${t.muted}20` }}>
+              <div className="h-full rounded-full skeleton-shimmer" style={{ width: "60%", background: t.cyan }} />
+            </div>
+            <p className="text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</p>
           </div>
         </div>
       </ThemeContext.Provider>
@@ -685,6 +712,9 @@ function AppShell({ isDark, setIsDark }) {
               setCurrentUser={setCurrentUser}
               onLogout={handleLogout}
               reloadData={reloadData}
+              stepConfigs={stepConfigs}
+              updateStepConfigs={updateStepConfigs}
+              dataLoaded={dataLoaded}
             />
           </main>
         </div>

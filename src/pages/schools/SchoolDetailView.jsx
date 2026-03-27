@@ -9,7 +9,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import { SUB_STATUS } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
-const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://newbook-e2v3.onrender.com/api";
+const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://demo-api.agencybook.net/api";
 const token = () => localStorage.getItem("agencyos_token");
 
 // Interview List-এ available columns — user select/deselect করবে

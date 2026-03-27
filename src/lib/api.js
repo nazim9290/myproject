@@ -6,7 +6,7 @@
  *
  * API URL:
  *   - লোকাল: http://localhost:3001/api
- *   - প্রোডাকশন: https://newbook-e2v3.onrender.com/api
+ *   - প্রোডাকশন: https://demo-api.agencybook.net/api
  *
  * ব্যবহার:
  *   import { students } from "../lib/api";
@@ -17,7 +17,7 @@
 // ═══════════════════════════════════════════════════════
 // API Base URL — environment অনুযায়ী auto-detect
 // ═══════════════════════════════════════════════════════
-const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://newbook-e2v3.onrender.com/api");
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://demo-api.agencybook.net/api");
 
 /** localStorage থেকে JWT token পড়ে */
 function getToken() {

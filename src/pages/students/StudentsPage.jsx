@@ -7,11 +7,13 @@ import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { PIPELINE_STATUSES } from "../../data/students";
 import Pagination from "../../components/ui/Pagination";
+import SortHeader from "../../components/ui/SortHeader";
+import useSortable from "../../hooks/useSortable";
 import StudentDetailView from "./StudentDetailView";
 import AddStudentForm from "./AddStudentForm";
 import { api } from "../../hooks/useAPI";
 
-export default function StudentsPage({ students, setStudents, reloadData }) {
+export default function StudentsPage({ students, setStudents, reloadData, stepConfigs }) {
   const t = useTheme();
   const toast = useToast();
   const [selectedId, setSelectedId] = useState(null);
@@ -127,6 +129,7 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name_en");
 
   const selectedStudent = selectedId ? students.find((s) => s.id === selectedId) : null;
 
@@ -134,6 +137,7 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
     return (
       <StudentDetailView
         student={selectedStudent}
+        stepConfigs={stepConfigs}
         onBack={() => setSelectedId(null)}
         onUpdate={async (updated) => {
           try { await api.patch(`/students/${updated.id}`, updated); } catch {}
@@ -166,9 +170,10 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
     const matchSchool = filterSchool === "All" || (s.school || "") === filterSchool;
     return matchSearch && matchStatus && matchCountry && matchBranch && matchBatch && matchSchool;
   });
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const sorted = sortFn(filtered);
+  const totalPages = Math.ceil(sorted.length / pageSize);
   const safePage = Math.min(page, Math.max(1, totalPages));
-  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const paginated = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const activeCount = students.filter((s) => !["CANCELLED", "PAUSED"].includes(s.status)).length;
   const visaCount = students.filter((s) => ["VISA_GRANTED", "ARRIVED", "COMPLETED"].includes(s.status)).length;
@@ -288,7 +293,7 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
                 </div>
                 <button onClick={async () => {
                   try {
-                    const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://newbook-e2v3.onrender.com/api";
+                    const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000/api" : "https://demo-api.agencybook.net/api";
                     const tk = localStorage.getItem("agencyos_token");
                     const res = await fetch(`${API_URL}/students/import/template`, { headers: { Authorization: `Bearer ${tk}` } });
                     const blob = await res.blob();
@@ -445,8 +450,12 @@ export default function StudentsPage({ students, setStudents, reloadData }) {
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["ID", "Name", "Phone", "Branch", "Country", "School", "Batch", "Status", "Type"].map(h => (
-                  <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                {[
+                  { label: "ID", key: "id" }, { label: "Name", key: "name_en" }, { label: "Phone", key: "phone" },
+                  { label: "Branch", key: "branch" }, { label: "Country", key: "country" }, { label: "School", key: "school" },
+                  { label: "Batch", key: "batch" }, { label: "Status", key: "status" }, { label: "Type", key: "type" },
+                ].map(col => (
+                  <SortHeader key={col.key} label={col.label} sortKey={col.key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                 ))}
               </tr>
             </thead>

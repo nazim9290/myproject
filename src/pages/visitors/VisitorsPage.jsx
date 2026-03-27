@@ -7,6 +7,8 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { INITIAL_BRANCHES, AGENTS_DATA } from "../../data/mockData";
 import Pagination from "../../components/ui/Pagination";
+import useSortable from "../../hooks/useSortable";
+import SortHeader from "../../components/ui/SortHeader";
 import { api } from "../../hooks/useAPI";
 
 function NewVisitorForm({ onSave, onCancel }) {
@@ -222,6 +224,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const [filterBranch, setFilterBranch] = useState("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
 
   // Close dropdowns on outside click — useEffect replaces backdrop div to avoid
   // z-index stacking context issues (anim-fade on Card creates a new stacking context,
@@ -251,9 +254,10 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const byStatus = statusFilter === "All" ? searched : searched.filter(v => v.status === statusFilter);
   const filtered = filterBranch === "All" ? byStatus : byStatus.filter(v => (v.branch || "") === filterBranch);
   const allBranches = ["All", ...new Set(nonEnrolled.map(v => v.branch).filter(Boolean))];
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const sortedFiltered = sortFn(filtered);
+  const totalPages = Math.ceil(sortedFiltered.length / pageSize);
   const safePage = Math.min(page, Math.max(1, totalPages));
-  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const paginated = sortedFiltered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const todayCount = nonEnrolled.filter(v => v.date === todayStr).length;
   const needFU = nonEnrolled.filter(v => (v.status==="Interested"||v.status==="Thinking") && daysDiff(v.lastFollowUp||v.date) > 3).length;
@@ -527,9 +531,17 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch{setVisitors([v,...visitors]);}setShowForm(false);toast.created("Visitor");}} onCancel={()=>setShowForm(false)}/></Card>}
 
       <Card delay={100}>
-        <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {filtered.length} জন ভিজিটর</p>
+        <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {sortedFiltered.length} জন ভিজিটর</p>
         <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr style={{borderBottom:"1px solid "+t.border}}>
-          {["Name","Phone","Branch","Country","Visa","Source","Days","Follow-up","Status","Action"].map(h=><th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{color:t.muted}}>{h}</th>)}
+          <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="ফোন" sortKey="phone" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="দেশ" sortKey="interested_countries" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="Source" sortKey="source" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="তারিখ" sortKey="date" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="Follow-up" sortKey="lastFollowUp" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{color:t.muted}}>Action</th>
         </tr></thead><tbody>
           {paginated.map(v=>{
             const dc=v.interested_countries?v.interested_countries[0]:v.country;
@@ -541,17 +553,18 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             return <tr key={v.id} className="cursor-pointer" style={{borderBottom:"1px solid "+t.border}}
               onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}
               onClick={()=>setDetailId(v.id)}>
+              {/* নাম */}
               <td className="py-3 px-3"><div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{background:t.cyan+"15",color:t.cyan}}>{v.name.charAt(0)}</div>
                 <div><span className="font-medium block">{v.name}</span>{v.name_bn&&<span className="text-[9px] block" style={{color:t.muted}}>{v.name_bn}</span>}</div>
               </div></td>
+              {/* ফোন */}
               <td className="py-3 px-3 font-mono text-[11px]" style={{color:t.textSecondary}}>{v.phone}</td>
+              {/* Branch */}
               <td className="py-3 px-3"><Badge color={t.purple} size="xs">{v.branch || "—"}</Badge></td>
+              {/* দেশ */}
               <td className="py-3 px-3"><Badge color={dc==="Japan"?t.rose:dc==="Germany"?t.amber:t.emerald} size="xs">{dc}</Badge>{mc&&<span className="text-[8px] ml-1" style={{color:t.muted}}>+{v.interested_countries.length-1}</span>}</td>
-              <td className="py-3 px-3 text-[10px]" style={{color:t.textSecondary}}>{v.visa_type||"—"}</td>
-              <td className="py-3 px-3" style={{color:t.textSecondary}}>{v.source}</td>
-              <td className="py-3 px-3"><span className="text-[10px] font-mono" style={{color:days>14?t.rose:days>7?t.amber:t.muted}}>{days}d</span></td>
-              <td className="py-3 px-3">{fuBad?<span className="text-[10px] font-semibold" style={{color:t.rose}}>Overdue</span>:v.lastFollowUp?<span className="text-[10px]" style={{color:t.emerald}}>✓ {fuD}d</span>:<span className="text-[10px]" style={{color:t.muted}}>—</span>}</td>
+              {/* স্ট্যাটাস */}
               <td className="py-3 px-3" onClick={e=>e.stopPropagation()}>
                 <div className="relative">
                   <button onClick={()=>setOpenMenuId(isMenu?null:v.id)} className="hover:scale-105 transition"><Badge color={stsColor(v.status)} size="xs">{v.status} ▾</Badge></button>
@@ -564,6 +577,13 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
                   </div>}
                 </div>
               </td>
+              {/* Source */}
+              <td className="py-3 px-3" style={{color:t.textSecondary}}>{v.source}</td>
+              {/* তারিখ */}
+              <td className="py-3 px-3"><span className="text-[10px] font-mono" style={{color:days>14?t.rose:days>7?t.amber:t.muted}}>{v.date} ({days}d)</span></td>
+              {/* Follow-up */}
+              <td className="py-3 px-3">{fuBad?<span className="text-[10px] font-semibold" style={{color:t.rose}}>Overdue</span>:v.lastFollowUp?<span className="text-[10px]" style={{color:t.emerald}}>✓ {fuD}d</span>:<span className="text-[10px]" style={{color:t.muted}}>—</span>}</td>
+              {/* Action */}
               <td className="py-3 px-3" onClick={e=>e.stopPropagation()}>
                 <div className="flex items-center gap-1">
                   {(v.status==="Interested"||v.status==="Thinking")&&<button onClick={()=>markFollowUp(v.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.cyan+"15",color:t.cyan}} title="Follow-up done">📞</button>}
@@ -573,8 +593,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             </tr>;
           })}
         </tbody></table></div>
-        {filtered.length===0&&<div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">No visitors found</p></div>}
-        <Pagination total={filtered.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
+        {sortedFiltered.length===0&&<div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো ভিজিটর পাওয়া যায়নি</p></div>}
+        <Pagination total={sortedFiltered.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
     </div>
   );

@@ -533,4 +533,5 @@ export const NAV_ITEMS = [
   { key: "users", label: "Users & Roles" },
   { key: "portal", label: "Student Portal" },
   { key: "settings", label: "Settings" },
+  { key: "help", label: "সাহায্য" },
 ];

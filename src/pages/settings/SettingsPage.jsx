@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText } from "lucide-react";
+import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw } from "lucide-react";
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
+import { PIPELINE_STATUSES } from "../../data/students";
+import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 
 // ── Administration ট্যাব কনফিগ ──
 const ADMIN_TABS = [
@@ -19,7 +21,7 @@ const ADMIN_TABS = [
   { key: "backup", label: "ডাটা ব্যাকআপ", icon: Database },
 ];
 
-export default function SettingsPage({ isDark, setIsDark, students, visitors }) {
+export default function SettingsPage({ isDark, setIsDark, students, visitors, stepConfigs, updateStepConfigs }) {
   const t = useTheme();
   const toast = useToast();
   const { labelSettings, updateLabelSettings } = useLabelSettings();
@@ -45,6 +47,79 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
     "VISITOR", "FOLLOW_UP", "ENROLLED", "IN_COURSE", "EXAM_PASSED", "DOC_COLLECTION",
     "SCHOOL_INTERVIEW", "DOC_SUBMITTED", "COE_RECEIVED", "VISA_GRANTED", "ARRIVED", "COMPLETED"
   ]);
+
+  // ── Pipeline step checklist editing ──
+  const [editingStep, setEditingStep] = useState(null);           // কোন step edit হচ্ছে
+  const [editStepHint, setEditStepHint] = useState("");            // step hint text
+  const [editStepNextLabel, setEditStepNextLabel] = useState("");   // next button label
+  const [editStepIcon, setEditStepIcon] = useState("");             // step icon
+  const [editChecklist, setEditChecklist] = useState([]);           // checklist items
+  const [newItemText, setNewItemText] = useState("");               // নতুন item add করার text
+  const [newItemReq, setNewItemReq] = useState(true);               // নতুন item required?
+  const [editingItemId, setEditingItemId] = useState(null);         // কোন item inline edit হচ্ছে
+  const [editItemText, setEditItemText] = useState("");             // edit করা item text
+
+  // step edit শুরু করো
+  const openStepEdit = (stepCode) => {
+    const conf = stepConfigs?.[stepCode] || {};
+    setEditingStep(stepCode);
+    setEditStepHint(conf.hint || "");
+    setEditStepNextLabel(conf.nextLabel || "");
+    setEditStepIcon(conf.icon || "");
+    setEditChecklist([...(conf.checklist || [])]);
+    setNewItemText("");
+    setEditingItemId(null);
+  };
+
+  // checklist-এ নতুন item add
+  const addChecklistItem = () => {
+    if (!newItemText.trim()) { toast.error("আইটেম টেক্সট দিন"); return; }
+    const id = `${editingStep.toLowerCase()}_${Date.now()}`;
+    setEditChecklist(prev => [...prev, { id, text: newItemText.trim(), req: newItemReq }]);
+    setNewItemText("");
+    setNewItemReq(true);
+  };
+
+  // checklist item delete
+  const removeChecklistItem = (itemId) => {
+    setEditChecklist(prev => prev.filter(i => i.id !== itemId));
+  };
+
+  // checklist item required toggle
+  const toggleItemReq = (itemId) => {
+    setEditChecklist(prev => prev.map(i => i.id === itemId ? { ...i, req: !i.req } : i));
+  };
+
+  // inline edit save
+  const saveItemEdit = (itemId) => {
+    if (!editItemText.trim()) return;
+    setEditChecklist(prev => prev.map(i => i.id === itemId ? { ...i, text: editItemText.trim() } : i));
+    setEditingItemId(null);
+  };
+
+  // সব পরিবর্তন save করো
+  const saveStepConfig = () => {
+    if (!editingStep || !updateStepConfigs) return;
+    const updated = { ...stepConfigs };
+    updated[editingStep] = {
+      ...updated[editingStep],
+      icon: editStepIcon,
+      hint: editStepHint,
+      nextLabel: editStepNextLabel,
+      checklist: editChecklist,
+    };
+    updateStepConfigs(updated);
+    toast.success(`${editingStep} — চেকলিস্ট সংরক্ষিত হয়েছে`);
+    setEditingStep(null);
+  };
+
+  // সব কিছু ডিফল্টে রিসেট
+  const resetToDefaults = () => {
+    if (!updateStepConfigs) return;
+    updateStepConfigs(DEFAULT_STEPS_META);
+    toast.success("সব ধাপ ডিফল্ট ডেমো ডাটায় রিসেট হয়েছে");
+    setEditingStep(null);
+  };
 
   // ── Branch management ──
   const [branches, setBranches] = useState([
@@ -529,22 +604,173 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors }) 
         </Card>
       </div>}
 
-      {/* ── পাইপলাইন সেটিংস ── */}
+      {/* ── পাইপলাইন সেটিংস — Dynamic Checklist Admin ── */}
       {activeTab === "pipeline" && <div className="space-y-5">
-        <Card delay={50}>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><GitBranch size={14} /> Student Pipeline Steps</h3>
-          <p className="text-[10px] mb-3" style={{ color: t.muted }}>স্টুডেন্ট pipeline-এর ধাপগুলো — drag করে order পরিবর্তন করা যাবে ভবিষ্যতে</p>
-          <div className="space-y-1.5">
-            {pipelineStatuses.map((s, i) => (
-              <div key={s} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: t.inputBg }}>
-                <span className="text-[10px] font-mono w-6 text-center" style={{ color: t.muted }}>{i + 1}</span>
-                <span className="w-2 h-2 rounded-full" style={{ background: i < 2 ? t.amber : i < 10 ? t.cyan : t.emerald }} />
-                <span className="text-xs font-medium flex-1">{s}</span>
-                <Badge color={i < 2 ? "amber" : i < 10 ? "cyan" : "emerald"} size="xs">{i < 2 ? "লিড" : i < 10 ? "প্রসেসিং" : "সম্পন্ন"}</Badge>
+        {/* ── ধাপ তালিকা ── */}
+        {!editingStep && (
+          <Card delay={50}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2"><GitBranch size={14} /> পাইপলাইন ধাপ ও চেকলিস্ট</h3>
+                <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>প্রতিটি ধাপে ক্লিক করে চেকলিস্ট আইটেম add/edit/delete করুন</p>
               </div>
-            ))}
-          </div>
-        </Card>
+              <Button variant="ghost" size="xs" icon={RotateCcw} onClick={resetToDefaults}>ডিফল্ট রিসেট</Button>
+            </div>
+            <div className="space-y-1.5">
+              {pipelineStatuses.map((s, i) => {
+                const ps = PIPELINE_STATUSES.find(p => p.code === s);
+                const conf = stepConfigs?.[s] || {};
+                const itemCount = (conf.checklist || []).length;
+                const reqCount = (conf.checklist || []).filter(c => c.req).length;
+                return (
+                  <div key={s} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+                    style={{ background: t.inputBg }}
+                    onClick={() => openStepEdit(s)}
+                    onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                    onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
+                    <span className="text-[10px] font-mono w-6 text-center" style={{ color: t.muted }}>{i + 1}</span>
+                    <span className="text-base">{conf.icon || "📋"}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold">{ps?.label || s}</span>
+                        <span className="text-[9px] font-mono" style={{ color: t.muted }}>{s}</span>
+                      </div>
+                      <p className="text-[10px] truncate" style={{ color: t.muted }}>{conf.hint || "—"}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[10px]" style={{ color: t.textSecondary }}>{itemCount} আইটেম</p>
+                      <p className="text-[9px]" style={{ color: t.muted }}>{reqCount} আবশ্যক</p>
+                    </div>
+                    <Edit3 size={13} style={{ color: t.muted }} />
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+        {/* ── ধাপ Edit UI ── */}
+        {editingStep && (() => {
+          const ps = PIPELINE_STATUSES.find(p => p.code === editingStep);
+          return (
+            <div className="space-y-4">
+              <Card delay={0}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setEditingStep(null)} className="p-1.5 rounded-lg transition" style={{ background: t.inputBg }}
+                      onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
+                      <X size={14} />
+                    </button>
+                    <div>
+                      <h3 className="text-sm font-semibold flex items-center gap-2">
+                        <span className="text-base">{editStepIcon}</span>
+                        {ps?.label || editingStep} — চেকলিস্ট সম্পাদনা
+                      </h3>
+                      <p className="text-[10px]" style={{ color: t.muted }}>ধাপ: {editingStep}</p>
+                    </div>
+                  </div>
+                  <Button icon={Save} size="xs" onClick={saveStepConfig}>সংরক্ষণ</Button>
+                </div>
+
+                {/* ── Step meta fields ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>আইকন (Emoji)</label>
+                    <input value={editStepIcon} onChange={e => setEditStepIcon(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                      placeholder="🚶" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরবর্তী ধাপের বাটন টেক্সট</label>
+                    <input value={editStepNextLabel} onChange={e => setEditStepNextLabel(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                      placeholder="পরবর্তী ধাপে যান" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধাপের বিবরণ / Hint</label>
+                    <input value={editStepHint} onChange={e => setEditStepHint(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                      placeholder="এই ধাপে কী করতে হবে..." />
+                  </div>
+                </div>
+
+                {/* ── চেকলিস্ট আইটেম তালিকা ── */}
+                <div className="mb-3">
+                  <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>
+                    চেকলিস্ট আইটেম ({editChecklist.length} টি)
+                  </p>
+
+                  <div className="space-y-1">
+                    {editChecklist.map((item, idx) => (
+                      <div key={item.id} className="flex items-center gap-2 px-3 py-2 rounded-lg group"
+                        style={{ background: t.inputBg }}>
+                        <span className="text-[10px] font-mono w-5 text-center shrink-0" style={{ color: t.muted }}>{idx + 1}</span>
+
+                        {/* Required toggle */}
+                        <button onClick={() => toggleItemReq(item.id)} className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold transition"
+                          style={{ background: item.req ? `${t.rose}15` : `${t.muted}15`, color: item.req ? t.rose : t.muted }}
+                          title={item.req ? "আবশ্যক — ক্লিক করে ঐচ্ছিক করুন" : "ঐচ্ছিক — ক্লিক করে আবশ্যক করুন"}>
+                          {item.req ? "আবশ্যক" : "ঐচ্ছিক"}
+                        </button>
+
+                        {/* Item text (inline edit) */}
+                        {editingItemId === item.id ? (
+                          <div className="flex-1 flex items-center gap-1">
+                            <input value={editItemText} onChange={e => setEditItemText(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter") saveItemEdit(item.id); if (e.key === "Escape") setEditingItemId(null); }}
+                              className="flex-1 px-2 py-1 rounded text-xs outline-none" autoFocus
+                              style={{ background: t.card, border: `1px solid ${t.cyan}`, color: t.text }} />
+                            <button onClick={() => saveItemEdit(item.id)} className="p-1 rounded" style={{ color: t.emerald }}><CheckCircle size={14} /></button>
+                            <button onClick={() => setEditingItemId(null)} className="p-1 rounded" style={{ color: t.muted }}><X size={12} /></button>
+                          </div>
+                        ) : (
+                          <span className="flex-1 text-xs cursor-pointer" style={{ color: t.text }}
+                            onClick={() => { setEditingItemId(item.id); setEditItemText(item.text); }}>
+                            {item.text}
+                          </span>
+                        )}
+
+                        {/* Edit & Delete buttons */}
+                        {editingItemId !== item.id && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                            <button onClick={() => { setEditingItemId(item.id); setEditItemText(item.text); }} className="p-1 rounded transition"
+                              style={{ color: t.cyan }} title="এডিট করুন"><Edit3 size={12} /></button>
+                            <button onClick={() => removeChecklistItem(item.id)} className="p-1 rounded transition"
+                              style={{ color: t.rose }} title="মুছে ফেলুন"><Trash2 size={12} /></button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {editChecklist.length === 0 && (
+                      <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো আইটেম নেই — নিচে নতুন আইটেম যোগ করুন</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── নতুন আইটেম যোগ ── */}
+                <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: `${t.cyan}06`, border: `1px solid ${t.cyan}15` }}>
+                  <Plus size={14} style={{ color: t.cyan }} />
+                  <input value={newItemText} onChange={e => setNewItemText(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") addChecklistItem(); }}
+                    className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }}
+                    placeholder="নতুন চেকলিস্ট আইটেম লিখুন..." />
+                  <button onClick={() => setNewItemReq(!newItemReq)} className="shrink-0 px-2 py-1 rounded text-[9px] font-bold transition"
+                    style={{ background: newItemReq ? `${t.rose}15` : `${t.muted}15`, color: newItemReq ? t.rose : t.muted }}>
+                    {newItemReq ? "আবশ্যক" : "ঐচ্ছিক"}
+                  </button>
+                  <Button size="xs" onClick={addChecklistItem}>যোগ করুন</Button>
+                </div>
+
+                {/* ── Bottom actions ── */}
+                <div className="flex items-center justify-between pt-3 mt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+                  <Button variant="ghost" size="xs" onClick={() => setEditingStep(null)}>বাতিল</Button>
+                  <Button icon={Save} size="xs" onClick={saveStepConfig}>সংরক্ষণ করুন</Button>
+                </div>
+              </Card>
+            </div>
+          );
+        })()}
       </div>}
 
       {/* ── ব্রাঞ্চ ম্যানেজমেন্ট ── */}

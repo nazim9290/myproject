@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Save, Download } from "lucide-react";
+import { Save, Download, Search } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import SortHeader from "../../components/ui/SortHeader";
+import useSortable from "../../hooks/useSortable";
 import { ATT_STATUS, ATTENDANCE_DAY, BATCHES } from "../../data/mockData";
 
 const ATT_CYCLE = ["present", "absent", "late"];
@@ -15,6 +17,8 @@ export default function AttendancePage({ students = [] }) {
   const today = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedBatch, setSelectedBatch] = useState("all");
+  const [searchQ, setSearchQ] = useState("");
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
   // attendanceLog: { [date]: { [studentId]: status } }
   const [attendanceLog, setAttendanceLog] = useState({ "2026-03-22": Object.fromEntries(ATTENDANCE_DAY.map(a => [a.id, a.status])) });
 
@@ -24,11 +28,18 @@ export default function AttendancePage({ students = [] }) {
   const filteredStudents = selectedBatch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.batch === selectedBatch);
 
   // Fallback to mock data if no real students
-  const displayList = filteredStudents.length > 0 ? filteredStudents.map(s => ({ id: s.id, name: s.name_en, batch: s.batch }))
+  const baseList = filteredStudents.length > 0 ? filteredStudents.map(s => ({ id: s.id, name: s.name_en, batch: s.batch }))
     : ATTENDANCE_DAY.map(a => ({ id: a.id, name: a.name, batch: "Batch April 2026" }));
 
+  // সার্চ ও সর্ট প্রয়োগ
+  const displayList = sortFn(
+    searchQ.trim()
+      ? baseList.filter(s => s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.id.toLowerCase().includes(searchQ.toLowerCase()))
+      : baseList
+  );
+
   const todayAtt = attendanceLog[selectedDate] || {};
-  const getStatus = (id) => todayAtt[id] || "present";
+  const getStatus = (id) => todayAtt[id] || "absent";
   const cycleStatus = (id) => {
     const cur = ATT_CYCLE.indexOf(getStatus(id));
     const next = ATT_CYCLE[(cur + 1) % ATT_CYCLE.length];
@@ -82,6 +93,14 @@ export default function AttendancePage({ students = [] }) {
               {batchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
+          {/* সার্চ বার */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+            style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+            <Search size={14} style={{ color: t.muted }} />
+            <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
+              className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+              placeholder="স্টুডেন্ট খুঁজুন..." />
+          </div>
           <div className="text-xs pb-2" style={{ color: t.muted }}>
             মোট: <span className="font-bold" style={{ color: t.text }}>{displayList.length}</span> জন
           </div>
@@ -112,25 +131,40 @@ export default function AttendancePage({ students = [] }) {
           <p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে status পরিবর্তন করুন</p>
         </div>
         {displayList.length === 0 ? (
-          <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই — ব্যাচ পরিবর্তন করুন</p>
+          <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই — ব্যাচ বা সার্চ পরিবর্তন করুন</p>
         ) : (
-          <div className="space-y-1.5">
-            {displayList.map((student) => {
-              const status = getStatus(student.id);
-              const st = ATT_STATUS[status];
-              return (
-                <button key={student.id} onClick={() => cycleStatus(student.id)}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg transition text-left"
-                  style={{ background: `${st.color}06`, border: `1px solid ${st.color}20` }}>
-                  <span className="text-base shrink-0">{st.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium">{student.name}</p>
-                    <p className="text-[10px]" style={{ color: t.muted }}>{student.id}{student.batch ? ` • ${student.batch}` : ""}</p>
-                  </div>
-                  <Badge color={st.color} size="xs">{st.label}</Badge>
-                </button>
-              );
-            })}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                  <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="ID" sortKey="id" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ব্যাচ</th>
+                  <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>হাজিরা</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayList.map((student) => {
+                  const status = getStatus(student.id);
+                  const st = ATT_STATUS[status];
+                  return (
+                    <tr key={student.id} className="cursor-pointer" style={{ borderBottom: `1px solid ${t.border}` }}
+                      onClick={() => cycleStatus(student.id)}
+                      onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td className="py-3 px-4">
+                        <span className="font-medium">{student.name}</span>
+                      </td>
+                      <td className="py-3 px-4" style={{ color: t.muted }}>{student.id}</td>
+                      <td className="py-3 px-4" style={{ color: t.muted }}>{student.batch || "—"}</td>
+                      <td className="py-3 px-4">
+                        <Badge color={st.color} size="xs">{st.icon} {st.label}</Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
         <div className="flex justify-end mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>

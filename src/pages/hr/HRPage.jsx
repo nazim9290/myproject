@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { DollarSign, Users, CheckCircle, Building, Plus, Save, X } from "lucide-react";
+import { DollarSign, Users, CheckCircle, Building, Plus, Save, X, Search } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import SortHeader from "../../components/ui/SortHeader";
+import useSortable from "../../hooks/useSortable";
 import { INITIAL_BRANCHES, ALL_ROLES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -24,11 +26,22 @@ export default function HRPage() {
   }, []);
   const [payingEmpId, setPayingEmpId] = useState(null);
   const [payForm, setPayForm] = useState({ month: "", amount: "", method: "Bank Transfer", note: "" });
+  const [searchQ, setSearchQ] = useState("");
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
   const branches = INITIAL_BRANCHES.filter((b) => b.status === "active");
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const activeEmps = employees.filter((e) => e.status === "active");
   const totalSalary = activeEmps.reduce((s, e) => s + (e.salary || 0), 0);
+
+  // সার্চ ফিল্টার — নাম বা ফোন দিয়ে কর্মী খুঁজুন
+  const filteredEmps = sortFn(
+    employees.filter((e) =>
+      !searchQ ||
+      e.name.toLowerCase().includes(searchQ.toLowerCase()) ||
+      (e.phone || "").includes(searchQ)
+    )
+  );
 
   const handleAdd = () => {
     if (!newEmp.name.trim()) { toast.error("নাম দিন"); return; }
@@ -129,9 +142,9 @@ export default function HRPage() {
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "employees", label: "👥 Employees" },
-          { key: "salary", label: "💰 Salary" },
-          { key: "leave", label: "🏖️ Leave" },
+          { key: "employees", label: "👥 কর্মীতালিকা" },
+          { key: "salary", label: "💰 বেতন" },
+          { key: "leave", label: "🏖️ ছুটি" },
         ].map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
@@ -144,35 +157,62 @@ export default function HRPage() {
         ))}
       </div>
 
+      {/* সার্চ বার */}
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+        style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+        <Search size={14} style={{ color: t.muted }} />
+        <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
+          className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+          placeholder="কর্মী খুঁজুন..." />
+      </div>
+
       {activeTab === "employees" && (
-        <div className="space-y-2">
-          {employees.map((emp, i) => (
-            <Card key={emp.id} delay={i * 40} className="!p-4">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
-                  {emp.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold">{emp.name}</p>
-                    <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status}</Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 text-[10px] mt-0.5" style={{ color: t.muted }}>
-                    <span>{emp.role}</span>
-                    <span>🏢 {emp.branch}</span>
-                    {emp.phone && <span>📞 {emp.phone}</span>}
-                    {emp.joinDate && <span>📅 {emp.joinDate}</span>}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold font-mono" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</p>
-                  <p className="text-[9px]" style={{ color: t.muted }}>মাসিক</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <Card delay={100}>
+          <h3 className="text-sm font-semibold mb-3">কর্মী তালিকা</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                  <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="পদবি" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ফোন</th>
+                  <SortHeader label="যোগদান" sortKey="joinDate" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="বেতন" sortKey="salary" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmps.map((emp) => (
+                  <tr key={emp.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                          style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
+                          {emp.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                        </div>
+                        <span className="font-medium">{emp.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4" style={{ color: t.muted }}>{emp.role}</td>
+                    <td className="py-3 px-4" style={{ color: t.muted }}>{emp.branch}</td>
+                    <td className="py-3 px-4" style={{ color: t.muted }}>{emp.phone || "—"}</td>
+                    <td className="py-3 px-4" style={{ color: t.muted }}>{emp.joinDate || "—"}</td>
+                    <td className="py-3 px-4 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
+                    <td className="py-3 px-4">
+                      <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredEmps.length === 0 && (
+              <p className="text-center text-xs py-6" style={{ color: t.muted }}>কোনো কর্মী পাওয়া যায়নি</p>
+            )}
+          </div>
+        </Card>
       )}
 
       {activeTab === "salary" && (
@@ -183,13 +223,16 @@ export default function HRPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {["কর্মী", "পদবি", "Branch", "মূল বেতন", "Status", ""].map((h) => (
-                      <th key={h} className="text-left py-2 px-3 text-[10px] uppercase font-medium" style={{ color: t.muted }}>{h}</th>
-                    ))}
+                    <SortHeader label="কর্মী" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="পদবি" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="মূল বেতন" sortKey="salary" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((emp) => (
+                  {filteredEmps.map((emp) => (
                     <tr key={emp.id} style={{ borderBottom: `1px solid ${t.border}` }}
                       onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
                       onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
@@ -216,11 +259,16 @@ export default function HRPage() {
                 <tfoot>
                   <tr style={{ borderTop: `2px solid ${t.border}` }}>
                     <td colSpan={3} className="py-2.5 px-3 font-bold text-xs">মোট মাসিক বেতন</td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-sm" style={{ color: t.amber }}>৳{totalSalary.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 font-mono font-bold text-sm" style={{ color: t.amber }}>
+                      ৳{filteredEmps.reduce((s, e) => s + (e.salary || 0), 0).toLocaleString()}
+                    </td>
                     <td /><td />
                   </tr>
                 </tfoot>
               </table>
+              {filteredEmps.length === 0 && (
+                <p className="text-center text-xs py-6" style={{ color: t.muted }}>কোনো কর্মী পাওয়া যায়নি</p>
+              )}
             </div>
           </Card>
 
@@ -304,41 +352,53 @@ export default function HRPage() {
         </div>
       )}
 
-      {activeTab === "leave" && (
-        <Card delay={100}>
-          <h3 className="text-sm font-semibold mb-3">ছুটির তালিকা</h3>
-          <div className="space-y-2">
-            {employees.filter((e) => e.status === "active").map((emp, i) => {
-              const leaves = emp.leaves || { total: 18, used: 0 };
-              const remaining = (leaves.total || 18) - (leaves.used || 0);
-              const total = leaves.total || 18;
-              const pct = Math.round((remaining / total) * 100);
-              return (
-                <div key={emp.id} className="p-3 rounded-lg" style={{ background: t.inputBg }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-xs font-bold">{emp.name}</p>
-                      <p className="text-[10px]" style={{ color: t.muted }}>{emp.role} — {emp.branch}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold" style={{ color: pct >= 50 ? t.emerald : t.amber }}>{remaining} দিন বাকি</p>
-                      <p className="text-[9px]" style={{ color: t.muted }}>মোট {total} দিন</p>
-                    </div>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${t.muted}20` }}>
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct >= 50 ? t.emerald : t.amber }} />
-                  </div>
-                  <div className="flex gap-4 mt-2 text-[10px]" style={{ color: t.muted }}>
-                    <span>মোট: {total}</span>
-                    <span>ব্যবহৃত: {leaves.used || 0}</span>
-                    <span>বাকি: {remaining}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+      {activeTab === "leave" && (() => {
+        // ছুটি ট্যাবে active ও সার্চ ফিল্টার করা কর্মী
+        const leaveEmps = filteredEmps.filter((e) => e.status === "active");
+        return (
+          <Card delay={100}>
+            <h3 className="text-sm font-semibold mb-3">ছুটির তালিকা</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                    <SortHeader label="কর্মী" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="পদবি" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>মোট ছুটি</th>
+                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ব্যবহৃত</th>
+                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>বাকি</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaveEmps.map((emp) => {
+                    const leaves = emp.leaves || { total: 18, used: 0 };
+                    const total = leaves.total || 18;
+                    const used = leaves.used || 0;
+                    const remaining = total - used;
+                    const pct = Math.round((remaining / total) * 100);
+                    return (
+                      <tr key={emp.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                        <td className="py-3 px-4 font-medium">{emp.name}</td>
+                        <td className="py-3 px-4" style={{ color: t.muted }}>{emp.role}</td>
+                        <td className="py-3 px-4" style={{ color: t.muted }}>{emp.branch}</td>
+                        <td className="py-3 px-4">{total}</td>
+                        <td className="py-3 px-4" style={{ color: t.amber }}>{used}</td>
+                        <td className="py-3 px-4 font-bold" style={{ color: pct >= 50 ? t.emerald : t.amber }}>{remaining}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {leaveEmps.length === 0 && (
+                <p className="text-center text-xs py-6" style={{ color: t.muted }}>কোনো কর্মী পাওয়া যায়নি</p>
+              )}
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   );
 }

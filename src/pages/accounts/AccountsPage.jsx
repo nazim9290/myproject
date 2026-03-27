@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, DollarSign, Clock, FileText, Download, Plus, Save, X, Check } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Clock, FileText, Download, Plus, Save, X, Check, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Pagination from "../../components/ui/Pagination";
+import SortHeader from "../../components/ui/SortHeader";
+import useSortable from "../../hooks/useSortable";
 import { CATEGORY_CONFIG, FEE_CATEGORIES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -131,6 +134,31 @@ export default function AccountsPage({ students = [] }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [incomeData, setIncomeData] = useState([]);
   const [expenseData, setExpenseData] = useState([]);
+
+  // ── সার্চ, পেজিনেশন ও সর্টিং স্টেট (প্রতিটি ট্যাবের জন্য আলাদা) ──
+  // স্টুডেন্ট ফি সারসংক্ষেপ টেবিল
+  const [feeSummarySearch, setFeeSummarySearch] = useState("");
+  const [feeSummaryPage, setFeeSummaryPage] = useState(1);
+  const [feeSummaryPageSize, setFeeSummaryPageSize] = useState(20);
+  const feeSummarySort = useSortable("name");
+
+  // পেমেন্ট লেজার টেবিল
+  const [ledgerSearch, setLedgerSearch] = useState("");
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerPageSize, setLedgerPageSize] = useState(20);
+  const ledgerSort = useSortable("date", "desc");
+
+  // অন্যান্য আয় টেবিল
+  const [incomeSearch, setIncomeSearch] = useState("");
+  const [incomePage, setIncomePage] = useState(1);
+  const [incomePageSize, setIncomePageSize] = useState(20);
+  const incomeSort = useSortable("studentName");
+
+  // ব্যয় টেবিল
+  const [expenseSearch, setExpenseSearch] = useState("");
+  const [expensePage, setExpensePage] = useState(1);
+  const [expensePageSize, setExpensePageSize] = useState(20);
+  const expenseSort = useSortable("date", "desc");
 
   // ── Backend থেকে payments ও expenses load ──
   useEffect(() => {
@@ -382,160 +410,269 @@ export default function AccountsPage({ students = [] }) {
           {/* Per-student summary */}
           <Card delay={100}>
             <h3 className="text-sm font-semibold mb-3">স্টুডেন্ট ওয়াইজ সারসংক্ষেপ</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {["স্টুডেন্ট", "Branch", "মোট নির্ধারিত", "কালেক্ট হয়েছে", "বাকি", "অগ্রগতি"].map(h => (
-                      <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentFeeSummary.map(row => {
-                    const pct = row.totalDue > 0 ? Math.min(100, (row.totalCollected / row.totalDue) * 100) : 0;
-                    return (
-                      <tr key={row.id} style={{ borderBottom: `1px solid ${t.border}` }}
-                        onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <td className="py-3 px-3">
-                          <p className="font-medium">{row.name}</p>
-                          <p className="text-[9px]" style={{ color: t.muted }}>{row.id}</p>
-                        </td>
-                        <td className="py-3 px-3 text-[10px]" style={{ color: t.muted }}>{row.branch || "—"}</td>
-                        <td className="py-3 px-3 font-mono font-semibold">৳{row.totalDue.toLocaleString()}</td>
-                        <td className="py-3 px-3 font-mono font-semibold" style={{ color: t.emerald }}>৳{row.totalCollected.toLocaleString()}</td>
-                        <td className="py-3 px-3 font-mono" style={{ color: row.balance > 0 ? t.rose : t.muted }}>{row.balance > 0 ? `৳${row.balance.toLocaleString()}` : "—"}</td>
-                        <td className="py-3 px-3 min-w-[100px]">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: t.border }}>
-                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct >= 100 ? t.emerald : pct >= 50 ? t.cyan : t.amber }} />
-                            </div>
-                            <span style={{ color: t.muted }}>{Math.round(pct)}%</span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {/* সার্চ বার */}
+            <div className="flex flex-wrap gap-3 items-center mb-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+                <Search size={14} style={{ color: t.muted }} />
+                <input value={feeSummarySearch} onChange={e => { setFeeSummarySearch(e.target.value); setFeeSummaryPage(1); }}
+                  className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                  placeholder="স্টুডেন্টের নাম খুঁজুন..." />
+              </div>
             </div>
+            {(() => {
+              const filteredSummary = studentFeeSummary.filter(row =>
+                !feeSummarySearch || (row.name || "").toLowerCase().includes(feeSummarySearch.toLowerCase())
+              );
+              const sortedSummary = feeSummarySort.sortFn(filteredSummary);
+              const safePage = Math.min(feeSummaryPage, Math.max(1, Math.ceil(sortedSummary.length / feeSummaryPageSize)));
+              const paginatedSummary = sortedSummary.slice((safePage - 1) * feeSummaryPageSize, safePage * feeSummaryPageSize);
+              return (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                          <SortHeader label="স্টুডেন্ট" sortKey="name" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label="Branch" sortKey="branch" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label="মোট নির্ধারিত" sortKey="totalDue" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label="কালেক্ট হয়েছে" sortKey="totalCollected" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label="বাকি" sortKey="balance" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অগ্রগতি</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedSummary.map(row => {
+                          const pct = row.totalDue > 0 ? Math.min(100, (row.totalCollected / row.totalDue) * 100) : 0;
+                          return (
+                            <tr key={row.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                              onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              <td className="py-3 px-3">
+                                <p className="font-medium">{row.name}</p>
+                                <p className="text-[9px]" style={{ color: t.muted }}>{row.id}</p>
+                              </td>
+                              <td className="py-3 px-3 text-[10px]" style={{ color: t.muted }}>{row.branch || "—"}</td>
+                              <td className="py-3 px-3 font-mono font-semibold">৳{row.totalDue.toLocaleString()}</td>
+                              <td className="py-3 px-3 font-mono font-semibold" style={{ color: t.emerald }}>৳{row.totalCollected.toLocaleString()}</td>
+                              <td className="py-3 px-3 font-mono" style={{ color: row.balance > 0 ? t.rose : t.muted }}>{row.balance > 0 ? `৳${row.balance.toLocaleString()}` : "—"}</td>
+                              <td className="py-3 px-3 min-w-[100px]">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: t.border }}>
+                                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct >= 100 ? t.emerald : pct >= 50 ? t.cyan : t.amber }} />
+                                  </div>
+                                  <span style={{ color: t.muted }}>{Math.round(pct)}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination total={sortedSummary.length} page={safePage} pageSize={feeSummaryPageSize}
+                    onPage={setFeeSummaryPage} onPageSize={setFeeSummaryPageSize} />
+                </>
+              );
+            })()}
           </Card>
 
           {/* Payment transaction log */}
           <Card delay={120}>
             <h3 className="text-sm font-semibold mb-3">পেমেন্ট লেজার (সর্বশেষ)</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {["তারিখ", "স্টুডেন্ট", "খাত", "পদ্ধতি", "পরিমাণ", "নোট"].map(h => (
-                      <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentFeeRows.slice(0, 50).map(row => {
-                    const cat = CATEGORY_CONFIG[row.category] || { label: row.category, color: "#94a3b8", icon: "💰" };
-                    return (
-                      <tr key={row.paymentId} style={{ borderBottom: `1px solid ${t.border}` }}
-                        onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <td className="py-2.5 px-3 font-mono text-[10px]" style={{ color: t.muted }}>{row.date}</td>
-                        <td className="py-2.5 px-3">
-                          <p className="font-medium">{row.studentName}</p>
-                          <p className="text-[9px]" style={{ color: t.muted }}>{row.studentId}</p>
-                        </td>
-                        <td className="py-2.5 px-3"><Badge color={cat.color} size="xs">{cat.icon} {cat.label}</Badge></td>
-                        <td className="py-2.5 px-3 text-[10px]" style={{ color: t.muted }}>{row.method}</td>
-                        <td className="py-2.5 px-3 font-semibold font-mono" style={{ color: t.emerald }}>৳{row.amount.toLocaleString()}</td>
-                        <td className="py-2.5 px-3 text-[10px]" style={{ color: t.muted }}>{row.note || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                  {studentFeeRows.length === 0 && (
-                    <tr><td colSpan="6" className="py-6 text-center text-xs" style={{ color: t.muted }}>কোনো পেমেন্ট রেকর্ড নেই</td></tr>
-                  )}
-                </tbody>
-              </table>
+            {/* সার্চ বার */}
+            <div className="flex flex-wrap gap-3 items-center mb-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+                <Search size={14} style={{ color: t.muted }} />
+                <input value={ledgerSearch} onChange={e => { setLedgerSearch(e.target.value); setLedgerPage(1); }}
+                  className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                  placeholder="স্টুডেন্টের নাম খুঁজুন..." />
+              </div>
             </div>
+            {(() => {
+              const filteredLedger = studentFeeRows.filter(row =>
+                !ledgerSearch || (row.studentName || "").toLowerCase().includes(ledgerSearch.toLowerCase())
+              );
+              const sortedLedger = ledgerSort.sortFn(filteredLedger);
+              const safePage = Math.min(ledgerPage, Math.max(1, Math.ceil(sortedLedger.length / ledgerPageSize)));
+              const paginatedLedger = sortedLedger.slice((safePage - 1) * ledgerPageSize, safePage * ledgerPageSize);
+              return (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                          <SortHeader label="তারিখ" sortKey="date" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label="স্টুডেন্ট" sortKey="studentName" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label="খাত" sortKey="category" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label="পদ্ধতি" sortKey="method" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label="পরিমাণ" sortKey="amount" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>নোট</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedLedger.map(row => {
+                          const cat = CATEGORY_CONFIG[row.category] || { label: row.category, color: "#94a3b8", icon: "💰" };
+                          return (
+                            <tr key={row.paymentId} style={{ borderBottom: `1px solid ${t.border}` }}
+                              onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              <td className="py-2.5 px-3 font-mono text-[10px]" style={{ color: t.muted }}>{row.date}</td>
+                              <td className="py-2.5 px-3">
+                                <p className="font-medium">{row.studentName}</p>
+                                <p className="text-[9px]" style={{ color: t.muted }}>{row.studentId}</p>
+                              </td>
+                              <td className="py-2.5 px-3"><Badge color={cat.color} size="xs">{cat.icon} {cat.label}</Badge></td>
+                              <td className="py-2.5 px-3 text-[10px]" style={{ color: t.muted }}>{row.method}</td>
+                              <td className="py-2.5 px-3 font-semibold font-mono" style={{ color: t.emerald }}>৳{row.amount.toLocaleString()}</td>
+                              <td className="py-2.5 px-3 text-[10px]" style={{ color: t.muted }}>{row.note || "—"}</td>
+                            </tr>
+                          );
+                        })}
+                        {sortedLedger.length === 0 && (
+                          <tr><td colSpan="6" className="py-6 text-center text-xs" style={{ color: t.muted }}>কোনো পেমেন্ট রেকর্ড নেই</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination total={sortedLedger.length} page={safePage} pageSize={ledgerPageSize}
+                    onPage={setLedgerPage} onPageSize={setLedgerPageSize} />
+                </>
+              );
+            })()}
           </Card>
         </div>
       )}
 
       {activeTab === "income" && (
         <Card delay={100}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["স্টুডেন্ট", "ক্যাটাগরি", "মোট", "ট্যাক্স", "পরিশোধিত", "বাকি", "কিস্তি", "স্ট্যাটাস"].map((h) => (
-                    <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {incomeData.map((inc) => {
-                  const cat = CATEGORY_CONFIG[inc.category];
-                  const due = inc.amount - inc.paidAmount;
-                  return (
-                    <tr key={inc.id} style={{ borderBottom: `1px solid ${t.border}` }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                      <td className="py-3 px-3">
-                        <p className="font-medium">{inc.studentName}</p>
-                        <p className="text-[9px]" style={{ color: t.muted }}>{inc.studentId}</p>
-                      </td>
-                      <td className="py-3 px-3"><Badge color={cat?.color || t.muted} size="xs">{cat?.icon} {cat?.label}</Badge></td>
-                      <td className="py-3 px-3 font-semibold font-mono">৳{inc.amount.toLocaleString()}</td>
-                      <td className="py-3 px-3 font-mono" style={{ color: inc.tax > 0 ? t.purple : t.muted }}>{inc.tax > 0 ? `৳${inc.tax.toLocaleString()}` : "—"}</td>
-                      <td className="py-3 px-3 font-semibold font-mono" style={{ color: t.emerald }}>৳{inc.paidAmount.toLocaleString()}</td>
-                      <td className="py-3 px-3 font-mono" style={{ color: due > 0 ? t.amber : t.muted }}>{due > 0 ? `৳${due.toLocaleString()}` : "—"}</td>
-                      <td className="py-3 px-3" style={{ color: t.textSecondary }}>{inc.paid}/{inc.installments}</td>
-                      <td className="py-3 px-3">
-                        <Badge color={inc.status === "paid" ? t.emerald : inc.status === "partial" ? t.amber : t.rose} size="xs">
-                          {inc.status === "paid" ? "পরিশোধিত" : inc.status === "partial" ? "আংশিক" : "অপরিশোধিত"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {/* সার্চ বার */}
+          <div className="flex flex-wrap gap-3 items-center mb-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <Search size={14} style={{ color: t.muted }} />
+              <input value={incomeSearch} onChange={e => { setIncomeSearch(e.target.value); setIncomePage(1); }}
+                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                placeholder="স্টুডেন্টের নাম খুঁজুন..." />
+            </div>
           </div>
+          {(() => {
+            const filteredIncome = incomeData.filter(inc =>
+              !incomeSearch || (inc.studentName || "").toLowerCase().includes(incomeSearch.toLowerCase())
+            );
+            const sortedIncome = incomeSort.sortFn(filteredIncome);
+            const safePage = Math.min(incomePage, Math.max(1, Math.ceil(sortedIncome.length / incomePageSize)));
+            const paginatedIncome = sortedIncome.slice((safePage - 1) * incomePageSize, safePage * incomePageSize);
+            return (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                        <SortHeader label="স্টুডেন্ট" sortKey="studentName" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label="ক্যাটাগরি" sortKey="category" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label="মোট" sortKey="amount" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label="ট্যাক্স" sortKey="tax" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label="পরিশোধিত" sortKey="paidAmount" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>বাকি</th>
+                        <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>কিস্তি</th>
+                        <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedIncome.map((inc) => {
+                        const cat = CATEGORY_CONFIG[inc.category];
+                        const due = inc.amount - inc.paidAmount;
+                        return (
+                          <tr key={inc.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                            <td className="py-3 px-3">
+                              <p className="font-medium">{inc.studentName}</p>
+                              <p className="text-[9px]" style={{ color: t.muted }}>{inc.studentId}</p>
+                            </td>
+                            <td className="py-3 px-3"><Badge color={cat?.color || t.muted} size="xs">{cat?.icon} {cat?.label}</Badge></td>
+                            <td className="py-3 px-3 font-semibold font-mono">৳{inc.amount.toLocaleString()}</td>
+                            <td className="py-3 px-3 font-mono" style={{ color: inc.tax > 0 ? t.purple : t.muted }}>{inc.tax > 0 ? `৳${inc.tax.toLocaleString()}` : "—"}</td>
+                            <td className="py-3 px-3 font-semibold font-mono" style={{ color: t.emerald }}>৳{inc.paidAmount.toLocaleString()}</td>
+                            <td className="py-3 px-3 font-mono" style={{ color: due > 0 ? t.amber : t.muted }}>{due > 0 ? `৳${due.toLocaleString()}` : "—"}</td>
+                            <td className="py-3 px-3" style={{ color: t.textSecondary }}>{inc.paid}/{inc.installments}</td>
+                            <td className="py-3 px-3">
+                              <Badge color={inc.status === "paid" ? t.emerald : inc.status === "partial" ? t.amber : t.rose} size="xs">
+                                {inc.status === "paid" ? "পরিশোধিত" : inc.status === "partial" ? "আংশিক" : "অপরিশোধিত"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination total={sortedIncome.length} page={safePage} pageSize={incomePageSize}
+                  onPage={setIncomePage} onPageSize={setIncomePageSize} />
+              </>
+            );
+          })()}
         </Card>
       )}
 
       {activeTab === "expense" && (
         <Card delay={100}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["তারিখ", "ক্যাটাগরি", "বিবরণ", "পরিমাণ"].map((h) => (
-                    <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[...expenseData].sort((a, b) => b.date.localeCompare(a.date)).map((exp) => {
-                  const cat = CATEGORY_CONFIG[exp.category];
-                  return (
-                    <tr key={exp.id} style={{ borderBottom: `1px solid ${t.border}` }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                      <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{exp.date}</td>
-                      <td className="py-3 px-3"><Badge color={cat?.color || t.muted} size="xs">{cat?.icon} {cat?.label}</Badge></td>
-                      <td className="py-3 px-3" style={{ color: t.textSecondary }}>{exp.description}</td>
-                      <td className="py-3 px-3 font-semibold font-mono" style={{ color: t.rose }}>৳{exp.amount.toLocaleString()}</td>
-                    </tr>
-                  );
-                })}
-                <tr style={{ borderTop: `2px solid ${t.border}` }}>
-                  <td colSpan="3" className="py-3 px-3 text-right font-semibold">মোট খরচ:</td>
-                  <td className="py-3 px-3 font-bold font-mono" style={{ color: t.rose }}>৳{totalExpense.toLocaleString()}</td>
-                </tr>
-              </tbody>
-            </table>
+          {/* সার্চ বার */}
+          <div className="flex flex-wrap gap-3 items-center mb-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <Search size={14} style={{ color: t.muted }} />
+              <input value={expenseSearch} onChange={e => { setExpenseSearch(e.target.value); setExpensePage(1); }}
+                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                placeholder="বিবরণ দিয়ে খুঁজুন..." />
+            </div>
           </div>
+          {(() => {
+            const filteredExpense = expenseData.filter(exp =>
+              !expenseSearch || (exp.description || "").toLowerCase().includes(expenseSearch.toLowerCase())
+            );
+            const sortedExpense = expenseSort.sortFn(filteredExpense);
+            const safePage = Math.min(expensePage, Math.max(1, Math.ceil(sortedExpense.length / expensePageSize)));
+            const paginatedExpense = sortedExpense.slice((safePage - 1) * expensePageSize, safePage * expensePageSize);
+            const filteredTotal = filteredExpense.reduce((s, e) => s + (e.amount || 0), 0);
+            return (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                        <SortHeader label="তারিখ" sortKey="date" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                        <SortHeader label="ক্যাটাগরি" sortKey="category" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                        <SortHeader label="বিবরণ" sortKey="description" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                        <SortHeader label="পরিমাণ" sortKey="amount" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedExpense.map((exp) => {
+                        const cat = CATEGORY_CONFIG[exp.category];
+                        return (
+                          <tr key={exp.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                            <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{exp.date}</td>
+                            <td className="py-3 px-3"><Badge color={cat?.color || t.muted} size="xs">{cat?.icon} {cat?.label}</Badge></td>
+                            <td className="py-3 px-3" style={{ color: t.textSecondary }}>{exp.description}</td>
+                            <td className="py-3 px-3 font-semibold font-mono" style={{ color: t.rose }}>৳{exp.amount.toLocaleString()}</td>
+                          </tr>
+                        );
+                      })}
+                      <tr style={{ borderTop: `2px solid ${t.border}` }}>
+                        <td colSpan="3" className="py-3 px-3 text-right font-semibold">মোট খরচ:</td>
+                        <td className="py-3 px-3 font-bold font-mono" style={{ color: t.rose }}>৳{filteredTotal.toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination total={sortedExpense.length} page={safePage} pageSize={expensePageSize}
+                  onPage={setExpensePage} onPageSize={setExpensePageSize} />
+              </>
+            );
+          })()}
         </Card>
       )}
 

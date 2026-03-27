@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
-import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, DollarSign, Save, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, Save, X, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
+import useSortable from "../../hooks/useSortable";
+import SortHeader from "../../components/ui/SortHeader";
+import Pagination from "../../components/ui/Pagination";
 
 export default function AgentsPage() {
   const t = useTheme();
@@ -22,11 +25,24 @@ export default function AgentsPage() {
   const [form, setForm] = useState({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
   const [payingAgentId, setPayingAgentId] = useState(null);
   const [payForm, setPayForm] = useState({ amount: "", method: "Bank Transfer", note: "" });
+  const [searchQ, setSearchQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [expandedId, setExpandedId] = useState(null);
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   const totalReferred = agents.reduce((s, a) => s + a.students.length, 0);
   const totalFeeDue = agents.reduce((s, a) => s + a.students.filter((st) => !st.feePaid).length * a.commissionPerStudent, 0);
   const totalFeePaid = agents.reduce((s, a) => s + a.students.filter((st) => st.feePaid).length * a.commissionPerStudent, 0);
+
+  // ── ফিল্টার, সর্ট, পেজিনেশন লজিক ──
+  const filtered = agents
+    .map(a => ({ ...a, referredCount: a.students.length }))
+    .filter(a => !searchQ || a.name.toLowerCase().includes(searchQ.toLowerCase()) || (a.area || "").toLowerCase().includes(searchQ.toLowerCase()));
+  const sorted = sortFn(filtered);
+  const safePage = Math.min(page, Math.max(1, Math.ceil(sorted.length / pageSize)));
+  const paginated = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="space-y-5 anim-fade">
@@ -94,96 +110,185 @@ export default function AgentsPage() {
         </Card>
       )}
 
-      <div className="space-y-4">
-        {agents.map((agent, i) => {
-          const totalFee = agent.students.length * agent.commissionPerStudent;
-          const paidFee = agent.students.filter((s) => s.feePaid).length * agent.commissionPerStudent;
-          const dueFee = totalFee - paidFee;
-          const conversionRate = agent.students.length > 0 ? Math.round((agent.students.filter((s) => ["VISA_GRANTED", "ARRIVED", "COMPLETED"].includes(s.status)).length / agent.students.length) * 100) : 0;
-          return (
-            <Card key={agent.id} delay={200 + i * 60}>
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0" style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
-                  {agent.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-bold">{agent.name}</p>
-                    <Badge color={agent.status === "active" ? t.emerald : t.muted} size="xs">{agent.status === "active" ? "Active" : "Inactive"}</Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-[11px]" style={{ color: t.textSecondary }}>
-                    <span className="flex items-center gap-1"><Phone size={10} /> {agent.phone}</span>
-                    <span className="flex items-center gap-1"><MapPin size={10} /> {agent.area}</span>
-                    <span className="flex items-center gap-1"><DollarSign size={10} /> ৳{agent.commissionPerStudent.toLocaleString()}/student</span>
-                  </div>
+      {/* ── সার্চ বার ── */}
+      <Card delay={100}>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+            style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+            <Search size={14} style={{ color: t.muted }} />
+            <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setPage(1); }}
+              className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+              placeholder="এজেন্ট খুঁজুন..." />
+          </div>
+        </div>
+      </Card>
 
-                  {agent.students.length > 0 && (
-                    <div className="mt-3 space-y-1.5">
-                      {agent.students.map((st) => (
-                        <div key={st.id} className="flex items-center justify-between text-xs p-2 rounded-lg" style={{ background: t.hoverBg }}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{st.name}</span>
-                            <StatusBadge status={st.status} />
-                          </div>
-                          <Badge color={st.feePaid ? t.emerald : t.rose} size="xs">{st.feePaid ? "✓ Paid" : "Due"}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="text-right shrink-0 space-y-1.5">
-                  <div>
-                    <p className="text-[9px] uppercase" style={{ color: t.muted }}>রেফার</p>
-                    <p className="text-lg font-bold" style={{ color: t.cyan }}>{agent.students.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] uppercase" style={{ color: t.muted }}>বাকি</p>
-                    <p className="text-sm font-bold font-mono" style={{ color: dueFee > 0 ? t.rose : t.emerald }}>{dueFee > 0 ? `৳${(dueFee / 1000).toFixed(0)}K` : "✓"}</p>
-                  </div>
-                  {dueFee > 0 && (
-                    <button onClick={() => { setPayingAgentId(agent.id); setPayForm({ amount: String(dueFee), method: "Bank Transfer", note: "" }); }}
-                      className="text-[10px] px-2.5 py-1.5 rounded-lg font-medium"
-                      style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                      💳 পরিশোধ
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Commission payment form */}
-              {payingAgentId === agent.id && (
-                <div className="mt-3 pt-3 grid grid-cols-1 md:grid-cols-4 gap-3 items-end" style={{ borderTop: `1px solid ${t.border}` }}>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিমাণ (৳)</label>
-                    <input type="number" value={payForm.amount} onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পদ্ধতি</label>
-                    <select value={payForm.method} onChange={e => setPayForm(p => ({ ...p, method: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                      <option>Bank Transfer</option><option>Cash</option><option>Cheque</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট</label>
-                    <input value={payForm.note} onChange={e => setPayForm(p => ({ ...p, note: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমিশন পেমেন্ট..." />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="xs" onClick={() => setPayingAgentId(null)}>বাতিল</Button>
-                    <Button icon={Save} size="xs" onClick={() => {
-                      const amt = parseInt(payForm.amount);
-                      if (!amt || amt <= 0) { toast.error("পরিমাণ দিন"); return; }
-                      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, commissionPaid: (a.commissionPaid || 0) + amt } : a));
-                      setPayingAgentId(null);
-                      toast.success(`৳${amt.toLocaleString()} — কমিশন পরিশোধ হয়েছে`);
-                    }}>সংরক্ষণ</Button>
-                  </div>
-                </div>
+      {/* ── এজেন্ট টেবিল ── */}
+      <Card delay={150}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium w-8" style={{ color: t.muted }}></th>
+                <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="এলাকা" sortKey="area" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ফোন</th>
+                <SortHeader label="রেফার করেছেন" sortKey="referredCount" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="কমিশন" sortKey="commissionPerStudent" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>বাকি</th>
+                <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginated.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="text-center py-8 text-xs" style={{ color: t.muted }}>কোনো এজেন্ট পাওয়া যায়নি</td>
+                </tr>
               )}
-            </Card>
-          );
-        })}
-      </div>
+              {paginated.map((agent) => {
+                const totalFee = agent.students.length * agent.commissionPerStudent;
+                const paidFee = agent.students.filter((s) => s.feePaid).length * agent.commissionPerStudent;
+                const dueFee = totalFee - paidFee;
+                const isExpanded = expandedId === agent.id;
+                return (
+                  <React.Fragment key={agent.id}>
+                    {/* ── মূল সারি ── */}
+                    <tr
+                      style={{ borderBottom: `1px solid ${t.border}` }}
+                      onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      {/* বিস্তারিত টগল */}
+                      <td className="py-3 px-4">
+                        {agent.students.length > 0 ? (
+                          <button onClick={() => setExpandedId(isExpanded ? null : agent.id)} className="p-0.5 rounded" style={{ color: t.muted }}>
+                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </button>
+                        ) : <span style={{ width: 14, display: "inline-block" }} />}
+                      </td>
+
+                      {/* নাম */}
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                            style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
+                            {agent.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          </div>
+                          <span className="font-semibold">{agent.name}</span>
+                        </div>
+                      </td>
+
+                      {/* এলাকা */}
+                      <td className="py-3 px-4" style={{ color: t.textSecondary }}>
+                        <span className="flex items-center gap-1"><MapPin size={10} /> {agent.area || "—"}</span>
+                      </td>
+
+                      {/* ফোন */}
+                      <td className="py-3 px-4" style={{ color: t.textSecondary }}>
+                        <span className="flex items-center gap-1"><Phone size={10} /> {agent.phone}</span>
+                      </td>
+
+                      {/* রেফার করেছেন */}
+                      <td className="py-3 px-4">
+                        <span className="font-bold" style={{ color: t.cyan }}>{agent.students.length}</span>
+                      </td>
+
+                      {/* কমিশন */}
+                      <td className="py-3 px-4 font-mono">
+                        ৳{agent.commissionPerStudent.toLocaleString("en-IN")}
+                      </td>
+
+                      {/* স্ট্যাটাস */}
+                      <td className="py-3 px-4">
+                        <Badge color={agent.status === "active" ? t.emerald : t.muted} size="xs">
+                          {agent.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                        </Badge>
+                      </td>
+
+                      {/* বাকি */}
+                      <td className="py-3 px-4">
+                        <span className="font-bold font-mono" style={{ color: dueFee > 0 ? t.rose : t.emerald }}>
+                          {dueFee > 0 ? `৳${(dueFee / 1000).toFixed(0)}K` : "✓"}
+                        </span>
+                      </td>
+
+                      {/* অ্যাকশন */}
+                      <td className="py-3 px-4 text-right">
+                        {dueFee > 0 && (
+                          <button onClick={() => { setPayingAgentId(agent.id); setPayForm({ amount: String(dueFee), method: "Bank Transfer", note: "" }); }}
+                            className="text-[10px] px-2.5 py-1.5 rounded-lg font-medium"
+                            style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                            পরিশোধ
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* ── বিস্তারিত: রেফার করা স্টুডেন্ট তালিকা ── */}
+                    {isExpanded && agent.students.length > 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-3" style={{ background: t.hoverBg }}>
+                          <div className="space-y-1.5 ml-8">
+                            <p className="text-[10px] uppercase tracking-wider mb-2 font-medium" style={{ color: t.muted }}>রেফার করা স্টুডেন্ট</p>
+                            {agent.students.map((st) => (
+                              <div key={st.id} className="flex items-center justify-between text-xs p-2 rounded-lg" style={{ background: t.card }}>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{st.name}</span>
+                                  <StatusBadge status={st.status} />
+                                </div>
+                                <Badge color={st.feePaid ? t.emerald : t.rose} size="xs">{st.feePaid ? "✓ পরিশোধিত" : "বাকি"}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* ── কমিশন পেমেন্ট ফর্ম ── */}
+                    {payingAgentId === agent.id && (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-3" style={{ background: t.hoverBg }}>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end ml-8">
+                            <div>
+                              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিমাণ (৳)</label>
+                              <input type="number" value={payForm.amount} onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পদ্ধতি</label>
+                              <select value={payForm.method} onChange={e => setPayForm(p => ({ ...p, method: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                                <option>Bank Transfer</option><option>Cash</option><option>Cheque</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট</label>
+                              <input value={payForm.note} onChange={e => setPayForm(p => ({ ...p, note: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমিশন পেমেন্ট..." />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="xs" onClick={() => setPayingAgentId(null)}>বাতিল</Button>
+                              <Button icon={Save} size="xs" onClick={() => {
+                                const amt = parseInt(payForm.amount);
+                                if (!amt || amt <= 0) { toast.error("পরিমাণ দিন"); return; }
+                                setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, commissionPaid: (a.commissionPaid || 0) + amt } : a));
+                                setPayingAgentId(null);
+                                toast.success(`৳${amt.toLocaleString()} — কমিশন পরিশোধ হয়েছে`);
+                              }}>সংরক্ষণ</Button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── পেজিনেশন ── */}
+        <Pagination total={sorted.length} page={safePage} pageSize={pageSize}
+          onPage={setPage} onPageSize={setPageSize} />
+      </Card>
     </div>
   );
 }

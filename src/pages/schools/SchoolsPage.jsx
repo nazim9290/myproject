@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X } from "lucide-react";
+import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X, Search } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/ui/Pagination";
+import SortHeader from "../../components/ui/SortHeader";
+import useSortable from "../../hooks/useSortable";
 import { SUB_STATUS } from "../../data/mockData";
 import SchoolDetailView from "./SchoolDetailView";
 import { api } from "../../hooks/useAPI";
@@ -30,6 +33,16 @@ export default function SchoolsPage({ students }) {
   const [form, setForm] = useState(BLANK_SCHOOL);
   const [submissionsData, setSubmissionsData] = useState([]);
   const [deleteSchoolId, setDeleteSchoolId] = useState(null);
+
+  // ── সার্চ ও ফিল্টার state ──
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [subSearch, setSubSearch] = useState("");
+  const [recheckSearch, setRecheckSearch] = useState("");
+
+  // ── সাবমিশন টেবিল সর্টিং ও পেজিনেশন ──
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("submission_date", "desc");
+  const [subPage, setSubPage] = useState(1);
+  const [subPageSize, setSubPageSize] = useState(20);
 
   // ── Backend থেকে load ──
   useEffect(() => {
@@ -139,7 +152,19 @@ export default function SchoolsPage({ students }) {
       </div>
 
       {activeTab === "schools" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
+          {/* ── স্কুল সার্চ বার ── */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <Search size={14} style={{ color: t.muted }} />
+              <input value={schoolSearch} onChange={e => setSchoolSearch(e.target.value)}
+                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                placeholder="স্কুলের নাম দিয়ে খুঁজুন..." />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {showForm && (
             <Card delay={0} className="md:col-span-2 xl:col-span-3">
               <div className="flex items-center justify-between mb-4">
@@ -289,7 +314,12 @@ export default function SchoolsPage({ students }) {
               </div>
             </Card>
           )}
-          {schools.map((school, i) => {
+          {schools.filter(s => {
+            const name = (s.name_en || s.name || "").toLowerCase();
+            const nameJp = (s.name_jp || "").toLowerCase();
+            const q = schoolSearch.toLowerCase();
+            return !q || name.includes(q) || nameJp.includes(q);
+          }).map((school, i) => {
             const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;
             const name = school.name_en || school.name;
             return (
@@ -344,76 +374,132 @@ export default function SchoolsPage({ students }) {
               </Card>
             );
           })}
-        </div>
-      )}
-
-      {activeTab === "submissions" && (
-        <Card delay={100}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["স্টুডেন্ট", "স্কুল", "তারিখ", "#", "স্ট্যাটাস", "সমস্যা"].map((h) => (
-                    <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {submissionsData.sort((a, b) => (b.submission_date || "").localeCompare(a.submission_date || "")).map((sub) => {
-                  const st = SUB_STATUS[sub.status] || { color: "gray", icon: "•", label: sub.status };
-                  return (
-                    <tr key={sub.id} style={{ borderBottom: `1px solid ${t.border}` }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                      <td className="py-3 px-3"><p className="font-medium">{sub.student_name || sub.students?.name_en || "—"}</p><p className="text-[9px]" style={{ color: t.muted }}>{sub.student_id}</p></td>
-                      <td className="py-3 px-3" style={{ color: t.textSecondary }}>{sub.school_name || sub.schools?.name_en || "—"}</td>
-                      <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{sub.submission_date || "—"}</td>
-                      <td className="py-3 px-3"><span className="font-mono font-semibold" style={{ color: t.cyan }}>#{sub.submission_no || sub.id?.slice(0,6)}</span></td>
-                      <td className="py-3 px-3"><Badge color={st.color} size="xs">{st.icon} {st.label}</Badge></td>
-                      <td className="py-3 px-3">{(sub.feedback || []).length > 0 ? <Badge color={t.rose} size="xs">{sub.feedback.length} issues</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
-        </Card>
-      )}
-
-      {activeTab === "rechecks" && (
-        <div className="space-y-3">
-          {submissionsData.filter((s) => (s.feedback || []).length > 0).map((sub, i) => {
-            const st = SUB_STATUS[sub.status] || { color: "gray", icon: "•", label: sub.status };
-            return (
-              <Card key={sub.id} delay={i * 60}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">{sub.student_name || sub.students?.name_en || "—"}</p>
-                      <Badge color={st.color} size="xs">{st.icon} {st.label}</Badge>
-                    </div>
-                    <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{sub.school_name || sub.schools?.name_en || "—"} • #{sub.submission_no || ""} • {sub.submission_date || ""}</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {sub.feedback.map((fb, j) => (
-                    <div key={j} className="flex items-start gap-3 p-3 rounded-lg" style={{ background: `${t.rose}06`, border: `1px solid ${t.rose}15` }}>
-                      <AlertCircle size={14} style={{ color: t.rose }} className="mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs font-semibold" style={{ color: t.rose }}>{fb.doc}</p>
-                        <p className="text-[11px] mt-0.5" style={{ color: t.textSecondary }}>{fb.issue}</p>
-                        <p className="text-[9px] mt-1" style={{ color: t.muted }}>তারিখ: {fb.date}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            );
-          })}
-          {submissionsData.filter((s) => (s.feedback || []).length > 0).length === 0 && (
-            <Card delay={0}><EmptyState icon={AlertCircle} title="কোনো recheck বাকি নেই" subtitle="সব ডকুমেন্ট গ্রহণযোগ্য" /></Card>
-          )}
         </div>
       )}
+
+      {activeTab === "submissions" && (() => {
+        // ── সাবমিশন ফিল্টার, সর্ট ও পেজিনেশন ──
+        const subFiltered = submissionsData.filter(sub => {
+          const studentName = (sub.student_name || sub.students?.name_en || "").toLowerCase();
+          const schoolName = (sub.school_name || sub.schools?.name_en || "").toLowerCase();
+          const q = subSearch.toLowerCase();
+          return !q || studentName.includes(q) || schoolName.includes(q);
+        });
+        const subSorted = sortFn(subFiltered);
+        const subSafePage = Math.min(subPage, Math.max(1, Math.ceil(subSorted.length / subPageSize)));
+        const subPaginated = subSorted.slice((subSafePage - 1) * subPageSize, subSafePage * subPageSize);
+
+        return (
+          <div className="space-y-4">
+            {/* ── সাবমিশন সার্চ বার ── */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+                <Search size={14} style={{ color: t.muted }} />
+                <input value={subSearch} onChange={e => { setSubSearch(e.target.value); setSubPage(1); }}
+                  className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                  placeholder="স্টুডেন্ট বা স্কুলের নাম দিয়ে খুঁজুন..." />
+              </div>
+            </div>
+
+            <Card delay={100}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      <SortHeader label="স্টুডেন্ট" sortKey="student_name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="স্কুল" sortKey="school_name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="তারিখ" sortKey="submission_date" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="#" sortKey="submission_no" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>সমস্যা</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subPaginated.map((sub) => {
+                      const st = SUB_STATUS[sub.status] || { color: "gray", icon: "•", label: sub.status };
+                      return (
+                        <tr key={sub.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                          <td className="py-3 px-4"><p className="font-medium">{sub.student_name || sub.students?.name_en || "—"}</p><p className="text-[9px]" style={{ color: t.muted }}>{sub.student_id}</p></td>
+                          <td className="py-3 px-4" style={{ color: t.textSecondary }}>{sub.school_name || sub.schools?.name_en || "—"}</td>
+                          <td className="py-3 px-4 font-mono text-[11px]" style={{ color: t.textSecondary }}>{sub.submission_date || "—"}</td>
+                          <td className="py-3 px-4"><span className="font-mono font-semibold" style={{ color: t.cyan }}>#{sub.submission_no || sub.id?.slice(0,6)}</span></td>
+                          <td className="py-3 px-4"><Badge color={st.color} size="xs">{st.icon} {st.label}</Badge></td>
+                          <td className="py-3 px-4">{(sub.feedback || []).length > 0 ? <Badge color={t.rose} size="xs">{sub.feedback.length} issues</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {subSorted.length === 0 && <EmptyState icon={AlertCircle} title="কোনো সাবমিশন পাওয়া যায়নি" subtitle="সার্চ পরিবর্তন করে আবার চেষ্টা করুন" />}
+              {subSorted.length > 0 && (
+                <Pagination total={subSorted.length} page={subSafePage} pageSize={subPageSize}
+                  onPage={setSubPage} onPageSize={setSubPageSize} />
+              )}
+            </Card>
+          </div>
+        );
+      })()}
+
+      {activeTab === "rechecks" && (() => {
+        // ── রিচেক ফিল্টার ──
+        const recheckItems = submissionsData.filter((s) => (s.feedback || []).length > 0).filter(sub => {
+          const studentName = (sub.student_name || sub.students?.name_en || "").toLowerCase();
+          const schoolName = (sub.school_name || sub.schools?.name_en || "").toLowerCase();
+          const q = recheckSearch.toLowerCase();
+          return !q || studentName.includes(q) || schoolName.includes(q);
+        });
+
+        return (
+          <div className="space-y-3">
+            {/* ── রিচেক সার্চ বার ── */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+                <Search size={14} style={{ color: t.muted }} />
+                <input value={recheckSearch} onChange={e => setRecheckSearch(e.target.value)}
+                  className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                  placeholder="স্টুডেন্ট বা স্কুলের নাম দিয়ে খুঁজুন..." />
+              </div>
+            </div>
+
+            {recheckItems.map((sub, i) => {
+              const st = SUB_STATUS[sub.status] || { color: "gray", icon: "•", label: sub.status };
+              return (
+                <Card key={sub.id} delay={i * 60}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold">{sub.student_name || sub.students?.name_en || "—"}</p>
+                        <Badge color={st.color} size="xs">{st.icon} {st.label}</Badge>
+                      </div>
+                      <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{sub.school_name || sub.schools?.name_en || "—"} • #{sub.submission_no || ""} • {sub.submission_date || ""}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {sub.feedback.map((fb, j) => (
+                      <div key={j} className="flex items-start gap-3 p-3 rounded-lg" style={{ background: `${t.rose}06`, border: `1px solid ${t.rose}15` }}>
+                        <AlertCircle size={14} style={{ color: t.rose }} className="mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold" style={{ color: t.rose }}>{fb.doc}</p>
+                          <p className="text-[11px] mt-0.5" style={{ color: t.textSecondary }}>{fb.issue}</p>
+                          <p className="text-[9px] mt-1" style={{ color: t.muted }}>তারিখ: {fb.date}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
+            {recheckItems.length === 0 && (
+              <Card delay={0}><EmptyState icon={AlertCircle} title="কোনো recheck বাকি নেই" subtitle="সব ডকুমেন্ট গ্রহণযোগ্য" /></Card>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

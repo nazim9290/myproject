@@ -13,6 +13,9 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Pagination from "../../components/ui/Pagination";
+import SortHeader from "../../components/ui/SortHeader";
+import useSortable from "../../hooks/useSortable";
 import { api } from "../../hooks/useAPI";
 
 export default function DocumentsPage({ students }) {
@@ -25,6 +28,9 @@ export default function DocumentsPage({ students }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [searchDoc, setSearchDoc] = useState("");
   const [filterBatch, setFilterBatch] = useState("All");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name_en");
 
   // Student detail view
   const [studentDocData, setStudentDocData] = useState([]); // saved document_data for selected student
@@ -340,46 +346,74 @@ export default function DocumentsPage({ students }) {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">Student Documents</h3>
           <div className="flex items-center gap-2">
-            <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)}
+            <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }}
               className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
               {allBatches.map(b => <option key={b} value={b}>{b === "All" ? "সব ব্যাচ" : b}</option>)}
             </select>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={12} style={{ color: t.muted }} />
-              <input value={searchDoc} onChange={e => setSearchDoc(e.target.value)}
+              <input value={searchDoc} onChange={e => { setSearchDoc(e.target.value); setPage(1); }}
                 className="bg-transparent text-xs outline-none w-32" style={{ color: t.text }}
                 placeholder="স্টুডেন্ট খুঁজুন..." />
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          {filteredStudents.map(student => (
-            <div key={student.id}
-              className="flex items-center gap-4 p-3.5 rounded-xl cursor-pointer transition-all group"
-              style={{ background: "transparent" }}
-              onMouseEnter={e => { e.currentTarget.style.background = t.hoverBg; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-              onClick={async () => {
-                setSelectedStudent(student);
-                await loadStudentDocs(student.id);
-              }}>
-              <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
-                style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
-                {(student.name_en || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
+        {/* সর্টেবল টেবিল */}
+        {(() => {
+          const sorted = sortFn(filteredStudents);
+          const safePage = Math.min(page, Math.max(1, Math.ceil(sorted.length / pageSize)));
+          const paginated = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+          return (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      <SortHeader label="নাম" sortKey="name_en" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="ID" sortKey="id" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="ব্যাচ" sortKey="batch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginated.map(student => (
+                      <tr key={student.id}
+                        className="cursor-pointer group"
+                        style={{ borderBottom: `1px solid ${t.border}` }}
+                        onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        onClick={async () => {
+                          setSelectedStudent(student);
+                          await loadStudentDocs(student.id);
+                        }}>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                              style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
+                              {(student.name_en || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
+                            </div>
+                            <span className="font-semibold truncate">{student.name_en}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4" style={{ color: t.textSecondary }}>{student.id}</td>
+                        <td className="py-3 px-4" style={{ color: t.textSecondary }}>{student.batch || "—"}</td>
+                        <td className="py-3 px-4"><StatusBadge status={student.status} /></td>
+                        <td className="py-3 px-4">
+                          <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold truncate">{student.name_en}</p>
-                  <StatusBadge status={student.status} />
-                </div>
-                <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{student.id} • {student.batch || "—"}</p>
-              </div>
-              <ChevronRight size={16} className="shrink-0 transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />
-            </div>
-          ))}
-          {filteredStudents.length === 0 && <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট পাওয়া যায়নি</p>}
-        </div>
+              {paginated.length === 0 && <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট পাওয়া যায়নি</p>}
+              <Pagination total={sorted.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
+            </>
+          );
+        })()}
       </Card>
     </div>
   );

@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Plus, Users, CheckCircle, Layers, Building2, Save, X, MapPin, Phone, Mail, User, Shield, Pencil, Trash2 } from "lucide-react";
+import { Plus, Users, CheckCircle, Layers, Building2, Save, X, MapPin, Phone, Mail, User, Shield, Pencil, Trash2, Search } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import SortHeader from "../../components/ui/SortHeader";
+import useSortable from "../../hooks/useSortable";
 import { MOCK_USERS, ALL_ROLES, PERMISSION_MATRIX, INITIAL_BRANCHES, EMPLOYEES } from "../../data/mockData";
 
 const EMPTY_USER = { name: "", email: "", phone: "", branch: "", password: "", roles: [] };
@@ -18,6 +20,10 @@ export default function UserRolePage() {
   const [employees] = useState(EMPLOYEES);
   const [activeTab, setActiveTab] = useState("branches");
   const [editingUserId, setEditingUserId] = useState(null);
+
+  // সার্চ ও সর্টিং স্টেট
+  const [searchQ, setSearchQ] = useState("");
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
 
   // User form
   const [showUserForm, setShowUserForm] = useState(false);
@@ -163,7 +169,7 @@ export default function UserRolePage() {
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {tabs.map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+          <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchQ(""); }}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
             style={{
               background: activeTab === tab.key ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#ffffff") : "transparent",
@@ -175,7 +181,15 @@ export default function UserRolePage() {
       </div>
 
       {/* ============ BRANCHES TAB ============ */}
-      {activeTab === "branches" && (
+      {activeTab === "branches" && (() => {
+        // Branch ফিল্টার
+        const bq = searchQ.toLowerCase();
+        const filteredBranches = branches.filter((br) =>
+          !bq || br.name.toLowerCase().includes(bq) || br.city.toLowerCase().includes(bq)
+          || (br.manager || "").toLowerCase().includes(bq)
+        );
+
+        return (
         <>
           {/* Branch form */}
           {showBranchForm && (
@@ -221,9 +235,25 @@ export default function UserRolePage() {
             </Card>
           )}
 
+          {/* সার্চ বার */}
+          <Card delay={50}>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <Search size={14} style={{ color: t.muted }} />
+              <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)}
+                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                placeholder="Branch নাম, শহর বা ম্যানেজার দিয়ে খুঁজুন..." />
+            </div>
+          </Card>
+
           {/* Branch list */}
+          {filteredBranches.length === 0 && (
+            <Card delay={100}>
+              <p className="text-center py-6 text-xs" style={{ color: t.muted }}>কোনো Branch পাওয়া যায়নি</p>
+            </Card>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {branches.map((br, i) => {
+            {filteredBranches.map((br, i) => {
               const branchEmployees = employees.filter((e) => e.branch === br.name);
               const branchUsers = users.filter((u) => u.branch === br.name);
               return (
@@ -288,10 +318,20 @@ export default function UserRolePage() {
             })}
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* ============ USERS TAB ============ */}
-      {activeTab === "users" && (
+      {activeTab === "users" && (() => {
+        // ইউজার ফিল্টার ও সর্ট
+        const q = searchQ.toLowerCase();
+        const filteredUsers = users.filter((u) =>
+          !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+          || u.branch.toLowerCase().includes(q) || u.roles.join(" ").toLowerCase().includes(q)
+        );
+        const sortedUsers = sortFn(filteredUsers);
+
+        return (
         <>
           {/* Add User form */}
           {showUserForm && (
@@ -352,63 +392,117 @@ export default function UserRolePage() {
             </Card>
           )}
 
-          {/* Users list */}
-          <div className="space-y-2">
-            {users.map((user, i) => (
-              <Card key={user.id} delay={i * 40} className="!p-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-11 w-11 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
-                    {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold">{user.name}</p>
-                      <Badge color={user.status === "active" ? t.emerald : t.muted} size="xs">{user.status}</Badge>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 text-[10px] mt-0.5" style={{ color: t.muted }}>
-                      <span className="flex items-center gap-1"><Mail size={9} />{user.email}</span>
-                      <span className="flex items-center gap-1"><Building2 size={9} />{user.branch}</span>
-                      <span>শেষ লগিন: {user.lastLogin}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {user.roles.map((role) => (
-                        <Badge key={role} color={role === "Owner" ? t.rose : role.includes("Manager") ? t.purple : t.cyan} size="xs">{role}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="xs" onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}>
-                      Roles
-                    </Button>
-                    <button onClick={() => deleteUser(user.id)} className="p-1.5 rounded-lg transition"
-                      style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
-                      <Trash2 size={13} />
-                    </button>
+          {/* সার্চ বার */}
+          <Card delay={50}>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <Search size={14} style={{ color: t.muted }} />
+              <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)}
+                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                placeholder="নাম, ইমেইল, Branch বা Role দিয়ে খুঁজুন..." />
+            </div>
+          </Card>
+
+          {/* Users টেবিল */}
+          <Card delay={100}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                    <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="ইমেইল" sortKey="email" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>পদবি</th>
+                    <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-xs" style={{ color: t.muted }}>কোনো ইউজার পাওয়া যায়নি</td>
+                    </tr>
+                  )}
+                  {sortedUsers.map((user) => (
+                    <tr key={user.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                      {/* নাম */}
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                            style={{ background: `linear-gradient(135deg, ${t.cyan}25, ${t.purple}25)`, color: t.cyan }}>
+                            {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          </div>
+                          <span className="font-medium">{user.name}</span>
+                        </div>
+                      </td>
+                      {/* ইমেইল */}
+                      <td className="py-3 px-4" style={{ color: t.textSecondary }}>{user.email}</td>
+                      {/* পদবি / Roles */}
+                      <td className="py-3 px-4">
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles.map((role) => (
+                            <Badge key={role} color={role === "Owner" ? t.rose : role.includes("Manager") ? t.purple : t.cyan} size="xs">{role}</Badge>
+                          ))}
+                        </div>
+                      </td>
+                      {/* Branch */}
+                      <td className="py-3 px-4">
+                        <span className="flex items-center gap-1" style={{ color: t.textSecondary }}>
+                          <Building2 size={11} style={{ color: t.muted }} />{user.branch}
+                        </span>
+                      </td>
+                      {/* স্ট্যাটাস */}
+                      <td className="py-3 px-4">
+                        <Badge color={user.status === "active" ? t.emerald : t.muted} size="xs">{user.status === "active" ? "Active" : "Inactive"}</Badge>
+                      </td>
+                      {/* অ্যাকশন */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="xs" onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}>
+                            Roles
+                          </Button>
+                          <button onClick={() => deleteUser(user.id)} className="p-1.5 rounded-lg transition"
+                            style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Role editing panel — সিলেক্ট করা ইউজারের জন্য */}
+            {editingUserId && (() => {
+              const user = users.find((u) => u.id === editingUserId);
+              if (!user) return null;
+              return (
+                <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                  <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>
+                    <span className="font-semibold" style={{ color: t.text }}>{user.name}</span> — Role ক্লিক করে assign/remove:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ALL_ROLES.map((role) => {
+                      const has = user.roles.includes(role);
+                      return (
+                        <button key={role} onClick={() => toggleRole(user.id, role)}
+                          className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition"
+                          style={{ background: has ? `${t.emerald}20` : t.inputBg, color: has ? t.emerald : t.muted, border: `1px solid ${has ? `${t.emerald}40` : t.inputBorder}` }}>
+                          {has ? "✓ " : ""}{role}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                {editingUserId === user.id && (
-                  <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-                    <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>Role ক্লিক করে assign/remove:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {ALL_ROLES.map((role) => {
-                        const has = user.roles.includes(role);
-                        return (
-                          <button key={role} onClick={() => toggleRole(user.id, role)}
-                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition"
-                            style={{ background: has ? `${t.emerald}20` : t.inputBg, color: has ? t.emerald : t.muted, border: `1px solid ${has ? `${t.emerald}40` : t.inputBorder}` }}>
-                            {has ? "✓ " : ""}{role}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
+              );
+            })()}
+          </Card>
         </>
-      )}
+        );
+      })()}
 
       {/* ============ PERMISSIONS TAB ============ */}
       {activeTab === "permissions" && (

@@ -110,8 +110,14 @@ export const getGlobalStyles = (t) => `
   @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes slideIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
   .anim-fade { animation: fadeIn 0.4s ease forwards; }
   .anim-slide { animation: slideIn 0.35s ease forwards; }
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, ${t.muted}10 25%, ${t.muted}20 50%, ${t.muted}10 75%) !important;
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
   select, input { color: ${t.text}; }
   select option { background: ${t.cardSolid}; color: ${t.text}; }
   /* Required field * mark লাল দেখাবে — label-এ, placeholder-এ, সবখানে */
