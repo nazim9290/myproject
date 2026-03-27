@@ -397,6 +397,13 @@ function AppShell({ isDark, setIsDark }) {
   const [visitors, setVisitors] = useState([]);
   const [dataLoaded, setDataLoaded] = useState(false);
 
+  // ── Student Portal state — top-level-এ থাকতে হবে (React hooks rule) ──
+  const [studentUser, setStudentUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("agencyos_student_user")); } catch { return null; }
+  });
+  const [studentToken, setStudentToken] = useState(() => localStorage.getItem("agencyos_student_token"));
+  const [showStudentLogin, setShowStudentLogin] = useState(false);
+
   // ── Pipeline step configs — Admin dynamic checklist (localStorage persist) ──
   const [stepConfigs, setStepConfigs] = useState(() => {
     try {
@@ -655,13 +662,6 @@ function AppShell({ isDark, setIsDark }) {
       </ThemeContext.Provider>
     );
   }
-
-  // ── Student Portal Mode — student logged in হলে portal দেখাও ──
-  const [studentUser, setStudentUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("agencyos_student_user")); } catch { return null; }
-  });
-  const [studentToken, setStudentToken] = useState(() => localStorage.getItem("agencyos_student_token"));
-  const [showStudentLogin, setShowStudentLogin] = useState(false);
 
   // Student logged in → portal দেখাও
   if (studentUser && studentToken) {
