@@ -237,7 +237,7 @@ export default function AccountsPage({ students = [] }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Accounts & Finance</h2>
+          <h2 className="text-xl font-bold">হিসাব ও অর্থ</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>আয়, ব্যয়, ট্যাক্স ও লাভ-ক্ষতি</p>
         </div>
         <div className="flex gap-2">
@@ -334,7 +334,7 @@ export default function AccountsPage({ students = [] }) {
       {activeTab === "overview" && (
         <div className="grid grid-cols-12 gap-5">
           <Card className="col-span-12 lg:col-span-8" delay={200}>
-            <h3 className="text-sm font-semibold mb-4">Monthly P&L</h3>
+            <h3 className="text-sm font-semibold mb-4">মাসিক লাভ-ক্ষতি</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={(() => {
                 // API data থেকে monthly P&L generate
