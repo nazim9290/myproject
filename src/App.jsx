@@ -38,6 +38,7 @@ import CalendarPage from "./pages/calendar/CalendarPage";
 import UserRolePage from "./pages/users/UserRolePage";
 import StudentPortalPage from "./pages/portal/StudentPortalPage";
 import StudentLoginPage from "./pages/portal/StudentLoginPage";
+import AdminPortalPreview from "./pages/portal/AdminPortalPreview";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import HelpPage from "./pages/help/HelpPage";
@@ -375,7 +376,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "users":
       return <UserRolePage />;
     case "portal":
-      return <StudentPortalPage />;
+      return <AdminPortalPreview students={students} />;
     case "settings":
       return <SettingsPage isDark={isDark} setIsDark={setIsDark} students={students} visitors={visitors} stepConfigs={stepConfigs} updateStepConfigs={updateStepConfigs} />;
     case "help":
