@@ -6,8 +6,12 @@ import { useAuth } from "../context/AuthContext";
 export default function LoginPage({ onLogin }) {
   const t = useTheme();
   const { login: authLogin } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // ── Remember Me — localStorage থেকে saved credentials load ──
+  const saved = localStorage.getItem("agencybook_remember");
+  const remembered = saved ? JSON.parse(saved) : null;
+  const [email, setEmail] = useState(remembered?.email || "");
+  const [password, setPassword] = useState(remembered?.password || "");
+  const [rememberMe, setRememberMe] = useState(!!remembered);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -25,6 +29,12 @@ export default function LoginPage({ onLogin }) {
     try {
       // AuthContext.login() saves token + user to localStorage
       const user = await authLogin(email, password);
+      // Remember Me — সফল লগইনের পর credentials save/remove
+      if (rememberMe) {
+        localStorage.setItem("agencybook_remember", JSON.stringify({ email, password }));
+      } else {
+        localStorage.removeItem("agencybook_remember");
+      }
       onLogin(user);
     } catch (err) {
       // Fallback to mock login if backend is not running
@@ -77,17 +87,24 @@ export default function LoginPage({ onLogin }) {
                 <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
               </div>
             </div>
+            {/* Remember Me চেকবক্স */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-cyan-500" style={{ accentColor: t.cyan }} />
+              <span className="text-xs" style={{ color: t.muted }}>আমাকে মনে রাখুন</span>
+            </label>
+
             <button
               onClick={handleLogin}
               disabled={loading}
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 disabled:opacity-50"
               style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "লগইন হচ্ছে..." : "Login"}
             </button>
           </div>
 
-          <p className="text-center text-[10px] opacity-30 mt-6">Demo: admin@agencyos.com / admin123</p>
+          <p className="text-center text-[10px] opacity-30 mt-6">Demo: admin@agencybook.net / admin123</p>
         </div>
       </div>
     </div>
