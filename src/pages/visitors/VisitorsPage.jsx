@@ -145,7 +145,7 @@ function NewVisitorForm({ onSave, onCancel }) {
         </div>}
       </div>}
 
-      <SectionHeader icon="🌍" title="আগ্রহের দেশ ও Intake" sKey="country" />
+      <SectionHeader icon="🌍" title="আগ্রহের দেশ ও ইনটেক" sKey="country" />
       {sections.country && <><div><label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}>আগ্রহের দেশ (একাধিক নির্বাচন করুন)</label>
       <div className="flex flex-wrap gap-2">
         {["Japan", "Canada", "UK", "USA", "Australia", "China", "Germany", "Korea", "Other"].map(c => {

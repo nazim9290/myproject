@@ -396,7 +396,7 @@ export default function UserRolePage() {
                 </div>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}><Shield size={9} className="inline mr-1" />Roles * (এক বা একাধিক)</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}><Shield size={9} className="inline mr-1" />রোল * (এক বা একাধিক)</label>
                 <div className="flex flex-wrap gap-1.5">
                   {ALL_ROLES.map((role) => {
                     const has = userForm.roles.includes(role);
@@ -483,7 +483,7 @@ export default function UserRolePage() {
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button variant="ghost" size="xs" onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}>
-                            Roles
+                            রোল
                           </Button>
                           <button onClick={() => deleteUser(user.id)} className="p-1.5 rounded-lg transition"
                             style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = t.rose} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
@@ -551,7 +551,7 @@ export default function UserRolePage() {
               <h3 className="text-sm font-semibold">অনুমতি ম্যাট্রিক্স</h3>
               <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>R = পড়া, W = লেখা, D = মুছা — ক্লিক করে toggle করুন</p>
             </div>
-            <Button icon={Save} size="xs" onClick={() => toast.success("Permissions সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
+            <Button icon={Save} size="xs" onClick={() => toast.success("অনুমতি সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
           </div>
           <div className="overflow-x-auto mt-3">
             <table className="w-full text-xs">
@@ -602,9 +602,9 @@ export default function UserRolePage() {
           {/* Legend */}
           <div className="flex gap-4 mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
             {[
-              { label: "Read (R)", color: t.emerald },
-              { label: "Write (W)", color: t.amber },
-              { label: "Delete (D)", color: t.rose },
+              { label: "পড়া (R)", color: t.emerald },
+              { label: "লেখা (W)", color: t.amber },
+              { label: "মুছা (D)", color: t.rose },
             ].map(({ label, color }) => (
               <div key={label} className="flex items-center gap-1.5 text-[10px]" style={{ color: t.muted }}>
                 <div className="h-2.5 w-2.5 rounded" style={{ background: `${color}25`, border: `1px solid ${color}40` }} />
