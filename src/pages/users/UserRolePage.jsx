@@ -50,8 +50,8 @@ export default function UserRolePage() {
 
   const saveUser = () => {
     if (!userForm.name.trim() || !userForm.email.trim()) { toast.error("নাম ও ইমেইল দিন"); return; }
-    if (!userForm.branch) { toast.error("Branch নির্বাচন করুন"); return; }
-    if (userForm.roles.length === 0) { toast.error("কমপক্ষে একটি role দিন"); return; }
+    if (!userForm.branch) { toast.error("ব্রাঞ্চ নির্বাচন করুন"); return; }
+    if (userForm.roles.length === 0) { toast.error("কমপক্ষে একটি রোল দিন"); return; }
     setUsers((prev) => [...prev, {
       id: `U-${String(prev.length + 1).padStart(3, "0")}`,
       ...userForm,
@@ -81,7 +81,7 @@ export default function UserRolePage() {
       toast.updated("ব্রাঞ্চ আপডেট হয়েছে!");
     } else {
       setBranches((prev) => [...prev, { id: `BR-${String(prev.length + 1).padStart(3, "0")}`, ...branchForm, status: "active", createdAt: new Date().toISOString().slice(0, 10) }]);
-      toast.success("Branch তৈরি হয়েছে!");
+      toast.success("ব্রাঞ্চ তৈরি হয়েছে!");
     }
     setShowBranchForm(false);
     setBranchForm(EMPTY_BRANCH);
@@ -94,7 +94,7 @@ export default function UserRolePage() {
     if (deleteBranchConfirm !== id) { setDeleteBranchConfirm(id); return; }
     setBranches((prev) => prev.filter((b) => b.id !== id));
     setDeleteBranchConfirm(null);
-    toast.deleted("Branch মুছে ফেলা হয়েছে");
+    toast.deleted("ব্রাঞ্চ মুছে ফেলা হয়েছে");
   };
 
   // Permission matrix state (Role → Module → { read, write, del })
@@ -434,7 +434,7 @@ export default function UserRolePage() {
                     <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <SortHeader label="ইমেইল" sortKey="email" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>পদবি</th>
-                    <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
                   </tr>
