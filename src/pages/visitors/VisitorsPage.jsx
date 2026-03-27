@@ -110,7 +110,7 @@ function NewVisitorForm({ onSave, onCancel }) {
           <input value={form.jp_exam_type_other} onChange={e => set("jp_exam_type_other", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{...is, borderColor: `${t.rose}40`}} placeholder="পরীক্ষার নাম লিখুন" /></div>}
           <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেভেল</label>
           <select value={form.jp_level} onChange={e => set("jp_level", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option></select></div>
-          <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Score</label>
+          <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কোর</label>
           <input value={form.jp_score} onChange={e => set("jp_score", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="100" type="number" /></div>
         </>}
       </div>}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { Plus, Briefcase, Users, TrendingUp, Clock, Search } from "lucide-react";
+import { Plus, Briefcase, Users, TrendingUp, Clock, Search, X, Save } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -9,8 +10,11 @@ import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import { PARTNER_AGENCIES, SERVICE_LABELS } from "../../data/mockData";
 
+const EMPTY_PARTNER = { name: "", contact: "", phone: "", address: "", services: [], status: "active" };
+
 export default function PartnerAgencyPage() {
   const t = useTheme();
+  const toast = useToast();
 
   // সার্চ, পেজিনেশন ও সর্টিং স্টেট
   const [searchQ, setSearchQ] = useState("");
@@ -18,20 +22,36 @@ export default function PartnerAgencyPage() {
   const [pageSize, setPageSize] = useState(20);
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
 
+  // নতুন পার্টনার ফর্ম
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [partnerForm, setPartnerForm] = useState(EMPTY_PARTNER);
+  const [partners, setPartners] = useState(PARTNER_AGENCIES);
+
+  const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+
+  const savePartner = () => {
+    if (!partnerForm.name.trim()) { toast.error("পার্টনারের নাম দিন"); return; }
+    if (!partnerForm.phone.trim()) { toast.error("ফোন নম্বর দিন"); return; }
+    setPartners(prev => [...prev, { ...partnerForm, id: `PA-${Date.now()}`, students: [] }]);
+    setPartnerForm(EMPTY_PARTNER);
+    setShowAddForm(false);
+    toast.success("নতুন পার্টনার যোগ হয়েছে!");
+  };
+
   // KPI হিসাব
-  const totalStudents = PARTNER_AGENCIES.reduce((s, p) => s + p.students.length, 0);
-  const totalRevenue = PARTNER_AGENCIES.reduce((s, p) => s + p.students.reduce((ss, st) => ss + st.paid, 0), 0);
-  const totalDue = PARTNER_AGENCIES.reduce((s, p) => s + p.students.reduce((ss, st) => ss + (st.fee - st.paid), 0), 0);
+  const totalStudents = partners.reduce((s, p) => s + p.students.length, 0);
+  const totalRevenue = partners.reduce((s, p) => s + p.students.reduce((ss, st) => ss + st.paid, 0), 0);
+  const totalDue = partners.reduce((s, p) => s + p.students.reduce((ss, st) => ss + (st.fee - st.paid), 0), 0);
 
   // ফ্ল্যাট ডাটা — সর্টিং-এর জন্য computed ফিল্ড যোগ
   const partnersFlat = useMemo(() =>
-    PARTNER_AGENCIES.map((p) => ({
+    partners.map((p) => ({
       ...p,
       studentCount: p.students.length,
       revenue: p.students.reduce((s, st) => s + st.paid, 0),
       due: p.students.reduce((s, st) => s + (st.fee - st.paid), 0),
     })),
-  []);
+  [partners]);
 
   // সার্চ ফিল্টার
   const filtered = useMemo(() => {
@@ -62,13 +82,51 @@ export default function PartnerAgencyPage() {
           <h2 className="text-xl font-bold">পার্টনার এজেন্সি (B2B)</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>অন্য এজেন্সির স্টুডেন্ট প্রসেসিং</p>
         </div>
-        <Button icon={Plus}>নতুন পার্টনার</Button>
+        <Button icon={Plus} onClick={() => setShowAddForm(true)}>নতুন পার্টনার</Button>
       </div>
+
+      {/* নতুন পার্টনার ফর্ম */}
+      {showAddForm && (
+        <Card delay={0}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold">নতুন পার্টনার যোগ করুন</h3>
+            <button onClick={() => { setShowAddForm(false); setPartnerForm(EMPTY_PARTNER); }} className="p-1 rounded-lg" style={{ color: t.muted }}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পার্টনার নাম *</label>
+              <input value={partnerForm.name} onChange={e => setPartnerForm(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="এজেন্সির নাম" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>যোগাযোগ ব্যক্তি</label>
+              <input value={partnerForm.contact} onChange={e => setPartnerForm(prev => ({ ...prev, contact: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="নাম" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন *</label>
+              <input value={partnerForm.phone} onChange={e => setPartnerForm(prev => ({ ...prev, phone: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="01XXXXXXXXX" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা</label>
+              <input value={partnerForm.address} onChange={e => setPartnerForm(prev => ({ ...prev, address: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঠিকানা" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setPartnerForm(EMPTY_PARTNER); }}>বাতিল</Button>
+            <Button icon={Save} size="sm" onClick={savePartner}>সংরক্ষণ</Button>
+          </div>
+        </Card>
+      )}
 
       {/* KPI কার্ড */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "সক্রিয় পার্টনার", value: PARTNER_AGENCIES.filter((p) => p.status === "active").length, color: t.cyan, icon: Briefcase },
+          { label: "সক্রিয় পার্টনার", value: partners.filter((p) => p.status === "active").length, color: t.cyan, icon: Briefcase },
           { label: "মোট স্টুডেন্ট", value: totalStudents, color: t.purple, icon: Users },
           { label: "আয়", value: `৳${(totalRevenue / 1000).toFixed(0)}K`, color: t.emerald, icon: TrendingUp },
           { label: "বাকি", value: `৳${(totalDue / 1000).toFixed(0)}K`, color: totalDue > 0 ? t.rose : t.emerald, icon: Clock },

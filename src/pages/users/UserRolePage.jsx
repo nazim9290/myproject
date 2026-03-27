@@ -60,14 +60,14 @@ export default function UserRolePage() {
     }]);
     setUserForm(EMPTY_USER);
     setShowUserForm(false);
-    toast.success("User যোগ হয়েছে!");
+    toast.success("ইউজার যোগ হয়েছে!");
   };
 
   const deleteUser = (id) => {
     if (deleteUserConfirm !== id) { setDeleteUserConfirm(id); return; }
     setUsers((prev) => prev.filter((u) => u.id !== id));
     setDeleteUserConfirm(null);
-    toast.deleted("User মুছে ফেলা হয়েছে");
+    toast.deleted("ইউজার মুছে ফেলা হয়েছে");
   };
 
   // --- Branch actions ---
@@ -78,7 +78,7 @@ export default function UserRolePage() {
     if (!branchForm.name.trim() || !branchForm.city.trim()) { toast.error("নাম ও শহর দিন"); return; }
     if (editingBranchId) {
       setBranches((prev) => prev.map((b) => b.id === editingBranchId ? { ...b, ...branchForm } : b));
-      toast.updated("Branch আপডেট হয়েছে!");
+      toast.updated("ব্রাঞ্চ আপডেট হয়েছে!");
     } else {
       setBranches((prev) => [...prev, { id: `BR-${String(prev.length + 1).padStart(3, "0")}`, ...branchForm, status: "active", createdAt: new Date().toISOString().slice(0, 10) }]);
       toast.success("Branch তৈরি হয়েছে!");

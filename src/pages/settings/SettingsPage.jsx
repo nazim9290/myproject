@@ -327,6 +327,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     const a = document.createElement("a"); a.href = url;
                     a.download = `AgencyBook_Full_Backup_${new Date().toISOString().slice(0, 10)}.json`;
                     a.click(); URL.revokeObjectURL(url);
+                    toast.exported("Full Database Backup");
                   }
                 },
                 { icon: "🎓", label: "Students Export (CSV)", sub: "সব student data — CSV format", color: t.purple,
@@ -339,6 +340,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     const a = document.createElement("a"); a.href = url;
                     a.download = `Students_${new Date().toISOString().slice(0, 10)}.csv`;
                     a.click(); URL.revokeObjectURL(url);
+                    toast.exported(`Students CSV (${(students || []).length} records)`);
                   }
                 },
                 { icon: "🚶", label: "Visitors Export (CSV)", sub: "সব visitor data — CSV format", color: t.amber,
@@ -351,6 +353,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     const a = document.createElement("a"); a.href = url;
                     a.download = `Visitors_${new Date().toISOString().slice(0, 10)}.csv`;
                     a.click(); URL.revokeObjectURL(url);
+                    toast.exported(`Visitors CSV (${(visitors || []).length} records)`);
                   }
                 },
                 { icon: "💰", label: "Financial Report Export", sub: "আয়-ব্যয় রিপোর্ট — CSV format", color: t.emerald,
