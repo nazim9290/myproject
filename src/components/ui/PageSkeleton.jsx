@@ -38,7 +38,7 @@ function TableSkeleton({ cols = 5, rows = 8 }) {
 function KpiSkeleton({ count = 4 }) {
   const t = useTheme();
   return (
-    <div className={`grid grid-cols-2 lg:grid-cols-${count} gap-3`}>
+    <div className={`grid grid-cols-2 lg:${({ 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-4", 5: "grid-cols-5", 6: "grid-cols-6" })[count] || "grid-cols-4"} gap-3`}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="p-4 rounded-xl" style={{ background: t.card, border: `1px solid ${t.border}` }}>
           <Bone w={80} h={8} rounded="rounded" className="mb-3" />

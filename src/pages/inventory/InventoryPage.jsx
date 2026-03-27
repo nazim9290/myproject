@@ -96,7 +96,7 @@ export default function InventoryPage() {
   const handleAdd = () => {
     if (!addForm.name.trim()) { toast.error("সম্পদের নাম দিন"); return; }
     const newItem = { ...addForm, id: `INV-${String(Date.now()).slice(-3)}`, price: Number(addForm.price) || 0, quantity: Number(addForm.quantity) || 1 };
-    setItems([newItem, ...items]);
+    setItems(prev => [newItem, ...prev]);
     setShowAddForm(false);
     setAddForm({ name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "ঢাকা (HQ)", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" });
     toast.success(`"${newItem.name}" — Inventory তে যোগ হয়েছে`);
@@ -104,7 +104,7 @@ export default function InventoryPage() {
 
   const cycleCondition = (id) => {
     const order = ["new", "good", "fair", "repair", "damaged", "disposed"];
-    setItems(items.map((i) => {
+    setItems(prev => prev.map((i) => {
       if (i.id !== id) return i;
       const idx = order.indexOf(i.condition);
       return { ...i, condition: order[(idx + 1) % order.length] };
@@ -117,7 +117,7 @@ export default function InventoryPage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Inventory</h2>
+          <h2 className="text-xl font-bold">ইনভেন্টরি</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>সম্পদ, মালামাল ও ব্যবহার্য সামগ্রী ব্যবস্থাপনা</p>
         </div>
         <div className="flex gap-2">
@@ -127,7 +127,7 @@ export default function InventoryPage() {
             const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url;
             a.download = `Inventory_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
           }}>Export</Button>
-          <Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>Add Item</Button>
+          <Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>আইটেম যোগ করুন</Button>
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export default function InventoryPage() {
           { label: "মোট মূল্য", value: `৳${(totalValue / 1000).toFixed(0)}K`, color: t.purple, icon: DollarSign },
           { label: "ব্রাঞ্চ", value: branches.length, color: t.amber, icon: Building },
           { label: "মেরামত দরকার", value: needsRepair, color: needsRepair > 0 ? t.rose : t.emerald, icon: AlertTriangle },
-          { label: "Low Stock", value: lowStock, color: lowStock > 0 ? t.rose : t.emerald, icon: AlertTriangle },
+          { label: "কম স্টক", value: lowStock, color: lowStock > 0 ? t.rose : t.emerald, icon: AlertTriangle },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 40}>
             <div className="flex items-center justify-between">
@@ -157,13 +157,13 @@ export default function InventoryPage() {
       {/* ── ট্যাব সুইচার ── */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "assets", label: "Fixed Assets", count: items.length },
+          { key: "assets", label: "স্থায়ী সম্পদ", count: items.length },
           { key: "consumables", label: "ব্যবহার্য সামগ্রী", count: consumables.length },
-          { key: "log", label: "Movement Log", count: movementLogs.length },
+          { key: "log", label: "মুভমেন্ট লগ", count: movementLogs.length },
         ].map((tab) => (
           <button key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1); setSearch(""); }}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
-            style={{ background: activeTab === tab.key ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#ffffff") : "transparent", color: activeTab === tab.key ? t.text : t.muted, boxShadow: activeTab === tab.key && t.mode === "light" ? "0 1px 3px rgba(0,0,0,0.08)" : "none" }}>
+            style={{ background: activeTab === tab.key ? `${t.cyan}15` : "transparent", color: activeTab === tab.key ? t.cyan : t.muted }}>
             {tab.label} ({tab.count})
           </button>
         ))}

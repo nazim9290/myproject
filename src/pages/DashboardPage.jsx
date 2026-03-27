@@ -15,7 +15,7 @@ export default function DashboardPage({ students, visitors }) {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Dashboard</h2>
+          <h2 className="text-xl font-bold">ড্যাশবোর্ড</h2>
           <p className="text-xs opacity-40 mt-0.5">আজ ২২ মার্চ, ২০২৬</p>
         </div>
       </div>
@@ -23,10 +23,10 @@ export default function DashboardPage({ students, visitors }) {
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: Users, label: "মোট স্টুডেন্ট", value: students.length, sub: `Active: ${activeStudents}`, color: t.cyan, trend: "+১২%" },
+          { icon: Users, label: "মোট স্টুডেন্ট", value: students.length, sub: `সক্রিয়: ${activeStudents}`, color: t.cyan, trend: "+১২%" },
           { icon: DollarSign, label: "এই মাসের আয়", value: "৳১২.৫L", sub: "বকেয়া: ৳৩.২L", color: t.emerald, trend: "+২৭%" },
-          { icon: FileText, label: "ডক প্রসেসিং", value: docInProgress, sub: "students in doc stage", color: t.amber, trend: null },
-          { icon: Plane, label: "ভিসা/পৌঁছেছে", value: visaGranted, sub: "visa granted or arrived", color: t.purple, trend: null },
+          { icon: FileText, label: "ডক প্রসেসিং", value: docInProgress, sub: "ডকুমেন্ট পর্যায়ে", color: t.amber, trend: null },
+          { icon: Plane, label: "ভিসা/পৌঁছেছে", value: visaGranted, sub: "ভিসা প্রাপ্ত বা এসেছে", color: t.purple, trend: null },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 60}>
             <div className="flex items-start justify-between">
@@ -41,9 +41,9 @@ export default function DashboardPage({ students, visitors }) {
             </div>
             {kpi.trend && (
               <div className="mt-2 flex items-center gap-1">
-                <TrendingUp size={12} className="text-emerald-400" />
-                <span className="text-[10px] font-semibold text-emerald-400">{kpi.trend}</span>
-                <span className="text-[10px] opacity-30">vs last month</span>
+                <TrendingUp size={12} style={{ color: t.emerald }} />
+                <span className="text-[10px] font-semibold" style={{ color: t.emerald }}>{kpi.trend}</span>
+                <span className="text-[10px] opacity-30">গত মাসের তুলনায়</span>
               </div>
             )}
           </Card>
@@ -53,7 +53,7 @@ export default function DashboardPage({ students, visitors }) {
       <div className="grid grid-cols-12 gap-5">
         {/* Revenue */}
         <Card className="col-span-12 lg:col-span-8" delay={250}>
-          <h3 className="text-sm font-semibold mb-4">Monthly Revenue</h3>
+          <h3 className="text-sm font-semibold mb-4">মাসিক আয়</h3>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={revenueData}>
               <defs>
@@ -74,14 +74,15 @@ export default function DashboardPage({ students, visitors }) {
         {/* Alerts */}
         <Card className="col-span-12 lg:col-span-4" delay={300}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">Alerts</h3>
-            <Badge color={t.rose} size="xs">{alerts.filter((a) => a.type === "critical").length} critical</Badge>
+            <h3 className="text-sm font-semibold">সতর্কতা</h3>
+            <Badge color={t.rose} size="xs">{alerts.filter((a) => a.type === "critical").length} জরুরি</Badge>
           </div>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {alerts.map((a, i) => {
-              const bg = a.type === "critical" ? "border-rose-500/20 bg-rose-500/5" : a.type === "warning" ? "border-amber-500/20 bg-amber-500/5" : "border-sky-500/20 bg-sky-500/5";
+              const alertColor = a.type === "critical" ? t.rose : a.type === "warning" ? t.amber : t.cyan;
               return (
-                <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg border ${bg}`}>
+                <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg border"
+                  style={{ borderColor: `${alertColor}20`, background: `${alertColor}08` }}>
                   <span className="text-sm">{a.icon}</span>
                   <div>
                     <p className="text-[11px] leading-snug">{a.text}</p>
@@ -95,23 +96,23 @@ export default function DashboardPage({ students, visitors }) {
 
         {/* Pipeline */}
         <Card className="col-span-12 lg:col-span-6" delay={350}>
-          <h3 className="text-sm font-semibold mb-3">Pipeline Funnel</h3>
+          <h3 className="text-sm font-semibold mb-3">পাইপলাইন ফানেল</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={pipelineChartData} layout="vertical">
-              <XAxis type="number" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="stage" tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} width={70} />
+              <XAxis type="number" tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="stage" tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} width={70} />
               <Tooltip contentStyle={{ background: t.tooltipBg, border: `1px solid ${t.tooltipBorder}`, borderRadius: 8, fontSize: 12, color: t.text }} />
               <Bar dataKey="count" fill={t.cyan} radius={[0, 6, 6, 0]} barSize={14} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Recent Visitors */}
+        {/* সাম্প্রতিক ভিজিটর */}
         <Card className="col-span-12 lg:col-span-6" delay={400}>
-          <h3 className="text-sm font-semibold mb-3">Recent Visitors</h3>
+          <h3 className="text-sm font-semibold mb-3">সাম্প্রতিক ভিজিটর</h3>
           <div className="space-y-2">
             {visitors.slice(0, 4).map((v) => (
-              <div key={v.id} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5">
+              <div key={v.id} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: t.inputBg }}>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: `${t.cyan}20`, color: t.cyan }}>
                     {v.name.charAt(0)}

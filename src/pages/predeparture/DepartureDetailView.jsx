@@ -34,31 +34,31 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   const sections = [
-    { key: "coe", icon: "📋", title: "COE Information", color: t.cyan, items: [
+    { key: "coe", icon: "📋", title: "সিওই তথ্য", color: t.cyan, items: [
       { label: "COE নম্বর", value: st.coe.number },
       { label: "প্রাপ্তির তারিখ", value: st.coe.date },
       { label: "মেয়াদ শেষ", value: st.coe.expiry },
       { label: "বাকি দিন", value: `${Math.max(0, Math.ceil((new Date(st.coe.expiry) - new Date()) / 86400000))} দিন`, warn: Math.ceil((new Date(st.coe.expiry) - new Date()) / 86400000) < 30 },
     ]},
-    { key: "health", icon: "🏥", title: "Health Tests", color: t.emerald, items: st.healthTests.map((h) => ({
+    { key: "health", icon: "🏥", title: "স্বাস্থ্য পরীক্ষা", color: t.emerald, items: st.healthTests.map((h) => ({
       label: h.test, value: h.status === "done" ? `✅ ${h.result} (${h.date})` : h.status === "scheduled" ? `📅 Scheduled: ${h.date}` : "❌ বাকি আছে",
       warn: h.status !== "done",
     }))},
-    { key: "tuition", icon: "💰", title: "Tuition Remittance", color: t.amber, items: [
+    { key: "tuition", icon: "💰", title: "টিউশন রেমিটেন্স", color: t.amber, items: [
       { label: "পরিমাণ", value: `${st.tuition.currency} ${st.tuition.amount.toLocaleString()}` },
       { label: "ব্যাংক", value: st.tuition.bank || "❌ বাকি" },
       { label: "TT Reference", value: st.tuition.ttRef || "—" },
       { label: "পাঠানোর তারিখ", value: st.tuition.sentDate || "—" },
       { label: "স্কুল পেয়েছে", value: st.tuition.receivedBySchool ? "✅ হ্যাঁ" : "⏳ অপেক্ষমাণ", warn: !st.tuition.receivedBySchool },
     ]},
-    { key: "vfs", icon: "🛂", title: "VFS Application", color: t.purple, items: [
+    { key: "vfs", icon: "🛂", title: "ভিএফএস আবেদন", color: t.purple, items: [
       { label: "অ্যাপয়েন্টমেন্ট তারিখ", value: st.vfs.appointmentDate || "❌ তারিখ নেওয়া হয়নি", warn: !st.vfs.appointmentDate },
       { label: "সময়", value: st.vfs.time || "—" },
       { label: "লোকেশন", value: st.vfs.location || "—" },
       { label: "ফর্ম পূরণ", value: st.vfs.formFilled ? "✅ সম্পন্ন" : "❌ বাকি", warn: !st.vfs.formFilled },
       { label: "ডকুমেন্ট জমা", value: st.vfs.docsSubmitted ? "✅ জমা দেওয়া হয়েছে" : "❌ বাকি", warn: !st.vfs.docsSubmitted },
     ]},
-    { key: "visa", icon: "✅", title: "Visa Status", color: t.emerald, items: [
+    { key: "visa", icon: "✅", title: "ভিসা স্ট্যাটাস", color: t.emerald, items: [
       { label: "স্ট্যাটাস", value: st.visa.status === "granted" ? "🎉 অনুমোদিত!" : st.visa.status === "pending" ? "⏳ Processing" : "❌ আবেদন হয়নি", warn: st.visa.status !== "granted" },
       { label: "ভিসা নম্বর", value: st.visa.number || "—" },
       { label: "অনুমোদনের তারিখ", value: st.visa.grantDate || "—" },
@@ -138,7 +138,7 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
               <Button variant="ghost" size="xs" onClick={() => setEditingVFS(false)}>বাতিল</Button>
               <Button icon={Save} size="xs" onClick={saveVFS}>সংরক্ষণ</Button>
             </div>
-          ) : <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setEditingVFS(true)}>Edit</Button>}
+          ) : <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setEditingVFS(true)}>সম্পাদনা</Button>}
         </div>
         {editingVFS ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -176,13 +176,13 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
       {/* Flight Edit */}
       <Card delay={350}>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.cyan }}>✈️ Flight Information</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.cyan }}>✈️ ফ্লাইট তথ্য</h4>
           {editingFlight ? (
             <div className="flex gap-2">
               <Button variant="ghost" size="xs" onClick={() => setEditingFlight(false)}>বাতিল</Button>
               <Button icon={Save} size="xs" onClick={saveFlight}>সংরক্ষণ</Button>
             </div>
-          ) : <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setEditingFlight(true)}>Edit</Button>}
+          ) : <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setEditingFlight(true)}>সম্পাদনা</Button>}
         </div>
         {editingFlight ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -205,11 +205,11 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
               <p className="text-xs font-bold mt-1" style={{ color: t.cyan }}>{st.flight.airline}</p>
             </div>
             <div className="flex-1 grid grid-cols-3 gap-4 text-xs">
-              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>Flight</p><p className="font-bold">{st.flight.number}</p></div>
-              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>Date</p><p className="font-bold">{st.flight.date}</p></div>
-              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>Time</p><p className="font-bold">{st.flight.time}</p></div>
-              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>From</p><p className="font-bold">{st.flight.from || "DAC"}</p></div>
-              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>To</p><p className="font-bold">{st.flight.to || "NRT"}</p></div>
+              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>ফ্লাইট</p><p className="font-bold">{st.flight.number}</p></div>
+              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>তারিখ</p><p className="font-bold">{st.flight.date}</p></div>
+              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>সময়</p><p className="font-bold">{st.flight.time}</p></div>
+              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>থেকে</p><p className="font-bold">{st.flight.from || "DAC"}</p></div>
+              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>গন্তব্য</p><p className="font-bold">{st.flight.to || "NRT"}</p></div>
             </div>
           </div>
         ) : (
@@ -221,7 +221,7 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
         <Card delay={400}>
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.amber }}>
-              📝 Airport Document Checklist
+              📝 এয়ারপোর্ট ডকুমেন্ট চেকলিস্ট
             </h4>
             <span className="text-xs font-bold" style={{ color: checkedCount === st.airportChecklist.length ? t.emerald : t.amber }}>
               {checkedCount}/{st.airportChecklist.length} ✓
@@ -244,7 +244,7 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
             ))}
           </div>
           <div className="flex gap-2 mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-            <Button icon={Download} size="xs" onClick={() => toast.exported("Airport Checklist PDF")}>Download PDF</Button>
+            <Button icon={Download} size="xs" onClick={() => toast.exported("Airport Checklist PDF")}>পিডিএফ ডাউনলোড</Button>
             <Button variant="ghost" size="xs" onClick={() => setChecklistState(st.airportChecklist.map(() => true))}>সব Check করুন</Button>
           </div>
         </Card>

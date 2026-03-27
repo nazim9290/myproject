@@ -31,10 +31,10 @@ function NewVisitorForm({ onSave, onCancel }) {
   const [errors, setErrors] = useState({});
   const [sections, setSections] = useState({ personal: true, education: false, jpExam: false, visa: false, country: false, source: true });
   const toggleSection = (s) => setSections({ ...sections, [s]: !sections[s] });
-  const set = (k, v) => { setForm({ ...form, [k]: v }); if (errors[k]) setErrors({ ...errors, [k]: null }); };
-  const setEdu = (i, f, v) => { const e = [...form.education]; e[i] = { ...e[i], [f]: v }; setForm({ ...form, education: e }); };
-  const addEdu = () => setForm({ ...form, education: [...form.education, { level: "", year: "", board: "", gpa: "", subject: "" }] });
-  const removeEdu = (i) => { if (form.education.length <= 1) return; const e = [...form.education]; e.splice(i, 1); setForm({ ...form, education: e }); };
+  const set = (k, v) => { setForm(prev => ({ ...prev, [k]: v })); if (errors[k]) setErrors(prev => ({ ...prev, [k]: null })); };
+  const setEdu = (i, f, v) => { setForm(prev => { const e = [...prev.education]; e[i] = { ...e[i], [f]: v }; return { ...prev, education: e }; }); };
+  const addEdu = () => setForm(prev => ({ ...prev, education: [...prev.education, { level: "", year: "", board: "", gpa: "", subject: "" }] }));
+  const removeEdu = (i) => { setForm(prev => { if (prev.education.length <= 1) return prev; const e = [...prev.education]; e.splice(i, 1); return { ...prev, education: e }; }); };
   const toggleCountry = (c) => { const curr = form.interested_countries; if (curr.includes(c)) { if (curr.length === 1) return; set("interested_countries", curr.filter(x => x !== c)); } else { set("interested_countries", [...curr, c]); } };
   const validate = () => { const e = {}; if (!form.name.trim()) e.name = "নাম আবশ্যক"; if (!form.phone.trim()) e.phone = "ফোন আবশ্যক"; if (form.phone && !/^01\d{9}$/.test(form.phone.replace(/[- ]/g, ""))) e.phone = "সঠিক ফোন নম্বর দিন"; setErrors(e); return Object.keys(e).length === 0; };
   const save = () => { if (!validate()) { toast.error("ফর্মে ত্রুটি আছে — লাল চিহ্নিত field দেখুন"); return; } onSave({ ...form, id: `V-${Date.now()}`, status: "Interested", date: new Date().toISOString().slice(0, 10), lastFollowUp: null }); };
@@ -55,7 +55,7 @@ function NewVisitorForm({ onSave, onCancel }) {
       {sections.personal && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা) <span className="req-star">*</span></label>
         <input value={form.name} onChange={e => set("name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: errors.name ? t.rose : t.inputBorder }} placeholder="পুরো নাম" /><FieldError error={errors.name} /></div>
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English)</label>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (ইংরেজি)</label>
         <input value={form.name_en} onChange={e => set("name_en", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Full Name" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>জন্ম তারিখ</label>
         <input type="date" value={form.dob} onChange={e => set("dob", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} /></div>
@@ -68,13 +68,13 @@ function NewVisitorForm({ onSave, onCancel }) {
         <div className="md:col-span-2"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা</label>
         <input value={form.address} onChange={e => set("address", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="বাড়ি, এলাকা, জেলা" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লিঙ্গ</label>
-        <select value={form.gender} onChange={e => set("gender", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Male</option><option>Female</option><option>Other</option></select></div>
+        <select value={form.gender} onChange={e => set("gender", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option value="Male">পুরুষ</option><option value="Female">মহিলা</option><option value="Other">অন্যান্য</option></select></div>
       </div>}
 
       <SectionHeader icon="🎓" title="শিক্ষাগত তথ্য" sKey="education" />
       {sections.education && <><div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.border}` }}>
         <table className="w-full text-xs"><thead><tr style={{ background: t.inputBg }}>
-          {["Education", "Year", "Board", "GPA", "Subject", ""].map(h => <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>)}
+          {["শিক্ষা", "সাল", "বোর্ড", "জিপিএ", "বিষয়", ""].map(h => <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>)}
         </tr></thead><tbody>
           {form.education.map((edu, idx) => (<tr key={idx} style={{ borderTop: `1px solid ${t.border}` }}>
             <td className="py-1.5 px-2"><input value={edu.level} onChange={e => setEdu(idx, "level", e.target.value)} className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder="SSC / HSC / Honours" /></td>
@@ -108,14 +108,14 @@ function NewVisitorForm({ onSave, onCancel }) {
           </select></div>
           {form.jp_exam_type === "Other" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.rose }}>কোন পরীক্ষা? <span className="req-star">*</span></label>
           <input value={form.jp_exam_type_other} onChange={e => set("jp_exam_type_other", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{...is, borderColor: `${t.rose}40`}} placeholder="পরীক্ষার নাম লিখুন" /></div>}
-          <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Level</label>
+          <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেভেল</label>
           <select value={form.jp_level} onChange={e => set("jp_level", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option></select></div>
-          <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Score</label>
+          <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কোর</label>
           <input value={form.jp_score} onChange={e => set("jp_score", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="100" type="number" /></div>
         </>}
       </div>}
 
-      <SectionHeader icon="🛂" title="ভিসার ধরন / Purpose" sKey="visa" />
+      <SectionHeader icon="🛂" title="ভিসার ধরন / উদ্দেশ্য" sKey="visa" />
       {sections.visa && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কোন ভিসায় যেতে চান? <span className="req-star">*</span></label>
         <select value={form.visa_type} onChange={e => { set("visa_type", e.target.value); if (e.target.value !== "Other") setForm(prev => ({...prev, visa_type: e.target.value, visa_type_other: ""})); }} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
@@ -145,7 +145,7 @@ function NewVisitorForm({ onSave, onCancel }) {
         </div>}
       </div>}
 
-      <SectionHeader icon="🌍" title="আগ্রহের দেশ ও Intake" sKey="country" />
+      <SectionHeader icon="🌍" title="আগ্রহের দেশ ও ইনটেক" sKey="country" />
       {sections.country && <><div><label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}>আগ্রহের দেশ (একাধিক নির্বাচন করুন)</label>
       <div className="flex flex-wrap gap-2">
         {["Japan", "Canada", "UK", "USA", "Australia", "China", "Germany", "Korea", "Other"].map(c => {
@@ -155,10 +155,10 @@ function NewVisitorForm({ onSave, onCancel }) {
         })}
       </div></div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Intake</label>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইনটেক</label>
         <select value={form.interested_intake} onChange={e => set("interested_intake", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>April 2026</option><option>October 2026</option><option>April 2027</option><option>নিশ্চিত নয়</option></select></div>
         <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
-          <label className="text-xs" style={{ color: t.textSecondary }}>Budget চিন্তিত?</label>
+          <label className="text-xs" style={{ color: t.textSecondary }}>বাজেট চিন্তিত?</label>
           <button onClick={() => set("budget_concern", !form.budget_concern)} className="relative w-10 h-5 rounded-full transition-all" style={{ background: form.budget_concern ? t.amber : `${t.muted}40` }}>
             <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ left: form.budget_concern ? "22px" : "2px" }} /></button>
         </div>
@@ -189,7 +189,7 @@ function NewVisitorForm({ onSave, onCancel }) {
       <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="আলোচনার বিবরণ..." /></div></>}
       <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
         <p className="text-[10px]" style={{ color: t.muted }}>* চিহ্নিত field আবশ্যক</p>
-        <div className="flex gap-2"><Button variant="ghost" onClick={onCancel}>Cancel</Button><Button icon={Save} onClick={save}>Save Visitor</Button></div>
+        <div className="flex gap-2"><Button variant="ghost" onClick={onCancel}>বাতিল</Button><Button icon={Save} onClick={save}>ভিজিটর সংরক্ষণ</Button></div>
       </div>
     </div>
   );
@@ -276,14 +276,14 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
   const markFollowUp = (id) => {
     updateVisitor(id, { lastFollowUp: todayStr });
-    toast.success("Follow-up done ✓");
+    toast.success("ফলো-আপ সম্পন্ন ✓");
   };
 
   const doConvert = (v) => {
     onConvertToStudent(v);
     setConfirmAction(null);
     setDetailId(null);
-    toast.success(v.name + " — Enrolled! Added to Students");
+    toast.success(v.name + " — ভর্তি হয়েছে! স্টুডেন্ট তালিকায় যোগ হয়েছে");
   };
 
   const doDelete = async (v) => {
@@ -291,13 +291,13 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
     setVisitors(visitors.filter(x => x.id !== v.id));
     setConfirmAction(null);
     setDetailId(null);
-    toast.deleted("Visitor");
+    toast.deleted("ভিজিটর");
   };
 
   const saveEdit = () => {
     updateVisitor(editData.id, editData);
     setEditMode(false);
-    toast.updated("Visitor");
+    toast.updated("ভিজিটর");
   };
 
   const doExport = (mode) => {
@@ -352,9 +352,9 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   };
 
   const STS = [
-    { v: "Interested", l: "Interested", c: t.emerald, i: "🟢" },
-    { v: "Thinking", l: "Thinking", c: t.amber, i: "🟡" },
-    { v: "Not Interested", l: "Not Interested", c: t.muted, i: "⚪" },
+    { v: "Interested", l: "আগ্রহী", c: t.emerald, i: "🟢" },
+    { v: "Thinking", l: "ভাবছে", c: t.amber, i: "🟡" },
+    { v: "Not Interested", l: "আগ্রহী না", c: t.muted, i: "⚪" },
   ];
   const stsColor = (s) => s==="Interested"?t.emerald:s==="Thinking"?t.amber:t.muted;
   const is = { background: t.inputBg, border: "1px solid "+t.inputBorder, color: t.text };
@@ -371,26 +371,26 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         <div className="space-y-5 anim-fade">
           <div className="flex items-center gap-4">
             <button onClick={() => setEditMode(false)} className="p-2 rounded-xl hover:bg-white/5"><ArrowLeft size={18}/></button>
-            <div className="flex-1"><h2 className="text-xl font-bold">Edit: {v.name}</h2></div>
-            <Button variant="ghost" size="xs" onClick={() => setEditMode(false)}>Cancel</Button>
-            <Button size="xs" icon={Save} onClick={saveEdit}>Save Changes</Button>
+            <div className="flex-1"><h2 className="text-xl font-bold">সম্পাদনা: {v.name}</h2></div>
+            <Button variant="ghost" size="xs" onClick={() => setEditMode(false)}>বাতিল</Button>
+            <Button size="xs" icon={Save} onClick={saveEdit}>পরিবর্তন সংরক্ষণ</Button>
           </div>
           <Card delay={0}><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {[{k:"name",l:"Name (English)"},{k:"name_bn",l:"Name (Bangla)"},{k:"phone",l:"Phone"},{k:"guardian_phone",l:"Guardian Phone"},{k:"email",l:"Email"},{k:"dob",l:"Date of Birth",type:"date"}].map(f=>(
+            {[{k:"name",l:"নাম (ইংরেজি)"},{k:"name_bn",l:"নাম (বাংলা)"},{k:"phone",l:"ফোন"},{k:"guardian_phone",l:"অভিভাবকের ফোন"},{k:"email",l:"ইমেইল"},{k:"dob",l:"জন্ম তারিখ",type:"date"}].map(f=>(
               <div key={f.k}><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>{f.l}</label>
               <input type={f.type||"text"} value={ed[f.k]||""} onChange={e=>se(f.k,e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
             ))}
-            <div className="md:col-span-2"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>Address</label>
+            <div className="md:col-span-2"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>ঠিকানা</label>
             <input value={ed.address||""} onChange={e=>se("address",e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
-            {[{k:"visa_type",l:"Visa Type",opts:["Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Other"]},
-              {k:"source",l:"Source",opts:["Walk-in","Facebook","Agent","Referral","Website","YouTube"]},
-              {k:"counselor",l:"Counselor",opts:["Mina","Sadia","Karim"]}].map(f=>(
+            {[{k:"visa_type",l:"ভিসার ধরন",opts:["Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Other"]},
+              {k:"source",l:"সোর্স",opts:["Walk-in","Facebook","Agent","Referral","Website","YouTube"]},
+              {k:"counselor",l:"কাউন্সেলর",opts:["Mina","Sadia","Karim"]}].map(f=>(
               <div key={f.k}><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>{f.l}</label>
               <select value={ed[f.k]||f.opts[0]} onChange={e=>se(f.k,e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>{f.opts.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
             ))}
-            <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>Next Follow-up</label>
+            <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>পরবর্তী ফলো-আপ</label>
             <input type="date" value={ed.next_follow_up||""} onChange={e=>se("next_follow_up",e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
-            <div className="md:col-span-3"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>Notes</label>
+            <div className="md:col-span-3"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>নোট</label>
             <textarea value={ed.notes||""} onChange={e=>se("notes",e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is}/></div>
           </div></Card>
         </div>
@@ -406,10 +406,10 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             <p className="text-xs" style={{color:t.muted}}>{v.name_bn||""} • {v.id} • {days}d ago</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="xs" icon={Phone} onClick={() => markFollowUp(v.id)}>Follow-up</Button>
-            <Button variant="ghost" size="xs" icon={Edit3} onClick={() => { setEditData({...v}); setEditMode(true); }}>Edit</Button>
-            <Button variant="danger" size="xs" icon={Trash2} onClick={() => setConfirmAction({type:"delete",visitor:v})}>Delete</Button>
-            {v.status!=="Not Interested" && <Button size="xs" icon={Check} onClick={() => setConfirmAction({type:"convert",visitor:v})}>Enroll</Button>}
+            <Button variant="ghost" size="xs" icon={Phone} onClick={() => markFollowUp(v.id)}>ফলো-আপ</Button>
+            <Button variant="ghost" size="xs" icon={Edit3} onClick={() => { setEditData({...v}); setEditMode(true); }}>সম্পাদনা</Button>
+            <Button variant="danger" size="xs" icon={Trash2} onClick={() => setConfirmAction({type:"delete",visitor:v})}>মুছুন</Button>
+            {v.status!=="Not Interested" && <Button size="xs" icon={Check} onClick={() => setConfirmAction({type:"convert",visitor:v})}>ভর্তি</Button>}
           </div>
         </div>
 
@@ -429,32 +429,32 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         {confirmAction && <Card delay={0}><div className="flex items-center gap-4">
           <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
           <div className="flex-1">
-            <p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"Delete this visitor?":"Enroll as Student?"}</p>
-            <p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name} — {confirmAction.type==="delete"?"All data will be removed":"Will be added to Students"}</p>
+            <p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p>
+            <p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name} — {confirmAction.type==="delete"?"সব ডাটা মুছে যাবে":"স্টুডেন্ট তালিকায় যোগ হবে"}</p>
           </div>
-          <Button variant="ghost" size="xs" onClick={() => setConfirmAction(null)}>Cancel</Button>
-          <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={() => confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>Confirm</Button>
+          <Button variant="ghost" size="xs" onClick={() => setConfirmAction(null)}>বাতিল</Button>
+          <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={() => confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
         </div></Card>}
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>Personal Info</h4>
-            <div className="space-y-2">{[{l:"Name",val:v.name},{l:"Bangla",val:v.name_bn},{l:"Phone",val:v.phone},{l:"Guardian",val:v.guardian_phone},{l:"Email",val:v.email},{l:"Address",val:v.address},{l:"DOB",val:v.dob},{l:"Gender",val:v.gender}].map(f=>
+          <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>ব্যক্তিগত তথ্য</h4>
+            <div className="space-y-2">{[{l:"নাম",val:v.name},{l:"বাংলা",val:v.name_bn},{l:"ফোন",val:v.phone},{l:"অভিভাবক",val:v.guardian_phone},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob},{l:"লিঙ্গ",val:v.gender}].map(f=>
               <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium">{f.val||"—"}</span></div>
             )}</div>
           </Card>
-          <Card delay={100}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>Interest & Visa</h4>
-            <div className="space-y-2">{[{l:"Country",val:v.interested_countries?v.interested_countries.join(", "):v.country},{l:"Visa Type",val:v.visa_type},{l:"Intake",val:v.interested_intake},{l:"Budget Concern",val:v.budget_concern?"Yes":"No"}].map(f=>
+          <Card delay={100}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>আগ্রহ ও ভিসা</h4>
+            <div className="space-y-2">{[{l:"দেশ",val:v.interested_countries?v.interested_countries.join(", "):v.country},{l:"ভিসার ধরন",val:v.visa_type},{l:"ইনটেক",val:v.interested_intake},{l:"বাজেট সমস্যা",val:v.budget_concern?"হ্যাঁ":"না"}].map(f=>
               <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium">{f.val||"—"}</span></div>
             )}</div>
             {v.has_jp_cert && <div className="mt-3 p-3 rounded-lg" style={{background:t.inputBg}}><p className="text-xs font-semibold">{v.jp_exam_type||"JLPT"} — {v.jp_level} — Score: {v.jp_score||"—"}</p></div>}
           </Card>
-          <Card delay={150}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>Source & Follow-up</h4>
-            <div className="space-y-2">{[{l:"Source",val:v.source},{l:"Agent",val:v.agent_name},{l:"Counselor",val:v.counselor},{l:"Visit Date",val:v.date+" ("+days+"d ago)"},{l:"Last Follow-up",val:v.lastFollowUp?v.lastFollowUp+" ("+daysDiff(v.lastFollowUp)+"d ago)":"Not done"},{l:"Next Follow-up",val:v.next_follow_up}].map(f=>
-              <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium" style={{color:f.val==="Not done"?t.rose:t.text}}>{f.val||"—"}</span></div>
+          <Card delay={150}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>সোর্স ও ফলো-আপ</h4>
+            <div className="space-y-2">{[{l:"সোর্স",val:v.source},{l:"এজেন্ট",val:v.agent_name},{l:"কাউন্সেলর",val:v.counselor},{l:"ভিজিটের তারিখ",val:v.date+" ("+days+"d ago)"},{l:"শেষ ফলো-আপ",val:v.lastFollowUp?v.lastFollowUp+" ("+daysDiff(v.lastFollowUp)+"d ago)":"করা হয়নি"},{l:"পরবর্তী ফলো-আপ",val:v.next_follow_up}].map(f=>
+              <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium" style={{color:f.val==="করা হয়নি"?t.rose:t.text}}>{f.val||"—"}</span></div>
             )}</div>
           </Card>
-          <Card delay={200} className="md:col-span-2 xl:col-span-3"><h4 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:t.muted}}>Notes</h4>
-            <p className="text-sm" style={{color:v.notes?t.text:t.muted}}>{v.notes||"No notes"}</p>
+          <Card delay={200} className="md:col-span-2 xl:col-span-3"><h4 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color:t.muted}}>নোট</h4>
+            <p className="text-sm" style={{color:v.notes?t.text:t.muted}}>{v.notes||"কোনো নোট নেই"}</p>
           </Card>
         </div>
       </div>
@@ -465,35 +465,35 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div><h2 className="text-xl font-bold">Visitors</h2><p className="text-xs mt-0.5" style={{color:t.muted}}>Visitor & Follow-up Management</p></div>
+        <div><h2 className="text-xl font-bold">ভিজিটর</h2><p className="text-xs mt-0.5" style={{color:t.muted}}>ভিজিটর ও ফলো-আপ ব্যবস্থাপনা</p></div>
         <div className="flex gap-2">
           <div className="relative">
-            <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExport(!showExport)}>Export ▾</Button>
+            <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExport(!showExport)}>এক্সপোর্ট ▾</Button>
             {showExport && <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[220px]" style={{background:t.cardSolid,border:"1px solid "+t.border,boxShadow:"0 8px 30px rgba(0,0,0,0.25)"}}>
-              <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold" style={{color:t.muted,borderBottom:"1px solid "+t.border}}>Export Visitors CSV</div>
+              <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold" style={{color:t.muted,borderBottom:"1px solid "+t.border}}>ভিজিটর CSV এক্সপোর্ট</div>
               <button onClick={() => doExport("filtered")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.cyan}}>📋</span><div><p className="font-medium">Current View ({filtered.length})</p><p className="text-[9px]" style={{color:t.muted}}>Only showing filtered visitors</p></div>
+                <span style={{color:t.cyan}}>📋</span><div><p className="font-medium">বর্তমান ভিউ ({filtered.length})</p><p className="text-[9px]" style={{color:t.muted}}>শুধু ফিল্টার করা ভিজিটর</p></div>
               </button>
               <button onClick={() => doExport("active")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.emerald}}>🟢</span><div><p className="font-medium">Active Only ({activeList.length})</p><p className="text-[9px]" style={{color:t.muted}}>Interested + Thinking</p></div>
+                <span style={{color:t.emerald}}>🟢</span><div><p className="font-medium">শুধু সক্রিয় ({activeList.length})</p><p className="text-[9px]" style={{color:t.muted}}>আগ্রহী + ভাবছে</p></div>
               </button>
               <button onClick={() => doExport("all")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.purple}}>📦</span><div><p className="font-medium">All Visitors ({nonEnrolled.length})</p><p className="text-[9px]" style={{color:t.muted}}>Everything except enrolled</p></div>
+                <span style={{color:t.purple}}>📦</span><div><p className="font-medium">সব ভিজিটর ({nonEnrolled.length})</p><p className="text-[9px]" style={{color:t.muted}}>ভর্তি ছাড়া সবাই</p></div>
               </button>
             </div>}
           </div>
           <Button variant="ghost" size="xs" icon={Settings} onClick={() => setShowSettings(!showSettings)}/>
-          <Button icon={Plus} onClick={() => setShowForm(!showForm)}>{showForm?"Close":"New Visitor"}</Button>
+          <Button icon={Plus} onClick={() => setShowForm(!showForm)}>{showForm?"বন্ধ":"নতুন ভিজিটর"}</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[{l:"Active",v:activeList.length,c:t.cyan},{l:"Today",v:todayCount,c:t.emerald},{l:"Follow-up Due",v:needFU,c:needFU>0?t.rose:t.muted},{l:"Enrolled",v:enrolledCount,c:t.purple},{l:"Archive",v:archiveList.length,c:t.muted}].map((s,i)=>
+        {[{l:"সক্রিয়",v:activeList.length,c:t.cyan},{l:"আজ",v:todayCount,c:t.emerald},{l:"ফলো-আপ বাকি",v:needFU,c:needFU>0?t.rose:t.muted},{l:"ভর্তি হয়েছে",v:enrolledCount,c:t.purple},{l:"আর্কাইভ",v:archiveList.length,c:t.muted}].map((s,i)=>
           <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.inputBg}}><p className="text-lg font-bold" style={{color:s.c}}>{s.v}</p><p className="text-[10px]" style={{color:t.muted}}>{s.l}</p></div>
         )}
       </div>
 
-      {showSettings && <Card delay={0} className="!p-4"><div className="flex items-center justify-between"><div><p className="text-sm font-semibold">Archive Settings</p><p className="text-[10px]" style={{color:t.muted}}>Days before archive</p></div><div className="flex items-center gap-2">
+      {showSettings && <Card delay={0} className="!p-4"><div className="flex items-center justify-between"><div><p className="text-sm font-semibold">আর্কাইভ সেটিংস</p><p className="text-[10px]" style={{color:t.muted}}>আর্কাইভের আগে দিন</p></div><div className="flex items-center gap-2">
         {[7,15,30,60,90].map(d=><button key={d} onClick={()=>{setArchiveDays(d);toast.saved("Archive: "+d+"d")}} className="px-2.5 py-1 rounded-lg text-[10px] font-medium" style={{background:archiveDays===d?t.cyan+"20":t.inputBg,color:archiveDays===d?t.cyan:t.muted}}>{d}d</button>)}
         <button onClick={()=>setShowSettings(false)}><X size={14} style={{color:t.muted}}/></button>
       </div></div></Card>}
@@ -508,7 +508,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-1.5 rounded-lg" style={{background:t.inputBg,border:"1px solid "+t.inputBorder}}>
           <Search size={13} style={{color:t.muted}}/>
-          <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);setPage(1);}} className="flex-1 bg-transparent text-xs outline-none" style={{color:t.text}} placeholder="Search name, phone..."/>
+          <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);setPage(1);}} className="flex-1 bg-transparent text-xs outline-none" style={{color:t.text}} placeholder="নাম, ফোন খুঁজুন..."/>
           {searchQ && <button onClick={()=>setSearchQ("")}><X size={12} style={{color:t.muted}}/></button>}
         </div>
         {["All","Interested","Thinking","Not Interested"].map(f=>{
@@ -516,32 +516,32 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           return <button key={f} onClick={()=>{setStatusFilter(f);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs transition" style={{background:statusFilter===f?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#e2e8f0"):"transparent",color:statusFilter===f?t.text:t.muted,fontWeight:statusFilter===f?600:400}}>{f} ({c})</button>;
         })}
         <select value={filterBranch} onChange={e=>{setFilterBranch(e.target.value);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs outline-none ml-auto" style={{background:t.inputBg,border:`1px solid ${filterBranch!=="All"?t.cyan:t.inputBorder}`,color:filterBranch!=="All"?t.cyan:t.text}}>
-          {allBranches.map(b=><option key={b} value={b}>{b==="All"?"সব Branch":b}</option>)}
+          {allBranches.map(b=><option key={b} value={b}>{b==="All"?"সব ব্রাঞ্চ":b}</option>)}
         </select>
       </div>
 
       {confirmAction && <Card delay={0}><div className="flex items-center gap-4">
         <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
-        <div className="flex-1"><p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"Delete?":"Enroll as Student?"}</p><p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name}</p></div>
-        <Button variant="ghost" size="xs" onClick={()=>setConfirmAction(null)}>Cancel</Button>
-        <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={()=>confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>Confirm</Button>
+        <div className="flex-1"><p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p><p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name}</p></div>
+        <Button variant="ghost" size="xs" onClick={()=>setConfirmAction(null)}>বাতিল</Button>
+        <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={()=>confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
       </div></Card>}
 
-      {showForm && <Card delay={0}><h3 className="text-sm font-semibold mb-4">+ New Visitor</h3>
-        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch{setVisitors([v,...visitors]);}setShowForm(false);toast.created("Visitor");}} onCancel={()=>setShowForm(false)}/></Card>}
+      {showForm && <Card delay={0}><h3 className="text-sm font-semibold mb-4">+ নতুন ভিজিটর</h3>
+        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch{setVisitors([v,...visitors]);}setShowForm(false);toast.created("ভিজিটর");}} onCancel={()=>setShowForm(false)}/></Card>}
 
       <Card delay={100}>
         <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {sortedFiltered.length} জন ভিজিটর</p>
         <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr style={{borderBottom:"1px solid "+t.border}}>
           <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
           <SortHeader label="ফোন" sortKey="phone" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
           <SortHeader label="দেশ" sortKey="interested_countries" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
           <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="Source" sortKey="source" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label="সোর্স" sortKey="source" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
           <SortHeader label="তারিখ" sortKey="date" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="Follow-up" sortKey="lastFollowUp" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{color:t.muted}}>Action</th>
+          <SortHeader label="ফলো-আপ" sortKey="lastFollowUp" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{color:t.muted}}>অ্যাকশন</th>
         </tr></thead><tbody>
           {paginated.map(v=>{
             const dc=v.interested_countries?v.interested_countries[0]:v.country;
@@ -582,12 +582,12 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
               {/* তারিখ */}
               <td className="py-3 px-3"><span className="text-[10px] font-mono" style={{color:days>14?t.rose:days>7?t.amber:t.muted}}>{v.date} ({days}d)</span></td>
               {/* Follow-up */}
-              <td className="py-3 px-3">{fuBad?<span className="text-[10px] font-semibold" style={{color:t.rose}}>Overdue</span>:v.lastFollowUp?<span className="text-[10px]" style={{color:t.emerald}}>✓ {fuD}d</span>:<span className="text-[10px]" style={{color:t.muted}}>—</span>}</td>
+              <td className="py-3 px-3">{fuBad?<span className="text-[10px] font-semibold" style={{color:t.rose}}>বিলম্বিত</span>:v.lastFollowUp?<span className="text-[10px]" style={{color:t.emerald}}>✓ {fuD}d</span>:<span className="text-[10px]" style={{color:t.muted}}>—</span>}</td>
               {/* Action */}
               <td className="py-3 px-3" onClick={e=>e.stopPropagation()}>
                 <div className="flex items-center gap-1">
-                  {(v.status==="Interested"||v.status==="Thinking")&&<button onClick={()=>markFollowUp(v.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.cyan+"15",color:t.cyan}} title="Follow-up done">📞</button>}
-                  {v.status!=="Not Interested"&&<button onClick={()=>setConfirmAction({type:"convert",visitor:v})} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.emerald+"15",color:t.emerald}}>🎓 Enroll</button>}
+                  {(v.status==="Interested"||v.status==="Thinking")&&<button onClick={()=>markFollowUp(v.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.cyan+"15",color:t.cyan}} title="ফলো-আপ সম্পন্ন">📞</button>}
+                  {v.status!=="Not Interested"&&<button onClick={()=>setConfirmAction({type:"convert",visitor:v})} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.emerald+"15",color:t.emerald}}>🎓 ভর্তি</button>}
                 </div>
               </td>
             </tr>;

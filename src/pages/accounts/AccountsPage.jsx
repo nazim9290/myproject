@@ -59,7 +59,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
         <h3 className="text-sm font-bold">{type === "income" ? "নতুন আয় এন্ট্রি" : "নতুন ব্যয় এন্ট্রি"}</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={save}>Save</Button>
+          <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -74,11 +74,11 @@ function AddEntryForm({ type, onSave, onCancel }) {
           <>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্টের নাম <span className="req-star">*</span></label>
-              <input value={form.studentName} onChange={e => set("studentName", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.studentName ? t.rose : t.inputBorder }} placeholder="Student name..." />
+              <input value={form.studentName} onChange={e => set("studentName", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.studentName ? t.rose : t.inputBorder }} placeholder="স্টুডেন্টের নাম..." />
               {err.studentName && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.studentName}</p>}
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Student ID</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট ID</label>
               <input value={form.studentId} onChange={e => set("studentId", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="S-2026-001" />
             </div>
           </>
@@ -111,7 +111,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Due তারিখ</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিশোধের তারিখ</label>
               <input type="date" value={form.dueDate} onChange={e => set("dueDate", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
             </div>
           </>
@@ -194,8 +194,8 @@ export default function AccountsPage({ students = [] }) {
   // income API data: paid_amount (DB) বা paidAmount (legacy)
   const totalIncome = incomeData.reduce((s, i) => s + (i.paid_amount || i.paidAmount || i.amount || 0), 0) + studentCollected;
   const totalExpense = expenseData.reduce((s, e) => s + (e.amount || 0), 0);
-  const totalDue = incomeData.reduce((s, i) => s + (i.amount - i.paidAmount), 0) + studentDue;
-  const totalTax = incomeData.filter((i) => i.status === "paid" || i.status === "partial").reduce((s, i) => s + i.tax, 0);
+  const totalDue = incomeData.reduce((s, i) => s + (i.amount - (i.paidAmount || i.paid_amount || 0)), 0) + studentDue;
+  const totalTax = incomeData.filter((i) => i.status === "paid" || i.status === "partial").reduce((s, i) => s + (i.tax || 0), 0);
   const profit = totalIncome - totalExpense;
   const fmt = (v) => v >= 100000 ? `৳${(v / 100000).toFixed(1)}L` : v >= 1000 ? `৳${(v / 1000).toFixed(0)}K` : `৳${v}`;
 
@@ -237,18 +237,18 @@ export default function AccountsPage({ students = [] }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Accounts & Finance</h2>
+          <h2 className="text-xl font-bold">হিসাব ও অর্থ</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>আয়, ব্যয়, ট্যাক্স ও লাভ-ক্ষতি</p>
         </div>
         <div className="flex gap-2">
           <div className="relative">
-            <Button variant="ghost" icon={Download} size="xs" onClick={() => setShowExportMenu(v => !v)}>Export ▾</Button>
+            <Button variant="ghost" icon={Download} size="xs" onClick={() => setShowExportMenu(v => !v)}>এক্সপোর্ট ▾</Button>
             {showExportMenu && (
               <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[170px]" style={{ background: t.cardSolid, border: `1px solid ${t.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
                 {[
-                  { label: "💰 Income CSV", fn: doExportIncome },
-                  { label: "💸 Expense CSV", fn: doExportExpense },
-                  { label: "📊 P&L Report", fn: doExportPL },
+                  { label: "💰 আয় CSV", fn: doExportIncome },
+                  { label: "💸 ব্যয় CSV", fn: doExportExpense },
+                  { label: "📊 লাভ-ক্ষতি রিপোর্ট", fn: doExportPL },
                 ].map(({ label, fn }) => (
                   <button key={label} onClick={() => { fn(); setShowExportMenu(false); }} className="w-full px-4 py-2.5 text-xs text-left transition"
                     onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -300,7 +300,7 @@ export default function AccountsPage({ students = [] }) {
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "overview", label: "📊 Overview" },
+          { key: "overview", label: "📊 সারসংক্ষেপ" },
           { key: "student_fees", label: "🎓 স্টুডেন্ট ফি" },
           { key: "income", label: "💰 অন্যান্য আয়" },
           { key: "expense", label: "💸 ব্যয়" },
@@ -334,7 +334,7 @@ export default function AccountsPage({ students = [] }) {
       {activeTab === "overview" && (
         <div className="grid grid-cols-12 gap-5">
           <Card className="col-span-12 lg:col-span-8" delay={200}>
-            <h3 className="text-sm font-semibold mb-4">Monthly P&L</h3>
+            <h3 className="text-sm font-semibold mb-4">মাসিক লাভ-ক্ষতি</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={(() => {
                 // API data থেকে monthly P&L generate
@@ -434,7 +434,7 @@ export default function AccountsPage({ students = [] }) {
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                           <SortHeader label="স্টুডেন্ট" sortKey="name" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
-                          <SortHeader label="Branch" sortKey="branch" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
                           <SortHeader label="মোট নির্ধারিত" sortKey="totalDue" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
                           <SortHeader label="কালেক্ট হয়েছে" sortKey="totalCollected" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
                           <SortHeader label="বাকি" sortKey="balance" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />

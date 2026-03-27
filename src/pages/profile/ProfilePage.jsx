@@ -84,7 +84,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             onMouseEnter={(e) => (e.currentTarget.style.background = "#ef444425")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "#ef444415")}
           >
-            <LogOut size={13} /> Logout
+            <LogOut size={13} /> লগআউট
           </button>
         </div>
       </Card>
@@ -296,7 +296,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                       color: (isDark ? "dark" : "light") === mode ? t.text : t.muted,
                     }}
                   >
-                    {mode === "dark" ? "🌙 Dark" : "☀️ Light"}
+                    {mode === "dark" ? "🌙 ডার্ক" : "☀️ লাইট"}
                   </button>
                 ))}
               </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, CheckCircle, Layers, Building2, Save, X, MapPin, Phone, Mail, User, Shield, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Users, CheckCircle, Layers, Building2, Save, X, MapPin, Phone, Mail, User, Shield, Pencil, Trash2, Search, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -33,21 +33,25 @@ export default function UserRolePage() {
   const [showBranchForm, setShowBranchForm] = useState(false);
   const [branchForm, setBranchForm] = useState(EMPTY_BRANCH);
   const [editingBranchId, setEditingBranchId] = useState(null);
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState(null);
+  const [deleteBranchConfirm, setDeleteBranchConfirm] = useState(null);
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   // --- User actions ---
-  const toggleRole = (userId, role) =>
-    setUsers(users.map((u) =>
+  const toggleRole = (userId, role) => {
+    setUsers(prev => prev.map((u) =>
       u.id === userId
         ? { ...u, roles: u.roles.includes(role) ? u.roles.filter((r) => r !== role) : [...u.roles, role] }
         : u
     ));
+    toast.updated("Role");
+  };
 
   const saveUser = () => {
     if (!userForm.name.trim() || !userForm.email.trim()) { toast.error("নাম ও ইমেইল দিন"); return; }
-    if (!userForm.branch) { toast.error("Branch নির্বাচন করুন"); return; }
-    if (userForm.roles.length === 0) { toast.error("কমপক্ষে একটি role দিন"); return; }
+    if (!userForm.branch) { toast.error("ব্রাঞ্চ নির্বাচন করুন"); return; }
+    if (userForm.roles.length === 0) { toast.error("কমপক্ষে একটি রোল দিন"); return; }
     setUsers((prev) => [...prev, {
       id: `U-${String(prev.length + 1).padStart(3, "0")}`,
       ...userForm,
@@ -56,12 +60,14 @@ export default function UserRolePage() {
     }]);
     setUserForm(EMPTY_USER);
     setShowUserForm(false);
-    toast.success("User যোগ হয়েছে!");
+    toast.success("ইউজার যোগ হয়েছে!");
   };
 
   const deleteUser = (id) => {
+    if (deleteUserConfirm !== id) { setDeleteUserConfirm(id); return; }
     setUsers((prev) => prev.filter((u) => u.id !== id));
-    toast.deleted("User মুছে ফেলা হয়েছে");
+    setDeleteUserConfirm(null);
+    toast.deleted("ইউজার মুছে ফেলা হয়েছে");
   };
 
   // --- Branch actions ---
@@ -72,10 +78,10 @@ export default function UserRolePage() {
     if (!branchForm.name.trim() || !branchForm.city.trim()) { toast.error("নাম ও শহর দিন"); return; }
     if (editingBranchId) {
       setBranches((prev) => prev.map((b) => b.id === editingBranchId ? { ...b, ...branchForm } : b));
-      toast.updated("Branch আপডেট হয়েছে!");
+      toast.updated("ব্রাঞ্চ আপডেট হয়েছে!");
     } else {
       setBranches((prev) => [...prev, { id: `BR-${String(prev.length + 1).padStart(3, "0")}`, ...branchForm, status: "active", createdAt: new Date().toISOString().slice(0, 10) }]);
-      toast.success("Branch তৈরি হয়েছে!");
+      toast.success("ব্রাঞ্চ তৈরি হয়েছে!");
     }
     setShowBranchForm(false);
     setBranchForm(EMPTY_BRANCH);
@@ -84,21 +90,23 @@ export default function UserRolePage() {
 
   const deleteBranch = (id) => {
     const empCount = employees.filter((e) => e.branch === branches.find((b) => b.id === id)?.name).length;
-    if (empCount > 0) { toast.error(`এই branch-এ ${empCount} জন কর্মী আছেন — আগে তাদের স্থানান্তর করুন`); return; }
+    if (empCount > 0) { toast.error(`এই ব্রাঞ্চে ${empCount} জন কর্মী আছেন — আগে তাদের স্থানান্তর করুন`); return; }
+    if (deleteBranchConfirm !== id) { setDeleteBranchConfirm(id); return; }
     setBranches((prev) => prev.filter((b) => b.id !== id));
-    toast.deleted("Branch মুছে ফেলা হয়েছে");
+    setDeleteBranchConfirm(null);
+    toast.deleted("ব্রাঞ্চ মুছে ফেলা হয়েছে");
   };
 
   // Permission matrix state (Role → Module → { read, write, del })
   const MODULES = [
-    { key: "dashboard", label: "Dashboard" },
-    { key: "visitors", label: "Visitors" },
-    { key: "students", label: "Students" },
-    { key: "documents", label: "Documents" },
-    { key: "accounts", label: "Accounts" },
-    { key: "reports", label: "Reports" },
-    { key: "settings", label: "Settings" },
-    { key: "users", label: "Users" },
+    { key: "dashboard", label: "ড্যাশবোর্ড" },
+    { key: "visitors", label: "ভিজিটর" },
+    { key: "students", label: "স্টুডেন্ট" },
+    { key: "documents", label: "ডকুমেন্টস" },
+    { key: "accounts", label: "একাউন্টস" },
+    { key: "reports", label: "রিপোর্ট" },
+    { key: "settings", label: "সেটিংস" },
+    { key: "users", label: "ইউজার" },
   ];
   const PERM_ROLES = Object.keys(PERMISSION_MATRIX);
   const initMatrix = () => {
@@ -128,29 +136,29 @@ export default function UserRolePage() {
 
   const managers = employees.filter((e) => ["Owner", "Branch Manager"].includes(e.role));
   const tabs = [
-    { key: "branches", label: "🏢 Branches" },
-    { key: "users", label: "👥 Users" },
-    { key: "permissions", label: "🔐 Permissions" },
+    { key: "branches", label: "🏢 ব্রাঞ্চ" },
+    { key: "users", label: "👥 ইউজার" },
+    { key: "permissions", label: "🔐 অনুমতি" },
   ];
 
   return (
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Users & Branches</h2>
+          <h2 className="text-xl font-bold">ইউজার ও ব্রাঞ্চ</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>শাখা ব্যবস্থাপনা, ইউজার ও রোল কন্ট্রোল</p>
         </div>
-        {activeTab === "branches" && <Button icon={Plus} onClick={openAddBranch}>নতুন Branch</Button>}
-        {activeTab === "users" && <Button icon={Plus} onClick={() => setShowUserForm(true)}>Add User</Button>}
+        {activeTab === "branches" && <Button icon={Plus} onClick={openAddBranch}>নতুন ব্রাঞ্চ</Button>}
+        {activeTab === "users" && <Button icon={Plus} onClick={() => setShowUserForm(true)}>ইউজার যোগ করুন</Button>}
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট Branch", value: branches.filter((b) => b.status === "active").length, color: t.cyan, icon: Building2 },
-          { label: "মোট User", value: users.length, color: t.purple, icon: Users },
-          { label: "Active User", value: users.filter((u) => u.status === "active").length, color: t.emerald, icon: CheckCircle },
-          { label: "মোট Role", value: ALL_ROLES.length, color: t.amber, icon: Layers },
+          { label: "মোট ব্রাঞ্চ", value: branches.filter((b) => b.status === "active").length, color: t.cyan, icon: Building2 },
+          { label: "মোট ইউজার", value: users.length, color: t.purple, icon: Users },
+          { label: "সক্রিয় ইউজার", value: users.filter((u) => u.status === "active").length, color: t.emerald, icon: CheckCircle },
+          { label: "মোট রোল", value: ALL_ROLES.length, color: t.amber, icon: Layers },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -172,8 +180,8 @@ export default function UserRolePage() {
           <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchQ(""); }}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
             style={{
-              background: activeTab === tab.key ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#ffffff") : "transparent",
-              color: activeTab === tab.key ? t.text : t.muted,
+              background: activeTab === tab.key ? `${t.cyan}15` : "transparent",
+              color: activeTab === tab.key ? t.cyan : t.muted,
             }}>
             {tab.label}
           </button>
@@ -195,7 +203,7 @@ export default function UserRolePage() {
           {showBranchForm && (
             <Card delay={0}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold">{editingBranchId ? "Branch সম্পাদনা" : "নতুন Branch তৈরি করুন"}</h3>
+                <h3 className="text-sm font-bold">{editingBranchId ? "ব্রাঞ্চ সম্পাদনা" : "নতুন ব্রাঞ্চ তৈরি করুন"}</h3>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowBranchForm(false); setEditingBranchId(null); }}>বাতিল</Button>
                   <Button size="xs" icon={Save} onClick={saveBranch}>সংরক্ষণ</Button>
@@ -203,7 +211,7 @@ export default function UserRolePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch নাম <span className="req-star">*</span></label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ নাম <span className="req-star">*</span></label>
                   <input value={branchForm.name} onChange={(e) => setBranchForm((p) => ({ ...p, name: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: ঢাকা (HQ), সিলেট" />
                 </div>
@@ -223,7 +231,7 @@ export default function UserRolePage() {
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="02-XXXXXXX" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch Manager</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ ম্যানেজার</label>
                   <select value={branchForm.manager} onChange={(e) => setBranchForm((p) => ({ ...p, manager: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option value="">— নির্বাচন করুন —</option>
@@ -242,14 +250,14 @@ export default function UserRolePage() {
               <Search size={14} style={{ color: t.muted }} />
               <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                placeholder="Branch নাম, শহর বা ম্যানেজার দিয়ে খুঁজুন..." />
+                placeholder="ব্রাঞ্চ নাম, শহর বা ম্যানেজার দিয়ে খুঁজুন..." />
             </div>
           </Card>
 
           {/* Branch list */}
           {filteredBranches.length === 0 && (
             <Card delay={100}>
-              <p className="text-center py-6 text-xs" style={{ color: t.muted }}>কোনো Branch পাওয়া যায়নি</p>
+              <p className="text-center py-6 text-xs" style={{ color: t.muted }}>কোনো ব্রাঞ্চ পাওয়া যায়নি</p>
             </Card>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,7 +283,7 @@ export default function UserRolePage() {
                         <Pencil size={13} />
                       </button>
                       <button onClick={() => deleteBranch(br.id)} className="p-1.5 rounded-lg transition"
-                        style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
+                        style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = t.rose} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
                         <Trash2 size={13} />
                       </button>
                     </div>
@@ -284,7 +292,7 @@ export default function UserRolePage() {
                   <div className="space-y-1.5 text-[11px] mb-3" style={{ color: t.textSecondary }}>
                     {br.address && <p className="flex items-center gap-1.5"><MapPin size={10} style={{ color: t.muted }} />{br.address}</p>}
                     {br.phone && <p className="flex items-center gap-1.5"><Phone size={10} style={{ color: t.muted }} />{br.phone}</p>}
-                    {br.manager && <p className="flex items-center gap-1.5"><User size={10} style={{ color: t.muted }} />Manager: <span className="font-medium">{br.manager}</span></p>}
+                    {br.manager && <p className="flex items-center gap-1.5"><User size={10} style={{ color: t.muted }} />ম্যানেজার: <span className="font-medium">{br.manager}</span></p>}
                   </div>
 
                   <div className="flex gap-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
@@ -294,13 +302,27 @@ export default function UserRolePage() {
                     </div>
                     <div className="flex-1 text-center">
                       <p className="text-lg font-bold" style={{ color: t.cyan }}>{branchUsers.length}</p>
-                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>System User</p>
+                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>সিস্টেম ইউজার</p>
                     </div>
                     <div className="flex-1 text-center">
-                      <p className="text-[10px] font-bold" style={{ color: t.emerald }}>{br.status === "active" ? "Active" : "Inactive"}</p>
+                      <p className="text-[10px] font-bold" style={{ color: t.emerald }}>{br.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</p>
                       <p className="text-[9px] uppercase" style={{ color: t.muted }}>স্ট্যাটাস</p>
                     </div>
                   </div>
+
+                  {deleteBranchConfirm === br.id && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl mt-3"
+                      style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
+                      <AlertTriangle size={16} style={{ color: t.rose }} />
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold" style={{ color: t.rose }}>মুছে ফেলবেন?</p>
+                        <p className="text-[10px]" style={{ color: t.muted }}>এই কাজ undo করা যাবে না</p>
+                      </div>
+                      <button onClick={() => setDeleteBranchConfirm(null)} className="text-xs px-2 py-1" style={{ color: t.muted }}>না</button>
+                      <button onClick={() => deleteBranch(br.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                        style={{ background: t.rose, color: "#fff" }}>হ্যাঁ, মুছুন</button>
+                    </div>
+                  )}
 
                   {branchEmployees.length > 0 && (
                     <div className="mt-3 pt-3 space-y-1" style={{ borderTop: `1px solid ${t.border}` }}>
@@ -337,7 +359,7 @@ export default function UserRolePage() {
           {showUserForm && (
             <Card delay={0}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold">নতুন System User যোগ করুন</h3>
+                <h3 className="text-sm font-bold">নতুন সিস্টেম ইউজার যোগ করুন</h3>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowUserForm(false); setUserForm(EMPTY_USER); }}>বাতিল</Button>
                   <Button size="xs" icon={Save} onClick={saveUser}>সংরক্ষণ</Button>
@@ -360,10 +382,10 @@ export default function UserRolePage() {
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="01XXXXXXXXX" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Building2 size={9} className="inline mr-1" />Branch <span className="req-star">*</span></label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}><Building2 size={9} className="inline mr-1" />ব্রাঞ্চ <span className="req-star">*</span></label>
                   <select value={userForm.branch} onChange={(e) => setUserForm((p) => ({ ...p, branch: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="">— Branch নির্বাচন করুন —</option>
+                    <option value="">— ব্রাঞ্চ নির্বাচন করুন —</option>
                     {branches.filter((b) => b.status === "active").map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
                   </select>
                 </div>
@@ -374,7 +396,7 @@ export default function UserRolePage() {
                 </div>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}><Shield size={9} className="inline mr-1" />Roles * (এক বা একাধিক)</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}><Shield size={9} className="inline mr-1" />রোল * (এক বা একাধিক)</label>
                 <div className="flex flex-wrap gap-1.5">
                   {ALL_ROLES.map((role) => {
                     const has = userForm.roles.includes(role);
@@ -412,7 +434,7 @@ export default function UserRolePage() {
                     <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <SortHeader label="ইমেইল" sortKey="email" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>পদবি</th>
-                    <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                    <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                     <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
                   </tr>
@@ -455,21 +477,38 @@ export default function UserRolePage() {
                       </td>
                       {/* স্ট্যাটাস */}
                       <td className="py-3 px-4">
-                        <Badge color={user.status === "active" ? t.emerald : t.muted} size="xs">{user.status === "active" ? "Active" : "Inactive"}</Badge>
+                        <Badge color={user.status === "active" ? t.emerald : t.muted} size="xs">{user.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
                       </td>
                       {/* অ্যাকশন */}
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button variant="ghost" size="xs" onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}>
-                            Roles
+                            রোল
                           </Button>
                           <button onClick={() => deleteUser(user.id)} className="p-1.5 rounded-lg transition"
-                            style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
+                            style={{ color: t.muted }} onMouseEnter={(e) => e.currentTarget.style.color = t.rose} onMouseLeave={(e) => e.currentTarget.style.color = t.muted}>
                             <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
                     </tr>
+                    {deleteUserConfirm === user.id && (
+                      <tr>
+                        <td colSpan={6} className="py-0 px-4">
+                          <div className="flex items-center gap-3 p-3 rounded-xl my-2"
+                            style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
+                            <AlertTriangle size={16} style={{ color: t.rose }} />
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold" style={{ color: t.rose }}>মুছে ফেলবেন?</p>
+                              <p className="text-[10px]" style={{ color: t.muted }}>এই কাজ undo করা যাবে না</p>
+                            </div>
+                            <button onClick={() => setDeleteUserConfirm(null)} className="text-xs px-2 py-1" style={{ color: t.muted }}>না</button>
+                            <button onClick={() => deleteUser(user.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                              style={{ background: t.rose, color: "#fff" }}>হ্যাঁ, মুছুন</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   ))}
                 </tbody>
               </table>
@@ -482,7 +521,7 @@ export default function UserRolePage() {
               return (
                 <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                   <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>
-                    <span className="font-semibold" style={{ color: t.text }}>{user.name}</span> — Role ক্লিক করে assign/remove:
+                    <span className="font-semibold" style={{ color: t.text }}>{user.name}</span> — রোল ক্লিক করে যোগ/বাদ করুন:
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {ALL_ROLES.map((role) => {
@@ -509,16 +548,16 @@ export default function UserRolePage() {
         <Card delay={100}>
           <div className="flex items-center justify-between mb-1">
             <div>
-              <h3 className="text-sm font-semibold">Permission Matrix</h3>
-              <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>R = Read, W = Write, D = Delete — ক্লিক করে toggle করুন</p>
+              <h3 className="text-sm font-semibold">অনুমতি ম্যাট্রিক্স</h3>
+              <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>R = পড়া, W = লেখা, D = মুছা — ক্লিক করে toggle করুন</p>
             </div>
-            <Button icon={Save} size="xs" onClick={() => toast.success("Permissions সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
+            <Button icon={Save} size="xs" onClick={() => toast.success("অনুমতি সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
           </div>
           <div className="overflow-x-auto mt-3">
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  <th className="text-left py-2 px-3 text-[10px] uppercase font-medium" style={{ color: t.muted, minWidth: 140 }}>Role</th>
+                  <th className="text-left py-2 px-3 text-[10px] uppercase font-medium" style={{ color: t.muted, minWidth: 140 }}>রোল</th>
                   {MODULES.map(({ key, label }) => (
                     <th key={key} className="text-center py-2 px-1 text-[9px] uppercase font-medium" style={{ color: t.muted, minWidth: 72 }}>{label}</th>
                   ))}
@@ -563,9 +602,9 @@ export default function UserRolePage() {
           {/* Legend */}
           <div className="flex gap-4 mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
             {[
-              { label: "Read (R)", color: t.emerald },
-              { label: "Write (W)", color: t.amber },
-              { label: "Delete (D)", color: t.rose },
+              { label: "পড়া (R)", color: t.emerald },
+              { label: "লেখা (W)", color: t.amber },
+              { label: "মুছা (D)", color: t.rose },
             ].map(({ label, color }) => (
               <div key={label} className="flex items-center gap-1.5 text-[10px]" style={{ color: t.muted }}>
                 <div className="h-2.5 w-2.5 rounded" style={{ background: `${color}25`, border: `1px solid ${color}40` }} />

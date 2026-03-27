@@ -133,19 +133,20 @@ export const getGlobalStyles = (t) => `
 `;
 
 export function ThemeToggle({ isDark, onToggle }) {
+  const t = useTheme();
   return (
     <button
       onClick={onToggle}
       className="relative p-2 rounded-lg transition-all duration-300 group"
-      style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#f1f5f9" }}
-      title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      style={{ background: t.inputBg }}
+      title={isDark ? "লাইট মোডে যান" : "ডার্ক মোডে যান"}
     >
       <div className="relative w-4 h-4">
         {/* Sun */}
         <svg
           className="absolute inset-0 transition-all duration-500"
           style={{ opacity: isDark ? 0 : 1, transform: isDark ? "rotate(-90deg) scale(0.5)" : "rotate(0) scale(1)" }}
-          viewBox="0 0 24 24" fill="none" stroke="#ca8a04" strokeWidth="2" strokeLinecap="round"
+          viewBox="0 0 24 24" fill="none" stroke={t.amber} strokeWidth="2" strokeLinecap="round"
         >
           <circle cx="12" cy="12" r="5" />
           <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
@@ -157,7 +158,7 @@ export function ThemeToggle({ isDark, onToggle }) {
         <svg
           className="absolute inset-0 transition-all duration-500"
           style={{ opacity: isDark ? 1 : 0, transform: isDark ? "rotate(0) scale(1)" : "rotate(90deg) scale(0.5)" }}
-          viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round"
+          viewBox="0 0 24 24" fill="none" stroke={t.purple} strokeWidth="2" strokeLinecap="round"
         >
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </svg>

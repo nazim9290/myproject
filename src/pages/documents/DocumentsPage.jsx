@@ -289,7 +289,7 @@ export default function DocumentsPage({ students }) {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">{dt.name_bn || dt.name}</p>
-                        <p className="text-[9px]" style={{ color: t.muted }}>{dt.name} • {(dt.fields || []).length} fields</p>
+                        <p className="text-[9px]" style={{ color: t.muted }}>{dt.name} • {(dt.fields || []).length} ফিল্ড</p>
                       </div>
                     </div>
                     <Badge color={comp.pct === 100 ? "emerald" : comp.pct > 0 ? "amber" : "gray"} size="xs">
@@ -304,7 +304,7 @@ export default function DocumentsPage({ students }) {
                   </div>
 
                   <p className="text-[10px]" style={{ color: t.muted }}>
-                    {comp.filled}/{comp.total} fields পূরণ
+                    {comp.filled}/{comp.total} ফিল্ড পূরণ
                     {saved && <span> • সর্বশেষ: {saved.updated_at?.slice(0, 10)}</span>}
                   </p>
                 </div>
@@ -321,7 +321,7 @@ export default function DocumentsPage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Documents</h2>
+          <h2 className="text-xl font-bold">ডকুমেন্টস</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>ডকুমেন্ট ডাটা ইনপুট — ট্রান্সলেশন ও Doc Generator-এ ব্যবহার হবে</p>
         </div>
       </div>
@@ -330,9 +330,9 @@ export default function DocumentsPage({ students }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "মোট স্টুডেন্ট", value: allStudents.length, color: t.cyan },
-          { label: "Document Types", value: docTypes.length, color: t.purple },
+          { label: "ডকুমেন্ট ধরন", value: docTypes.length, color: t.purple },
           { label: "ব্যাচ", value: allBatches.length - 1, color: t.amber },
-          { label: "মোট Fields", value: docTypes.reduce((s, dt) => s + (dt.fields || []).length, 0), color: t.emerald },
+          { label: "মোট ফিল্ড", value: docTypes.reduce((s, dt) => s + (dt.fields || []).length, 0), color: t.emerald },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
@@ -344,7 +344,7 @@ export default function DocumentsPage({ students }) {
       {/* Filter + Search */}
       <Card delay={200}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">Student Documents</h3>
+          <h3 className="text-sm font-semibold">স্টুডেন্ট ডকুমেন্টস</h3>
           <div className="flex items-center gap-2">
             <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }}
               className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>

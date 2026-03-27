@@ -56,7 +56,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
     const newMismatches = computeMismatches(newDocs);
     setMismatches(newMismatches);
     setExpandedDoc(null);
-    const mismatchMsg = newMismatches.length > 0 ? ` • ${newMismatches.length}টি mismatch পাওয়া গেছে` : " • সব তথ্য মিলে গেছে ✓";
+    const mismatchMsg = newMismatches.length > 0 ? ` • ${newMismatches.length}টি অমিল পাওয়া গেছে` : " • সব তথ্য মিলে গেছে ✓";
     toast.success("ডকুমেন্ট তথ্য সংরক্ষণ হয়েছে" + mismatchMsg);
   };
 
@@ -76,7 +76,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
             <h2 className="text-xl font-bold">{student.name_en}</h2>
             <StatusBadge status={student.status} />
           </div>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.id} • {student.school} • Documents ({verified}/{total} verified — {pct}%)</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.id} • {student.school} • ডকুমেন্টস ({verified}/{total} যাচাই — {pct}%)</p>
         </div>
       </div>
 
@@ -91,10 +91,10 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
         </div>
         <div className="flex gap-4 mt-3">
           {[
-            { label: "Verified", count: docs.filter(d => d.status === "verified").length, color: t.emerald },
-            { label: "Submitted", count: docs.filter(d => d.status === "submitted").length, color: t.amber },
-            { label: "Issue", count: docs.filter(d => d.status === "issue").length, color: t.rose },
-            { label: "Missing", count: docs.filter(d => d.status === "not_submitted").length, color: t.muted },
+            { label: "যাচাইকৃত", count: docs.filter(d => d.status === "verified").length, color: t.emerald },
+            { label: "জমাকৃত", count: docs.filter(d => d.status === "submitted").length, color: t.amber },
+            { label: "সমস্যা", count: docs.filter(d => d.status === "issue").length, color: t.rose },
+            { label: "অনুপস্থিত", count: docs.filter(d => d.status === "not_submitted").length, color: t.muted },
           ].map((s) => (
             <div key={s.label} className="flex items-center gap-1.5 text-[11px]">
               <div className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />
@@ -107,8 +107,8 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "checklist", label: "📄 Document Checklist", count: total },
-          { key: "validation", label: "🔍 Cross-Validation", count: mismatches.length },
+          { key: "checklist", label: "📄 ডকুমেন্ট চেকলিস্ট", count: total },
+          { key: "validation", label: "🔍 ক্রস-ভ্যালিডেশন", count: mismatches.length },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -146,8 +146,8 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold">{docType?.name || doc.docId}</p>
-                      {hasMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>⚠ Mismatch</span>}
-                      {!docType?.base && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>Conditional</span>}
+                      {hasMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>⚠ অমিল</span>}
+                      {!docType?.base && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>শর্তসাপেক্ষ</span>}
                     </div>
                     <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
                       {docType?.name_en}{doc.uploadDate && ` • আপলোড: ${doc.uploadDate}`}
@@ -172,7 +172,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                   <Badge color={statusConf.color} size="xs">{statusConf.label}</Badge>
                   <Button variant="ghost" icon={isExpanded ? X : Edit3} size="xs"
                     onClick={() => setExpandedDoc(isExpanded ? null : doc.docId)}>
-                    {isExpanded ? "" : "Data"}
+                    {isExpanded ? "" : "ডাটা"}
                   </Button>
                 </div>
 
@@ -217,7 +217,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
               <div className="flex flex-col items-center py-10">
                 <CheckCircle size={40} style={{ color: t.emerald }} strokeWidth={1.2} />
                 <p className="text-sm font-semibold mt-3" style={{ color: t.emerald }}>সব ডকুমেন্টে তথ্য মিলে গেছে!</p>
-                <p className="text-xs mt-1" style={{ color: t.muted }}>কোনো mismatch পাওয়া যায়নি</p>
+                <p className="text-xs mt-1" style={{ color: t.muted }}>কোনো অমিল পাওয়া যায়নি</p>
               </div>
             </Card>
           ) : (

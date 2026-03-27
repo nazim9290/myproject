@@ -33,11 +33,12 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
   // ── ডাটা লোড ──
   useEffect(() => {
     const load = async () => {
+      const hdrs = { Authorization: `Bearer ${studentToken}`, "Content-Type": "application/json" };
       try {
         const [profileRes, configRes, feesRes] = await Promise.all([
-          fetch(`${API_URL}/student-portal/me`, { headers }),
-          fetch(`${API_URL}/student-portal/form-config`, { headers }),
-          fetch(`${API_URL}/student-portal/fees`, { headers }),
+          fetch(`${API_URL}/student-portal/me`, { headers: hdrs }),
+          fetch(`${API_URL}/student-portal/form-config`, { headers: hdrs }),
+          fetch(`${API_URL}/student-portal/fees`, { headers: hdrs }),
         ]);
         const p = await profileRes.json();
         const c = await configRes.json();
@@ -49,7 +50,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
       setLoading(false);
     };
     load();
-  }, []);
+  }, [studentToken]);
 
   // ── ডাটা সংরক্ষণ ──
   const saveData = async () => {

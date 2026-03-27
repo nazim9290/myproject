@@ -21,7 +21,7 @@ export default function ReportsPage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Reports & Analytics</h2>
+          <h2 className="text-xl font-bold">রিপোর্ট ও বিশ্লেষণ</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>পারফরম্যান্স রিপোর্ট ও বিশ্লেষণ</p>
         </div>
         <Button variant="ghost" icon={Download} size="xs" onClick={() => {
@@ -30,15 +30,15 @@ export default function ReportsPage({ students }) {
           const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
           Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Analytics_Report_${new Date().toISOString().slice(0,10)}.csv` }).click();
           toast.exported(`Analytics Report (${(students || []).length} students)`);
-        }}>Export All</Button>
+        }}>সব এক্সপোর্ট</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Overall Conversion", value: `${overallConversion}%`, color: t.emerald, icon: TrendingUp },
-          { label: "Cost/Student", value: `৳${(costPerStudent / 1000).toFixed(1)}K`, color: t.amber, icon: DollarSign },
-          { label: "Total Arrived (YTD)", value: totalArrived, color: t.cyan, icon: TrendingUp },
-          { label: "Dropout Rate", value: "12%", color: t.rose, icon: TrendingDown },
+          { label: "সামগ্রিক কনভার্শন", value: `${overallConversion}%`, color: t.emerald, icon: TrendingUp },
+          { label: "স্টুডেন্ট প্রতি খরচ", value: `৳${(costPerStudent / 1000).toFixed(1)}K`, color: t.amber, icon: DollarSign },
+          { label: "মোট এসেছে (YTD)", value: totalArrived, color: t.cyan, icon: TrendingUp },
+          { label: "ঝরে পড়ার হার", value: "12%", color: t.rose, icon: TrendingDown },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -56,14 +56,14 @@ export default function ReportsPage({ students }) {
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "funnel", label: "📊 Pipeline Funnel" },
-          { key: "source", label: "📡 Source Analysis" },
-          { key: "dropout", label: "📉 Dropout Report" },
-          { key: "country", label: "🌏 Country-wise" },
+          { key: "funnel", label: "📊 পাইপলাইন ফানেল" },
+          { key: "source", label: "📡 সোর্স বিশ্লেষণ" },
+          { key: "dropout", label: "📉 ড্রপআউট রিপোর্ট" },
+          { key: "country", label: "🌏 দেশভিত্তিক" },
         ].map((tab) => (
           <button key={tab.key} onClick={() => setActiveReport(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200"
-            style={{ background: activeReport === tab.key ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#ffffff") : "transparent", color: activeReport === tab.key ? t.text : t.muted, boxShadow: activeReport === tab.key && t.mode === "light" ? "0 1px 3px rgba(0,0,0,0.08)" : "none" }}>
+            style={{ background: activeReport === tab.key ? `${t.cyan}15` : "transparent", color: activeReport === tab.key ? t.cyan : t.muted }}>
             {tab.label}
           </button>
         ))}

@@ -186,11 +186,11 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Students</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>Student Pipeline Management</p>
+          <h2 className="text-xl font-bold">স্টুডেন্ট</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>স্টুডেন্ট পাইপলাইন ব্যবস্থাপনা</p>
         </div>
         <div className="flex gap-2 relative">
-          <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExportMenu(p => !p)}>Export</Button>
+          <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExportMenu(p => !p)}>এক্সপোর্ট</Button>
           {showExportMenu && (
             <div className="absolute right-0 top-8 z-50 rounded-xl shadow-lg min-w-[200px] overflow-hidden"
               style={{ background: t.card, border: `1px solid ${t.border}` }}>
@@ -230,17 +230,17 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             </div>
           )}
 
-          <Button variant="ghost" icon={Upload} onClick={() => { setShowImport(true); setImportStep("upload"); setImportFile(null); setImportResult(null); }}>Excel Import</Button>
-          <Button icon={Plus} onClick={() => setShowAddForm(true)}>Add Student</Button>
+          <Button variant="ghost" icon={Upload} onClick={() => { setShowImport(true); setImportStep("upload"); setImportFile(null); setImportResult(null); }}>এক্সেল ইমপোর্ট</Button>
+          <Button icon={Plus} onClick={() => setShowAddForm(true)}>নতুন স্টুডেন্ট</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { l: "Total", v: students.length, c: t.cyan },
-          { l: "Active", v: activeCount, c: t.emerald },
-          { l: "Visa / Arrived", v: visaCount, c: t.purple },
-          { l: "Own / Partner", v: `${ownCount} / ${partnerCount}`, c: t.amber },
+          { l: "মোট", v: students.length, c: t.cyan },
+          { l: "সক্রিয়", v: activeCount, c: t.emerald },
+          { l: "ভিসা / এসেছে", v: visaCount, c: t.purple },
+          { l: "নিজস্ব / পার্টনার", v: `${ownCount} / ${partnerCount}`, c: t.amber },
         ].map((s, i) => (
           <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
             <p className="text-lg font-bold" style={{ color: s.c }}>{s.v}</p>
@@ -261,7 +261,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               setStudents(prev => [newStudent, ...prev]);
             }
             setShowAddForm(false);
-            toast.success(`${newStudent.name_en} — Student added!`);
+            toast.success(`${newStudent.name_en} — স্টুডেন্ট যোগ হয়েছে!`);
           }}
         />
       )}
@@ -436,13 +436,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
           {countries.map(c => <option key={c} value={c}>{c === "All" ? "সব দেশ" : c}</option>)}
         </select>
         <select value={filterBranch} onChange={e => { setFilterBranch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: filterBranch !== "All" ? t.cyan : t.text }}>
-          {branches.map(b => <option key={b} value={b}>{b === "All" ? "সব Branch" : b}</option>)}
+          {branches.map(b => <option key={b} value={b}>{b === "All" ? "সব ব্রাঞ্চ" : b}</option>)}
         </select>
         <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: filterBatch !== "All" ? t.amber : t.text }}>
-          {batches.map(b => <option key={b} value={b}>{b === "All" ? "সব Batch" : b}</option>)}
+          {batches.map(b => <option key={b} value={b}>{b === "All" ? "সব ব্যাচ" : b}</option>)}
         </select>
         <select value={filterSchool} onChange={e => { setFilterSchool(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${filterSchool !== "All" ? t.emerald : t.inputBorder}`, color: filterSchool !== "All" ? t.emerald : t.text }}>
-          {schools.map(s => <option key={s} value={s}>{s === "All" ? "সব School" : s}</option>)}
+          {schools.map(s => <option key={s} value={s}>{s === "All" ? "সব স্কুল" : s}</option>)}
         </select>
       </div>
 
@@ -453,9 +453,9 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                 {[
-                  { label: "ID", key: "id" }, { label: "Name", key: "name_en" }, { label: "Phone", key: "phone" },
-                  { label: "Branch", key: "branch" }, { label: "Country", key: "country" }, { label: "School", key: "school" },
-                  { label: "Batch", key: "batch" }, { label: "Status", key: "status" }, { label: "Type", key: "type" },
+                  { label: "আইডি", key: "id" }, { label: "নাম", key: "name_en" }, { label: "ফোন", key: "phone" },
+                  { label: "ব্রাঞ্চ", key: "branch" }, { label: "দেশ", key: "country" }, { label: "স্কুল", key: "school" },
+                  { label: "ব্যাচ", key: "batch" }, { label: "স্ট্যাটাস", key: "status" }, { label: "ধরন", key: "type" },
                 ].map(col => (
                   <SortHeader key={col.key} label={col.label} sortKey={col.key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                 ))}
@@ -491,7 +491,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && <div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">No students found</p></div>}
+        {filtered.length === 0 && <div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো স্টুডেন্ট পাওয়া যায়নি</p></div>}
         <Pagination total={filtered.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
     </div>

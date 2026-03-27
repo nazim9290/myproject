@@ -37,7 +37,7 @@ export default function PreDeparturePage({ students = [] }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Pre-Departure & VFS</h2>
+          <h2 className="text-xl font-bold">প্রি-ডিপার্চার ও ভিএফএস</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>COE → Health → Tuition → VFS → Visa → Flight → Arrival</p>
         </div>
       </div>

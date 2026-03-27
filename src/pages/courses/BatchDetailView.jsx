@@ -10,12 +10,12 @@ import EmptyState from "../../components/ui/EmptyState";
 import { BATCH_STUDENTS, CLASS_TESTS } from "../../data/mockData";
 
 const ATT_STATUS = ["P", "A", "L"]; // Present / Absent / Late
-const ATT_COLOR = { P: "#22c55e", A: "#f43f5e", L: "#f59e0b" };
 const ATT_LABEL = { P: "উপস্থিত", A: "অনুপস্থিত", L: "দেরিতে" };
 
 export default function BatchDetailView({ batch, students: allStudents = [], onBack, activeTab, setActiveTab }) {
   const t = useTheme();
   const toast = useToast();
+  const attColor = { P: t.emerald, A: t.rose, L: t.amber };
 
   const [bStudents, setBStudents] = useState(BATCH_STUDENTS[batch.id] || []);
   const [bTests, setBTests] = useState(CLASS_TESTS.filter(ct => ct.batchId === batch.id));
@@ -255,12 +255,12 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold" style={{ color: t.muted }}>
                 <span className="flex-1">স্টুডেন্ট</span>
-                {["P","A","L"].map(s => <span key={s} className="w-16 text-center" style={{ color: ATT_COLOR[s] }}>{ATT_LABEL[s]}</span>)}
+                {["P","A","L"].map(s => <span key={s} className="w-16 text-center" style={{ color: attColor[s] }}>{ATT_LABEL[s]}</span>)}
               </div>
               {bStudents.map(bs => {
                 const cur = attState[bs.studentId] || "P";
                 return (
-                  <div key={bs.studentId} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: `${ATT_COLOR[cur]}08`, border: `1px solid ${ATT_COLOR[cur]}20` }}>
+                  <div key={bs.studentId} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: `${attColor[cur]}08`, border: `1px solid ${attColor[cur]}20` }}>
                     <div className="flex items-center gap-2 flex-1">
                       <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: `${t.cyan}15`, color: t.cyan }}>{bs.name[0]}</div>
                       <div>
@@ -271,7 +271,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                     {ATT_STATUS.map(s => (
                       <button key={s} onClick={() => setAttState(p => ({ ...p, [bs.studentId]: s }))}
                         className="w-16 py-1.5 rounded-lg text-[10px] font-bold transition"
-                        style={{ background: cur === s ? ATT_COLOR[s] : `${ATT_COLOR[s]}15`, color: cur === s ? "#fff" : ATT_COLOR[s] }}>
+                        style={{ background: cur === s ? attColor[s] : `${attColor[s]}15`, color: cur === s ? "#fff" : attColor[s] }}>
                         {ATT_LABEL[s]}
                       </button>
                     ))}
@@ -368,7 +368,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {activeTab === "exams" && (
         <Card delay={100}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">JLPT / NAT / JPT Results</h3>
+            <h3 className="text-sm font-semibold">জেএলপিটি / এনএটি / জেপিটি ফলাফল</h3>
             <Button icon={showExamForm ? X : Plus} size="xs" onClick={() => setShowExamForm(v => !v)}>
               {showExamForm ? "বাতিল" : "ফলাফল এন্ট্রি"}
             </Button>
@@ -428,9 +428,9 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                     {bs.jlptStatus === "Passed" ? "✓" : bs.jlptStatus === "Preparing" ? "⏳" : "—"}
                   </div>
                   <div className="flex-1"><p className="text-xs font-medium">{bs.name}</p><p className="text-[10px]" style={{ color: t.muted }}>{bs.studentId}</p></div>
-                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>Exam</p><p className="text-xs font-semibold">{bs.examType || "—"}</p></div>
-                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>Level</p><p className="text-xs font-semibold">{bs.jlptLevel || "—"}</p></div>
-                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>Score</p><p className="text-xs font-bold" style={{ color: bs.jlptScore >= 120 ? t.emerald : bs.jlptScore ? t.amber : t.muted }}>{bs.jlptScore ?? "—"}</p></div>
+                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>পরীক্ষা</p><p className="text-xs font-semibold">{bs.examType || "—"}</p></div>
+                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>লেভেল</p><p className="text-xs font-semibold">{bs.jlptLevel || "—"}</p></div>
+                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>স্কোর</p><p className="text-xs font-bold" style={{ color: bs.jlptScore >= 120 ? t.emerald : bs.jlptScore ? t.amber : t.muted }}>{bs.jlptScore ?? "—"}</p></div>
                   <Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? "পাস ✓" : bs.jlptStatus === "Preparing" ? "প্রস্তুতি" : bs.jlptStatus === "Dropped" ? "বাদ" : "শুরু হয়নি"}</Badge>
                 </div>
               );
