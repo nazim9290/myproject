@@ -155,11 +155,12 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     );
   }
 
-  const countries = ["All", ...new Set(students.map((s) => (s.country || "").trim()).filter(Boolean))];
+  const uniqueVals = (arr, key) => [...new Set(arr.map(s => (s[key] || "").trim()).filter(v => v && v !== "—" && v !== "-"))];
+  const countries = ["All", ...uniqueVals(students, "country")];
   const statuses = ["All", ...PIPELINE_STATUSES.map((s) => s.code)];
-  const branches = ["All", ...new Set(students.map((s) => (s.branch || "").trim()).filter(Boolean))];
-  const batches = ["All", ...new Set(students.map((s) => (s.batch || "").trim()).filter(Boolean))];
-  const schools = ["All", ...new Set(students.map((s) => (s.school || "").trim()).filter(Boolean))];
+  const branches = ["All", ...uniqueVals(students, "branch")];
+  const batches = ["All", ...uniqueVals(students, "batch")];
+  const schools = ["All", ...uniqueVals(students, "school")];
 
   const filtered = students.filter((s) => {
     const q = searchQ.toLowerCase();
