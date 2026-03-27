@@ -6,7 +6,7 @@
  *
  * API URL:
  *   - লোকাল: http://localhost:5000/api
- *   - প্রোডাকশন: https://api.agencybook.net/api (Render proxy)
+ *   - প্রোডাকশন: https://api.agencybook.net/api (VPS Nginx proxy)
  *
  * ব্যবহার:
  *   import { students } from "../lib/api";

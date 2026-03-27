@@ -49,8 +49,11 @@ echo ""
 log "1/12 — System update..."
 export DEBIAN_FRONTEND=noninteractive
 apt update -y && apt upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
-apt install -y curl wget git unzip software-properties-common gnupg2 build-essential
-ok "System updated"
+apt install -y curl wget git unzip software-properties-common gnupg2 build-essential \
+  libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
+  libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
+  libcairo2 libasound2t64
+ok "System updated (Chromium deps সহ)"
 
 # ═══════════════════════════════════════════════════
 # 2. User Create: agencybook
@@ -191,6 +194,13 @@ server {
     # Request size limit (file upload)
     client_max_body_size 20M;
 
+    # Uploaded files — Nginx সরাসরি serve করবে (Node.js bypass)
+    location /uploads/ {
+        alias /home/agencybook/uploads/;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
     location / {
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
@@ -271,15 +281,45 @@ MAX_FILE_SIZE=10485760
 ENVFILE
 
 mkdir -p /home/${APP_USER}/uploads
+mkdir -p /home/${APP_USER}/logs
 chown -R ${APP_USER}:${APP_USER} ${BACKEND_DIR}
 chown -R ${APP_USER}:${APP_USER} /home/${APP_USER}/uploads
+chown -R ${APP_USER}:${APP_USER} /home/${APP_USER}/logs
 
-# PM2 দিয়ে start
+# ── Database Schema Run — tables তৈরি ──
+log "Schema migration হচ্ছে..."
+PGPASSWORD="${DB_PASS}" psql -U ${DB_USER} -h 127.0.0.1 -d ${DB_NAME} -f ${BACKEND_DIR}/deploy/schema.sql 2>/dev/null || true
+PGPASSWORD="${DB_PASS}" psql -U ${DB_USER} -h 127.0.0.1 -d ${DB_NAME} -f ${BACKEND_DIR}/deploy/billing_schema.sql 2>/dev/null || true
+PGPASSWORD="${DB_PASS}" psql -U ${DB_USER} -h 127.0.0.1 -d ${DB_NAME} -f ${BACKEND_DIR}/deploy/portal_schema.sql 2>/dev/null || true
+ok "Database schema applied"
+
+# ── PM2 Ecosystem Config তৈরি ──
+cat > ${BACKEND_DIR}/ecosystem.config.js <<'PM2CONFIG'
+module.exports = {
+  apps: [{
+    name: "agencybook-api",
+    script: "src/app.js",
+    instances: 2,
+    exec_mode: "cluster",
+    max_memory_restart: "500M",
+    autorestart: true,
+    watch: false,
+    env: { NODE_ENV: "production" },
+    error_file: "/home/agencybook/logs/api-error.log",
+    out_file: "/home/agencybook/logs/api-out.log",
+    merge_logs: true,
+    log_date_format: "YYYY-MM-DD HH:mm:ss",
+  }],
+};
+PM2CONFIG
+chown ${APP_USER}:${APP_USER} ${BACKEND_DIR}/ecosystem.config.js
+
+# PM2 দিয়ে start (cluster mode)
 cd ${BACKEND_DIR}
 sudo -u ${APP_USER} pm2 delete agencybook-api 2>/dev/null || true
-sudo -u ${APP_USER} pm2 start npm --name "agencybook-api" -- start
+sudo -u ${APP_USER} pm2 start ecosystem.config.js
 sudo -u ${APP_USER} pm2 save
-ok "Backend running on PM2 (port 5000)"
+ok "Backend running on PM2 (cluster mode, port 5000)"
 
 # ═══════════════════════════════════════════════════
 # 10. SSL — Certbot Install (domain point হলে certificate নেবে)
@@ -340,6 +380,7 @@ cat > ${APP_DIR}/deploy.sh <<'DEPLOY'
 
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 TARGET=${1:-all}
@@ -357,9 +398,26 @@ if [ "$TARGET" = "backend" ] || [ "$TARGET" = "all" ]; then
   echo -e "${CYAN}[Deploy]${NC} Backend deploying..."
   cd /home/agencybook/backend
   git pull origin main
-  npm install
+  npm install --production
   pm2 restart agencybook-api
-  echo -e "${GREEN}[✓]${NC} Backend deployed & restarted!"
+
+  # Health check — ৫ সেকেন্ড পর API চেক
+  sleep 3
+  if curl -sf http://127.0.0.1:5000/api/health > /dev/null; then
+    echo -e "${GREEN}[✓]${NC} Backend deployed & health check passed!"
+  else
+    echo -e "${RED}[✗]${NC} Backend health check failed — pm2 logs দেখুন"
+    pm2 logs agencybook-api --lines 20 --nostream
+  fi
+fi
+
+if [ "$TARGET" = "schema" ]; then
+  echo -e "${CYAN}[Deploy]${NC} Schema migration..."
+  cd /home/agencybook/backend
+  source .env
+  PGPASSWORD=$(echo $DATABASE_URL | sed 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/') \
+    psql -U agencybook -h 127.0.0.1 -d agencybook_db -f deploy/schema.sql
+  echo -e "${GREEN}[✓]${NC} Schema applied!"
 fi
 
 echo -e "${GREEN}[✓]${NC} Deploy complete — $(date)"
