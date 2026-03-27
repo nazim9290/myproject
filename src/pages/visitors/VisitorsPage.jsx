@@ -115,7 +115,7 @@ function NewVisitorForm({ onSave, onCancel }) {
         </>}
       </div>}
 
-      <SectionHeader icon="🛂" title="ভিসার ধরন / Purpose" sKey="visa" />
+      <SectionHeader icon="🛂" title="ভিসার ধরন / উদ্দেশ্য" sKey="visa" />
       {sections.visa && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কোন ভিসায় যেতে চান? <span className="req-star">*</span></label>
         <select value={form.visa_type} onChange={e => { set("visa_type", e.target.value); if (e.target.value !== "Other") setForm(prev => ({...prev, visa_type: e.target.value, visa_type_other: ""})); }} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
@@ -155,10 +155,10 @@ function NewVisitorForm({ onSave, onCancel }) {
         })}
       </div></div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Intake</label>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইনটেক</label>
         <select value={form.interested_intake} onChange={e => set("interested_intake", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>April 2026</option><option>October 2026</option><option>April 2027</option><option>নিশ্চিত নয়</option></select></div>
         <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
-          <label className="text-xs" style={{ color: t.textSecondary }}>Budget চিন্তিত?</label>
+          <label className="text-xs" style={{ color: t.textSecondary }}>বাজেট চিন্তিত?</label>
           <button onClick={() => set("budget_concern", !form.budget_concern)} className="relative w-10 h-5 rounded-full transition-all" style={{ background: form.budget_concern ? t.amber : `${t.muted}40` }}>
             <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ left: form.budget_concern ? "22px" : "2px" }} /></button>
         </div>
@@ -291,13 +291,13 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
     setVisitors(visitors.filter(x => x.id !== v.id));
     setConfirmAction(null);
     setDetailId(null);
-    toast.deleted("Visitor");
+    toast.deleted("ভিজিটর");
   };
 
   const saveEdit = () => {
     updateVisitor(editData.id, editData);
     setEditMode(false);
-    toast.updated("Visitor");
+    toast.updated("ভিজিটর");
   };
 
   const doExport = (mode) => {
@@ -528,7 +528,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       </div></Card>}
 
       {showForm && <Card delay={0}><h3 className="text-sm font-semibold mb-4">+ নতুন ভিজিটর</h3>
-        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch{setVisitors([v,...visitors]);}setShowForm(false);toast.created("Visitor");}} onCancel={()=>setShowForm(false)}/></Card>}
+        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch{setVisitors([v,...visitors]);}setShowForm(false);toast.created("ভিজিটর");}} onCancel={()=>setShowForm(false)}/></Card>}
 
       <Card delay={100}>
         <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {sortedFiltered.length} জন ভিজিটর</p>
@@ -582,7 +582,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
               {/* তারিখ */}
               <td className="py-3 px-3"><span className="text-[10px] font-mono" style={{color:days>14?t.rose:days>7?t.amber:t.muted}}>{v.date} ({days}d)</span></td>
               {/* Follow-up */}
-              <td className="py-3 px-3">{fuBad?<span className="text-[10px] font-semibold" style={{color:t.rose}}>Overdue</span>:v.lastFollowUp?<span className="text-[10px]" style={{color:t.emerald}}>✓ {fuD}d</span>:<span className="text-[10px]" style={{color:t.muted}}>—</span>}</td>
+              <td className="py-3 px-3">{fuBad?<span className="text-[10px] font-semibold" style={{color:t.rose}}>বিলম্বিত</span>:v.lastFollowUp?<span className="text-[10px]" style={{color:t.emerald}}>✓ {fuD}d</span>:<span className="text-[10px]" style={{color:t.muted}}>—</span>}</td>
               {/* Action */}
               <td className="py-3 px-3" onClick={e=>e.stopPropagation()}>
                 <div className="flex items-center gap-1">
