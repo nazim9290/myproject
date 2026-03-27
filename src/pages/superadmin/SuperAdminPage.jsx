@@ -14,10 +14,8 @@ import { API_URL } from "../../lib/api";
  */
 
 const PLANS = [
-  { id: "free", label: "Free", color: "#94a3b8", limit: "২০ students, ২ users" },
-  { id: "starter", label: "Starter", color: "#22d3ee", limit: "১০০ students, ৫ users" },
-  { id: "pro", label: "Pro", color: "#a855f7", limit: "৫০০ students, ১৫ users" },
-  { id: "enterprise", label: "Enterprise", color: "#f59e0b", limit: "Unlimited" },
+  { id: "standard", label: "Standard", color: "#22d3ee", limit: "Per-student billing" },
+  { id: "dedicated", label: "Dedicated", color: "#a855f7", limit: "Fixed pricing" },
 ];
 
 export default function SuperAdminPage() {
@@ -28,26 +26,30 @@ export default function SuperAdminPage() {
 
   const [agencies, setAgencies] = useState([]);
   const [stats, setStats] = useState(null);
+  const [pricing, setPricing] = useState({ per_student_fee: 3000, trial_days: 14 });
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showPricingForm, setShowPricingForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [detailAgency, setDetailAgency] = useState(null);
 
   const [form, setForm] = useState({
     name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "",
-    plan: "free", admin_name: "", admin_email: "", admin_password: "", dedicated: false,
+    plan: "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: false,
   });
 
   // ── ডাটা লোড ──
   const loadData = async () => {
     try {
-      const [agRes, stRes] = await Promise.all([
+      const [agRes, stRes, prRes] = await Promise.all([
         fetch(`${API_URL}/super-admin/agencies`, { headers }),
         fetch(`${API_URL}/super-admin/stats`, { headers }),
+        fetch(`${API_URL}/super-admin/pricing`, { headers }),
       ]);
       if (agRes.ok) setAgencies(await agRes.json());
       if (stRes.ok) setStats(await stRes.json());
+      if (prRes.ok) setPricing(await prRes.json());
     } catch {}
     setLoading(false);
   };
@@ -133,18 +135,42 @@ export default function SuperAdminPage() {
         </div>
       )}
 
-      {/* ── Plan breakdown ── */}
-      {stats && (
-        <div className="flex gap-2">
-          {PLANS.map(p => (
-            <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
-              style={{ background: `${p.color}15`, color: p.color }}>
-              <span className="font-bold">{stats.planBreakdown?.[p.id] || 0}</span>
-              <span>{p.label}</span>
-            </div>
-          ))}
+      {/* ── Pricing Config ── */}
+      <Card delay={100}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2">💰 প্রাইসিং কনফিগ</h3>
+            <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
+              প্রতি স্টুডেন্ট ENROLLED হলে: <strong style={{ color: t.emerald }}>৳{pricing.per_student_fee?.toLocaleString("en-IN")}</strong>
+              {" "}• Trial: <strong>{pricing.trial_days} দিন</strong>
+            </p>
+          </div>
+          <Button variant="ghost" size="xs" icon={Edit3} onClick={() => setShowPricingForm(!showPricingForm)}>
+            পরিবর্তন
+          </Button>
         </div>
-      )}
+
+        {showPricingForm && (
+          <div className="mt-4 pt-4 flex items-end gap-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>প্রতি স্টুডেন্ট ফি (৳)</label>
+              <input type="number" value={pricing.per_student_fee} onChange={e => setPricing(p => ({ ...p, per_student_fee: Number(e.target.value) }))}
+                className="w-32 px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Free Trial (দিন)</label>
+              <input type="number" value={pricing.trial_days} onChange={e => setPricing(p => ({ ...p, trial_days: Number(e.target.value) }))}
+                className="w-24 px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+            </div>
+            <Button size="xs" icon={Save} onClick={async () => {
+              try {
+                const res = await fetch(`${API_URL}/super-admin/pricing`, { method: "PATCH", headers, body: JSON.stringify(pricing) });
+                if (res.ok) { toast.success("প্রাইসিং আপডেট হয়েছে"); setShowPricingForm(false); }
+              } catch { toast.error("ব্যর্থ"); }
+            }}>সংরক্ষণ</Button>
+          </div>
+        )}
+      </Card>
 
       {/* ── নতুন এজেন্সি তৈরি ── */}
       {showCreateForm && (
@@ -224,7 +250,7 @@ export default function SuperAdminPage() {
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["এজেন্সি", "Subdomain", "Plan", "Students", "Users", "Status", ""].map(h => (
+                {["এজেন্সি", "Subdomain", "ফি/Student", "Students", "Trial", "Status", ""].map(h => (
                   <th key={h} className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                 ))}
               </tr>
@@ -250,9 +276,25 @@ export default function SuperAdminPage() {
                       </div>
                     </td>
                     <td className="py-3 px-4 font-mono text-[10px]" style={{ color: t.cyan }}>{agency.subdomain}.agencybook.net</td>
-                    <td className="py-3 px-4"><Badge color={planInfo.color} size="xs">{planInfo.label}</Badge></td>
+                    <td className="py-3 px-4">
+                      {isDedicated ? (
+                        <Badge color={t.purple} size="xs">Dedicated</Badge>
+                      ) : (
+                        <span className="text-xs font-mono font-bold" style={{ color: t.emerald }}>৳{(agency.per_student_fee || 0).toLocaleString("en-IN")}</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 font-mono font-bold">{agency.studentCount || 0}</td>
-                    <td className="py-3 px-4 font-mono">{agency.userCount || 0}</td>
+                    <td className="py-3 px-4">
+                      {(() => {
+                        const trialActive = agency.trial_ends_at && new Date(agency.trial_ends_at) > new Date();
+                        const daysLeft = trialActive ? Math.ceil((new Date(agency.trial_ends_at) - new Date()) / 86400000) : 0;
+                        return trialActive ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.amber}15`, color: t.amber }}>{daysLeft} দিন বাকি</span>
+                        ) : (
+                          <span className="text-[10px]" style={{ color: t.muted }}>শেষ</span>
+                        );
+                      })()}
+                    </td>
                     <td className="py-3 px-4">
                       <Badge color={agency.status === "active" ? t.emerald : agency.status === "suspended" ? t.rose : t.amber} size="xs">
                         {agency.status === "active" ? "সক্রিয়" : agency.status === "suspended" ? "স্থগিত" : agency.status}
@@ -260,10 +302,6 @@ export default function SuperAdminPage() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1">
-                        <select value={agency.plan} onChange={e => updateAgency(agency.id, { plan: e.target.value })}
-                          className="px-2 py-1 rounded text-[10px] outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                          {PLANS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                        </select>
                         {agency.status === "active" ? (
                           <button onClick={() => updateAgency(agency.id, { status: "suspended" })}
                             className="px-2 py-1 rounded text-[10px]" style={{ color: t.rose }}>স্থগিত</button>
