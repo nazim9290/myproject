@@ -472,13 +472,13 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             {showExport && <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[220px]" style={{background:t.cardSolid,border:"1px solid "+t.border,boxShadow:"0 8px 30px rgba(0,0,0,0.25)"}}>
               <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold" style={{color:t.muted,borderBottom:"1px solid "+t.border}}>ভিজিটর CSV এক্সপোর্ট</div>
               <button onClick={() => doExport("filtered")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.cyan}}>📋</span><div><p className="font-medium">Current View ({filtered.length})</p><p className="text-[9px]" style={{color:t.muted}}>Only showing filtered visitors</p></div>
+                <span style={{color:t.cyan}}>📋</span><div><p className="font-medium">বর্তমান ভিউ ({filtered.length})</p><p className="text-[9px]" style={{color:t.muted}}>শুধু ফিল্টার করা ভিজিটর</p></div>
               </button>
               <button onClick={() => doExport("active")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.emerald}}>🟢</span><div><p className="font-medium">Active Only ({activeList.length})</p><p className="text-[9px]" style={{color:t.muted}}>Interested + Thinking</p></div>
+                <span style={{color:t.emerald}}>🟢</span><div><p className="font-medium">শুধু সক্রিয় ({activeList.length})</p><p className="text-[9px]" style={{color:t.muted}}>আগ্রহী + ভাবছে</p></div>
               </button>
               <button onClick={() => doExport("all")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.purple}}>📦</span><div><p className="font-medium">All Visitors ({nonEnrolled.length})</p><p className="text-[9px]" style={{color:t.muted}}>Everything except enrolled</p></div>
+                <span style={{color:t.purple}}>📦</span><div><p className="font-medium">সব ভিজিটর ({nonEnrolled.length})</p><p className="text-[9px]" style={{color:t.muted}}>ভর্তি ছাড়া সবাই</p></div>
               </button>
             </div>}
           </div>

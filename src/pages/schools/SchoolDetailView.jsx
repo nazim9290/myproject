@@ -81,7 +81,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
 
   // Generate interview list
   const generateInterviewList = async () => {
-    if (selectedForInterview.length === 0) { toast.error("কমপক্ষে ১ জন student সিলেক্ট করুন"); return; }
+    if (selectedForInterview.length === 0) { toast.error("কমপক্ষে ১ জন স্টুডেন্ট সিলেক্ট করুন"); return; }
     setGenerating(true);
     try {
       const res = await fetch(`${API_URL}/schools/${school.id}/interview-list`, {
@@ -193,8 +193,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
             <div className="flex items-center gap-2">
               <select value={interviewFormat} onChange={e => setInterviewFormat(e.target.value)}
                 className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                <option value="row">Row-wise (প্রতি student এক row)</option>
-                <option value="column">Column-wise (প্রতি student এক column)</option>
+                <option value="row">Row-wise (প্রতি স্টুডেন্ট এক row)</option>
+                <option value="column">Column-wise (প্রতি স্টুডেন্ট এক column)</option>
               </select>
             </div>
           </div>
@@ -381,7 +381,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                         <span className="text-[10px] font-mono" style={{ color: t.cyan }}>#{sub.submission_number || 1}</span>
                         {sub.intake && <span className="text-[10px]" style={{ color: t.muted }}>{sub.intake}</span>}
                       </div>
-                      <p className="text-[10px]" style={{ color: t.muted }}>{sub.submission_date || "—"}{sub.recheck_count > 0 ? ` • ${sub.recheck_count}x recheck` : ""}</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{sub.submission_date || "—"}{sub.recheck_count > 0 ? ` • ${sub.recheck_count}x রিচেক` : ""}</p>
                     </div>
 
                     {/* Status dropdown */}
@@ -405,7 +405,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                       <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
                           <input value={feedbackForm.doc} onChange={e => setFeedbackForm(p => ({ ...p, doc: e.target.value }))}
-                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Document নাম (যেমন: Birth Cert)" />
+                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="ডকুমেন্ট নাম (যেমন: জন্ম সনদ)" />
                           <input value={feedbackForm.issue} onChange={e => setFeedbackForm(p => ({ ...p, issue: e.target.value }))}
                             className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="সমস্যা কী?" />
                           <div className="flex gap-2">
