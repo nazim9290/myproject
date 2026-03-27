@@ -59,7 +59,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
         <h3 className="text-sm font-bold">{type === "income" ? "নতুন আয় এন্ট্রি" : "নতুন ব্যয় এন্ট্রি"}</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={save}>Save</Button>
+          <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -246,9 +246,9 @@ export default function AccountsPage({ students = [] }) {
             {showExportMenu && (
               <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[170px]" style={{ background: t.cardSolid, border: `1px solid ${t.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
                 {[
-                  { label: "💰 Income CSV", fn: doExportIncome },
-                  { label: "💸 Expense CSV", fn: doExportExpense },
-                  { label: "📊 P&L Report", fn: doExportPL },
+                  { label: "💰 আয় CSV", fn: doExportIncome },
+                  { label: "💸 ব্যয় CSV", fn: doExportExpense },
+                  { label: "📊 লাভ-ক্ষতি রিপোর্ট", fn: doExportPL },
                 ].map(({ label, fn }) => (
                   <button key={label} onClick={() => { fn(); setShowExportMenu(false); }} className="w-full px-4 py-2.5 text-xs text-left transition"
                     onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -300,7 +300,7 @@ export default function AccountsPage({ students = [] }) {
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "overview", label: "📊 Overview" },
+          { key: "overview", label: "📊 সারসংক্ষেপ" },
           { key: "student_fees", label: "🎓 স্টুডেন্ট ফি" },
           { key: "income", label: "💰 অন্যান্য আয়" },
           { key: "expense", label: "💸 ব্যয়" },

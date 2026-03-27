@@ -90,7 +90,7 @@ export default function UserRolePage() {
 
   const deleteBranch = (id) => {
     const empCount = employees.filter((e) => e.branch === branches.find((b) => b.id === id)?.name).length;
-    if (empCount > 0) { toast.error(`এই branch-এ ${empCount} জন কর্মী আছেন — আগে তাদের স্থানান্তর করুন`); return; }
+    if (empCount > 0) { toast.error(`এই ব্রাঞ্চে ${empCount} জন কর্মী আছেন — আগে তাদের স্থানান্তর করুন`); return; }
     if (deleteBranchConfirm !== id) { setDeleteBranchConfirm(id); return; }
     setBranches((prev) => prev.filter((b) => b.id !== id));
     setDeleteBranchConfirm(null);
@@ -521,7 +521,7 @@ export default function UserRolePage() {
               return (
                 <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                   <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>
-                    <span className="font-semibold" style={{ color: t.text }}>{user.name}</span> — Role ক্লিক করে assign/remove:
+                    <span className="font-semibold" style={{ color: t.text }}>{user.name}</span> — রোল ক্লিক করে যোগ/বাদ করুন:
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {ALL_ROLES.map((role) => {
@@ -557,7 +557,7 @@ export default function UserRolePage() {
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  <th className="text-left py-2 px-3 text-[10px] uppercase font-medium" style={{ color: t.muted, minWidth: 140 }}>Role</th>
+                  <th className="text-left py-2 px-3 text-[10px] uppercase font-medium" style={{ color: t.muted, minWidth: 140 }}>রোল</th>
                   {MODULES.map(({ key, label }) => (
                     <th key={key} className="text-center py-2 px-1 text-[9px] uppercase font-medium" style={{ color: t.muted, minWidth: 72 }}>{label}</th>
                   ))}
