@@ -1,124 +1,342 @@
+import { useState, useEffect } from "react";
+import { Save, LogOut, ChevronDown, ChevronRight, Check, Lock, User, FileText, DollarSign, Clock } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
-import { DOC_STATUS_CONFIG } from "../../data/mockData";
-import { INITIAL_STUDENTS } from "../../data/students";
+import { Badge, StatusBadge } from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
+import { PIPELINE_STATUSES } from "../../data/students";
 
-export default function StudentPortalPage() {
+/**
+ * StudentPortalPage — স্টুডেন্ট নিজের তথ্য দেখবে ও পূরণ করবে
+ * Admin যে section enable করেছে শুধু সেগুলো দেখাবে
+ */
+export default function StudentPortalPage({ studentUser, studentToken, onLogout }) {
   const t = useTheme();
-  const student = INITIAL_STUDENTS[0];
-  const docs = [
-    { name: "পাসপোর্ট", status: "verified" },
-    { name: "জন্ম নিবন্ধন", status: "issue" },
-    { name: "SSC সার্টিফিকেট", status: "verified" },
-    { name: "SSC মার্কশিট", status: "verified" },
-    { name: "HSC সার্টিফিকেট", status: "not_submitted" },
-    { name: "HSC মার্কশিট", status: "not_submitted" },
-    { name: "ফ্যামিলি সার্টিফিকেট", status: "submitted" },
-    { name: "ব্যাংক স্টেটমেন্ট", status: "not_submitted" },
-    { name: "ছবি", status: "verified" },
-    { name: "JLPT Certificate", status: "submitted" },
-  ];
-  const verified = docs.filter((d) => d.status === "verified").length;
-  const pct = Math.round((verified / docs.length) * 100);
-  const payments = [
-    { item: "কোর্স ফি (১ম কিস্তি)", amount: 15000, status: "paid" },
-    { item: "কোর্স ফি (২য় কিস্তি)", amount: 15000, status: "paid" },
-    { item: "কোর্স ফি (৩য় কিস্তি)", amount: 15000, status: "due" },
-    { item: "ডক প্রসেসিং ফি", amount: 15000, status: "due" },
-  ];
+  const toast = useToast();
+  const [profile, setProfile] = useState(null);
+  const [formConfig, setFormConfig] = useState([]);
+  const [fees, setFees] = useState({ items: [], payments: [], totalDue: 0, totalPaid: 0, balance: 0 });
+  const [loading, setLoading] = useState(true);
+  const [editData, setEditData] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState(null);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", new: "", confirm: "" });
+
+  const API_URL = window.location.hostname === "localhost"
+    ? "http://localhost:5000/api"
+    : `https://${window.location.hostname.replace(/^demo\./, "demo-api.")}/api`;
+
+  const headers = { Authorization: `Bearer ${studentToken}`, "Content-Type": "application/json" };
+
+  // ── ডাটা লোড ──
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [profileRes, configRes, feesRes] = await Promise.all([
+          fetch(`${API_URL}/student-portal/me`, { headers }),
+          fetch(`${API_URL}/student-portal/form-config`, { headers }),
+          fetch(`${API_URL}/student-portal/fees`, { headers }),
+        ]);
+        const p = await profileRes.json();
+        const c = await configRes.json();
+        const f = await feesRes.json();
+        if (profileRes.ok) { setProfile(p); setEditData({ ...p }); }
+        if (configRes.ok && Array.isArray(c)) setFormConfig(c);
+        if (feesRes.ok) setFees(f);
+      } catch {}
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  // ── ডাটা সংরক্ষণ ──
+  const saveData = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/student-portal/me`, {
+        method: "PATCH", headers, body: JSON.stringify(editData),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setProfile(data);
+        setEditData({ ...data });
+        toast.success("তথ্য সংরক্ষিত হয়েছে");
+      } else {
+        toast.error(data.error || "সংরক্ষণ ব্যর্থ");
+      }
+    } catch { toast.error("সার্ভারে সমস্যা"); }
+    setSaving(false);
+  };
+
+  // ── পাসওয়ার্ড পরিবর্তন ──
+  const changePassword = async () => {
+    if (!pwForm.current || !pwForm.new) { toast.error("পুরানো ও নতুন পাসওয়ার্ড দিন"); return; }
+    if (pwForm.new.length < 6) { toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর"); return; }
+    if (pwForm.new !== pwForm.confirm) { toast.error("নতুন পাসওয়ার্ড মিলছে না"); return; }
+    try {
+      const res = await fetch(`${API_URL}/student-portal/change-password`, {
+        method: "POST", headers,
+        body: JSON.stringify({ current_password: pwForm.current, new_password: pwForm.new }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("পাসওয়ার্ড পরিবর্তন হয়েছে");
+        setShowPasswordForm(false);
+        setPwForm({ current: "", new: "", confirm: "" });
+      } else {
+        toast.error(data.error || "পরিবর্তন ব্যর্থ");
+      }
+    } catch { toast.error("সার্ভারে সমস্যা"); }
+  };
+
+  // ── ফর্ম ইনপুট render ──
+  const renderField = (field) => {
+    const val = editData[field.key] || "";
+    const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+
+    if (field.type === "select") {
+      return (
+        <select value={val} onChange={e => setEditData(p => ({ ...p, [field.key]: e.target.value }))}
+          className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+          <option value="">-- নির্বাচন করুন --</option>
+          {(field.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      );
+    }
+    if (field.type === "textarea") {
+      return (
+        <textarea value={val} onChange={e => setEditData(p => ({ ...p, [field.key]: e.target.value }))}
+          rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} />
+      );
+    }
+    return (
+      <input type={field.type || "text"} value={val}
+        onChange={e => setEditData(p => ({ ...p, [field.key]: e.target.value }))}
+        className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}
+        placeholder={field.label} />
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 anim-fade">
+        <div className="text-center">
+          <div className="h-10 w-10 mx-auto mb-3 rounded-xl flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${t.emerald}, ${t.cyan})` }}>
+            <span className="text-white font-bold text-sm">S</span>
+          </div>
+          <p className="text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-sm" style={{ color: t.muted }}>প্রোফাইল লোড ব্যর্থ — আবার লগইন করুন</p>
+        <button onClick={onLogout} className="mt-3 px-4 py-2 rounded-lg text-xs" style={{ background: t.inputBg, color: t.cyan }}>লগআউট</button>
+      </div>
+    );
+  }
+
+  const statusInfo = PIPELINE_STATUSES.find(s => s.code === profile.status);
 
   return (
-    <div className="space-y-5 anim-fade">
-      <div className="flex items-center gap-4">
-        <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold" style={{ background: `linear-gradient(135deg, ${t.cyan}30, ${t.purple}30)`, color: t.cyan }}>MR</div>
-        <div>
-          <h2 className="text-xl font-bold">স্বাগতম, {student.name_bn}!</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.id} • {student.school} • {student.batch}</p>
+    <div className="space-y-5 anim-fade max-w-4xl mx-auto">
+      {/* ── হেডার ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-lg font-bold"
+            style={{ background: `linear-gradient(135deg, ${t.emerald}30, ${t.cyan}30)`, color: t.emerald }}>
+            {(profile.name_en || "S").charAt(0)}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">স্বাগতম, {profile.name_bn || profile.name_en}!</h2>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+              {profile.id} • {profile.school || "—"} • {profile.batch || "—"}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="xs" icon={Lock} onClick={() => setShowPasswordForm(!showPasswordForm)}>পাসওয়ার্ড</Button>
+          <Button variant="ghost" size="xs" icon={LogOut} onClick={onLogout}>লগআউট</Button>
         </div>
       </div>
 
+      {/* ── পাইপলাইন স্ট্যাটাস ── */}
       <Card delay={50}>
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl flex items-center justify-center text-xl" style={{ background: `${t.amber}15` }}>📄</div>
+          <div className="h-12 w-12 rounded-xl flex items-center justify-center text-xl"
+            style={{ background: `${statusInfo?.color || t.cyan}15` }}>
+            <Clock size={20} style={{ color: statusInfo?.color || t.cyan }} />
+          </div>
           <div className="flex-1">
-            <p className="text-sm font-bold">বর্তমান অবস্থা: <span style={{ color: t.amber }}>ডকুমেন্ট কালেকশন চলছে</span></p>
-            <p className="text-xs mt-0.5" style={{ color: t.muted }}>কিছু ডকুমেন্ট বাকি — নিচে দেখুন</p>
+            <p className="text-sm font-bold">
+              বর্তমান অবস্থা: <span style={{ color: statusInfo?.color || t.cyan }}>{statusInfo?.label || profile.status}</span>
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+              নিচের ফর্মগুলো পূরণ করুন — আপনার এজেন্সি নির্দেশনা দিবে
+            </p>
           </div>
+          <StatusBadge status={profile.status} />
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card delay={100}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">📄 আমার ডকুমেন্ট</h3>
-            <span className="text-xs font-bold" style={{ color: pct >= 70 ? t.emerald : t.amber }}>{pct}%</span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden mb-4" style={{ background: `${t.muted}15` }}>
-            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 70 ? t.emerald : t.amber }} />
-          </div>
-          <div className="space-y-1.5">
-            {docs.map((doc, i) => {
-              const st = DOC_STATUS_CONFIG[doc.status] || { color: t.muted, icon: "📄", label: doc.status };
-              return (
-                <div key={i} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: `${st.color}06`, border: `1px solid ${st.color}12` }}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{st.icon}</span>
-                    <span className="text-xs font-medium">{doc.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge color={st.color} size="xs">{st.label}</Badge>
-                    {doc.status === "not_submitted" && (
-                      <button className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.cyan}15`, color: t.cyan }}>আপলোড</button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-
-        <Card delay={150}>
-          <h3 className="text-sm font-semibold mb-3">💰 আমার পেমেন্ট</h3>
-          <div className="space-y-2">
-            {payments.map((p, i) => (
-              <div key={i} className="flex items-center justify-between p-2.5 rounded-lg"
-                style={{ background: p.status === "due" ? `${t.rose}06` : `${t.emerald}06`, border: `1px solid ${p.status === "due" ? `${t.rose}12` : `${t.emerald}12`}` }}>
-                <p className="text-xs font-medium">{p.item}</p>
-                <div className="text-right">
-                  <p className="text-xs font-bold font-mono" style={{ color: p.status === "due" ? t.rose : t.emerald }}>৳{p.amount.toLocaleString()}</p>
-                  <Badge color={p.status === "paid" ? t.emerald : t.rose} size="xs">{p.status === "paid" ? "✓ Paid" : "Due"}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between pt-2 text-xs mt-2" style={{ borderTop: `1px solid ${t.border}` }}>
-            <span style={{ color: t.muted }}>মোট বাকি:</span>
-            <span className="font-bold font-mono" style={{ color: t.rose }}>৳{payments.filter((p) => p.status === "due").reduce((s, p) => s + p.amount, 0).toLocaleString()}</span>
-          </div>
-        </Card>
-      </div>
-
-      <Card delay={200}>
-        <h3 className="text-sm font-semibold mb-3">📋 আমার তথ্য</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "দেশ", value: student.country, icon: "🌏" },
-            { label: "স্কুল", value: student.school, icon: "🏫" },
-            { label: "ব্যাচ", value: student.batch, icon: "📅" },
-            { label: "লেভেল", value: "N5", icon: "🏆" },
-          ].map((info, i) => (
-            <div key={i} className="p-3 rounded-xl text-center" style={{ background: t.inputBg }}>
-              <span className="text-xl">{info.icon}</span>
-              <p className="text-xs font-bold mt-1">{info.value}</p>
-              <p className="text-[9px]" style={{ color: t.muted }}>{info.label}</p>
+      {/* ── পাসওয়ার্ড পরিবর্তন ── */}
+      {showPasswordForm && (
+        <Card delay={0}>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Lock size={14} /> পাসওয়ার্ড পরিবর্তন</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বর্তমান পাসওয়ার্ড</label>
+              <input type="password" value={pwForm.current} onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
             </div>
-          ))}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নতুন পাসওয়ার্ড</label>
+              <input type="password" value={pwForm.new} onChange={e => setPwForm(p => ({ ...p, new: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নিশ্চিত করুন</label>
+              <input type="password" value={pwForm.confirm} onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <Button size="xs" onClick={changePassword}>পরিবর্তন করুন</Button>
+            <Button size="xs" variant="ghost" onClick={() => setShowPasswordForm(false)}>বাতিল</Button>
+          </div>
+        </Card>
+      )}
+
+      {/* ── ডাটা ইনপুট ফর্ম — Admin-defined sections ── */}
+      {formConfig.length > 0 ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <FileText size={14} style={{ color: t.cyan }} /> আপনার তথ্য পূরণ করুন
+            </h3>
+            <Button icon={Save} size="xs" onClick={saveData} disabled={saving}>
+              {saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ করুন"}
+            </Button>
+          </div>
+
+          {formConfig.map((section, idx) => {
+            const isOpen = activeSection === section.section_key;
+            const fields = Array.isArray(section.fields) ? section.fields : [];
+            const filledCount = fields.filter(f => editData[f.key]).length;
+
+            return (
+              <Card key={section.id || idx} delay={idx * 30}>
+                {/* Section header — ক্লিক করে expand/collapse */}
+                <button onClick={() => setActiveSection(isOpen ? null : section.section_key)}
+                  className="w-full flex items-center gap-3 text-left">
+                  <div className="h-8 w-8 rounded-lg flex items-center justify-center text-sm"
+                    style={{ background: `${t.cyan}12` }}>
+                    {section.section_key === "personal" ? "👤" :
+                     section.section_key === "identity" ? "🛂" :
+                     section.section_key === "address" ? "📍" :
+                     section.section_key === "family" ? "👨‍👩‍👧" :
+                     section.section_key === "education" ? "🎓" :
+                     section.section_key === "jp_exam" ? "🇯🇵" : "📋"}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">{section.section_label_bn || section.section_label}</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>
+                      {fields.length > 0 ? `${filledCount}/${fields.length} পূরণ হয়েছে` : "ডাটা ইনপুট"}
+                    </p>
+                  </div>
+                  {fields.length > 0 && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {filledCount === fields.length && fields.length > 0 ? (
+                        <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
+                          style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                          <Check size={10} /> সম্পন্ন
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full"
+                          style={{ background: `${t.amber}15`, color: t.amber }}>
+                          অসম্পূর্ণ
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {isOpen ? <ChevronDown size={16} style={{ color: t.muted }} /> : <ChevronRight size={16} style={{ color: t.muted }} />}
+                </button>
+
+                {/* Fields */}
+                {isOpen && fields.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+                    {fields.map(field => (
+                      <div key={field.key} className={field.type === "textarea" ? "md:col-span-2" : ""}>
+                        <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
+                          {field.label} {field.required && <span style={{ color: t.rose }}>*</span>}
+                        </label>
+                        {renderField(field)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {isOpen && fields.length === 0 && (
+                  <p className="text-xs mt-4 pt-3 text-center" style={{ color: t.muted, borderTop: `1px solid ${t.border}` }}>
+                    এই সেকশনের ফর্ম এজেন্সি কনফিগার করবে
+                  </p>
+                )}
+              </Card>
+            );
+          })}
         </div>
+      ) : (
+        <Card delay={100}>
+          <p className="text-xs text-center py-6" style={{ color: t.muted }}>
+            এজেন্সি এখনো ফর্ম কনফিগার করেনি — পরে আবার দেখুন
+          </p>
+        </Card>
+      )}
+
+      {/* ── ফি সারাংশ ── */}
+      <Card delay={200}>
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <DollarSign size={14} style={{ color: t.emerald }} /> পেমেন্ট সারাংশ
+        </h3>
+        {fees.items.length > 0 ? (
+          <>
+            <div className="space-y-1.5">
+              {fees.items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: t.inputBg }}>
+                  <span className="text-xs">{item.label || item.category}</span>
+                  <span className="text-xs font-bold font-mono">৳{(item.amount || 0).toLocaleString("en-IN")}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between pt-3 mt-3 text-xs" style={{ borderTop: `1px solid ${t.border}` }}>
+              <div>
+                <span style={{ color: t.muted }}>মোট: </span>
+                <span className="font-bold">৳{fees.totalDue.toLocaleString("en-IN")}</span>
+              </div>
+              <div>
+                <span style={{ color: t.muted }}>পরিশোধিত: </span>
+                <span className="font-bold" style={{ color: t.emerald }}>৳{fees.totalPaid.toLocaleString("en-IN")}</span>
+              </div>
+              <div>
+                <span style={{ color: t.muted }}>বাকি: </span>
+                <span className="font-bold" style={{ color: fees.balance > 0 ? t.rose : t.emerald }}>৳{fees.balance.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ফি রেকর্ড নেই</p>
+        )}
       </Card>
 
+      {/* ── যোগাযোগ ── */}
       <div className="p-4 rounded-xl text-center" style={{ background: `${t.cyan}06`, border: `1px solid ${t.cyan}15` }}>
-        <p className="text-xs" style={{ color: t.cyan }}>📞 সমস্যা হলে যোগাযোগ: 01700000001</p>
+        <p className="text-xs" style={{ color: t.cyan }}>📞 সমস্যা হলে আপনার এজেন্সিতে যোগাযোগ করুন</p>
       </div>
     </div>
   );

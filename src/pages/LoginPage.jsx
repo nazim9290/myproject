@@ -3,7 +3,7 @@ import { GraduationCap, Mail, Lock, AlertTriangle } from "lucide-react";
 import { useTheme, getGlobalStyles } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({ onLogin, onStudentLogin }) {
   const t = useTheme();
   const { login: authLogin } = useAuth();
   // ── Remember Me — base64 encode করে localStorage-এ রাখা (plaintext নয়) ──
@@ -103,7 +103,16 @@ export default function LoginPage({ onLogin }) {
             </button>
           </div>
 
-          <p className="text-center text-[10px] opacity-30 mt-6">Demo: admin@agencybook.net / admin123</p>
+          {onStudentLogin && (
+            <button onClick={onStudentLogin}
+              className="w-full mt-4 py-2.5 rounded-xl text-xs font-medium transition-all border"
+              style={{ borderColor: `${t.emerald}40`, color: t.emerald, background: `${t.emerald}08` }}
+              onMouseEnter={e => e.currentTarget.style.background = `${t.emerald}15`}
+              onMouseLeave={e => e.currentTarget.style.background = `${t.emerald}08`}>
+              🎓 স্টুডেন্ট পোর্টাল লগইন
+            </button>
+          )}
+          <p className="text-center text-[10px] opacity-30 mt-4">Demo: admin@agencybook.net / admin123</p>
         </div>
       </div>
     </div>

@@ -36,6 +36,7 @@ import ReportsPage from "./pages/reports/ReportsPage";
 import CalendarPage from "./pages/calendar/CalendarPage";
 import UserRolePage from "./pages/users/UserRolePage";
 import StudentPortalPage from "./pages/portal/StudentPortalPage";
+import StudentLoginPage from "./pages/portal/StudentLoginPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import HelpPage from "./pages/help/HelpPage";
@@ -655,10 +656,50 @@ function AppShell({ isDark, setIsDark }) {
     );
   }
 
-  if (!authUser) {
+  // ── Student Portal Mode — student logged in হলে portal দেখাও ──
+  const [studentUser, setStudentUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("agencyos_student_user")); } catch { return null; }
+  });
+  const [studentToken, setStudentToken] = useState(() => localStorage.getItem("agencyos_student_token"));
+  const [showStudentLogin, setShowStudentLogin] = useState(false);
+
+  // Student logged in → portal দেখাও
+  if (studentUser && studentToken) {
     return (
       <ThemeContext.Provider value={t}>
-        <LoginPage onLogin={handleLogin} />
+        <ToastProvider>
+          <div className="min-h-screen p-4 lg:p-6" style={{ background: t.bg }}>
+            <StudentPortalPage
+              studentUser={studentUser}
+              studentToken={studentToken}
+              onLogout={() => {
+                localStorage.removeItem("agencyos_student_token");
+                localStorage.removeItem("agencyos_student_user");
+                setStudentUser(null);
+                setStudentToken(null);
+              }}
+            />
+          </div>
+        </ToastProvider>
+      </ThemeContext.Provider>
+    );
+  }
+
+  if (!authUser) {
+    // Student login page দেখাচ্ছে
+    if (showStudentLogin) {
+      return (
+        <ThemeContext.Provider value={t}>
+          <StudentLoginPage
+            onLogin={(user, token) => { setStudentUser(user); setStudentToken(token); }}
+            onBackToStaff={() => setShowStudentLogin(false)}
+          />
+        </ThemeContext.Provider>
+      );
+    }
+    return (
+      <ThemeContext.Provider value={t}>
+        <LoginPage onLogin={handleLogin} onStudentLogin={() => setShowStudentLogin(true)} />
       </ThemeContext.Provider>
     );
   }
