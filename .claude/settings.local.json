@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "defaultMode": "dontAsk",
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash",
       "Read",
@@ -8,7 +8,12 @@
       "Edit",
       "Glob",
       "Grep",
-      "WebFetch"
+      "WebFetch",
+      "WebSearch",
+      "NotebookEdit",
+      "Agent",
+      "TodoWrite",
+      "mcp__github__*"
     ],
     "additionalDirectories": [
       "c:/Users/User/agency-os-backend"
