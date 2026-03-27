@@ -37,6 +37,11 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   ]);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // ── Portal Access ──
+  const [showPortalForm, setShowPortalForm] = useState(false);
+  const [portalAccess, setPortalAccess] = useState(student.portal_access || false);
+  const [portalPassword, setPortalPassword] = useState("");
   const [showStepCard, setShowStepCard] = useState(false);
 
   // ── Timeline state ──
@@ -245,6 +250,89 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           </div>
         </Card>
       )}
+
+      {/* ── Portal Access Toggle ── */}
+      <Card delay={55}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl flex items-center justify-center text-base"
+              style={{ background: portalAccess ? `${t.emerald}15` : `${t.muted}15` }}>
+              🎓
+            </div>
+            <div>
+              <p className="text-sm font-semibold">স্টুডেন্ট পোর্টাল</p>
+              <p className="text-[10px]" style={{ color: t.muted }}>
+                {portalAccess ? "✅ পোর্টাল চালু — স্টুডেন্ট ফোন নম্বর দিয়ে লগইন করতে পারবে" : "পোর্টাল বন্ধ — স্টুডেন্ট লগইন করতে পারবে না"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {portalAccess && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                ফোন: {student.phone}
+              </span>
+            )}
+            <button onClick={() => setShowPortalForm(!showPortalForm)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition"
+              style={{ background: portalAccess ? `${t.rose}15` : `${t.emerald}15`, color: portalAccess ? t.rose : t.emerald }}>
+              {portalAccess ? "বন্ধ করুন" : "চালু করুন"}
+            </button>
+          </div>
+        </div>
+
+        {showPortalForm && (
+          <div className="mt-4 pt-4 space-y-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            {!portalAccess ? (
+              <>
+                <p className="text-xs" style={{ color: t.textSecondary }}>
+                  পোর্টাল চালু করলে স্টুডেন্ট <strong style={{ color: t.text }}>{student.phone}</strong> নম্বর দিয়ে লগইন করবে। একটি পাসওয়ার্ড সেট করুন:
+                </p>
+                <div className="flex items-center gap-3">
+                  <input type="text" value={portalPassword} onChange={e => setPortalPassword(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                    placeholder="পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর)" />
+                  <button onClick={async () => {
+                    if (portalPassword.length < 6) { toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর"); return; }
+                    try {
+                      await api.post(`/students/${student.id}/portal-access`, { enabled: true, password: portalPassword });
+                      setPortalAccess(true);
+                      setShowPortalForm(false);
+                      setPortalPassword("");
+                      toast.success(`${student.name_en} — পোর্টাল চালু হয়েছে`);
+                    } catch { toast.error("সার্ভার ত্রুটি"); }
+                  }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white shrink-0"
+                    style={{ background: t.emerald }}>
+                    চালু করুন
+                  </button>
+                </div>
+                <p className="text-[10px]" style={{ color: t.muted }}>
+                  লগইন: ফোন <strong>{student.phone}</strong> + পাসওয়ার্ড → স্টুডেন্ট পোর্টাল
+                </p>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <p className="text-xs flex-1" style={{ color: t.textSecondary }}>
+                  পোর্টাল বন্ধ করলে স্টুডেন্ট আর লগইন করতে পারবে না। ডাটা মুছবে না।
+                </p>
+                <button onClick={async () => {
+                  try {
+                    await api.post(`/students/${student.id}/portal-access`, { enabled: false });
+                    setPortalAccess(false);
+                    setShowPortalForm(false);
+                    toast.success("পোর্টাল বন্ধ হয়েছে");
+                  } catch { toast.error("সার্ভার ত্রুটি"); }
+                }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white shrink-0"
+                  style={{ background: t.rose }}>
+                  নিশ্চিত — বন্ধ করুন
+                </button>
+                <button onClick={() => setShowPortalForm(false)}
+                  className="px-3 py-2 rounded-lg text-xs" style={{ color: t.muted }}>বাতিল</button>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
 
       {/* ══════════════════════════════════════
           PIPELINE STEPPER
