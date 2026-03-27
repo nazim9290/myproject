@@ -5,8 +5,8 @@
  * প্রতিটি module-এ list, create, update, remove function থাকে।
  *
  * API URL:
- *   - লোকাল: http://localhost:3001/api
- *   - প্রোডাকশন: https://demo-api.agencybook.net/api
+ *   - লোকাল: http://localhost:5000/api
+ *   - প্রোডাকশন: https://api.agencybook.net/api (Render proxy)
  *
  * ব্যবহার:
  *   import { students } from "../lib/api";
@@ -18,9 +18,11 @@
 // API Base URL — environment অনুযায়ী auto-detect
 // ═══════════════════════════════════════════════════════
 // Centralized API URL — সব ফাইলে এখান থেকে import করতে হবে
+// API URL — লোকাল: localhost:5000, প্রোডাকশন: api.agencybook.net
 export const API_URL = import.meta.env.VITE_API_URL || (
-  window.location.hostname === "localhost" ? "http://localhost:5000/api"
-  : `https://${window.location.hostname.replace(/^demo\./, "demo-api.")}/api`
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000/api"
+    : "https://api.agencybook.net/api"
 );
 
 /** localStorage থেকে JWT token পড়ে */
@@ -48,6 +50,14 @@ async function request(path, options = {}) {
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data;
 }
+
+// ═══════════════════════════════════════════════════════
+// Dashboard — aggregated stats
+// ═══════════════════════════════════════════════════════
+export const dashboard = {
+  /** Dashboard stats (students, visitors, pipeline, revenue, alerts) */
+  stats: () => request("/dashboard/stats"),
+};
 
 // ═══════════════════════════════════════════════════════
 // Auth — লগইন ও রেজিস্ট্রেশন
@@ -265,6 +275,58 @@ export const submissions = {
   create: (body) => request("/submissions", { method: "POST", body: JSON.stringify(body) }),
   /** submission status আপডেট */
   update: (id, body) => request(`/submissions/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+};
+
+// ═══════════════════════════════════════════════════════
+// Users — ইউজার ও Branch ম্যানেজমেন্ট
+// ═══════════════════════════════════════════════════════
+export const users = {
+  /** সব ইউজার তালিকা */
+  list: () => request("/users"),
+  /** ইউজার আপডেট (role, branch, status) */
+  update: (id, body) => request(`/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** ইউজার মুছে ফেলো */
+  remove: (id) => request(`/users/${id}`, { method: "DELETE" }),
+  /** Branch তালিকা */
+  branches: () => request("/users/branches"),
+  /** Available roles */
+  roles: () => request("/users/roles"),
+};
+
+// ═══════════════════════════════════════════════════════
+// Reports — রিপোর্ট ও Analytics
+// ═══════════════════════════════════════════════════════
+export const reports = {
+  /** Pipeline funnel, source, dropout, country analytics */
+  analytics: () => request("/reports/analytics"),
+};
+
+// ═══════════════════════════════════════════════════════
+// Partners — পার্টনার এজেন্সি (B2B)
+// ═══════════════════════════════════════════════════════
+export const partners = {
+  /** সব partner তালিকা */
+  list: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/partners${qs ? `?${qs}` : ""}`); },
+  /** নতুন partner তৈরি */
+  create: (body) => request("/partners", { method: "POST", body: JSON.stringify(body) }),
+  /** partner আপডেট */
+  update: (id, body) => request(`/partners/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  /** partner মুছে ফেলো */
+  remove: (id) => request(`/partners/${id}`, { method: "DELETE" }),
+  /** partner-এর students */
+  getStudents: (id) => request(`/partners/${id}/students`),
+  /** partner-এ student যোগ */
+  addStudent: (id, body) => request(`/partners/${id}/students`, { method: "POST", body: JSON.stringify(body) }),
+};
+
+// ═══════════════════════════════════════════════════════
+// Pre-Departure — প্রি-ডিপার্চার ও VFS
+// ═══════════════════════════════════════════════════════
+export const preDeparture = {
+  /** departure-eligible students + checklist */
+  list: () => request("/pre-departure"),
+  /** student-এর departure data update */
+  update: (studentId, body) => request(`/pre-departure/${studentId}`, { method: "POST", body: JSON.stringify(body) }),
 };
 
 // ═══════════════════════════════════════════════════════

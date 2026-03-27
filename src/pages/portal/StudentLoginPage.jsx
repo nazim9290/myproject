@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GraduationCap, Phone, Lock, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useTheme, getGlobalStyles } from "../../context/ThemeContext";
+import { API_URL } from "../../lib/api";
 
 /**
  * StudentLoginPage — স্টুডেন্ট পোর্টাল লগইন
@@ -14,9 +15,7 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_URL = window.location.hostname === "localhost"
-    ? "http://localhost:5000/api"
-    : `https://${window.location.hostname.replace(/^demo\./, "demo-api.")}/api`;
+  // API_URL — centralized import থেকে আসে
 
   const handleLogin = async () => {
     if (!phone.trim() || !password.trim()) { setError("ফোন নম্বর ও পাসওয়ার্ড দিন"); return; }

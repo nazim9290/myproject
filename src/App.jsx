@@ -338,7 +338,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
 
   switch (activePage) {
     case "dashboard":
-      return <DashboardPage students={students} visitors={visitors} />;
+      return <DashboardPage />;
     case "visitors":
       return <VisitorsPage visitors={visitors} setVisitors={setVisitors} onConvertToStudent={onConvertToStudent} reloadData={reloadData} />;
     case "students":
@@ -356,7 +356,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "certificates":
       return <CertificatePage students={students} />;
     case "departure":
-      return <PreDeparturePage students={students} />;
+      return <PreDeparturePage />;
     case "tasks":
       return <TasksPage students={students} />;
     case "communication":
@@ -372,7 +372,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "hr":
       return <HRPage />;
     case "reports":
-      return <ReportsPage students={students} />;
+      return <ReportsPage />;
     case "calendar":
       return <CalendarPage students={students} />;
     case "users":
@@ -388,7 +388,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "profile":
       return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} onLogout={onLogout} isDark={isDark} setIsDark={setIsDark} />;
     default:
-      return <DashboardPage students={students} visitors={visitors} />;
+      return <DashboardPage />;
   }
 }
 

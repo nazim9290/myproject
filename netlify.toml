@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════════════════
+# Netlify Build & Deploy Configuration — AgencyBook
+# ═══════════════════════════════════════════════════════
+# Domain: agencybook.net (primary)
+# Build: Vite → dist/
+# SPA: সব route index.html-এ redirect হবে
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA Redirect — React Router-এর জন্য
+# যেকোনো path → index.html (200 status = rewrite, not redirect)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security Headers — সব page-এ apply হবে
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Static asset caching — CSS/JS/images cache 1 year
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

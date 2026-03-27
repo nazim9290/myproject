@@ -9,7 +9,6 @@ import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
-import { INVENTORY_CATEGORIES, CONDITION_OPTIONS, CONSUMABLE_ITEMS } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 export default function InventoryPage() {

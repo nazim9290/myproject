@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { PIPELINE_STATUSES } from "../../data/students";
+import { API_URL } from "../../lib/api";
 
 /**
  * StudentPortalPage — স্টুডেন্ট নিজের তথ্য দেখবে ও পূরণ করবে
@@ -24,9 +25,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [pwForm, setPwForm] = useState({ current: "", new: "", confirm: "" });
 
-  const API_URL = window.location.hostname === "localhost"
-    ? "http://localhost:5000/api"
-    : `https://${window.location.hostname.replace(/^demo\./, "demo-api.")}/api`;
+  // API_URL top-level import থেকে আসে
 
   const headers = { Authorization: `Bearer ${studentToken}`, "Content-Type": "application/json" };
 

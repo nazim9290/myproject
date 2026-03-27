@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
@@ -7,7 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
-import { BATCH_STUDENTS, CLASS_TESTS } from "../../data/mockData";
+import { batches as batchesApi } from "../../lib/api";
 
 const ATT_STATUS = ["P", "A", "L"]; // Present / Absent / Late
 const ATT_LABEL = { P: "উপস্থিত", A: "অনুপস্থিত", L: "দেরিতে" };
@@ -17,8 +17,31 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const toast = useToast();
   const attColor = { P: t.emerald, A: t.rose, L: t.amber };
 
-  const [bStudents, setBStudents] = useState(BATCH_STUDENTS[batch.id] || []);
-  const [bTests, setBTests] = useState(CLASS_TESTS.filter(ct => ct.batchId === batch.id));
+  const [bStudents, setBStudents] = useState([]);
+  const [bTests, setBTests] = useState([]);
+
+  // ── API থেকে batch-এর enrolled students লোড ──
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await batchesApi.get(batch.id);
+        if (data && data.enrollments) {
+          setBStudents(data.enrollments.map(e => ({
+            studentId: e.student_id,
+            name: e.students?.name_en || e.student_id,
+            attendance: 0,
+            lastTest: null,
+            jlptStatus: "Preparing",
+            examType: null,
+            jlptLevel: null,
+            jlptScore: null,
+          })));
+        }
+      } catch (err) {
+        console.error("Batch detail load error:", err);
+      }
+    })();
+  }, [batch.id]);
 
   // Enroll student
   const [showEnroll, setShowEnroll] = useState(false);
@@ -27,11 +50,16 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     !bStudents.find(bs => bs.studentId === s.id) &&
     (!enrollSearch || s.name_en.toLowerCase().includes(enrollSearch.toLowerCase()) || s.id.toLowerCase().includes(enrollSearch.toLowerCase()))
   );
-  const enroll = (s) => {
-    setBStudents(prev => [...prev, { studentId: s.id, name: s.name_en, attendance: 0, lastTest: null, jlptStatus: "Preparing", examType: null, jlptLevel: null, jlptScore: null }]);
-    setShowEnroll(false);
-    setEnrollSearch("");
-    toast.success(`${s.name_en} — ব্যাচে যোগ হয়েছে`);
+  const enroll = async (s) => {
+    try {
+      await batchesApi.enroll(batch.id, s.id);
+      setBStudents(prev => [...prev, { studentId: s.id, name: s.name_en, attendance: 0, lastTest: null, jlptStatus: "Preparing", examType: null, jlptLevel: null, jlptScore: null }]);
+      setShowEnroll(false);
+      setEnrollSearch("");
+      toast.success(`${s.name_en} — ব্যাচে যোগ হয়েছে`);
+    } catch (err) {
+      toast.error(err.message || "যোগ করতে সমস্যা হয়েছে");
+    }
   };
 
   // Daily attendance
@@ -56,8 +84,8 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [testBatchFilter, setTestBatchFilter] = useState(batch.id);
   const [testExtraStudents, setTestExtraStudents] = useState([]); // IDs from other batches
 
-  // All batches for filter
-  const allBatchIds = [...new Set([batch.id, ...Object.keys(BATCH_STUDENTS)])];
+  // Current batch only (other batches would need separate API calls)
+  const allBatchIds = [batch.id];
 
   // Students visible in the test form: current batch + any extra from other batches
   const testStudentList = [
@@ -69,9 +97,8 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   ];
 
   const addExtraBatchStudents = (batchId) => {
-    const bs = BATCH_STUDENTS[batchId] || [];
-    const newIds = bs.map(s => s.studentId).filter(id => !bStudents.find(b => b.studentId === id) && !testExtraStudents.includes(id));
-    setTestExtraStudents(prev => [...prev, ...newIds]);
+    // অন্য ব্যাচ থেকে students যোগ করতে API call দরকার — ভবিষ্যতে implement
+    toast.info("অন্য ব্যাচ থেকে যোগ করা শীঘ্রই আসছে");
   };
 
   const addTest = () => {
