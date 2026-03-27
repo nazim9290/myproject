@@ -9,6 +9,7 @@ import {
 import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle, useLabelSettings } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { PermissionProvider, usePermissions } from "./context/PermissionContext";
 import { NAV_ITEMS } from "./data/mockData";
 import { DEFAULT_STEPS_META } from "./data/pipelineSteps";
 import { students as studentsApi, visitors as visitorsApi } from "./lib/api";
@@ -68,7 +69,7 @@ const NAV_ICONS = {
   help: HelpCircle,
 };
 
-function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts }) {
+function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts, canAccessPage }) {
   const w = collapsed ? 64 : 220;
   const visible = isMobile ? mobileOpen : true;
 
@@ -121,7 +122,7 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-2">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter(item => !canAccessPage || canAccessPage(item.key)).map((item) => {
             const Icon = NAV_ICONS[item.key] || Home;
             const active = activePage === item.key;
             const badge = badgeCounts?.[item.key] || null;
@@ -704,10 +705,14 @@ function AppShell({ isDark, setIsDark }) {
     );
   }
 
+  // ── User role থেকে permission নির্ধারণ ──
+  const userRole = currentUser?.role || authUser?.role || "counselor";
+
   return (
     <ThemeContext.Provider value={t}>
+      <PermissionProvider userRole={userRole}>
       <div className="flex h-screen overflow-hidden" style={{ background: t.bg }}>
-        <Sidebar
+        <SidebarWithPermissions
           activePage={activePage}
           setActivePage={setActivePage}
           t={t}
@@ -760,8 +765,15 @@ function AppShell({ isDark, setIsDark }) {
           </main>
         </div>
       </div>
+      </PermissionProvider>
     </ThemeContext.Provider>
   );
+}
+
+// Sidebar wrapper — usePermissions hook ব্যবহার করে canAccessPage পায়
+function SidebarWithPermissions(props) {
+  const { canAccessPage } = usePermissions();
+  return <Sidebar {...props} canAccessPage={canAccessPage} />;
 }
 
 export default function App() {

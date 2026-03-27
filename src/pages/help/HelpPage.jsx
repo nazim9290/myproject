@@ -345,6 +345,47 @@ const HELP_SECTIONS = [
     ],
   },
   {
+    id: "roles",
+    icon: Lock,
+    title: "রোল ও পারমিশন",
+    subtitle: "কে কোন পেজ দেখতে বা কাজ করতে পারবে",
+    color: "#c084fc",
+    topics: [
+      {
+        q: "কোন কোন রোল আছে?",
+        a: `সিস্টেমে ৯টি রোল আছে:
+• Owner — সব কিছুর সম্পূর্ণ access
+• Branch Manager — নিজ branch-এর সব কাজ (Settings/Users ছাড়া)
+• Counselor — ভিজিটর ও স্টুডেন্ট কাউন্সেলিং
+• Follow-up Executive — ভিজিটর ফলোআপ
+• Admission Officer — ভর্তি প্রক্রিয়া, ডকুমেন্ট, স্কুল
+• Language Teacher — কোর্স ও উপস্থিতি
+• Document Collector — শুধু ডকুমেন্ট সংগ্রহ
+• Document Processor — ডকুমেন্ট যাচাই ও জমা
+• Accounts — আর্থিক হিসাব ও রিপোর্ট`,
+      },
+      {
+        q: "রোল অনুযায়ী কে কী দেখতে পায়?",
+        a: `প্রতিটি রোলের জন্য আলাদা menu দেখায়:
+• Owner সব ২২+ মেনু দেখে
+• Counselor শুধু Visitors, Students, Communication দেখে
+• Accounts শুধু Dashboard, Accounts, Reports দেখে
+• Language Teacher শুধু Course ও Attendance দেখে
+
+রোল অনুযায়ী sidebar-এ শুধু অনুমোদিত পেজ দেখাবে — বাকিগুলো আড়াল থাকবে।`,
+      },
+      {
+        q: "Read / Write / Delete পারমিশন কী?",
+        a: `প্রতিটি module-এ ৩ ধরনের পারমিশন:
+• Read (R) — ডাটা দেখতে পারবে
+• Write (W) — নতুন যোগ ও সম্পাদনা করতে পারবে
+• Delete (D) — মুছে ফেলতে পারবে
+
+উদাহরণ: Document Collector students module-এ শুধু Read পারে — নতুন student যোগ বা delete করতে পারবে না।`,
+      },
+    ],
+  },
+  {
     id: "student-portal",
     icon: User,
     title: "স্টুডেন্ট পোর্টাল",
