@@ -41,6 +41,8 @@ export default function SuperAdminPage() {
 
   // ── ডাটা লোড ──
   const loadData = async () => {
+    const token = localStorage.getItem("agencyos_token");
+    const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
     try {
       const [agRes, stRes, prRes] = await Promise.all([
         fetch(`${API_URL}/super-admin/agencies`, { headers }),
@@ -106,7 +108,7 @@ export default function SuperAdminPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Shield size={20} style={{ color: t.purple }} /> Super Admin Panel
+            <Shield size={20} style={{ color: t.purple }} /> সুপার অ্যাডমিন প্যানেল
           </h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>সব এজেন্সি ম্যানেজমেন্ট — শুধু আপনার জন্য</p>
         </div>
@@ -202,7 +204,7 @@ export default function SuperAdminPage() {
               <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="info@agency.com" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Plan</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>প্ল্যান</label>
               <select value={form.plan} onChange={e => setForm(p => ({ ...p, plan: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                 {PLANS.map(p => <option key={p.id} value={p.id}>{p.label} — {p.limit}</option>)}
               </select>
@@ -222,7 +224,7 @@ export default function SuperAdminPage() {
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Password *</label>
-              <input value={form.admin_password} onChange={e => setForm(p => ({ ...p, admin_password: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমপক্ষে ৬ অক্ষর" />
+              <input type="password" value={form.admin_password} onChange={e => setForm(p => ({ ...p, admin_password: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমপক্ষে ৬ অক্ষর" />
             </div>
           </div>
 
@@ -250,7 +252,7 @@ export default function SuperAdminPage() {
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["এজেন্সি", "Subdomain", "ফি/Student", "Students", "Trial", "Status", ""].map(h => (
+                {["এজেন্সি", "সাবডোমেইন", "ফি/স্টুডেন্ট", "স্টুডেন্ট", "ট্রায়াল", "স্ট্যাটাস", ""].map(h => (
                   <th key={h} className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                 ))}
               </tr>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GraduationCap, Mail, Lock, AlertTriangle } from "lucide-react";
 import { useTheme, getGlobalStyles } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -20,14 +20,16 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
   const [error, setError] = useState("");
 
   // Auto-logout হলে message দেখাও
-  const logoutReason = localStorage.getItem("agencyos_logout_reason");
-  if (logoutReason && !error) {
-    localStorage.removeItem("agencyos_logout_reason");
-    setTimeout(() => setError(logoutReason === "idle" ? "নিষ্ক্রিয়তার কারণে অটো লগআউট হয়েছে — আবার লগইন করুন" : "সেশন মেয়াদ শেষ — আবার লগইন করুন"), 0);
-  }
+  useEffect(() => {
+    const logoutReason = localStorage.getItem("agencyos_logout_reason");
+    if (logoutReason) {
+      localStorage.removeItem("agencyos_logout_reason");
+      setError(logoutReason === "idle" ? "নিষ্ক্রিয়তার কারণে অটো লগআউট হয়েছে — আবার লগইন করুন" : "সেশন মেয়াদ শেষ — আবার লগইন করুন");
+    }
+  }, []);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) { setError("Email ও Password দিন"); return; }
+    if (!email.trim() || !password.trim()) { setError("ইমেইল ও পাসওয়ার্ড দিন"); return; }
     setLoading(true);
     setError("");
     try {
@@ -61,7 +63,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               <GraduationCap size={28} className="text-white" />
             </div>
             <h1 className="text-xl font-bold tracking-tight">AgencyBook</h1>
-            <p className="text-xs opacity-40 mt-1">Study Abroad Management System</p>
+            <p className="text-xs opacity-40 mt-1">বিদেশে অধ্যয়ন ব্যবস্থাপনা সিস্টেম</p>
           </div>
 
           {/* Form */}
@@ -73,14 +75,14 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               </div>
             )}
             <div>
-              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">Email</label>
+              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">ইমেইল</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 focus-within:border-cyan-500/30 transition">
                 <Mail size={14} className="opacity-30" />
                 <input value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="your@email.com" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">Password</label>
+              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">পাসওয়ার্ড</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 focus-within:border-cyan-500/30 transition">
                 <Lock size={14} className="opacity-30" />
                 <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
@@ -99,7 +101,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 disabled:opacity-50"
               style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}
             >
-              {loading ? "লগইন হচ্ছে..." : "Login"}
+              {loading ? "লগইন হচ্ছে..." : "লগইন"}
             </button>
           </div>
 

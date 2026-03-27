@@ -194,8 +194,8 @@ export default function AccountsPage({ students = [] }) {
   // income API data: paid_amount (DB) বা paidAmount (legacy)
   const totalIncome = incomeData.reduce((s, i) => s + (i.paid_amount || i.paidAmount || i.amount || 0), 0) + studentCollected;
   const totalExpense = expenseData.reduce((s, e) => s + (e.amount || 0), 0);
-  const totalDue = incomeData.reduce((s, i) => s + (i.amount - i.paidAmount), 0) + studentDue;
-  const totalTax = incomeData.filter((i) => i.status === "paid" || i.status === "partial").reduce((s, i) => s + i.tax, 0);
+  const totalDue = incomeData.reduce((s, i) => s + (i.amount - (i.paidAmount || i.paid_amount || 0)), 0) + studentDue;
+  const totalTax = incomeData.filter((i) => i.status === "paid" || i.status === "partial").reduce((s, i) => s + (i.tax || 0), 0);
   const profit = totalIncome - totalExpense;
   const fmt = (v) => v >= 100000 ? `৳${(v / 100000).toFixed(1)}L` : v >= 1000 ? `৳${(v / 1000).toFixed(0)}K` : `৳${v}`;
 
