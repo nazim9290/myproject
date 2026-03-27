@@ -30,6 +30,7 @@ DB_NAME="agencybook_db"
 DB_USER="agencybook"
 DB_PASS=$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 32)
 JWT_SECRET=$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 64)
+ENCRYPTION_KEY=$(openssl rand -hex 32)  # 256-bit AES key for PII encryption
 FRONTEND_REPO="https://github.com/nazim9290/myproject.git"
 BACKEND_REPO="https://github.com/nazim9290/newbook.git"
 APP_DIR="/home/${APP_USER}"
@@ -267,10 +268,8 @@ DATABASE_URL=postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}
 # JWT
 JWT_SECRET=${JWT_SECRET}
 
-# Supabase (আপনার existing Supabase credentials রাখুন যদি দরকার হয়)
-# SUPABASE_URL=https://lylfzhoilpepxlayeers.supabase.co
-# SUPABASE_ANON_KEY=your_anon_key
-# SUPABASE_SERVICE_KEY=your_service_key
+# PII Encryption (NID, passport, address etc.)
+ENCRYPTION_KEY=${ENCRYPTION_KEY}
 
 # CORS
 CORS_ORIGIN=https://agencybook.net,https://www.agencybook.net,http://localhost:5173
