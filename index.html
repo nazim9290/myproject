@@ -9,5 +9,28 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- ── Code Protection (Production Only) ── -->
+    <script>
+    if(location.hostname!=="localhost"&&!location.hostname.includes("127.0.0.1")){
+      // Right-click disable
+      document.addEventListener("contextmenu",function(e){e.preventDefault()});
+      // Keyboard shortcuts block (F12, Ctrl+Shift+I/J/C, Ctrl+U)
+      document.addEventListener("keydown",function(e){
+        if(e.key==="F12"||(e.ctrlKey&&e.shiftKey&&["I","J","C"].includes(e.key))||(e.ctrlKey&&e.key==="u")){e.preventDefault()}
+      });
+      // DevTools open detection — window size difference
+      (function(){var t=setInterval(function(){
+        var w=window.outerWidth-window.innerWidth>160;
+        var h=window.outerHeight-window.innerHeight>160;
+        if(w||h){document.body.innerHTML="<div style='display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a1a;color:#f43f5e;font-family:sans-serif;text-align:center'><div><h1>⚠️</h1><p>Developer Tools বন্ধ করুন</p><p style='font-size:12px;opacity:0.5;margin-top:8px'>এই অ্যাপ্লিকেশন সুরক্ষিত</p></div></div>";clearInterval(t)}
+      },1000)})();
+      // Select text disable
+      document.addEventListener("selectstart",function(e){if(e.target.tagName!=="INPUT"&&e.target.tagName!=="TEXTAREA"){e.preventDefault()}});
+      // Drag disable
+      document.addEventListener("dragstart",function(e){e.preventDefault()});
+      // Copy disable (except input fields)
+      document.addEventListener("copy",function(e){if(document.activeElement.tagName!=="INPUT"&&document.activeElement.tagName!=="TEXTAREA"){e.preventDefault()}});
+    }
+    </script>
   </body>
 </html>

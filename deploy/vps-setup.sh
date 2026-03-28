@@ -172,10 +172,17 @@ server {
     gzip_min_length 1024;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
 
-    # Static assets cache
+    # ── Source map ও hidden files block ──
+    location ~* \.(map|git|env|md|txt|yml|yaml|lock|log)$ {
+        deny all;
+        return 404;
+    }
+
+    # Static assets cache + no-sniff
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 30d;
         add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff";
         try_files $uri =404;
     }
 
