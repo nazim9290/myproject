@@ -29,7 +29,6 @@ export default function InventoryPage() {
       })));
     }).catch(() => {});
   }, []);
-  const [consumables] = useState(CONSUMABLE_ITEMS);
   const [activeTab, setActiveTab] = useState("assets");
   const [filterBranch, setFilterBranch] = useState("All");
   const [filterCategory, setFilterCategory] = useState("All");
@@ -44,14 +43,8 @@ export default function InventoryPage() {
   const consumableSort = useSortable("name", "asc");
   const logSort = useSortable("date", "desc");
 
-  // ── Movement log ডাটা ──
-  const movementLogs = [
-    { id: 1, date: "2026-03-20", action: "Purchase", item: "A4 Paper (10 রিম)", branch: "ঢাকা HQ", by: "Rana", cost: 5500, icon: "🛒" },
-    { id: 2, date: "2026-03-15", action: "Transfer", item: "Office Chair (2টি)", branch: "ঢাকা → চট্টগ্রাম", by: "Abrar", cost: 0, icon: "🔄" },
-    { id: 3, date: "2026-03-10", action: "Repair", item: "Printer HP LaserJet", branch: "চট্টগ্রাম", by: "Karim", cost: 2000, icon: "🔧" },
-    { id: 4, date: "2026-03-05", action: "Purchase", item: "Whiteboard Marker (20 pcs)", branch: "ঢাকা HQ", by: "Sadia", cost: 1600, icon: "🛒" },
-    { id: 5, date: "2026-02-28", action: "Dispose", item: "Mouse (নষ্ট)", branch: "ঢাকা HQ", by: "Jamal", cost: 0, icon: "🗑️" },
-  ];
+  // Movement log — ভবিষ্যতে API থেকে আসবে
+  const movementLogs = [];
 
   // ── Assets ফিল্টার + সার্চ + সর্ট + পেজিনেশন ──
   const filteredAssets = items
@@ -65,7 +58,8 @@ export default function InventoryPage() {
   const assetSafePage = Math.min(page, Math.max(1, Math.ceil(sortedAssets.length / pageSize)));
   const paginatedAssets = sortedAssets.slice((assetSafePage - 1) * pageSize, assetSafePage * pageSize);
 
-  // ── Consumables সার্চ + সর্ট + পেজিনেশন ──
+  // ── Consumables — inventory items থেকে consumable category filter ──
+  const consumables = items.filter(i => (i.category || "").toLowerCase().includes("consumab") || (i.category || "").toLowerCase().includes("ব্যবহার"));
   const filteredConsumables = consumables.filter((c) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -75,39 +69,39 @@ export default function InventoryPage() {
   const consSafePage = Math.min(page, Math.max(1, Math.ceil(sortedConsumables.length / pageSize)));
   const paginatedConsumables = sortedConsumables.slice((consSafePage - 1) * pageSize, consSafePage * pageSize);
 
-  // ── Movement Log সার্চ + সর্ট + পেজিনেশন ──
-  const filteredLogs = movementLogs.filter((l) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (l.item || "").toLowerCase().includes(q) || (l.action || "").toLowerCase().includes(q) || (l.branch || "").toLowerCase().includes(q) || (l.by || "").toLowerCase().includes(q);
-  });
-  const sortedLogs = logSort.sortFn(filteredLogs);
-  const logSafePage = Math.min(page, Math.max(1, Math.ceil(sortedLogs.length / pageSize)));
-  const paginatedLogs = sortedLogs.slice((logSafePage - 1) * pageSize, logSafePage * pageSize);
-
   // ── KPI গণনায় মূল items ব্যবহার (ফিল্টার/সার্চ ছাড়া) ──
   const totalValue = items.reduce((s, i) => s + (i.price * i.quantity), 0);
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
   const needsRepair = items.filter((i) => i.condition === "repair" || i.condition === "damaged").length;
-  const lowStock = consumables.filter((c) => c.stock <= c.minStock).length;
+  const lowStock = consumables.filter((c) => (c.quantity || 0) <= 5).length;
   const branches = [...new Set(items.map((i) => i.branch))];
 
-  const handleAdd = () => {
+  // ── API-তে নতুন item যোগ ──
+  const handleAdd = async () => {
     if (!addForm.name.trim()) { toast.error("সম্পদের নাম দিন"); return; }
-    const newItem = { ...addForm, id: `INV-${String(Date.now()).slice(-3)}`, price: Number(addForm.price) || 0, quantity: Number(addForm.quantity) || 1 };
-    setItems(prev => [newItem, ...prev]);
-    setShowAddForm(false);
-    setAddForm({ name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "ঢাকা (HQ)", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" });
-    toast.success(`"${newItem.name}" — Inventory তে যোগ হয়েছে`);
+    try {
+      const created = await api.post("/inventory", {
+        name: addForm.name, category: addForm.category, quantity: Number(addForm.quantity) || 1,
+        unit_price: Number(addForm.price) || 0, branch: addForm.branch, status: addForm.condition || "new",
+      });
+      setItems(prev => [{ ...created, price: created.unit_price || 0, brand: "", model: "", vendor: "" }, ...prev]);
+      setShowAddForm(false);
+      setAddForm({ name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "ঢাকা (HQ)", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" });
+      toast.success(`"${addForm.name}" — Inventory তে যোগ হয়েছে`);
+    } catch (err) { toast.error(err.message || "যোগ করতে সমস্যা"); }
   };
 
-  const cycleCondition = (id) => {
+  // ── Condition cycle — API-তে update ──
+  const cycleCondition = async (id) => {
     const order = ["new", "good", "fair", "repair", "damaged", "disposed"];
-    setItems(prev => prev.map((i) => {
-      if (i.id !== id) return i;
-      const idx = order.indexOf(i.condition);
-      return { ...i, condition: order[(idx + 1) % order.length] };
-    }));
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const idx = order.indexOf(item.condition || item.status || "new");
+    const newCond = order[(idx + 1) % order.length];
+    try {
+      await api.patch(`/inventory/${id}`, { status: newCond });
+      setItems(prev => prev.map(i => i.id === id ? { ...i, condition: newCond, status: newCond } : i));
+    } catch {}
   };
 
   const inputStyle = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };

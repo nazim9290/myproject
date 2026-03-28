@@ -132,6 +132,32 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const [showExportMenu, setShowExportMenu] = useState(false);
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name_en");
 
+  // ── Bulk Selection ──
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkStatus, setBulkStatus] = useState("");
+  const toggleSelect = (id) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const selectAll = () => { if (selectedIds.size === paginated.length) setSelectedIds(new Set()); else setSelectedIds(new Set(paginated.map(s => s.id))); };
+  const bulkChangeStatus = async () => {
+    if (!bulkStatus || selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    try {
+      await Promise.all(ids.map(id => api.patch(`/students/${id}`, { status: bulkStatus })));
+      setStudents(prev => prev.map(s => ids.includes(s.id) ? { ...s, status: bulkStatus } : s));
+      toast.success(`${ids.length} জন স্টুডেন্টের স্ট্যাটাস পরিবর্তন হয়েছে`);
+      setSelectedIds(new Set());
+      setBulkStatus("");
+    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+  };
+  const bulkDelete = async () => {
+    const ids = [...selectedIds];
+    try {
+      await Promise.all(ids.map(id => api.del(`/students/${id}`)));
+      setStudents(prev => prev.filter(s => !ids.includes(s.id)));
+      toast.success(`${ids.length} জন মুছে ফেলা হয়েছে`);
+      setSelectedIds(new Set());
+    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+  };
+
   const selectedStudent = selectedId ? students.find((s) => s.id === selectedId) : null;
 
   if (selectedStudent) {
@@ -447,11 +473,30 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       </div>
 
       <Card delay={100}>
-        <p className="text-xs font-medium mb-3" style={{ color: t.textSecondary }}>মোট: {filtered.length} জন স্টুডেন্ট</p>
+        {/* ── Bulk Action Bar ── */}
+        {selectedIds.size > 0 ? (
+          <div className="flex items-center gap-3 mb-3 p-2.5 rounded-xl" style={{ background: `${t.cyan}10`, border: `1px solid ${t.cyan}30` }}>
+            <span className="text-xs font-bold" style={{ color: t.cyan }}>{selectedIds.size} জন নির্বাচিত</span>
+            <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}
+              className="px-2 py-1 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+              <option value="">স্ট্যাটাস পরিবর্তন...</option>
+              {PIPELINE_STATUSES.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
+            </select>
+            {bulkStatus && <Button size="xs" onClick={bulkChangeStatus}>পরিবর্তন করুন</Button>}
+            <Button variant="ghost" size="xs" onClick={bulkDelete} style={{ color: t.rose }}>মুছুন</Button>
+            <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>বাতিল</Button>
+          </div>
+        ) : (
+          <p className="text-xs font-medium mb-3" style={{ color: t.textSecondary }}>মোট: {filtered.length} জন স্টুডেন্ট</p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                <th className="py-3 px-2 w-8">
+                  <input type="checkbox" checked={selectedIds.size === paginated.length && paginated.length > 0}
+                    onChange={selectAll} className="rounded" style={{ accentColor: t.cyan }} />
+                </th>
                 {[
                   { label: "আইডি", key: "id" }, { label: "নাম", key: "name_en" }, { label: "ফোন", key: "phone" },
                   { label: "ব্রাঞ্চ", key: "branch" }, { label: "দেশ", key: "country" }, { label: "স্কুল", key: "school" },
@@ -463,11 +508,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             </thead>
             <tbody>
               {paginated.map((s) => (
-                <tr key={s.id} className="cursor-pointer" style={{ borderBottom: `1px solid ${t.border}` }}
-                  onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                <tr key={s.id} className="cursor-pointer" style={{ borderBottom: `1px solid ${t.border}`, background: selectedIds.has(s.id) ? `${t.cyan}08` : "transparent" }}
+                  onMouseEnter={e => { if (!selectedIds.has(s.id)) e.currentTarget.style.background = t.hoverBg; }}
+                  onMouseLeave={e => { if (!selectedIds.has(s.id)) e.currentTarget.style.background = "transparent"; }}
                   onClick={() => setSelectedId(s.id)}>
-                  <td className="py-3 px-3 font-mono text-[10px]" style={{ color: t.muted }}>{s.id}</td>
+                  <td className="py-3 px-2" onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} className="rounded" style={{ accentColor: t.cyan }} />
+                  </td>
+                  <td className="py-3 px-3 font-mono text-[10px]" style={{ color: t.muted }} onClick={() => setSelectedId(s.id)}>{s.id}</td>
                   <td className="py-3 px-3">
                     <div className="flex items-center gap-2">
                       <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: `${t.cyan}15`, color: t.cyan }}>

@@ -505,6 +505,103 @@ const HELP_SECTIONS = [
       },
     ],
   },
+  {
+    id: "dashboard",
+    icon: TrendingUp,
+    title: "ড্যাশবোর্ড",
+    subtitle: "রিয়েল-টাইম KPI, চার্ট ও সতর্কতা",
+    color: "#22d3ee",
+    topics: [
+      {
+        q: "ড্যাশবোর্ডে কী কী দেখায়?",
+        a: `ড্যাশবোর্ড API থেকে real-time ডাটা দেখায়:
+• মোট স্টুডেন্ট ও Active সংখ্যা
+• এই মাসের আয় ও বকেয়া
+• ডক প্রসেসিং ও ভিসা পর্যায়ের সংখ্যা
+• মাসিক আয় চার্ট (৬ মাস)
+• পাইপলাইন ফানেল
+• সতর্কতা (overdue task, বকেয়া, COE action)
+• সাম্প্রতিক ভিজিটর ও আসন্ন টাস্ক`,
+      },
+    ],
+  },
+  {
+    id: "pre-departure",
+    icon: Plane,
+    title: "প্রি-ডিপার্চার ও VFS",
+    subtitle: "COE থেকে Flight পর্যন্ত tracking",
+    color: "#a855f7",
+    topics: [
+      {
+        q: "প্রি-ডিপার্চার কীভাবে কাজ করে?",
+        a: `COE পেয়েছে থেকে শুরু করে সব ধাপ track করা যায়:
+📋 COE → 🏥 Health → 💰 Tuition → 🛂 VFS → ✅ Visa → ✈️ Flight
+• প্রতিটি student-এর জন্য আলাদা checklist
+• ক্লিক করে detail view-তে যান
+• সব তথ্য পরিবর্তন করে "সেভ করুন" চাপুন`,
+      },
+    ],
+  },
+  {
+    id: "excel-system-vars",
+    icon: FileText,
+    title: "Excel সিস্টেম ভ্যারিয়েবল",
+    subtitle: "এজেন্সি, ব্রাঞ্চ, ব্যাচ — auto-fill",
+    color: "#f59e0b",
+    topics: [
+      {
+        q: "সিস্টেম ভ্যারিয়েবল কী?",
+        a: `Excel template-এ {{sys_*}} placeholder ব্যবহার করলে auto-fill হবে:
+• {{sys_agency_name}} — এজেন্সির নাম
+• {{sys_branch_address}} — স্টুডেন্টের ব্রাঞ্চের ঠিকানা
+• {{sys_today}} — আজকের তারিখ (2026-03-28)
+• {{sys_today_jp}} — 2026年03月28日
+• {{sys_batch_start:year}} — ব্যাচ শুরুর বছর
+• {{sys_school_name_jp}} — স্কুলের জাপানি নাম
+মোট ২৯টি সিস্টেম ভ্যারিয়েবল আছে — Excel পেজে ড্রপডাউনে দেখুন।`,
+      },
+      {
+        q: "ব্রাঞ্চ ঠিকানা কীভাবে সেট করবো?",
+        a: `Settings → ব্রাঞ্চ ম্যানেজমেন্ট → প্রতিটি branch-এর ঠিকানা, ফোন, ম্যানেজার দিন।
+Excel-এ {{sys_branch_address}} লিখলে student-এর branch-এর ঠিকানা auto-fill হবে।`,
+      },
+    ],
+  },
+  {
+    id: "prefix-id",
+    icon: Lock,
+    title: "Agency Prefix ID",
+    subtitle: "SEC-S-2026-001 ফরম্যাটের ID",
+    color: "#ec4899",
+    topics: [
+      {
+        q: "Prefix ID কীভাবে কাজ করে?",
+        a: `প্রতিটি entity-র ID এজেন্সির নামের আদ্যক্ষর দিয়ে তৈরি হয়:
+"Sunrise Education" → SEC
+• Student: SEC-S-2026-001
+• Visitor: SEC-V-2026-001
+• Payment: SEC-P-2026-001
+Super Admin-এ নতুন এজেন্সি তৈরি করলে auto-generate হয়।`,
+      },
+    ],
+  },
+  {
+    id: "bulk-actions",
+    icon: CheckCircle,
+    title: "বাল্ক অ্যাকশন",
+    subtitle: "একসাথে অনেক student-এর কাজ",
+    color: "#14b8a6",
+    topics: [
+      {
+        q: "বাল্ক স্ট্যাটাস পরিবর্তন কীভাবে করবো?",
+        a: `Students পেজে:
+১. বাম পাশের checkbox-এ ক্লিক করে student সিলেক্ট করুন
+২. উপরের "select all" checkbox দিয়ে পুরো পেজ সিলেক্ট করুন
+৩. ড্রপডাউন থেকে নতুন status নির্বাচন করুন
+৪. "পরিবর্তন করুন" চাপুন — একসাথে সবার status বদলে যাবে`,
+      },
+    ],
+  },
 ];
 
 export default function HelpPage() {

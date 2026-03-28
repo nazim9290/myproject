@@ -328,6 +328,24 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
                 <span className="font-bold" style={{ color: fees.balance > 0 ? t.rose : t.emerald }}>৳{fees.balance.toLocaleString("en-IN")}</span>
               </div>
             </div>
+            {/* ── পেমেন্ট ইতিহাস ── */}
+            {fees.payments && fees.payments.length > 0 && (
+              <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                <p className="text-[10px] uppercase tracking-wider mb-2 font-medium" style={{ color: t.muted }}>পেমেন্ট ইতিহাস</p>
+                <div className="space-y-1.5">
+                  {fees.payments.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded-lg text-[11px]" style={{ background: `${t.emerald}06` }}>
+                      <div className="flex items-center gap-2">
+                        <span style={{ color: t.emerald }}>✓</span>
+                        <span>{p.date || p.created_at?.slice(0, 10) || "—"}</span>
+                        <span style={{ color: t.muted }}>{p.method || p.payment_method || ""}</span>
+                      </div>
+                      <span className="font-bold font-mono" style={{ color: t.emerald }}>৳{(p.amount || p.paid_amount || 0).toLocaleString("en-IN")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ফি রেকর্ড নেই</p>
