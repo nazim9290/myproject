@@ -121,14 +121,50 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
     setEditingStep(null);
   };
 
-  // ── Branch management ──
-  const [branches, setBranches] = useState([
-    { id: "b1", name: "ঢাকা (HQ)", manager: "Admin", phone: "", status: "active" },
-    { id: "b2", name: "চট্টগ্রাম", manager: "", phone: "", status: "active" },
-    { id: "b3", name: "সিলেট", manager: "", phone: "", status: "active" },
-  ]);
+  // ── Branch management — API connected ──
+  const [branches, setBranches] = useState([]);
   const [showBranchForm, setShowBranchForm] = useState(false);
-  const [branchForm, setBranchForm] = useState({ name: "", manager: "", phone: "" });
+  const [editingBranchId, setEditingBranchId] = useState(null);
+  const [branchForm, setBranchForm] = useState({ name: "", name_bn: "", city: "", address: "", address_bn: "", phone: "", email: "", manager: "", is_hq: false });
+  const EMPTY_BRANCH = { name: "", name_bn: "", city: "", address: "", address_bn: "", phone: "", email: "", manager: "", is_hq: false };
+
+  // API থেকে branch লোড
+  useEffect(() => {
+    api.get("/branches").then(data => { if (Array.isArray(data)) setBranches(data); }).catch(() => {});
+  }, []);
+
+  // Branch save (create/update)
+  const saveBranch = async () => {
+    if (!branchForm.name.trim()) { toast.error("ব্রাঞ্চ নাম দিন"); return; }
+    try {
+      if (editingBranchId) {
+        const updated = await api.patch(`/branches/${editingBranchId}`, branchForm);
+        setBranches(prev => prev.map(b => b.id === editingBranchId ? updated : b));
+        toast.updated("ব্রাঞ্চ");
+      } else {
+        const created = await api.post("/branches", branchForm);
+        setBranches(prev => [...prev, created]);
+        toast.success("ব্রাঞ্চ যোগ হয়েছে");
+      }
+      setBranchForm(EMPTY_BRANCH);
+      setShowBranchForm(false);
+      setEditingBranchId(null);
+    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+  };
+
+  const editBranch = (b) => {
+    setBranchForm({ name: b.name, name_bn: b.name_bn || "", city: b.city || "", address: b.address || "", address_bn: b.address_bn || "", phone: b.phone || "", email: b.email || "", manager: b.manager || "", is_hq: b.is_hq || false });
+    setEditingBranchId(b.id);
+    setShowBranchForm(true);
+  };
+
+  const deleteBranch = async (id) => {
+    try {
+      await api.delete(`/branches/${id}`);
+      setBranches(prev => prev.filter(b => b.id !== id));
+      toast.success("ব্রাঞ্চ মুছে ফেলা হয়েছে");
+    } catch (err) { toast.error(err.message); }
+  };
 
   // ── Notification settings ──
   const [notifications, setNotifications] = useState({
@@ -776,55 +812,120 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         })()}
       </div>}
 
-      {/* ── ব্রাঞ্চ ম্যানেজমেন্ট ── */}
+      {/* ── ব্রাঞ্চ ম্যানেজমেন্ট — ঠিকানা, ফোন, ম্যানেজার সহ ── */}
       {activeTab === "branches" && <div className="space-y-5">
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2"><Globe size={14} /> ব্রাঞ্চ তালিকা</h3>
-            <Button icon={Plus} size="xs" onClick={() => setShowBranchForm(true)}>নতুন ব্রাঞ্চ</Button>
+            <Button icon={Plus} size="xs" onClick={() => { setBranchForm(EMPTY_BRANCH); setEditingBranchId(null); setShowBranchForm(true); }}>নতুন ব্রাঞ্চ</Button>
           </div>
+
+          {/* ── ব্রাঞ্চ ফর্ম (create/edit) ── */}
           {showBranchForm && (
-            <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+            <div className="mb-4 p-4 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <p className="text-xs font-semibold mb-3">{editingBranchId ? "ব্রাঞ্চ সম্পাদনা" : "নতুন ব্রাঞ্চ যোগ"}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ নাম <span className="req-star">*</span></label>
-                  <input value={branchForm.name} onChange={e => setBranchForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="রাজশাহী" />
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ নাম (EN) *</label>
+                  <input value={branchForm.name} onChange={e => setBranchForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Dhaka (HQ)" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ম্যানেজার</label>
-                  <input value={branchForm.manager} onChange={e => setBranchForm(p => ({ ...p, manager: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
+                  <input value={branchForm.name_bn} onChange={e => setBranchForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা (HQ)" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শহর</label>
+                  <input value={branchForm.city} onChange={e => setBranchForm(p => ({ ...p, city: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা" />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (EN) — Excel {{sys_branch_address}}-এ যাবে</label>
+                  <input value={branchForm.address} onChange={e => setBranchForm(p => ({ ...p, address: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="House 12, Road 4, Dhanmondi, Dhaka-1205" />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (বাংলা)</label>
+                  <input value={branchForm.address_bn} onChange={e => setBranchForm(p => ({ ...p, address_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="বাড়ি ১২, রোড ৪, ধানমন্ডি, ঢাকা-১২০৫" />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
-                  <input value={branchForm.phone} onChange={e => setBranchForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                  <input value={branchForm.phone} onChange={e => setBranchForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="02-9876543" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>
+                  <input value={branchForm.email} onChange={e => setBranchForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="dhaka@agency.com" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ম্যানেজার</label>
+                  <input value={branchForm.manager} onChange={e => setBranchForm(p => ({ ...p, manager: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Branch Manager নাম" />
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="xs" icon={X} onClick={() => setShowBranchForm(false)}>বাতিল</Button>
-                <Button size="xs" icon={Save} onClick={() => {
-                  if (!branchForm.name.trim()) { toast.error("ব্রাঞ্চ নাম দিন"); return; }
-                  setBranches(prev => [...prev, { id: `b-${Date.now()}`, ...branchForm, status: "active" }]);
-                  setBranchForm({ name: "", manager: "", phone: "" });
-                  setShowBranchForm(false);
-                  toast.success("ব্রাঞ্চ যোগ হয়েছে");
-                }}>সংরক্ষণ</Button>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={branchForm.is_hq} onChange={e => setBranchForm(p => ({ ...p, is_hq: e.target.checked }))} className="rounded" style={{ accentColor: t.cyan }} />
+                  <span className="text-xs" style={{ color: t.text }}>প্রধান কার্যালয় (HQ)</span>
+                </label>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowBranchForm(false); setEditingBranchId(null); }}>বাতিল</Button>
+                  <Button size="xs" icon={Save} onClick={saveBranch}>সংরক্ষণ</Button>
+                </div>
               </div>
             </div>
           )}
-          <div className="space-y-2">
-            {branches.map(b => (
-              <div key={b.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: t.inputBg }}>
-                <div className="flex items-center gap-3">
-                  <Globe size={14} style={{ color: t.cyan }} />
-                  <div>
-                    <p className="text-xs font-semibold">{b.name}</p>
-                    <p className="text-[10px]" style={{ color: t.muted }}>{b.manager || "ম্যানেজার নেই"} {b.phone ? `• ${b.phone}` : ""}</p>
+
+          {/* ── ব্রাঞ্চ তালিকা ── */}
+          {branches.length === 0 ? (
+            <p className="text-center py-6 text-xs" style={{ color: t.muted }}>কোনো ব্রাঞ্চ নেই — উপরের বাটন থেকে যোগ করুন</p>
+          ) : (
+            <div className="space-y-3">
+              {branches.map(b => (
+                <div key={b.id} className="p-3 rounded-xl" style={{ background: `${t.cyan}06`, border: `1px solid ${t.border}` }}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                        style={{ background: b.is_hq ? `${t.cyan}20` : `${t.muted}15`, color: b.is_hq ? t.cyan : t.muted }}>
+                        {b.is_hq ? "HQ" : (b.city || b.name || "?").slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold flex items-center gap-1.5">
+                          {b.name_bn || b.name}
+                          {b.is_hq && <Badge color={t.cyan} size="xs">HQ</Badge>}
+                        </p>
+                        {b.city && <p className="text-[10px]" style={{ color: t.muted }}>{b.city}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => editBranch(b)} className="p-1.5 rounded-lg" style={{ color: t.muted }}
+                        onMouseEnter={e => e.currentTarget.style.color = t.cyan} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
+                        <Edit3 size={12} />
+                      </button>
+                      <button onClick={() => deleteBranch(b.id)} className="p-1.5 rounded-lg" style={{ color: t.muted }}
+                        onMouseEnter={e => e.currentTarget.style.color = "#ef4444"} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                  {/* ঠিকানা ও বিস্তারিত */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-[10px]" style={{ color: t.textSecondary }}>
+                    {b.address && <p>📍 {b.address}</p>}
+                    {b.address_bn && <p>📍 {b.address_bn}</p>}
+                    {b.phone && <p>📞 {b.phone}</p>}
+                    {b.email && <p>✉️ {b.email}</p>}
+                    {b.manager && <p>👤 {b.manager}</p>}
                   </div>
                 </div>
-                <Badge color={b.status === "active" ? "emerald" : "rose"} size="xs">{b.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* ── সিস্টেম ভ্যারিয়েবল টিপ ── */}
+        <Card delay={100}>
+          <h3 className="text-xs font-semibold mb-2" style={{ color: t.cyan }}>💡 Excel-এ ব্রাঞ্চ তথ্য ব্যবহার</h3>
+          <p className="text-[10px]" style={{ color: t.muted }}>
+            Excel template-এ <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_address}}"}</span> লিখলে
+            স্টুডেন্টের ব্রাঞ্চের ঠিকানা auto-fill হবে।
+            একইভাবে <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_phone}}"}</span>,
+            <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_manager}}"}</span> ব্যবহার করুন।
+          </p>
         </Card>
       </div>}
 
