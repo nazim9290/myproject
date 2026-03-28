@@ -11,7 +11,7 @@
     <script type="module" src="/src/main.jsx"></script>
     <!-- ── Code Protection (Production Only) ── -->
     <script>
-    if(location.hostname!=="localhost"&&!location.hostname.includes("127.0.0.1")){
+    if(location.hostname!=="localhost"&&!location.hostname.includes("127.0.0.1")&&!location.search.includes("debug=1")){
       // Right-click disable
       document.addEventListener("contextmenu",function(e){e.preventDefault()});
       // Keyboard shortcuts block (F12, Ctrl+Shift+I/J/C, Ctrl+U)
