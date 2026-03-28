@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgencyBook — Test Runner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif}
+.header{position:sticky;top:0;z-index:10;background:#111827;border-bottom:1px solid #1e293b;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+h1{font-size:18px;display:flex;align-items:center;gap:8px}
+.stats{display:flex;gap:16px;font-size:12px}
+.stat{text-align:center}
+.stat-val{font-size:20px;font-weight:700}
+.stat-val.green{color:#22c55e}.stat-val.red{color:#f43f5e}.stat-val.blue{color:#22d3ee}.stat-val.amber{color:#f59e0b}
+.progress-bar{height:6px;background:#1e293b;border-radius:3px;overflow:hidden;margin:0 24px 0 24px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#22c55e,#22d3ee);border-radius:3px;transition:width .3s}
+.controls{padding:12px 24px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #1e293b}
+.filter-btn{padding:6px 14px;border-radius:8px;border:1px solid #334155;background:transparent;color:#94a3b8;font-size:11px;cursor:pointer}
+.filter-btn:hover{background:#1e293b;color:#e2e8f0}
+.filter-btn.active{background:#22d3ee20;color:#22d3ee;border-color:#22d3ee40}
+.search{flex:1;min-width:200px;padding:8px 14px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none}
+.search:focus{border-color:#22d3ee}
+.main{padding:16px 24px}
+.test-card{background:#111827;border:1px solid #1e293b;border-radius:12px;margin-bottom:12px;overflow:hidden;transition:all .2s}
+.test-card:hover{border-color:#334155}
+.test-card.pass{border-left:3px solid #22c55e}
+.test-card.fail{border-left:3px solid #f43f5e}
+.test-card.skip{border-left:3px solid #f59e0b}
+.test-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.test-id{font-family:monospace;font-size:10px;color:#64748b;min-width:55px}
+.test-module{font-size:10px;padding:2px 8px;border-radius:10px;background:#22d3ee15;color:#22d3ee;white-space:nowrap}
+.test-title{flex:1;font-size:13px;font-weight:600}
+.priority{font-size:9px;padding:2px 6px;border-radius:6px;font-weight:700}
+.priority.HIGH{background:#f43f5e20;color:#f43f5e}
+.priority.MEDIUM{background:#f59e0b20;color:#f59e0b}
+.priority.LOW{background:#22c55e20;color:#22c55e}
+.actions{display:flex;gap:4px}
+.action-btn{width:32px;height:32px;border-radius:8px;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.action-btn.pass-btn{background:#22c55e20;color:#22c55e}.action-btn.pass-btn:hover{background:#22c55e40}
+.action-btn.fail-btn{background:#f43f5e20;color:#f43f5e}.action-btn.fail-btn:hover{background:#f43f5e40}
+.action-btn.skip-btn{background:#f59e0b20;color:#f59e0b}.action-btn.skip-btn:hover{background:#f59e0b40}
+.action-btn.reset-btn{background:#64748b20;color:#64748b}.action-btn.reset-btn:hover{background:#64748b40}
+.test-body{display:none;padding:0 16px 16px 16px;border-top:1px solid #1e293b}
+.test-card.open .test-body{display:block}
+.step-box{background:#0f172a;border-radius:8px;padding:12px;margin-top:10px;font-size:12px;line-height:1.8;white-space:pre-wrap;color:#cbd5e1}
+.expected{background:#22c55e08;border:1px solid #22c55e20;border-radius:8px;padding:12px;margin-top:10px;font-size:12px;line-height:1.6;color:#86efac}
+.comment-box{margin-top:10px;width:100%;padding:8px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;resize:vertical;min-height:40px}
+.comment-box:focus{border-color:#22d3ee}
+.label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-top:12px;margin-bottom:4px;font-weight:600}
+.app-link{position:fixed;bottom:20px;right:20px;background:linear-gradient(135deg,#06b6d4,#a855f7);color:#fff;padding:12px 20px;border-radius:12px;text-decoration:none;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(6,182,212,.3);z-index:100;display:flex;align-items:center;gap:6px}
+.app-link:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(6,182,212,.4)}
+.export-btn{padding:6px 14px;border-radius:8px;border:1px solid #334155;background:#111827;color:#22d3ee;font-size:11px;cursor:pointer}
+.export-btn:hover{background:#22d3ee15}
+.module-group{font-size:11px;font-weight:700;color:#64748b;padding:20px 0 8px 0;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1e293b20}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧪 AgencyBook Test Runner</h1>
+  <div class="stats">
+    <div class="stat"><div class="stat-val blue" id="s-total">0</div><div>মোট</div></div>
+    <div class="stat"><div class="stat-val green" id="s-pass">0</div><div>পাস ✓</div></div>
+    <div class="stat"><div class="stat-val red" id="s-fail">0</div><div>ফেইল ✗</div></div>
+    <div class="stat"><div class="stat-val amber" id="s-skip">0</div><div>স্কিপ</div></div>
+    <div class="stat"><div class="stat-val" id="s-pct" style="color:#a855f7">0%</div><div>সম্পন্ন</div></div>
+  </div>
+  <button class="export-btn" onclick="exportResults()">📥 ফলাফল Export</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+<div class="controls">
+  <input class="search" id="search" placeholder="🔍 টেস্ট খুঁজুন (নাম, মডিউল, ID)..." oninput="render()">
+  <button class="filter-btn active" onclick="setFilter('all',this)">সব</button>
+  <button class="filter-btn" onclick="setFilter('pending',this)">⬜ বাকি</button>
+  <button class="filter-btn" onclick="setFilter('pass',this)">✅ পাস</button>
+  <button class="filter-btn" onclick="setFilter('fail',this)">❌ ফেইল</button>
+  <button class="filter-btn" onclick="setFilter('skip',this)">⚠️ স্কিপ</button>
+  <button class="filter-btn" onclick="setFilter('HIGH',this)">🔴 HIGH</button>
+</div>
+
+<div class="main" id="test-list"></div>
+
+<a class="app-link" href="https://demo.agencybook.net" target="_blank">🚀 অ্যাপ খুলুন →</a>
+
+<script>
+// ═══════════════════════════════════════════════
+// টেস্ট কেস ডাটা
+// ═══════════════════════════════════════════════
+const TESTS = [
+  { id:"TC-001", module:"লগইন", title:"সঠিক তথ্য দিয়ে লগইন", steps:"১. ব্রাউজারে https://demo.agencybook.net খুলুন\n২. Email: admin@agencybook.net লিখুন\n৩. Password: আপনার পাসওয়ার্ড লিখুন\n৪. \"লগইন\" বাটনে ক্লিক করুন", expected:"Dashboard পেজ দেখাবে — স্টুডেন্ট সংখ্যা ও চার্ট দেখাবে", priority:"HIGH" },
+  { id:"TC-002", module:"লগইন", title:"ভুল পাসওয়ার্ড দিয়ে লগইন", steps:"১. Email: admin@agencybook.net লিখুন\n২. Password: wrongpassword লিখুন\n৩. লগইন ক্লিক করুন", expected:"\"Email বা password ভুল\" — error message দেখাবে", priority:"HIGH" },
+  { id:"TC-003", module:"লগইন", title:"খালি ফর্ম দিয়ে লগইন", steps:"১. কোনো কিছু না লিখেই লগইন ক্লিক করুন", expected:"\"Email ও password দিন\" error দেখাবে", priority:"MEDIUM" },
+  { id:"TC-004", module:"লগইন", title:"লগআউট", steps:"১. লগইন করুন\n২. উপরে ডান পাশে Profile icon ক্লিক করুন\n৩. \"লগআউট\" ক্লিক করুন", expected:"লগইন পেজে ফিরে যাবে", priority:"HIGH" },
+  { id:"TC-005", module:"ড্যাশবোর্ড", title:"ড্যাশবোর্ড লোড", steps:"১. লগইন করুন\n২. বাম মেনু থেকে Dashboard ক্লিক করুন", expected:"৪টি KPI কার্ড দেখাবে: মোট স্টুডেন্ট, এই মাসের আয়, ডক প্রসেসিং, ভিসা/পৌঁছেছে", priority:"HIGH" },
+  { id:"TC-006", module:"ড্যাশবোর্ড", title:"চার্ট দেখা", steps:"১. Dashboard পেজে নিচে স্ক্রল করুন", expected:"মাসিক আয় চার্ট, পাইপলাইন ফানেল, সাম্প্রতিক ভিজিটর দেখাবে", priority:"MEDIUM" },
+  { id:"TC-007", module:"ভিজিটর", title:"নতুন ভিজিটর যোগ", steps:"১. মেনু থেকে Visitors ক্লিক করুন\n২. +ভিজিটর যোগ করুন ক্লিক করুন\n৩. নাম: টেস্ট ভিজিটর\n৪. ফোন: 01712345678\n৫. সোর্স: Walk-in\n৬. সংরক্ষণ ক্লিক করুন", expected:"সফলতার মেসেজ, তালিকায় নতুন entry", priority:"HIGH" },
+  { id:"TC-008", module:"ভিজিটর", title:"ভিজিটর সার্চ", steps:"১. Visitors পেজে যান\n২. সার্চ বক্সে \"টেস্ট\" লিখুন", expected:"শুধু \"টেস্ট\" নাম থাকা ভিজিটর দেখাবে", priority:"MEDIUM" },
+  { id:"TC-009", module:"ভিজিটর", title:"CSV Export", steps:"১. Visitors পেজে যান\n২. Export বাটনে ক্লিক করুন", expected:".csv ফাইল ডাউনলোড হবে, Excel-এ বাংলা ঠিক দেখাবে", priority:"MEDIUM" },
+  { id:"TC-010", module:"স্টুডেন্ট", title:"নতুন স্টুডেন্ট যোগ", steps:"১. মেনু থেকে Students ক্লিক করুন\n২. +স্টুডেন্ট যোগ করুন ক্লিক করুন\n৩. নাম: Test Student\n৪. ফোন: 01898765432\n৫. দেশ: Japan\n৬. সংরক্ষণ করুন", expected:"তালিকায় নতুন স্টুডেন্ট, ID হবে PREFIX-S-2026-XXX", priority:"HIGH" },
+  { id:"TC-011", module:"স্টুডেন্ট", title:"স্টুডেন্ট ID ফরম্যাট", steps:"১. নতুন স্টুডেন্ট যোগ করুন\n২. তার ID দেখুন", expected:"ID হবে এজেন্সি prefix সহ: SEC-S-2026-001", priority:"HIGH" },
+  { id:"TC-012", module:"স্টুডেন্ট", title:"স্টুডেন্ট ডিটেইল", steps:"১. তালিকায় একটি স্টুডেন্টের নামে ক্লিক করুন", expected:"সম্পূর্ণ তথ্য — ব্যক্তিগত, পাসপোর্ট, ফি, ডকুমেন্ট", priority:"HIGH" },
+  { id:"TC-013", module:"স্টুডেন্ট", title:"স্ট্যাটাস পরিবর্তন", steps:"১. স্টুডেন্ট ডিটেইল খুলুন\n২. স্ট্যাটাস পরিবর্তন করুন\n৩. সেভ করুন", expected:"স্ট্যাটাস পরিবর্তন হবে", priority:"HIGH" },
+  { id:"TC-014", module:"স্টুডেন্ট", title:"বাল্ক স্ট্যাটাস পরিবর্তন", steps:"১. Students তালিকায় যান\n২. checkbox দিয়ে ২-৩ জন সিলেক্ট করুন\n৩. ড্রপডাউন থেকে নতুন স্ট্যাটাস নির্বাচন\n৪. পরিবর্তন করুন ক্লিক করুন", expected:"সবার স্ট্যাটাস একসাথে পরিবর্তন হবে", priority:"HIGH" },
+  { id:"TC-015", module:"স্টুডেন্ট", title:"পেমেন্ট যোগ", steps:"১. স্টুডেন্ট ডিটেইল → ফি ট্যাব\n২. পেমেন্ট যোগ ক্লিক করুন\n৩. পরিমাণ: 5000, মাধ্যম: bKash\n৪. সংরক্ষণ", expected:"পেমেন্ট যোগ হবে, পরিশোধিত বাড়বে", priority:"HIGH" },
+  { id:"TC-016", module:"স্টুডেন্ট", title:"Excel Import", steps:"১. Students → Import বাটন\n২. .xlsx ফাইল আপলোড\n৩. কলাম ম্যাপিং\n৪. Import ক্লিক", expected:"সব স্টুডেন্ট যোগ হবে", priority:"HIGH" },
+  { id:"TC-017", module:"স্কুল", title:"নতুন স্কুল যোগ", steps:"১. মেনু → Schools\n২. +স্কুল যোগ করুন\n৩. নাম: Tokyo Galaxy\n৪. শৌকাই ফি: 50000\n৫. সংরক্ষণ", expected:"স্কুল যোগ হবে, 400 error হবে না", priority:"HIGH" },
+  { id:"TC-018", module:"স্কুল", title:"স্কুলে Submission", steps:"১. স্কুলের নামে ক্লিক → Submissions ট্যাব\n২. নতুন Submission\n৩. স্টুডেন্ট সিলেক্ট\n৪. সংরক্ষণ", expected:"Submission তৈরি হবে", priority:"HIGH" },
+  { id:"TC-019", module:"ব্যাচ", title:"নতুন ব্যাচ", steps:"১. মেনু → Language Course\n২. +নতুন ব্যাচ\n৩. নাম, তারিখ দিন\n৪. সংরক্ষণ", expected:"ব্যাচ তৈরি হবে", priority:"HIGH" },
+  { id:"TC-020", module:"ব্যাচ", title:"ব্যাচে স্টুডেন্ট যোগ", steps:"১. ব্যাচের নামে ক্লিক\n২. স্টুডেন্ট যোগ করুন\n৩. সার্চ করে সিলেক্ট", expected:"স্টুডেন্ট ব্যাচে যোগ হবে", priority:"HIGH" },
+  { id:"TC-021", module:"উপস্থিতি", title:"দৈনিক উপস্থিতি", steps:"১. মেনু → Attendance\n২. তারিখ ও ব্যাচ সিলেক্ট\n৩. P/A/L ক্লিক\n৪. সংরক্ষণ", expected:"উপস্থিতি সেভ হবে", priority:"HIGH" },
+  { id:"TC-022", module:"Excel", title:"টেমপ্লেট ম্যাপিং", steps:"১. মেনু → Excel AutoFill\n২. Template আপলোড\n৩. ড্রপডাউনে ১০টি ক্যাটাগরি দেখুন", expected:"ড্রপডাউনে সিস্টেম ভ্যারিয়েবল সহ ১০টি গ্রুপ দেখাবে", priority:"HIGH" },
+  { id:"TC-023", module:"Excel", title:"সিস্টেম ভ্যারিয়েবল", steps:"১. Template-এ {{sys_agency_name}} লিখুন\n২. আপলোড ও ম্যাপ করুন\n৩. Generate করুন", expected:"এজেন্সির নাম auto-fill হবে", priority:"HIGH" },
+  { id:"TC-024", module:"প্রি-ডিপার্চার", title:"তালিকা দেখা", steps:"১. মেনু → Pre-Departure", expected:"COE+ পর্যায়ের স্টুডেন্ট ও progress দেখাবে", priority:"HIGH" },
+  { id:"TC-025", module:"প্রি-ডিপার্চার", title:"তথ্য আপডেট", steps:"১. স্টুডেন্ট কার্ডে ক্লিক\n২. COE নম্বর, Health, VFS তথ্য দিন\n৩. সেভ করুন", expected:"তথ্য সেভ হবে, progress আপডেট হবে", priority:"HIGH" },
+  { id:"TC-026", module:"হিসাব", title:"আয় যোগ", steps:"১. মেনু → Accounts → আয় ট্যাব\n২. +নতুন আয়\n৩. পরিমাণ: 10000\n৪. সংরক্ষণ", expected:"আয় যোগ হবে", priority:"HIGH" },
+  { id:"TC-027", module:"পার্টনার", title:"নতুন পার্টনার", steps:"১. মেনু → Partners\n২. +নতুন পার্টনার\n৩. নাম ও ফোন দিন\n৪. সংরক্ষণ", expected:"পার্টনার তৈরি হবে", priority:"HIGH" },
+  { id:"TC-028", module:"রিপোর্ট", title:"পাইপলাইন ফানেল", steps:"১. মেনু → Reports\n২. পাইপলাইন ফানেল ট্যাব", expected:"Pipeline Funnel চার্ট দেখাবে", priority:"HIGH" },
+  { id:"TC-029", module:"রিপোর্ট", title:"দেশভিত্তিক", steps:"১. Reports → দেশ ভিত্তিক ট্যাব", expected:"দেশ অনুযায়ী স্টুডেন্ট ও আয় দেখাবে", priority:"MEDIUM" },
+  { id:"TC-030", module:"ইউজার", title:"নতুন User", steps:"১. মেনু → Users\n২. +নতুন User\n৩. নাম, ইমেইল, পাসওয়ার্ড (৮+ অক্ষর)\n৪. Role সিলেক্ট\n৫. সংরক্ষণ", expected:"User তৈরি হবে", priority:"HIGH" },
+  { id:"TC-031", module:"ইউজার", title:"ছোট পাসওয়ার্ড", steps:"১. নতুন User → Password: 12345 (৫ অক্ষর)\n২. সংরক্ষণ", expected:"\"কমপক্ষে ৮ অক্ষর\" error", priority:"HIGH" },
+  { id:"TC-032", module:"সেটিংস", title:"ব্রাঞ্চ যোগ (ঠিকানা সহ)", steps:"১. মেনু → Settings → ব্রাঞ্চ ম্যানেজমেন্ট\n২. +নতুন ব্রাঞ্চ\n৩. নাম, ঠিকানা, ফোন দিন\n৪. সংরক্ষণ", expected:"ব্রাঞ্চ তৈরি হবে, ঠিকানা সহ কার্ডে দেখাবে", priority:"HIGH" },
+  { id:"TC-033", module:"সেটিংস", title:"ব্রাঞ্চ Edit/Delete", steps:"১. ব্রাঞ্চের Edit আইকন → ঠিকানা পরিবর্তন → সেভ\n২. Delete আইকন → মুছে ফেলুন", expected:"Edit ও Delete কাজ করবে", priority:"MEDIUM" },
+  { id:"TC-034", module:"প্রোফাইল", title:"ছবি আপলোড", steps:"১. মেনু → Profile\n২. Camera আইকনে ক্লিক\n৩. একটি JPG/PNG ছবি সিলেক্ট করুন", expected:"ছবি আপলোড হবে, initials-এর বদলে ছবি দেখাবে", priority:"HIGH" },
+  { id:"TC-035", module:"সেটিংস", title:"এজেন্সি লোগো আপলোড", steps:"১. Settings → এজেন্সি তথ্য\n২. \"লোগো পরিবর্তন\" ক্লিক\n৩. লোগো ছবি সিলেক্ট করুন", expected:"লোগো আপলোড হবে, emoji-র বদলে লোগো দেখাবে", priority:"HIGH" },
+  { id:"TC-036", module:"পোর্টাল", title:"স্টুডেন্ট লগইন", steps:"১. লগইন পেজে Student Portal লিংক\n২. ফোন ও পাসওয়ার্ড দিন\n৩. লগইন", expected:"স্টুডেন্ট পোর্টাল খুলবে — তথ্য ও ফি দেখাবে", priority:"HIGH" },
+  { id:"TC-037", module:"পোর্টাল", title:"পেমেন্ট ইতিহাস", steps:"১. পোর্টালে লগইন\n২. পেমেন্ট সারাংশ দেখুন", expected:"ফি তালিকা + পেমেন্ট ইতিহাস (তারিখ, মাধ্যম, পরিমাণ)", priority:"HIGH" },
+  { id:"TC-038", module:"সুপার অ্যাডমিন", title:"নতুন এজেন্সি", steps:"১. Super Admin → +নতুন এজেন্সি\n২. নাম: Sunrise Education\n৩. Admin তথ্য দিন\n৪. সংরক্ষণ", expected:"এজেন্সি তৈরি হবে, ID Prefix দেখাবে", priority:"HIGH" },
+  { id:"TC-039", module:"সিকিউরিটি", title:"Right-click বন্ধ", steps:"১. demo.agencybook.net এ Right-click করুন", expected:"Context menu দেখাবে না", priority:"MEDIUM" },
+  { id:"TC-040", module:"সিকিউরিটি", title:"DevTools বন্ধ", steps:"১. F12 বা Ctrl+Shift+I চাপুন", expected:"DevTools খুলবে না বা warning দেখাবে", priority:"MEDIUM" },
+  { id:"TC-041", module:"ইনভেন্টরি", title:"আইটেম যোগ", steps:"১. মেনু → Inventory\n২. +আইটেম যোগ করুন\n৩. নাম ও দাম দিন\n৪. সংরক্ষণ", expected:"আইটেম API-তে সেভ হবে", priority:"MEDIUM" },
+  { id:"TC-042", module:"টাস্ক", title:"নতুন টাস্ক", steps:"১. মেনু → Tasks → +নতুন টাস্ক\n২. শিরোনাম, Priority, Due Date দিন\n৩. সংরক্ষণ", expected:"টাস্ক তৈরি হবে", priority:"MEDIUM" },
+  { id:"TC-043", module:"HR", title:"কর্মচারী যোগ", steps:"১. মেনু → HR → +কর্মচারী যোগ\n২. নাম, পদবি, বেতন দিন\n৩. সংরক্ষণ", expected:"কর্মচারী যোগ হবে", priority:"MEDIUM" },
+  { id:"TC-044", module:"মোবাইল", title:"মোবাইল ভিউ", steps:"১. ব্রাউজার ছোট করুন (বা মোবাইল থেকে খুলুন)\n২. ≡ মেনু ক্লিক করুন", expected:"সাইডবার hamburger মেনু হবে, সব ঠিকমতো দেখাবে", priority:"MEDIUM" },
+  { id:"TC-045", module:"হেল্প", title:"হেল্প পেজ", steps:"১. মেনু → Help\n২. যেকোনো section ক্লিক করুন", expected:"বিস্তারিত guide দেখাবে — সিস্টেম ভ্যারিয়েবল, বাল্ক অ্যাকশন সহ", priority:"LOW" },
+];
+
+// ═══════════════════════════════════════════════
+// State Management (localStorage persist)
+// ═══════════════════════════════════════════════
+const KEY = 'agencybook_test_results';
+let results = JSON.parse(localStorage.getItem(KEY) || '{}');
+let filter = 'all';
+
+function save() { localStorage.setItem(KEY, JSON.stringify(results)); }
+
+function setResult(id, status) {
+  if (results[id]?.status === status) { delete results[id]; } // toggle off
+  else { results[id] = { status, time: new Date().toISOString(), ...(results[id]||{}) }; }
+  save(); render();
+}
+
+function setComment(id, comment) {
+  results[id] = { ...(results[id]||{}), comment };
+  save();
+}
+
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function toggleCard(id) {
+  document.getElementById('card-'+id)?.classList.toggle('open');
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let visible = TESTS.filter(t => {
+    if (q && !t.id.toLowerCase().includes(q) && !t.title.toLowerCase().includes(q) && !t.module.toLowerCase().includes(q)) return false;
+    const r = results[t.id]?.status;
+    if (filter === 'pending') return !r;
+    if (filter === 'pass') return r === 'pass';
+    if (filter === 'fail') return r === 'fail';
+    if (filter === 'skip') return r === 'skip';
+    if (filter === 'HIGH') return t.priority === 'HIGH';
+    return true;
+  });
+
+  // Stats
+  const total = TESTS.length;
+  const pass = TESTS.filter(t => results[t.id]?.status === 'pass').length;
+  const fail = TESTS.filter(t => results[t.id]?.status === 'fail').length;
+  const skip = TESTS.filter(t => results[t.id]?.status === 'skip').length;
+  const done = pass + fail + skip;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-pass').textContent = pass;
+  document.getElementById('s-fail').textContent = fail;
+  document.getElementById('s-skip').textContent = skip;
+  document.getElementById('s-pct').textContent = Math.round(done/total*100) + '%';
+  document.getElementById('progress').style.width = (done/total*100) + '%';
+
+  // Group by module
+  let html = '';
+  let lastModule = '';
+  visible.forEach(t => {
+    if (t.module !== lastModule) { lastModule = t.module; html += `<div class="module-group">${t.module}</div>`; }
+    const r = results[t.id]?.status || '';
+    const comment = results[t.id]?.comment || '';
+    html += `
+    <div class="test-card ${r}" id="card-${t.id}">
+      <div class="test-header" onclick="toggleCard('${t.id}')">
+        <span class="test-id">${t.id}</span>
+        <span class="test-module">${t.module}</span>
+        <span class="test-title">${t.title}</span>
+        <span class="priority ${t.priority}">${t.priority}</span>
+        <div class="actions" onclick="event.stopPropagation()">
+          <button class="action-btn pass-btn" onclick="setResult('${t.id}','pass')" title="পাস">✓</button>
+          <button class="action-btn fail-btn" onclick="setResult('${t.id}','fail')" title="ফেইল">✗</button>
+          <button class="action-btn skip-btn" onclick="setResult('${t.id}','skip')" title="স্কিপ">⊘</button>
+        </div>
+      </div>
+      <div class="test-body">
+        <div class="label">ধাপ (Step by Step)</div>
+        <div class="step-box">${t.steps}</div>
+        <div class="label">প্রত্যাশিত ফলাফল</div>
+        <div class="expected">✅ ${t.expected}</div>
+        <div class="label">মন্তব্য (সমস্যা থাকলে লিখুন)</div>
+        <textarea class="comment-box" placeholder="সমস্যার বিবরণ বা স্ক্রিনশট লিংক..."
+          oninput="setComment('${t.id}',this.value)">${comment}</textarea>
+      </div>
+    </div>`;
+  });
+  document.getElementById('test-list').innerHTML = html || '<p style="text-align:center;padding:40px;color:#64748b">কোনো টেস্ট পাওয়া যায়নি</p>';
+}
+
+function exportResults() {
+  let csv = '\uFEFF' + 'টেস্ট ID,মডিউল,নাম,অগ্রাধিকার,ফলাফল,সময়,মন্তব্য\n';
+  TESTS.forEach(t => {
+    const r = results[t.id] || {};
+    csv += `${t.id},"${t.module}","${t.title}",${t.priority},${r.status||'বাকি'},${r.time||''},${(r.comment||'').replace(/"/g,'""')}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `TestResults_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+render();
+</script>
+</body>
+</html>
