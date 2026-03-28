@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Save, LogOut, Lock, Eye, EyeOff, Bell, Globe, Shield, Camera, User, Phone, Mail, Briefcase, Building2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import { API_URL } from "../../lib/api";
 
 export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isDark, setIsDark }) {
   const t = useTheme();
@@ -16,6 +17,29 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
   const initials = (info.name || "U").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const avatarRef = useRef(null);
+  const [avatarUrl, setAvatarUrl] = useState(currentUser.avatar_url || "");
+
+  // ── প্রোফাইল ছবি আপলোড ──
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error("ফাইল সাইজ সর্বোচ্চ 2MB"); return; }
+    const formData = new FormData();
+    formData.append("avatar", file);
+    try {
+      const token = localStorage.getItem("agencyos_token");
+      const res = await fetch(`${API_URL}/auth/upload-avatar`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.avatar_url) {
+        setAvatarUrl(data.avatar_url);
+        setCurrentUser(prev => ({ ...prev, avatar_url: data.avatar_url }));
+        toast.success("ছবি আপলোড হয়েছে!");
+      } else { toast.error(data.error || "আপলোড ব্যর্থ"); }
+    } catch { toast.error("আপলোড করতে সমস্যা হয়েছে"); }
+  };
 
   const saveProfile = () => {
     setCurrentUser((prev) => ({ ...prev, ...info }));
@@ -48,17 +72,21 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       <Card delay={0}>
         <div className="flex items-center gap-5">
           <div className="relative shrink-0">
-            <div
-              className="h-20 w-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #06b6d4, #a855f7)" }}
-            >
-              {initials}
-            </div>
+            {avatarUrl ? (
+              <img src={avatarUrl.startsWith("http") ? avatarUrl : `${API_URL.replace("/api", "")}${avatarUrl}`}
+                alt="Avatar" className="h-20 w-20 rounded-2xl object-cover" />
+            ) : (
+              <div className="h-20 w-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #06b6d4, #a855f7)" }}>
+                {initials}
+              </div>
+            )}
+            <input ref={avatarRef} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleAvatarUpload} className="hidden" />
             <button
               className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full flex items-center justify-center shadow"
               style={{ background: t.cyan, color: "#fff" }}
-              title="ছবি পরিবর্তন (শীঘ্রই আসছে)"
-              onClick={() => toast.info("ছবি আপলোড ফিচার শীঘ্রই আসছে!")}
+              title="ছবি পরিবর্তন"
+              onClick={() => avatarRef.current?.click()}
             >
               <Camera size={11} />
             </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw } from "lucide-react";
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
+import { API_URL } from "../../lib/api";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 
@@ -33,6 +34,26 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const [tradeLicense, setTradeLicense] = useState("");
   const [tinNumber, setTinNumber] = useState("");
   const [branch, setBranch] = useState("Dhaka (HQ)");
+
+  // ── এজেন্সি লোগো আপলোড ──
+  const logoRef = useRef(null);
+  const [agencyLogo, setAgencyLogo] = useState("");
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error("ফাইল সাইজ সর্বোচ্চ 2MB"); return; }
+    const formData = new FormData();
+    formData.append("logo", file);
+    try {
+      const token = localStorage.getItem("agencyos_token");
+      const res = await fetch(`${API_URL}/auth/upload-logo`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.logo_url) { setAgencyLogo(data.logo_url); toast.success("লোগো আপলোড হয়েছে!"); }
+      else { toast.error(data.error || "আপলোড ব্যর্থ"); }
+    } catch { toast.error("আপলোড করতে সমস্যা"); }
+  };
   const [taxRate, setTaxRate] = useState("15");
   const [currency, setCurrency] = useState("BDT");
   const [customFields, setCustomFields] = useState([
@@ -239,12 +260,21 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               </div>
             ))}
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লোগো</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্সি লোগো</label>
               <div className="flex items-center gap-3">
-                <div className="h-14 w-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
-                  🎓
-                </div>
-                <button className="px-3 py-1.5 rounded-lg text-xs" style={{ background: t.inputBg, color: t.textSecondary }}>Change Logo</button>
+                {agencyLogo ? (
+                  <img src={agencyLogo.startsWith("http") ? agencyLogo : `${API_URL.replace("/api", "")}${agencyLogo}`}
+                    alt="Logo" className="h-14 w-14 rounded-xl object-cover" />
+                ) : (
+                  <div className="h-14 w-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
+                    🎓
+                  </div>
+                )}
+                <input ref={logoRef} type="file" accept=".jpg,.jpeg,.png,.webp,.svg" onChange={handleLogoUpload} className="hidden" />
+                <button onClick={() => logoRef.current?.click()} className="px-3 py-1.5 rounded-lg text-xs"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.textSecondary }}>
+                  লোগো পরিবর্তন
+                </button>
               </div>
             </div>
           </div>
