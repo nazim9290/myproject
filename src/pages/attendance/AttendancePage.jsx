@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Save, Download, Search } from "lucide-react";
+import { api } from "../../hooks/useAPI";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -50,8 +51,14 @@ export default function AttendancePage({ students = [] }) {
   const absent = displayList.filter(s => getStatus(s.id) === "absent").length;
   const late = displayList.filter(s => getStatus(s.id) === "late").length;
 
-  const saveAttendance = () => {
-    toast.success(`${selectedDate} — ${displayList.length} জনের উপস্থিতি সংরক্ষণ হয়েছে (উপস্থিত: ${present}, অনুপস্থিত: ${absent}, দেরিতে: ${late})`);
+  const saveAttendance = async () => {
+    const records = displayList.map(s => ({ student_id: s.id, status: getStatus(s.id) }));
+    try {
+      await api.post("/attendance/save", { date: selectedDate, records });
+      toast.success(`${selectedDate} — ${displayList.length} জনের উপস্থিতি সংরক্ষণ হয়েছে`);
+    } catch {
+      toast.error("সংরক্ষণ ব্যর্থ");
+    }
   };
 
   const exportAttendance = () => {

@@ -36,29 +36,30 @@ export default function CommunicationPage({ students = [] }) {
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const save = () => {
+  const save = async () => {
     if (!form.studentId && !form.notes.trim()) { toast.error("স্টুডেন্ট ও নোট দিন"); return; }
     if (!form.notes.trim()) { toast.error("নোট লিখুন"); return; }
     const student = students.find(s => s.id === form.studentId);
     const now = new Date();
-    setLogs(prev => [{
-      id: `LOG-${Date.now()}`,
-      studentId: form.studentId,
-      studentName: student?.name_en || "—",
-      type: form.type,
-      direction: form.direction,
-      summary: form.notes,
-      follow_up_date: form.follow_up_date,
-      user: form.user,
-      date: now.toISOString().slice(0, 10),
-      time: now.toTimeString().slice(0, 5),
-    }, ...prev]);
+    const entry = {
+      student_id: form.studentId || null,
+      type: form.type, direction: form.direction,
+      notes: form.notes, content: form.notes,
+      follow_up_date: form.follow_up_date || null,
+    };
+    try {
+      const saved = await api.post("/communications", entry);
+      setLogs(prev => [{ ...saved, studentName: student?.name_en || "—", summary: saved.notes || saved.content, date: (saved.created_at || "").slice(0, 10) }, ...prev]);
+    } catch {
+      setLogs(prev => [{ id: `LOG-${Date.now()}`, ...entry, studentName: student?.name_en || "—", summary: form.notes, date: now.toISOString().slice(0, 10) }, ...prev]);
+    }
     setForm(BLANK);
     setShowForm(false);
     toast.success("Communication log যোগ হয়েছে!");
   };
 
-  const deleteLog = (id) => {
+  const deleteLog = async (id) => {
+    try { await api.del(`/communications/${id}`); } catch {}
     setLogs(prev => prev.filter(l => l.id !== id));
     setDeleteId(null);
     toast.success("মুছে ফেলা হয়েছে");

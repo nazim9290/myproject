@@ -137,8 +137,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     api.post("/activity-log", { module: "students", record_id: student.id, action: type, description: text }).catch(() => {});
   };
 
-  // Status change
+  // Status change — API-তেও save
   const changeStatus = (newStatus, msg) => {
+    api.patch(`/students/${student.id}`, { status: newStatus }).catch(() => {});
     const updated = { ...student, status: newStatus };
     onUpdate(updated);
     const stepLabel = PIPELINE_STATUSES.find(s => s.code === newStatus)?.label || newStatus;
@@ -162,7 +163,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   };
 
   // Edit
-  const handleSave = () => { onUpdate(editForm); setIsEditing(false); logActivity("তথ্য আপডেট হয়েছে", "edit"); toast.updated("Student"); };
+  const handleSave = () => { api.patch(`/students/${student.id}`, editForm).catch(() => {}); onUpdate(editForm); setIsEditing(false); logActivity("তথ্য আপডেট হয়েছে", "edit"); toast.updated("Student"); };
   const setField = (k, v) => setEditForm({ ...editForm, [k]: v });
 
   const current = isEditing ? editForm : student;

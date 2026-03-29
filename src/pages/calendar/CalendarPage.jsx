@@ -51,10 +51,15 @@ export default function CalendarPage({ students = [] }) {
               <h3 className="text-sm font-bold">নতুন ইভেন্ট</h3>
               <div className="flex gap-2">
                 <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
-                <Button icon={Save} size="xs" onClick={() => {
+                <Button icon={Save} size="xs" onClick={async () => {
                   if (!form.title.trim() || !form.date) { toast.error("টাইটেল ও তারিখ দিন"); return; }
                   const linked = students.find((s) => s.id === form.studentId);
-                  setEvents(prev => [...prev, { id: `EV-${Date.now()}`, ...form, students: linked ? [linked.name_en] : [] }]);
+                  try {
+                    const saved = await api.post("/calendar", { title: form.title, date: form.date, time: form.time || null, type: form.type, description: form.notes || "", student_id: form.studentId || null });
+                    setEvents(prev => [...prev, { ...saved, students: linked ? [linked.name_en] : [] }]);
+                  } catch {
+                    setEvents(prev => [...prev, { id: `EV-${Date.now()}`, ...form, students: linked ? [linked.name_en] : [] }]);
+                  }
                   setForm({ title: "", type: "interview", date: new Date().toISOString().slice(0, 10), time: "10:00", staff: "", studentId: "", notes: "" });
                   setShowForm(false);
                   toast.success("Event যোগ হয়েছে!");

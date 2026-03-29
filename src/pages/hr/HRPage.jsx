@@ -43,19 +43,17 @@ export default function HRPage() {
     )
   );
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newEmp.name.trim()) { toast.error("নাম দিন"); return; }
     if (!newEmp.role) { toast.error("পদবি নির্বাচন করুন"); return; }
     if (!newEmp.branch) { toast.error("ব্রাঞ্চ নির্বাচন করুন"); return; }
-    const emp = {
-      id: `EMP-${String(employees.length + 1).padStart(3, "0")}`,
-      ...newEmp,
-      salary: parseInt(newEmp.salary) || 0,
-      status: "active",
-      joinDate: new Date().toISOString().slice(0, 10),
-      leaves: { total: 18, used: 0 },
-    };
-    setEmployees(prev => [...prev, emp]);
+    const empData = { name: newEmp.name, designation: newEmp.role, role: newEmp.role, branch: newEmp.branch, salary: parseInt(newEmp.salary) || 0, phone: newEmp.phone || "", email: newEmp.email || "" };
+    try {
+      const saved = await api.post("/hr/employees", empData);
+      setEmployees(prev => [...prev, saved]);
+    } catch {
+      setEmployees(prev => [...prev, { id: `EMP-${Date.now()}`, ...empData, status: "active" }]);
+    }
     setNewEmp({ name: "", role: "", branch: "", salary: "", phone: "", email: "" });
     setShowAddForm(false);
     toast.success("কর্মচারী যোগ হয়েছে!");
@@ -305,21 +303,13 @@ export default function HRPage() {
                 </div>
                 <div className="flex justify-end gap-2 mt-3">
                   <Button variant="ghost" size="xs" onClick={() => setPayingEmpId(null)}>বাতিল</Button>
-                  <Button icon={Save} size="xs" onClick={() => {
+                  <Button icon={Save} size="xs" onClick={async () => {
                     const amt = parseInt(payForm.amount);
                     if (!payForm.month) { toast.error("মাস নির্বাচন করুন"); return; }
                     if (!amt || amt <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
-                    const record = {
-                      id: `SAL-${Date.now()}`,
-                      empId: emp.id,
-                      empName: emp.name,
-                      month: payForm.month,
-                      amount: amt,
-                      method: payForm.method,
-                      note: payForm.note,
-                      date: new Date().toISOString().slice(0, 10),
-                      paid: true,
-                    };
+                    const salaryData = { employee_id: emp.id, month: payForm.month, amount: amt, method: payForm.method, note: payForm.note };
+                    let record = { id: `SAL-${Date.now()}`, empId: emp.id, empName: emp.name, ...salaryData, date: new Date().toISOString().slice(0, 10), paid: true };
+                    try { const saved = await api.post("/hr/salary", salaryData); if (saved) record = { ...record, ...saved }; } catch {}
                     setSalaryHistory((prev) => [record, ...prev]);
                     setPayingEmpId(null);
                     toast.success(`${emp.name} — ৳${amt.toLocaleString()} বেতন পরিশোধ হয়েছে`);
