@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import DropZone from "../../components/ui/DropZone";
 // Templates loaded from backend API only
 
 import { API_URL as API } from "../../lib/api";
@@ -434,28 +435,20 @@ export default function ExcelAutoFillPage({ students }) {
             {/* File Upload Area */}
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Excel ফাইল (.xlsx)</label>
-              <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={handleFileSelect} className="hidden" />
-              <div
-                onClick={() => fileRef.current?.click()}
-                className="flex flex-col items-center justify-center p-8 rounded-xl cursor-pointer transition-all border-2 border-dashed"
-                style={{ borderColor: uploadFile ? t.cyan : t.inputBorder, background: uploadFile ? `${t.cyan}05` : t.inputBg }}
-              >
-                {uploadFile ? (
-                  <>
-                    <FileText size={32} style={{ color: t.cyan }} />
-                    <p className="text-sm font-medium mt-2">{uploadFile.name}</p>
-                    <p className="text-[10px] mt-1" style={{ color: t.muted }}>
-                      {(uploadFile.size / 1024).toFixed(1)} KB — ক্লিক করে পরিবর্তন করুন
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <Upload size={32} style={{ color: t.muted }} />
-                    <p className="text-xs mt-2 font-medium">Excel ফাইল ড্র্যাগ করুন বা ক্লিক করুন</p>
-                    <p className="text-[10px] mt-1" style={{ color: t.muted }}>.xlsx ফরম্যাট (⚠️ .xls নয়) • সর্বোচ্চ 10MB</p>
-                  </>
-                )}
-              </div>
+              {uploadFile ? (
+                <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
+                  <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={handleFileSelect} className="hidden" />
+                  <FileText size={24} style={{ color: t.cyan }} />
+                  <div>
+                    <p className="text-xs font-semibold">{uploadFile.name}</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>{(uploadFile.size / 1024).toFixed(1)} KB — ক্লিক করে পরিবর্তন</p>
+                  </div>
+                </div>
+              ) : (
+                <DropZone accept=".xlsx,.xls" onFile={(file) => handleFileSelect({ target: { files: [file] } })}>
+                  Excel টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
+                </DropZone>
+              )}
             </div>
 
             <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}15` }}>

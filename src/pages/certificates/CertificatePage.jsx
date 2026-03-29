@@ -10,6 +10,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
+import DropZone from "../../components/ui/DropZone";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
 
@@ -219,12 +220,17 @@ export default function CertificatePage({ students }) {
             </div>
           </div>
           <div>
-            <input ref={fileRef} type="file" accept=".docx" onChange={e => setUploadFile(e.target.files[0])} className="hidden" />
-            <div onClick={() => fileRef.current?.click()} className="flex flex-col items-center justify-center p-8 rounded-xl cursor-pointer border-2 border-dashed transition"
-              style={{ borderColor: uploadFile ? t.cyan : t.inputBorder, background: uploadFile ? `${t.cyan}05` : t.inputBg }}>
-              {uploadFile ? <><FileText size={32} style={{ color: t.cyan }} /><p className="text-sm font-medium mt-2">{uploadFile.name}</p></>
-                : <><Upload size={32} style={{ color: t.muted }} /><p className="text-xs mt-2">.docx ফাইল আপলোড করুন</p></>}
-            </div>
+            {uploadFile ? (
+              <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
+                <input ref={fileRef} type="file" accept=".docx" onChange={e => setUploadFile(e.target.files[0])} className="hidden" />
+                <FileText size={24} style={{ color: t.cyan }} />
+                <div><p className="text-xs font-semibold">{uploadFile.name}</p><p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে পরিবর্তন</p></div>
+              </div>
+            ) : (
+              <DropZone accept=".docx" onFile={(file) => setUploadFile(file)}>
+                .docx টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
+              </DropZone>
+            )}
           </div>
           <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}15` }}>
             <p className="text-[11px]" style={{ color: t.textSecondary }}>

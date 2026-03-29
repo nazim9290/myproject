@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, X, Plus, Download, Upload, ArrowLeft, Check, AlertTriangle } from "lucide-react";
+import DropZone from "../../components/ui/DropZone";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -343,15 +344,10 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                 </button>
               </div>
 
-              {/* ── File Upload ── */}
-              <input type="file" accept=".xlsx" onChange={handleImportUpload} className="hidden" id="import-file" />
-              <label htmlFor="import-file"
-                className="flex flex-col items-center justify-center p-10 rounded-xl cursor-pointer border-2 border-dashed transition"
-                style={{ borderColor: t.inputBorder, background: t.inputBg }}>
-                <Upload size={36} style={{ color: t.muted }} />
-                <p className="text-sm font-medium mt-3">Excel ফাইল আপলোড করুন</p>
-                <p className="text-[10px] mt-1" style={{ color: t.muted }}>.xlsx ফরম্যাট — প্রথম row header হতে হবে</p>
-              </label>
+              {/* ── File Upload (Drag & Drop) ── */}
+              <DropZone accept=".xlsx,.xls" onFile={(file) => handleImportUpload({ target: { files: [file] } })}>
+                Excel ফাইল টেনে আনুন অথবা ক্লিক করুন
+              </DropZone>
               <div className="mt-3 p-3 rounded-lg" style={{ background: `${t.cyan}08` }}>
                 <p className="text-[11px]" style={{ color: t.textSecondary }}>
                   <strong>নিয়ম:</strong> প্রথম row = column header, দ্বিতীয় row থেকে student data।
