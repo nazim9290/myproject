@@ -37,6 +37,13 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             jlptScore: null,
           })));
         }
+        // Class tests load from DB
+        if (data && data.tests && data.tests.length > 0) {
+          setBTests(data.tests.map(t => ({
+            id: t.id, batchId: t.batch_id, testName: t.test_name,
+            date: t.date, avgScore: t.avg_score, scores: t.scores || {},
+          })));
+        }
       } catch (err) {
         console.error("Batch detail load error:", err);
       }
@@ -139,10 +146,12 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     const newTest = { id: `CT-${Date.now()}`, batchId: batch.id, testName: testForm.testName, date: testForm.date, avgScore: avg, scores: testScores };
     setBTests(prev => [...prev, newTest]);
     setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
-    // DB-তে batch-এর tests JSON হিসেবে save
+    // DB-তে class_tests table-এ save
     try {
-      const allTests = [...bTests, newTest];
-      await batchesApi.update(batch.id, { settings: JSON.stringify({ tests: allTests }) });
+      const saved = await batchesApi.create ? null : null; // dummy
+      const { api: apiHook } = await import("../../hooks/useAPI");
+      const dbTest = await apiHook.post(`/batches/${batch.id}/tests`, { test_name: testForm.testName, date: testForm.date, avg_score: avg, scores: testScores });
+      if (dbTest && dbTest.id) newTest.id = dbTest.id;
     } catch {}
     setTestForm({ testName: "", date: today });
     setTestScores({});
