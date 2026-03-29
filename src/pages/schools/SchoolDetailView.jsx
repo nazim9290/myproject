@@ -63,7 +63,6 @@ export default function SchoolDetailView({ school, students, onBack }) {
   // ── Active section: interview | resume | null ──
   const [activeSection, setActiveSection] = useState(null);
 
-
   // ── Interview List state ──
   const showInterviewList = activeSection === "interview";
   const [selectedForInterview, setSelectedForInterview] = useState([]);
@@ -73,6 +72,38 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [interviewSearch, setInterviewSearch] = useState("");
   const [staffName, setStaffName] = useState("");
   const [interviewCols, setInterviewCols] = useState(DEFAULT_COLS);
+  const [templateName, setTemplateName] = useState(school.interview_template || "");
+  const [uploadingTemplate, setUploadingTemplate] = useState(false);
+
+  // ── Template upload handler ──
+  const handleTemplateUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".xlsx")) { toast.error("শুধু .xlsx ফাইল দিন"); return; }
+    setUploadingTemplate(true);
+    try {
+      const formData = new FormData();
+      formData.append("template", file);
+      const res = await fetch(`${API_URL}/schools/${school.id}/interview-template`, {
+        method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "আপলোড ব্যর্থ");
+      setTemplateName(data.template);
+      toast.success(`টেমপ্লেট আপলোড হয়েছে: ${file.name}`);
+    } catch (err) { toast.error(err.message); }
+    setUploadingTemplate(false);
+    e.target.value = "";
+  };
+
+  // ── Template delete handler ──
+  const handleTemplateDelete = async () => {
+    try {
+      await api.delete(`/schools/${school.id}/interview-template`);
+      setTemplateName("");
+      toast.success("টেমপ্লেট মুছে ফেলা হয়েছে — এখন ডিফল্ট ব্যবহার হবে");
+    } catch (err) { toast.error(err.message); }
+  };
 
   const allStudents = (students || []).filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
   const interviewFiltered = interviewSearch
@@ -199,6 +230,29 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 <option value="column">Column-wise (প্রতি স্টুডেন্ট এক column)</option>
               </select>
             </div>
+          </div>
+
+          {/* ── টেমপ্লেট ম্যানেজমেন্ট ── */}
+          <div className="flex items-center gap-3 mb-4 p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}20` }}>
+            <FileText size={16} style={{ color: t.cyan }} />
+            <div className="flex-1 text-xs">
+              {templateName ? (
+                <span>টেমপ্লেট: <strong style={{ color: t.cyan }}>{templateName}</strong> (স্কুল-specific)</span>
+              ) : (
+                <span style={{ color: t.muted }}>কোনো কাস্টম টেমপ্লেট নেই — <strong>ডিফল্ট টেমপ্লেট</strong> ব্যবহার হবে</span>
+              )}
+            </div>
+            <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition"
+              style={{ background: t.cyan, color: "#000" }}>
+              {uploadingTemplate ? "আপলোড হচ্ছে..." : "📎 টেমপ্লেট আপলোড"}
+              <input type="file" accept=".xlsx" onChange={handleTemplateUpload} className="hidden" disabled={uploadingTemplate} />
+            </label>
+            {templateName && (
+              <button onClick={handleTemplateDelete} className="px-2 py-1.5 rounded-lg text-xs transition"
+                style={{ background: `${t.rose}20`, color: t.rose }}>
+                ✕ মুছুন
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
