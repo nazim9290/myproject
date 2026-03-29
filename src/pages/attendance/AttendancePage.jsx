@@ -11,6 +11,17 @@ import useSortable from "../../hooks/useSortable";
 import { ATT_STATUS, ATTENDANCE_DAY, BATCHES } from "../../data/mockData";
 
 const ATT_CYCLE = ["present", "absent", "late"];
+// P/A/L → present/absent/late normalize
+const normalizeStatus = (s) => {
+  if (!s) return "absent";
+  const lower = s.toLowerCase();
+  if (lower === "p" || lower === "present") return "present";
+  if (lower === "a" || lower === "absent") return "absent";
+  if (lower === "l" || lower === "late") return "late";
+  return "absent";
+};
+// Safe ATT_STATUS lookup — undefined crash prevent
+const getStatusConfig = (status) => ATT_STATUS[normalizeStatus(status)] || ATT_STATUS.absent;
 
 export default function AttendancePage({ students = [] }) {
   const t = useTheme();
@@ -47,8 +58,7 @@ export default function AttendancePage({ students = [] }) {
   const filteredStudents = selectedBatch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.batch === selectedBatch);
 
   // Fallback to mock data if no real students
-  const baseList = filteredStudents.length > 0 ? filteredStudents.map(s => ({ id: s.id, name: s.name_en, batch: s.batch }))
-    : ATTENDANCE_DAY.map(a => ({ id: a.id, name: a.name, batch: "Batch April 2026" }));
+  const baseList = filteredStudents.map(s => ({ id: s.id, name: s.name_en || s.name || s.id, batch: s.batch }));
 
   // সার্চ ও সর্ট প্রয়োগ
   const displayList = sortFn(
@@ -58,7 +68,7 @@ export default function AttendancePage({ students = [] }) {
   );
 
   const todayAtt = attendanceLog[selectedDate] || {};
-  const getStatus = (id) => todayAtt[id] || "absent";
+  const getStatus = (id) => normalizeStatus(todayAtt[id]);
   const cycleStatus = (id) => {
     const cur = ATT_CYCLE.indexOf(getStatus(id));
     const next = ATT_CYCLE[(cur + 1) % ATT_CYCLE.length];
@@ -171,7 +181,7 @@ export default function AttendancePage({ students = [] }) {
               <tbody>
                 {displayList.map((student) => {
                   const status = getStatus(student.id);
-                  const st = ATT_STATUS[status];
+                  const st = getStatusConfig(status);
                   return (
                     <tr key={student.id} className="cursor-pointer" style={{ borderBottom: `1px solid ${t.border}` }}
                       onClick={() => cycleStatus(student.id)}
