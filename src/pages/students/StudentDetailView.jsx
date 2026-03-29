@@ -97,9 +97,18 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   };
   const sf = (k, v) => setSponsorForm(p => ({ ...p, [k]: v }));
 
-  // ── Fee & Payment state ──
+  // ── Fee & Payment state — DB থেকে load ──
   const [feeItems, setFeeItems] = useState(student.fees?.items || []);
   const [payments, setPayments] = useState(student.fees?.payments || []);
+  useEffect(() => {
+    // DB থেকে fee items ও payments load
+    api.get(`/students/${student.id}/fee-items`).then(data => {
+      if (Array.isArray(data) && data.length > 0) setFeeItems(data);
+    }).catch(() => {});
+    api.get(`/students/${student.id}/payments-list`).then(data => {
+      if (Array.isArray(data) && data.length > 0) setPayments(data);
+    }).catch(() => {});
+  }, [student.id]);
   const [showPayForm, setShowPayForm] = useState(false);
   const [payForm, setPayForm] = useState({ amount: "", method: "Cash", category: "", note: "" });
   const [showFeeItemForm, setShowFeeItemForm] = useState(false);
@@ -179,8 +188,11 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     if (!amount || amount <= 0) { toast.error("সঠิক পরিমাণ দিন"); return; }
     const catCfg = CATEGORY_CONFIG[feeItemForm.category];
     const label = feeItemForm.label.trim() || catCfg?.label || feeItemForm.category;
-    const newItem = { id: `fi-${Date.now()}`, category: feeItemForm.category, label, amount };
-    try { await api.post(`/students/${student.id}/payments`, { category: feeItemForm.category, label, amount, total_amount: amount, status: "pending" }); } catch {}
+    let newItem = { id: `fi-${Date.now()}`, category: feeItemForm.category, label, amount };
+    try {
+      const saved = await api.post(`/students/${student.id}/fee-items`, { category: feeItemForm.category, label, amount });
+      if (saved && saved.id) newItem = saved;
+    } catch {}
     const updated = [...feeItems, newItem];
     setFeeItems(updated);
     syncFees(updated, payments);
