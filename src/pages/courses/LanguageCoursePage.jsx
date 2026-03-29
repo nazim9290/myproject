@@ -113,8 +113,7 @@ export default function LanguageCoursePage({ students }) {
   }
 
   // ── KPI: students prop থেকে হিসাব (mock batchStudents সরানো হয়েছে) ──
-  const enrolledStudents = (students || []).filter(s => s.batch);
-  const totalStudents = enrolledStudents.length;
+  const totalStudents = batches.reduce((s, b) => s + (b.enrolledCount || 0), 0) || (students || []).filter(s => s.batch).length;
   const avgAttendance = 0; // attendance API থেকে আসবে পরে
   const passedExam = (students || []).filter(s => s.status === "EXAM_PASSED" || s.status === "DOC_COLLECTION").length;
 
@@ -179,6 +178,7 @@ export default function LanguageCoursePage({ students }) {
         {batches.map((batch, i) => {
           // ── ব্যাচের students: students prop থেকে batch name মিলিয়ে ──
           const bStudents = (students || []).filter(s => s.batch === batch.name || s.batch_id === batch.id);
+          const enrollCount = batch.enrolledCount || bStudents.length;
           const bAvgAtt = 0; // attendance API থেকে আসবে
           const bPassed = bStudents.filter(s => s.status === "EXAM_PASSED").length;
           const countryColor = batch.country === "Japan" ? t.rose : batch.country === "Germany" ? t.amber : t.cyan;
@@ -196,9 +196,9 @@ export default function LanguageCoursePage({ students }) {
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     {[
-                      { icon: Users, text: `${bStudents.length}/${batch.capacity} শিক্ষার্থী` },
+                      { icon: Users, text: `${enrollCount}/${batch.capacity || 30} শিক্ষার্থী` },
                       { icon: BookOpen, text: batch.level },
-                      { icon: Calendar, text: batch.startDate || "—" },
+                      { icon: Calendar, text: batch.start_date || batch.startDate || "—" },
                       { icon: User, text: batch.teacher || "—" },
                     ].map((item, j) => (
                       <div key={j} className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
