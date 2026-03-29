@@ -66,10 +66,11 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
     <div className="space-y-5 anim-fade">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={onBack} className="p-2 rounded-xl transition" style={{ background: "transparent" }}
-          onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
-          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-          <ArrowLeft size={18} />
+        <button onClick={onBack} className="p-2 rounded-xl transition flex items-center gap-1 text-xs font-medium"
+          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+          onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+          onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">ফিরুন</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3">

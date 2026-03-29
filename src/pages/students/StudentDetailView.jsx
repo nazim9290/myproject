@@ -248,10 +248,11 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
       {/* ── Header ── */}
       <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={onBack} className="p-2 rounded-xl transition"
+        <button onClick={onBack} className="p-2 rounded-xl transition flex items-center gap-1 text-xs font-medium"
+          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
           onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-          <ArrowLeft size={18} />
+          onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">ফিরুন</span>
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
