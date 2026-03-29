@@ -35,6 +35,21 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [activityLog, setActivityLog] = useState([
     { time: student.created, text: `Student created — ${student.source || "Walk-in"}`, type: "create" },
   ]);
+  // DB থেকে activity log load
+  useEffect(() => {
+    api.get(`/activity-log?record_id=${student.id}&module=students`).then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        const dbLogs = data.map(d => ({
+          time: d.created_at ? new Date(d.created_at).toISOString().slice(0, 16).replace("T", " ") : "",
+          text: d.description, type: d.action,
+        }));
+        setActivityLog(prev => {
+          const existing = new Set(prev.map(p => p.text + p.time));
+          return [...prev, ...dbLogs.filter(d => !existing.has(d.text + d.time))];
+        });
+      }
+    }).catch(() => {});
+  }, [student.id]);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -109,6 +124,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const logActivity = (text, type = "action") => {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
     setActivityLog(prev => [...prev, { time: now, text, type }]);
+    // DB-তে activity log save
+    api.post("/activity-log", { module: "students", record_id: student.id, action: type, description: text }).catch(() => {});
   };
 
   // Status change
