@@ -303,7 +303,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const doExport = (mode) => {
     const data = mode === "all" ? nonEnrolled : mode === "active" ? activeList : filtered;
     const cols = [
-      { key: "id", label: "ID" },
+      { key: "display_id", label: "ID" },
       { key: "name", label: "Name (EN)" },
       { key: "name_bn", label: "Name (BN)" },
       { key: "phone", label: "Phone" },
@@ -407,7 +407,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           <button onClick={() => setDetailId(null)} className="p-2 rounded-xl hover:bg-white/5"><ArrowLeft size={18}/></button>
           <div className="flex-1">
             <h2 className="text-xl font-bold">{v.name}</h2>
-            <p className="text-xs" style={{color:t.muted}}>{v.name_bn||""} • {v.id} • {days}d ago</p>
+            <p className="text-xs" style={{color:t.muted}}>{v.name_bn||""} • {v.display_id || v.id} • {days}d ago</p>
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="xs" icon={Phone} onClick={() => markFollowUp(v.id)}>ফলো-আপ</Button>
