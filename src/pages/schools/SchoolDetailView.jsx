@@ -74,6 +74,65 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [interviewCols, setInterviewCols] = useState(DEFAULT_COLS);
   const [templateName, setTemplateName] = useState(school.interview_template_name || school.interview_template || "");
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
+  const [mappingHeaders, setMappingHeaders] = useState([]); // [{position, label, field}]
+  const [mappingFormat, setMappingFormat] = useState("row");
+  const [mappingHeaderRow, setMappingHeaderRow] = useState(3);
+  const [showMapping, setShowMapping] = useState(false);
+  const [savingMapping, setSavingMapping] = useState(false);
+
+  // Student data fields — dropdown options
+  const STUDENT_FIELDS = [
+    { value: "", label: "— ম্যাপ করুন —" },
+    { value: "no", label: "ক্রমিক (No.)" },
+    { value: "full_name", label: "পুরো নাম" },
+    { value: "family_name", label: "পদবি (Family Name)" },
+    { value: "given_name", label: "নাম (Given Name)" },
+    { value: "name_bn", label: "নাম (বাংলা)" },
+    { value: "gender", label: "লিঙ্গ (Gender)" },
+    { value: "gender_jp", label: "লিঙ্গ (男性/女性)" },
+    { value: "dob", label: "জন্ম তারিখ" },
+    { value: "dob_age", label: "জন্ম তারিখ (বয়স)" },
+    { value: "age", label: "বয়স" },
+    { value: "nationality", label: "জাতীয়তা" },
+    { value: "education", label: "শিক্ষাগত যোগ্যতা" },
+    { value: "gpa", label: "GPA" },
+    { value: "jp_exam_type", label: "JP পরীক্ষার ধরন (JLPT/NAT)" },
+    { value: "jp_level", label: "JP লেভেল" },
+    { value: "jp_score", label: "JP স্কোর" },
+    { value: "jp_study_hours", label: "JP অধ্যয়ন ঘণ্টা" },
+    { value: "has_jp_cert", label: "JP সনদ আছে?" },
+    { value: "occupation", label: "পেশা" },
+    { value: "passport_no", label: "পাসপোর্ট নম্বর" },
+    { value: "phone", label: "ফোন" },
+    { value: "email", label: "ইমেইল" },
+    { value: "address", label: "ঠিকানা" },
+    { value: "intended_semester", label: "ইনটেক সেমিস্টার" },
+    { value: "sponsor", label: "স্পন্সর" },
+    { value: "sponsor_relation", label: "স্পন্সর সম্পর্ক" },
+    { value: "sponsor_income", label: "স্পন্সর আয়" },
+    { value: "sponsor_contact", label: "স্পন্সর যোগাযোগ" },
+    { value: "coe_applied", label: "COE আবেদন?" },
+    { value: "goal", label: "গ্র্যাজুয়েশনের পর লক্ষ্য" },
+    { value: "goal_jp", label: "লক্ষ্য (জাপানি)" },
+    { value: "past_visa", label: "পূর্ব ভিসা/ইমিগ্রেশন" },
+    { value: "agency_name", label: "এজেন্সির নাম" },
+    { value: "staff_name", label: "স্টাফের নাম" },
+    { value: "today", label: "আজকের তারিখ" },
+  ];
+
+  // Load saved mapping on mount
+  useEffect(() => {
+    if (school.interview_template) {
+      fetch(`${API_URL}/schools/${school.id}/interview-mapping`, { headers: { Authorization: `Bearer ${token()}` } })
+        .then(r => r.json()).then(data => {
+          if (data.mapping?.mapping) {
+            setMappingHeaders(data.mapping.mapping);
+            setMappingFormat(data.mapping.format || "row");
+            setMappingHeaderRow(data.mapping.header_row || 3);
+          }
+        }).catch(() => {});
+    }
+  }, [school.id, school.interview_template]);
 
   // ── Template upload handler ──
   const handleTemplateUpload = async (e) => {
@@ -90,10 +149,33 @@ export default function SchoolDetailView({ school, students, onBack }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "আপলোড ব্যর্থ");
       setTemplateName(data.template_name || data.template);
-      toast.success(`টেমপ্লেট আপলোড হয়েছে: ${file.name}`);
+      // Row-wise headers বা column-wise labels — যেটা বেশি
+      const headers = (data.row_headers?.length >= data.col_labels?.length) ? data.row_headers : data.col_labels;
+      const fmt = (data.row_headers?.length >= data.col_labels?.length) ? "row" : "column";
+      setMappingHeaders(headers || []);
+      setMappingFormat(fmt);
+      setMappingHeaderRow(data.header_row || 3);
+      setShowMapping(true);
+      toast.success(`টেমপ্লেট আপলোড হয়েছে — এখন ম্যাপিং করুন`);
     } catch (err) { toast.error(err.message); }
     setUploadingTemplate(false);
     e.target.value = "";
+  };
+
+  // ── Mapping save ──
+  const saveMapping = async () => {
+    setSavingMapping(true);
+    try {
+      const res = await fetch(`${API_URL}/schools/${school.id}/interview-mapping`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ mapping: mappingHeaders, format: mappingFormat, header_row: mappingHeaderRow }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+      toast.success("ম্যাপিং সেভ হয়েছে");
+      setShowMapping(false);
+    } catch (err) { toast.error(err.message); }
+    setSavingMapping(false);
   };
 
   // ── Template delete handler ──
@@ -251,12 +333,58 @@ export default function SchoolDetailView({ school, students, onBack }) {
               <input type="file" accept=".xlsx" onChange={handleTemplateUpload} className="hidden" disabled={uploadingTemplate} />
             </label>
             {templateName && (
-              <button onClick={handleTemplateDelete} className="px-2 py-1.5 rounded-lg text-xs transition"
-                style={{ background: `${t.rose}20`, color: t.rose }}>
-                ✕ মুছুন
-              </button>
+              <>
+                <button onClick={() => setShowMapping(!showMapping)} className="px-2 py-1.5 rounded-lg text-xs font-medium transition"
+                  style={{ background: `${t.purple}20`, color: t.purple }}>
+                  🔗 ম্যাপিং {showMapping ? "বন্ধ" : "দেখুন"}
+                </button>
+                <button onClick={handleTemplateDelete} className="px-2 py-1.5 rounded-lg text-xs transition"
+                  style={{ background: `${t.rose}20`, color: t.rose }}>
+                  ✕ মুছুন
+                </button>
+              </>
             )}
           </div>
+
+          {/* ── ম্যাপিং টেবিল ── */}
+          {showMapping && mappingHeaders.length > 0 && (
+            <div className="mb-4 p-4 rounded-xl" style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}20` }}>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold" style={{ color: t.purple }}>🔗 ফিল্ড ম্যাপিং — টেমপ্লেটের কোন {mappingFormat === "column" ? "রো" : "কলাম"}-এ কোন ডাটা বসবে</h4>
+                <div className="flex items-center gap-2">
+                  <select value={mappingFormat} onChange={e => setMappingFormat(e.target.value)}
+                    className="px-2 py-1 rounded text-[10px] outline-none" style={is}>
+                    <option value="row">Row-wise</option>
+                    <option value="column">Column-wise</option>
+                  </select>
+                  <button onClick={saveMapping} disabled={savingMapping}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: t.emerald, color: "#000" }}>
+                    {savingMapping ? "সেভ হচ্ছে..." : "💾 ম্যাপিং সেভ"}
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
+                {mappingHeaders.map((h, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: t.inputBg }}>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}20`, color: t.cyan }}>
+                      {mappingFormat === "column" ? `R${h.position}` : `C${h.position}`}
+                    </span>
+                    <span className="flex-1 text-xs truncate" title={h.label}>{h.label}</span>
+                    <select value={h.field || ""} onChange={e => {
+                      const updated = [...mappingHeaders];
+                      updated[i] = { ...h, field: e.target.value };
+                      setMappingHeaders(updated);
+                    }} className="px-2 py-1 rounded text-[10px] outline-none min-w-[140px]" style={is}>
+                      {STUDENT_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] mt-2" style={{ color: t.muted }}>
+                প্রতিটি টেমপ্লেট {mappingFormat === "column" ? "রো" : "কলাম"}-এর পাশে student-এর কোন ফিল্ড বসবে সিলেক্ট করুন। সেভ করলে পরবর্তীতে automatic ব্যবহার হবে।
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
