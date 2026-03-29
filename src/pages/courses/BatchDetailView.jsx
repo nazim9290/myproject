@@ -95,16 +95,24 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     if (!attDate || bStudents.length === 0) return;
     (async () => {
       try {
-        const { attendance } = await import("../../lib/api");
-        const data = await attendance.get(attDate, batch.id);
+        const { api: apiHook } = await import("../../hooks/useAPI");
+        const data = await apiHook.get(`/attendance?date=${attDate}&batch=${batch.id}`);
+        console.log("[Attendance Load]", attDate, "records:", Array.isArray(data) ? data.length : 0, data);
         if (Array.isArray(data) && data.length > 0) {
           const map = {};
-          data.forEach(r => { map[r.student_id] = r.status === "present" ? "P" : r.status === "absent" ? "A" : r.status === "late" ? "L" : r.status; });
-          setAttState(prev => ({ ...Object.fromEntries(bStudents.map(s => [s.studentId, "P"])), ...map }));
+          data.forEach(r => {
+            // status mapping — DB থেকে যা আসে তা P/A/L তে convert
+            const s = (r.status || "").toLowerCase();
+            map[r.student_id] = s === "present" || s === "p" ? "P" : s === "absent" || s === "a" ? "A" : s === "late" || s === "l" ? "L" : "P";
+          });
+          console.log("[Attendance Map]", map);
+          setAttState({ ...Object.fromEntries(bStudents.map(s => [s.studentId, "P"])), ...map });
         } else {
           setAttState(Object.fromEntries(bStudents.map(s => [s.studentId, "P"])));
         }
-      } catch {}
+      } catch (err) {
+        console.error("[Attendance Load Error]", err);
+      }
     })();
   }, [attDate, bStudents.length]);
   const saveAttendance = async () => {
@@ -114,18 +122,12 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       status: attState[s.studentId] || "P",
     }));
     try {
-      const { attendance } = await import("../../lib/api");
-      await attendance.save(attDate, records);
+      const { api: apiHook } = await import("../../hooks/useAPI");
+      await apiHook.post("/attendance/save", { date: attDate, batch_id: batch.id, records });
       toast.success(`${attDate} — উপস্থিতি সংরক্ষণ হয়েছে`);
     } catch (err) {
-      // fallback — direct API call
-      try {
-        const { api } = await import("../../hooks/useAPI");
-        await api.post("/attendance/save", { date: attDate, records });
-        toast.success(`${attDate} — উপস্থিতি সংরক্ষণ হয়েছে`);
-      } catch {
-        toast.error("সংরক্ষণ ব্যর্থ");
-      }
+      console.error("[Attendance Save Error]", err);
+      toast.error("সংরক্ষণ ব্যর্থ: " + (err.message || ""));
     }
   };
 
