@@ -18,3 +18,13 @@ body {
   min-height: 100vh;
   text-align: left;
 }
+
+/* Date picker icon — cyan color (dark/light both) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(70%) sepia(50%) saturate(500%) hue-rotate(160deg);
+  cursor: pointer;
+  opacity: 0.8;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
