@@ -243,8 +243,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                       { h: "Branch", k: "branch" }, { h: "Google Drive", k: "gdrive_folder_url" },
                       { h: "Status", k: "status" }, { h: "Created", k: "created" }, { h: "Notes", k: "internal_notes" },
                     ];
+                    const PHONE_KEYS = ["phone", "whatsapp"];
                     const csv = cols.map(c => c.h).join(",") + "\n" +
-                      opt.data.map(s => cols.map(c => `"${String(s[c.k] ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+                      opt.data.map(s => cols.map(c => {
+                        const v = String(s[c.k] ?? "").replace(/"/g, '""');
+                        if (PHONE_KEYS.includes(c.k) && v && /^0\d+$/.test(v)) return `="` + v + `"`;
+                        return `"${v}"`;
+                      }).join(",")).join("\n");
                     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
                     Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Students_${new Date().toISOString().slice(0,10)}.csv` }).click();
                     toast.exported(`Students (${opt.data.length} records)`);

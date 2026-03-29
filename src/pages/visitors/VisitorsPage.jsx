@@ -330,12 +330,16 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       { key: "notes", label: "Notes" },
     ];
     const header = cols.map(c => c.label).join(",");
+    // ফোন নম্বরে leading zero রক্ষা — Excel-এ ="0171..." format
+    const PHONE_KEYS = ["phone", "guardian_phone"];
     const rows = data.map(v => cols.map(c => {
       let val = v[c.key];
       if (val === undefined || val === null) return "";
       if (Array.isArray(val)) val = val.join("; ");
       if (typeof val === "boolean") val = val ? "Yes" : "No";
       val = String(val).replace(/"/g, '""');
+      // ফোন নম্বর — leading zero রাখতে ="..." format
+      if (PHONE_KEYS.includes(c.key) && val && /^0\d+$/.test(val)) return '="' + val + '"';
       return val.includes(",") || val.includes("\n") || val.includes('"') ? '"' + val + '"' : val;
     }).join(","));
     const csv = header + "\n" + rows.join("\n");
