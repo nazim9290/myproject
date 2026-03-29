@@ -4,26 +4,8 @@
 // ═══════════════════════════════════════════════
 
 export const DEFAULT_STEPS_META = {
-  VISITOR: {
-    icon: "🚶", nextStatus: "FOLLOW_UP", nextLabel: "ফলোআপ শুরু করুন",
-    hint: "প্রাথমিক কাউন্সেলিং শেষ হলে ফলোআপ শুরু করুন",
-    checklist: [
-      { id: "v1", text: "কাউন্সেলিং সম্পন্ন হয়েছে", req: true },
-      { id: "v2", text: "আগ্রহের দেশ ও ভিসার ধরন নির্ধারিত", req: true },
-      { id: "v3", text: "বাজেট ও সময়সীমা নিয়ে আলোচনা হয়েছে", req: false },
-      { id: "v4", text: "পরবর্তী ফলোআপ তারিখ নির্ধারিত", req: true },
-    ],
-  },
-  FOLLOW_UP: {
-    icon: "📞", nextStatus: "ENROLLED", nextLabel: "ভর্তি করুন",
-    hint: "কমপক্ষে ৩ বার ফলোআপ করুন — স্টুডেন্ট রাজি হলে ভর্তি করুন",
-    checklist: [
-      { id: "fu1", text: "কমপক্ষে ৩ বার ফলোআপ কল করা হয়েছে", req: true },
-      { id: "fu2", text: "অভিভাবকের সাথে আলোচনা হয়েছে", req: false },
-      { id: "fu3", text: "সমস্ত প্রশ্নের সঠিক উত্তর দেওয়া হয়েছে", req: true },
-      { id: "fu4", text: "ভর্তির সিদ্ধান্ত চূড়ান্ত হয়েছে", req: true },
-    ],
-  },
+  // VISITOR ও FOLLOW_UP → Visitors module-এ handle হয়
+  // Student pipeline ENROLLED থেকে শুরু
   ENROLLED: {
     icon: "✅", nextStatus: "IN_COURSE", nextLabel: "কোর্স শুরু করুন",
     hint: "ভর্তি ফর্ম ও প্রথম কিস্তি ফি পরিশোধ হলে ব্যাচে যোগ করুন",

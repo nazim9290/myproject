@@ -1,6 +1,6 @@
+// Student Pipeline — ভর্তি (ENROLLED) থেকে শুরু
+// ভিজিটর → ফলোআপ → ভর্তি এই ধাপ Visitors module-এ handle হয়
 export const PIPELINE_STATUSES = [
-  { code: "VISITOR", label: "দর্শনার্থী", color: "#94a3b8" },
-  { code: "FOLLOW_UP", label: "ফলোআপ", color: "#7dd3fc" },
   { code: "ENROLLED", label: "ভর্তি", color: "#6ee7b7" },
   { code: "IN_COURSE", label: "কোর্স চলছে", color: "#a5f3fc" },
   { code: "EXAM_PASSED", label: "পরীক্ষায় পাস", color: "#fcd34d" },
