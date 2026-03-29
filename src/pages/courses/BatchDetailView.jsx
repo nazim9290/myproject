@@ -170,16 +170,17 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       if (!u) return s;
       return { ...s, examType: examForm.examType, jlptLevel: examForm.level, jlptScore: parseInt(u.score) || null, jlptStatus: u.result };
     }));
-    // DB-তে প্রতিটি student-এর exam result save
+    // DB-তে student_jp_exams table-এ save
     try {
       const { api } = await import("../../hooks/useAPI");
       for (const [studentId, u] of Object.entries(examUpdates)) {
         if (u.score || u.result) {
-          await api.patch(`/students/${studentId}`, {
-            jp_exam_type: examForm.examType,
-            jp_level: examForm.level,
-            jp_score: u.score || "",
-            jp_result: u.result || "",
+          await api.post(`/students/${studentId}/exam-result`, {
+            exam_type: examForm.examType,
+            level: examForm.level,
+            score: u.score || null,
+            result: u.result || null,
+            exam_date: examForm.date || null,
           }).catch(() => {});
         }
       }
