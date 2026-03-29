@@ -218,6 +218,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const [showSettings, setShowSettings] = useState(false);
   const [detailId, setDetailId] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [visitorChecks, setVisitorChecks] = useState({});
   const [editData, setEditData] = useState({});
   const [searchQ, setSearchQ] = useState("");
   const [showExport, setShowExport] = useState(false);
@@ -417,56 +418,160 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           </div>
         </div>
 
-        {/* ── Visitor → Student Pipeline Progress ── */}
-        <Card delay={50}>
-          <p className="text-[10px] uppercase tracking-wider mb-3 font-semibold" style={{color:t.muted}}>ভিজিটর → ভর্তি পাইপলাইন</p>
-          {(() => {
-            const PIPELINE = [
-              { code: "Interested", label: "আগ্রহী", icon: "🟢", color: t.emerald },
-              { code: "Thinking", label: "ভাবছে / পরামর্শ", icon: "🤔", color: t.amber },
-              { code: "Follow-up", label: "ফলো-আপ চলছে", icon: "📞", color: t.cyan },
-              { code: "Ready", label: "ভর্তির জন্য প্রস্তুত", icon: "✅", color: t.purple },
-              { code: "Enrolled", label: "🎓 ভর্তি সম্পন্ন", icon: "🎓", color: t.emerald },
-            ];
-            // Current step determine
-            const sMap = { "Interested": 0, "Thinking": 1, "Not Interested": -1 };
-            const hasFollowUp = v.lastFollowUp || v.last_follow_up;
-            let currentStep = sMap[v.status] ?? 0;
-            if (hasFollowUp && currentStep >= 1) currentStep = 2;
-            if (v.status === "converted" || v.status === "Enrolled") currentStep = 4;
+        {/* ── Visitor → ভর্তি Pipeline + Checklist নির্দেশনা ── */}
+        {(() => {
+          const VISITOR_PIPELINE = [
+            { code: "Interested", label: "আগ্রহী", icon: "🟢", color: t.emerald,
+              hint: "প্রাথমিক কাউন্সেলিং সম্পন্ন করুন — আগ্রহের দেশ, বাজেট ও সময়সীমা নির্ধারণ করুন",
+              checklist: [
+                { id: "v1", text: "প্রাথমিক কাউন্সেলিং সম্পন্ন হয়েছে", req: true },
+                { id: "v2", text: "আগ্রহের দেশ ও ভিসার ধরন নির্ধারিত", req: true },
+                { id: "v3", text: "বাজেট ও সময়সীমা আলোচনা হয়েছে", req: false },
+                { id: "v4", text: "পরবর্তী ফলো-আপ তারিখ নির্ধারিত", req: true },
+              ],
+              nextAction: "Thinking", nextLabel: "পরবর্তী: ভাবছে",
+            },
+            { code: "Thinking", label: "ভাবছে / পরামর্শ", icon: "🤔", color: t.amber,
+              hint: "ভিজিটর সিদ্ধান্ত নিচ্ছে — নিয়মিত ফলো-আপ করুন, প্রশ্নের উত্তর দিন",
+              checklist: [
+                { id: "t1", text: "কমপক্ষে ২ বার ফলো-আপ কল করা হয়েছে", req: true },
+                { id: "t2", text: "অভিভাবকের সাথে আলোচনা হয়েছে", req: false },
+                { id: "t3", text: "সব প্রশ্নের সঠিক উত্তর দেওয়া হয়েছে", req: true },
+                { id: "t4", text: "প্রতিযোগী এজেন্সির offer জানা হয়েছে", req: false },
+              ],
+              nextAction: "follow-up", nextLabel: "পরবর্তী: ফলো-আপ",
+            },
+            { code: "Follow-up", label: "ফলো-আপ চলছে", icon: "📞", color: t.cyan,
+              hint: "নিয়মিত ফলো-আপ অব্যাহত রাখুন — ভর্তির সিদ্ধান্ত চূড়ান্ত করুন",
+              checklist: [
+                { id: "f1", text: "কমপক্ষে ৩ বার ফলো-আপ সম্পন্ন", req: true },
+                { id: "f2", text: "ভর্তি ফি ও কিস্তির পরিমাণ জানানো হয়েছে", req: true },
+                { id: "f3", text: "প্রয়োজনীয় কাগজপত্রের তালিকা দেওয়া হয়েছে", req: false },
+                { id: "f4", text: "ভর্তির সিদ্ধান্ত চূড়ান্ত হয়েছে", req: true },
+              ],
+              nextAction: "ready", nextLabel: "পরবর্তী: ভর্তির জন্য প্রস্তুত",
+            },
+            { code: "Ready", label: "ভর্তির জন্য প্রস্তুত", icon: "✅", color: t.purple,
+              hint: "ভর্তি ফি গ্রহণ করুন ও স্টুডেন্ট হিসেবে convert করুন",
+              checklist: [
+                { id: "r1", text: "ভর্তি ফি পরিশোধ হয়েছে", req: true },
+                { id: "r2", text: "ভর্তি ফর্ম পূরণ হয়েছে", req: true },
+                { id: "r3", text: "পাসপোর্ট কপি জমা হয়েছে", req: false },
+                { id: "r4", text: "ছবি জমা হয়েছে", req: false },
+              ],
+              nextAction: "convert", nextLabel: "🎓 ভর্তি করুন (স্টুডেন্ট-এ কনভার্ট)",
+            },
+            { code: "Enrolled", label: "ভর্তি সম্পন্ন", icon: "🎓", color: t.emerald,
+              hint: "ভর্তি সম্পন্ন — Students মডিউলে চলে গেছে",
+              checklist: [], nextAction: null, nextLabel: null,
+            },
+          ];
 
-            return (
-              <div className="flex items-center gap-1">
-                {PIPELINE.map((step, i) => {
-                  const isDone = i <= currentStep;
-                  const isCurrent = i === currentStep;
-                  return (
-                    <div key={step.code} className="flex items-center flex-1">
-                      <div className="flex flex-col items-center flex-1">
-                        <div className="h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold transition-all"
-                          style={{
-                            background: isDone ? step.color + "20" : t.inputBg,
-                            border: `2px solid ${isDone ? step.color : t.inputBorder}`,
-                            color: isDone ? step.color : t.muted,
-                            transform: isCurrent ? "scale(1.15)" : "scale(1)",
-                            boxShadow: isCurrent ? `0 0 12px ${step.color}40` : "none",
-                          }}>
-                          {isDone ? step.icon : i + 1}
+          const sMap = { "Interested": 0, "Thinking": 1, "Not Interested": -1 };
+          const hasFollowUp = v.lastFollowUp || v.last_follow_up;
+          let currentStep = sMap[v.status] ?? 0;
+          if (hasFollowUp && currentStep >= 1) currentStep = Math.max(currentStep, 2);
+          if (v.status === "converted" || v.status === "Enrolled") currentStep = 4;
+          const currentPipe = VISITOR_PIPELINE[Math.max(0, Math.min(currentStep, VISITOR_PIPELINE.length - 1))];
+
+          return (
+            <>
+              {/* Pipeline Progress */}
+              <Card delay={50}>
+                <p className="text-[10px] uppercase tracking-wider mb-3 font-semibold" style={{color:t.muted}}>ভিজিটর → ভর্তি পাইপলাইন</p>
+                <div className="flex items-center gap-1">
+                  {VISITOR_PIPELINE.map((step, i) => {
+                    const isDone = i <= currentStep;
+                    const isCurrent = i === currentStep;
+                    return (
+                      <div key={step.code} className="flex items-center flex-1">
+                        <div className="flex flex-col items-center flex-1">
+                          <div className="h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+                            style={{
+                              background: isDone ? step.color+"20" : t.inputBg,
+                              border: `2px solid ${isDone ? step.color : t.inputBorder}`,
+                              color: isDone ? step.color : t.muted,
+                              transform: isCurrent ? "scale(1.15)" : "scale(1)",
+                              boxShadow: isCurrent ? `0 0 12px ${step.color}40` : "none",
+                            }}>
+                            {isDone ? step.icon : i+1}
+                          </div>
+                          <p className="text-[9px] mt-1 text-center leading-tight" style={{color: isDone ? step.color : t.muted, fontWeight: isCurrent ? 700 : 400}}>
+                            {step.label}
+                          </p>
                         </div>
-                        <p className="text-[9px] mt-1 text-center leading-tight" style={{color: isDone ? step.color : t.muted, fontWeight: isCurrent ? 700 : 400}}>
-                          {step.label}
-                        </p>
+                        {i < VISITOR_PIPELINE.length-1 && (
+                          <div className="h-0.5 flex-1 mx-1 rounded-full" style={{background: i<currentStep ? step.color : t.inputBorder}} />
+                        )}
                       </div>
-                      {i < PIPELINE.length - 1 && (
-                        <div className="h-0.5 flex-1 mx-1 rounded-full" style={{background: i < currentStep ? step.color : t.inputBorder}} />
+                    );
+                  })}
+                </div>
+              </Card>
+
+              {/* ── এই ধাপের নির্দেশনা ও Checklist ── */}
+              {currentPipe.checklist.length > 0 && (
+                <Card delay={100}>
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{background: currentPipe.color+"15"}}>
+                      {currentPipe.icon}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold">{currentPipe.label} — করণীয়</p>
+                      <p className="text-[11px] mt-0.5" style={{color: t.muted}}>{currentPipe.hint}</p>
+                    </div>
+                  </div>
+
+                  {/* Checklist */}
+                  <div className="space-y-2 mb-4">
+                    <p className="text-[10px] uppercase tracking-wider font-bold" style={{color:t.muted}}>এই ধাপে যা করতে হবে</p>
+                    {currentPipe.checklist.map(item => {
+                      const key = `vp_${currentPipe.code}_${item.id}`;
+                      const ticked = !!visitorChecks[key];
+                      return (
+                        <button key={item.id} onClick={()=>setVisitorChecks(prev=>({...prev,[key]:!prev[key]}))}
+                          className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all"
+                          style={{background: ticked ? `${t.emerald}10` : t.inputBg, border:`1px solid ${ticked ? `${t.emerald}30` : "transparent"}`}}>
+                          <div className="h-5 w-5 rounded-md flex items-center justify-center shrink-0 border-2 transition-all"
+                            style={{background: ticked ? t.emerald : "transparent", borderColor: ticked ? t.emerald : t.inputBorder}}>
+                            {ticked && <Check size={11} color="#fff"/>}
+                          </div>
+                          <span className="text-xs flex-1" style={{color: ticked ? t.textSecondary : t.text, textDecoration: ticked ? "line-through" : "none"}}>
+                            {item.text}
+                          </span>
+                          {item.req && !ticked && <span className="text-[9px] shrink-0 px-1.5 py-0.5 rounded-full" style={{background:`${t.rose}15`,color:t.rose}}>আবশ্যক</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Step Button */}
+                  {currentPipe.nextAction && (
+                    <div className="pt-3" style={{borderTop:`1px solid ${t.border}`}}>
+                      {currentPipe.nextAction === "convert" ? (
+                        <button onClick={()=>setConfirmAction({type:"convert",visitor:v})}
+                          className="w-full py-3 rounded-xl text-sm font-bold transition-all hover:scale-[1.01]"
+                          style={{background:`linear-gradient(135deg, ${t.emerald}, ${t.cyan})`, color:"#fff"}}>
+                          🎓 ভর্তি করুন — স্টুডেন্ট মডিউলে কনভার্ট
+                        </button>
+                      ) : (
+                        <button onClick={()=>{
+                          if (currentPipe.nextAction === "Thinking") changeStatus(v.id, "Thinking");
+                          else if (currentPipe.nextAction === "follow-up") markFollowUp(v.id);
+                          else if (currentPipe.nextAction === "ready") toast.success("ভর্তির জন্য প্রস্তুত!");
+                        }}
+                          className="w-full py-2.5 rounded-xl text-xs font-semibold transition-all"
+                          style={{background: currentPipe.color+"15", color: currentPipe.color, border:`1px solid ${currentPipe.color}30`}}>
+                          → {currentPipe.nextLabel}
+                        </button>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </Card>
+                  )}
+                </Card>
+              )}
+            </>
+          );
+        })()}
 
         {/* Status Change */}
         <div className="flex items-center gap-2">
