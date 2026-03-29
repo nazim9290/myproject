@@ -67,14 +67,26 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [attDate, setAttDate] = useState(today);
   const [attState, setAttState] = useState(() => Object.fromEntries(bStudents.map(s => [s.studentId, "P"])));
   const cycleAtt = (id) => setAttState(p => ({ ...p, [id]: ATT_STATUS[(ATT_STATUS.indexOf(p[id] || "P") + 1) % 3] }));
-  const saveAttendance = () => {
-    // Update attendance %: P counts, L = 0.5
-    setBStudents(prev => prev.map(s => {
-      const status = attState[s.studentId] || "P";
-      const delta = status === "P" ? 1 : status === "L" ? 0.5 : 0;
-      return s; // In a real app we'd update per-day logs; here we just show toast
+  const saveAttendance = async () => {
+    // API-তে attendance save
+    const records = bStudents.map(s => ({
+      student_id: s.studentId,
+      status: attState[s.studentId] || "P",
     }));
-    toast.success(`${attDate} — উপস্থিতি সংরক্ষণ হয়েছে`);
+    try {
+      const { attendance } = await import("../../lib/api");
+      await attendance.save(attDate, records);
+      toast.success(`${attDate} — উপস্থিতি সংরক্ষণ হয়েছে`);
+    } catch (err) {
+      // fallback — direct API call
+      try {
+        const { api } = await import("../../hooks/useAPI");
+        await api.post("/attendance/save", { date: attDate, records });
+        toast.success(`${attDate} — উপস্থিতি সংরক্ষণ হয়েছে`);
+      } catch {
+        toast.error("সংরক্ষণ ব্যর্থ");
+      }
+    }
   };
 
   // Add class test — supports adding students from other batches
