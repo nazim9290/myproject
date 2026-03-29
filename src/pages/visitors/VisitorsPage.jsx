@@ -417,7 +417,58 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           </div>
         </div>
 
-        {/* Status Change Buttons — WORKS because detailVisitor is derived */}
+        {/* ── Visitor → Student Pipeline Progress ── */}
+        <Card delay={50}>
+          <p className="text-[10px] uppercase tracking-wider mb-3 font-semibold" style={{color:t.muted}}>ভিজিটর → ভর্তি পাইপলাইন</p>
+          {(() => {
+            const PIPELINE = [
+              { code: "Interested", label: "আগ্রহী", icon: "🟢", color: t.emerald },
+              { code: "Thinking", label: "ভাবছে / পরামর্শ", icon: "🤔", color: t.amber },
+              { code: "Follow-up", label: "ফলো-আপ চলছে", icon: "📞", color: t.cyan },
+              { code: "Ready", label: "ভর্তির জন্য প্রস্তুত", icon: "✅", color: t.purple },
+              { code: "Enrolled", label: "🎓 ভর্তি সম্পন্ন", icon: "🎓", color: t.emerald },
+            ];
+            // Current step determine
+            const sMap = { "Interested": 0, "Thinking": 1, "Not Interested": -1 };
+            const hasFollowUp = v.lastFollowUp || v.last_follow_up;
+            let currentStep = sMap[v.status] ?? 0;
+            if (hasFollowUp && currentStep >= 1) currentStep = 2;
+            if (v.status === "converted" || v.status === "Enrolled") currentStep = 4;
+
+            return (
+              <div className="flex items-center gap-1">
+                {PIPELINE.map((step, i) => {
+                  const isDone = i <= currentStep;
+                  const isCurrent = i === currentStep;
+                  return (
+                    <div key={step.code} className="flex items-center flex-1">
+                      <div className="flex flex-col items-center flex-1">
+                        <div className="h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+                          style={{
+                            background: isDone ? step.color + "20" : t.inputBg,
+                            border: `2px solid ${isDone ? step.color : t.inputBorder}`,
+                            color: isDone ? step.color : t.muted,
+                            transform: isCurrent ? "scale(1.15)" : "scale(1)",
+                            boxShadow: isCurrent ? `0 0 12px ${step.color}40` : "none",
+                          }}>
+                          {isDone ? step.icon : i + 1}
+                        </div>
+                        <p className="text-[9px] mt-1 text-center leading-tight" style={{color: isDone ? step.color : t.muted, fontWeight: isCurrent ? 700 : 400}}>
+                          {step.label}
+                        </p>
+                      </div>
+                      {i < PIPELINE.length - 1 && (
+                        <div className="h-0.5 flex-1 mx-1 rounded-full" style={{background: i < currentStep ? step.color : t.inputBorder}} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </Card>
+
+        {/* Status Change */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] uppercase tracking-wider" style={{color:t.muted}}>Status:</span>
           {STS.map(s => (
