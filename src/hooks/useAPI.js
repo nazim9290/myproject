@@ -42,14 +42,22 @@ async function request(path, options = {}) {
   // FormData না হলে JSON Content-Type বসাও
   if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
 
-  // API call
+  // API call — console log সহ
+  const method = (options.method || "GET").toUpperCase();
+  const isWrite = ["POST", "PATCH", "PUT", "DELETE"].includes(method);
+  if (isWrite) console.log(`%c[DB ${method}]%c ${path}`, "color:#22d3ee;font-weight:bold", "color:#94a3b8", options.body instanceof FormData ? "(FormData)" : options.body ? JSON.parse(options.body) : "");
+
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
-  // Error handling — API error হলে throw
+  // Error handling — API error হলে throw + console.error
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Request failed" }));
+    console.error(`%c[DB FAIL]%c ${method} ${path} → ${res.status}`, "color:#f43f5e;font-weight:bold", "color:#94a3b8", err.error || "");
     throw new Error(err.error || "Request failed");
   }
+
+  // Success log
+  if (isWrite) console.log(`%c[DB OK]%c ${method} ${path} → ${res.status}`, "color:#22c55e;font-weight:bold", "color:#94a3b8");
 
   // JSON response হলে parse করে return
   const ct = res.headers.get("content-type");

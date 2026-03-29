@@ -39,6 +39,10 @@ function getToken() {
  */
 async function request(path, options = {}) {
   const token = getToken();
+  const method = (options.method || "GET").toUpperCase();
+  const isWrite = ["POST", "PATCH", "PUT", "DELETE"].includes(method);
+  if (isWrite) console.log(`%c[API ${method}]%c ${path}`, "color:#a855f7;font-weight:bold", "color:#94a3b8");
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
@@ -48,7 +52,11 @@ async function request(path, options = {}) {
     },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
+  if (!res.ok) {
+    console.error(`%c[API FAIL]%c ${method} ${path} → ${res.status}`, "color:#f43f5e;font-weight:bold", "color:#94a3b8", data.error || "");
+    throw new Error(data.error || "Request failed");
+  }
+  if (isWrite) console.log(`%c[API OK]%c ${method} ${path} → ${res.status}`, "color:#22c55e;font-weight:bold", "color:#94a3b8");
   return data;
 }
 
