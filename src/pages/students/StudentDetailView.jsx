@@ -157,12 +157,13 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     onUpdate({ ...student, fees: { items, payments: pays } });
   };
 
-  const addFeeItem = () => {
+  const addFeeItem = async () => {
     const amount = parseInt(feeItemForm.amount, 10);
     if (!amount || amount <= 0) { toast.error("সঠิক পরিমাণ দিন"); return; }
     const catCfg = CATEGORY_CONFIG[feeItemForm.category];
     const label = feeItemForm.label.trim() || catCfg?.label || feeItemForm.category;
     const newItem = { id: `fi-${Date.now()}`, category: feeItemForm.category, label, amount };
+    try { await api.post(`/students/${student.id}/payments`, { category: feeItemForm.category, label, amount, total_amount: amount, status: "pending" }); } catch {}
     const updated = [...feeItems, newItem];
     setFeeItems(updated);
     syncFees(updated, payments);
@@ -180,14 +181,23 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     toast.success("ফি আইটেম মুছে ফেলা হয়েছে");
   };
 
-  const addPayment = () => {
+  const addPayment = async () => {
     const amount = parseInt(payForm.amount, 10);
     if (!amount || amount <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
     if (!payForm.category) { toast.error("খাত নির্বাচন করুন"); return; }
-    const newP = { id: `P-${Date.now()}`, date: new Date().toISOString().slice(0, 10), amount, method: payForm.method, category: payForm.category, note: payForm.note };
-    const updated = [...payments, newP];
-    setPayments(updated);
-    syncFees(feeItems, updated);
+    const newP = { date: new Date().toISOString().slice(0, 10), amount, method: payForm.method, category: payForm.category, note: payForm.note };
+    // API-তে save
+    try {
+      const saved = await api.post(`/students/${student.id}/payments`, newP);
+      const updated = [...payments, saved || { id: `P-${Date.now()}`, ...newP }];
+      setPayments(updated);
+      syncFees(feeItems, updated);
+    } catch {
+      // fallback local
+      const updated = [...payments, { id: `P-${Date.now()}`, ...newP }];
+      setPayments(updated);
+      syncFees(feeItems, updated);
+    }
     const catLabel = CATEGORY_CONFIG[payForm.category]?.label || payForm.category;
     logActivity(`পেমেন্ট — ${taka(amount)} [${catLabel}] (${payForm.method})${payForm.note ? ` — ${payForm.note}` : ""}`, "payment");
     setPayForm({ amount: "", method: "Cash", category: "", note: "" });
