@@ -88,7 +88,8 @@ export default function SchoolsPage({ students }) {
     try {
       if (editingId) {
         const updated = await api.patch(`/schools/${editingId}`, payload);
-        setSchools(prev => prev.map(s => s.id === editingId ? { ...s, ...updated } : s));
+        console.log("[School Update]", updated);
+        setSchools(prev => prev.map(s => s.id === editingId ? (updated && updated.id ? updated : { ...s, ...payload }) : s));
         toast.updated(form.name_en);
       } else {
         const saved = await api.post("/schools", payload);
