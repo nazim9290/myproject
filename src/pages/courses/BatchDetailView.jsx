@@ -20,24 +20,39 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [bStudents, setBStudents] = useState([]);
   const [bTests, setBTests] = useState([]);
 
-  // ── API থেকে batch-এর enrolled students লোড ──
+  // ── API থেকে batch-এর enrolled students + exam + attendance লোড ──
   useEffect(() => {
     (async () => {
       try {
+        const { api: apiHook } = await import("../../hooks/useAPI");
         const data = await batchesApi.get(batch.id);
-        if (data && data.enrollments) {
-          setBStudents(data.enrollments.map(e => ({
-            studentId: e.student_id,
-            name: e.students?.name_en || e.student_id,
-            attendance: 0,
-            lastTest: null,
-            jlptStatus: "Preparing",
-            examType: null,
-            jlptLevel: null,
-            jlptScore: null,
-          })));
+
+        if (data && data.enrollments && data.enrollments.length > 0) {
+          // প্রতিটি student-এর detail (exam data সহ) load
+          const enriched = await Promise.all(data.enrollments.map(async (e) => {
+            const base = {
+              studentId: e.student_id,
+              name: e.students?.name_en || e.student_id,
+              attendance: 0, lastTest: null,
+              jlptStatus: "Preparing", examType: null, jlptLevel: null, jlptScore: null,
+            };
+            try {
+              const detail = await apiHook.get(`/students/${e.student_id}`);
+              const exam = (detail.student_jp_exams || [])[0];
+              if (exam) {
+                base.examType = exam.exam_type || null;
+                base.jlptLevel = exam.level || null;
+                base.jlptScore = exam.score ? parseInt(exam.score) : null;
+                base.jlptStatus = exam.result === "Passed" ? "Passed" : exam.result === "Failed" ? "Failed" : "Preparing";
+              }
+            } catch {}
+            return base;
+          }));
+          setBStudents(enriched);
+          console.log("[Batch] Enrolled:", enriched.length, "students loaded with exam data");
         }
-        // Class tests load from DB
+
+        // Class tests load
         if (data && data.tests && data.tests.length > 0) {
           setBTests(data.tests.map(t => ({
             id: t.id, batchId: t.batch_id, testName: t.test_name,
