@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Download, Search } from "lucide-react";
 import { api } from "../../hooks/useAPI";
 import { useTheme } from "../../context/ThemeContext";
@@ -21,7 +21,25 @@ export default function AttendancePage({ students = [] }) {
   const [searchQ, setSearchQ] = useState("");
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
   // attendanceLog: { [date]: { [studentId]: status } }
-  const [attendanceLog, setAttendanceLog] = useState({ "2026-03-22": Object.fromEntries(ATTENDANCE_DAY.map(a => [a.id, a.status])) });
+  const [attendanceLog, setAttendanceLog] = useState({});
+
+  // ── DB থেকে attendance load — date বা batch পরিবর্তন হলে ──
+  useEffect(() => {
+    if (!selectedDate) return;
+    (async () => {
+      try {
+        const data = await api.get(`/attendance?date=${selectedDate}${selectedBatch !== "all" ? `&batch=${selectedBatch}` : ""}`);
+        console.log("[Attendance Read]", selectedDate, "records:", Array.isArray(data) ? data.length : 0);
+        if (Array.isArray(data) && data.length > 0) {
+          const map = {};
+          data.forEach(r => { map[r.student_id] = r.status || "absent"; });
+          setAttendanceLog(prev => ({ ...prev, [selectedDate]: { ...(prev[selectedDate] || {}), ...map } }));
+        }
+      } catch (err) {
+        console.error("[Attendance Read Error]", err);
+      }
+    })();
+  }, [selectedDate, selectedBatch]);
 
   // Students to show: enrolled/in_course students filtered by batch
   const eligibleStudents = students.filter(s => ["ENROLLED", "IN_COURSE", "EXAM_PASSED", "DOC_COLLECTION", "SCHOOL_INTERVIEW", "DOC_SUBMITTED"].includes(s.status));
