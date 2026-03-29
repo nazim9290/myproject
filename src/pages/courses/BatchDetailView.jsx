@@ -67,6 +67,24 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [attDate, setAttDate] = useState(today);
   const [attState, setAttState] = useState(() => Object.fromEntries(bStudents.map(s => [s.studentId, "P"])));
   const cycleAtt = (id) => setAttState(p => ({ ...p, [id]: ATT_STATUS[(ATT_STATUS.indexOf(p[id] || "P") + 1) % 3] }));
+
+  // DB থেকে attendance load — date পরিবর্তন হলে
+  useEffect(() => {
+    if (!attDate || bStudents.length === 0) return;
+    (async () => {
+      try {
+        const { attendance } = await import("../../lib/api");
+        const data = await attendance.get(attDate, batch.id);
+        if (Array.isArray(data) && data.length > 0) {
+          const map = {};
+          data.forEach(r => { map[r.student_id] = r.status === "present" ? "P" : r.status === "absent" ? "A" : r.status === "late" ? "L" : r.status; });
+          setAttState(prev => ({ ...Object.fromEntries(bStudents.map(s => [s.studentId, "P"])), ...map }));
+        } else {
+          setAttState(Object.fromEntries(bStudents.map(s => [s.studentId, "P"])));
+        }
+      } catch {}
+    })();
+  }, [attDate, bStudents.length]);
   const saveAttendance = async () => {
     // API-তে attendance save
     const records = bStudents.map(s => ({
@@ -113,7 +131,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     toast.info("অন্য ব্যাচ থেকে যোগ করা শীঘ্রই আসছে");
   };
 
-  const addTest = () => {
+  const addTest = async () => {
     if (!testForm.testName.trim()) { toast.error("টেস্টের নাম দিন"); return; }
     const allScored = testStudentList.filter(s => testScores[s.studentId]);
     const scores = allScored.map(s => parseInt(testScores[s.studentId]) || 0);
@@ -121,6 +139,11 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     const newTest = { id: `CT-${Date.now()}`, batchId: batch.id, testName: testForm.testName, date: testForm.date, avgScore: avg, scores: testScores };
     setBTests(prev => [...prev, newTest]);
     setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
+    // DB-তে batch-এর tests JSON হিসেবে save
+    try {
+      const allTests = [...bTests, newTest];
+      await batchesApi.update(batch.id, { settings: JSON.stringify({ tests: allTests }) });
+    } catch {}
     setTestForm({ testName: "", date: today });
     setTestScores({});
     setTestExtraStudents([]);
@@ -132,12 +155,26 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [examUpdates, setExamUpdates] = useState({});
   const [examForm, setExamForm] = useState({ examType: "JLPT", level: "N5", date: today });
   const [showExamForm, setShowExamForm] = useState(false);
-  const saveExamResults = () => {
+  const saveExamResults = async () => {
     setBStudents(prev => prev.map(s => {
       const u = examUpdates[s.studentId];
       if (!u) return s;
       return { ...s, examType: examForm.examType, jlptLevel: examForm.level, jlptScore: parseInt(u.score) || null, jlptStatus: u.result };
     }));
+    // DB-তে প্রতিটি student-এর exam result save
+    try {
+      const { api } = await import("../../hooks/useAPI");
+      for (const [studentId, u] of Object.entries(examUpdates)) {
+        if (u.score || u.result) {
+          await api.patch(`/students/${studentId}`, {
+            jp_exam_type: examForm.examType,
+            jp_level: examForm.level,
+            jp_score: u.score || "",
+            jp_result: u.result || "",
+          }).catch(() => {});
+        }
+      }
+    } catch {}
     setExamUpdates({});
     setShowExamForm(false);
     toast.success("পরীক্ষার ফলাফল সংরক্ষণ হয়েছে");
