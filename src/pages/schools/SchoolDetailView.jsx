@@ -72,7 +72,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [interviewSearch, setInterviewSearch] = useState("");
   const [staffName, setStaffName] = useState("");
   const [interviewCols, setInterviewCols] = useState(DEFAULT_COLS);
-  const [templateName, setTemplateName] = useState(school.interview_template || "");
+  const [templateName, setTemplateName] = useState(school.interview_template_name || school.interview_template || "");
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
 
   // ── Template upload handler ──
@@ -89,7 +89,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "আপলোড ব্যর্থ");
-      setTemplateName(data.template);
+      setTemplateName(data.template_name || data.template);
       toast.success(`টেমপ্লেট আপলোড হয়েছে: ${file.name}`);
     } catch (err) { toast.error(err.message); }
     setUploadingTemplate(false);
