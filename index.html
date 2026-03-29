@@ -9,19 +9,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <!-- ── Code Protection (Desktop only, মোবাইল safe) ── -->
-    <script>
-    if(location.hostname!=="localhost"&&!location.hostname.includes("127.0.0.1")&&!location.search.includes("debug=1")){
-      // Right-click disable (desktop only)
-      if(!/Mobi|Android|iPhone/i.test(navigator.userAgent)){
-        document.addEventListener("contextmenu",function(e){e.preventDefault()});
-        document.addEventListener("keydown",function(e){
-          if(e.key==="F12"||(e.ctrlKey&&e.shiftKey&&["I","J","C"].includes(e.key))||(e.ctrlKey&&e.key==="u")){e.preventDefault()}
-        });
-      }
-      // Select text disable (input/textarea ছাড়া)
-      document.addEventListener("selectstart",function(e){if(e.target.tagName!=="INPUT"&&e.target.tagName!=="TEXTAREA"){e.preventDefault()}});
-    }
-    </script>
   </body>
 </html>
