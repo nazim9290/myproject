@@ -455,8 +455,22 @@ function AppShell({ isDark, setIsDark }) {
       const studs = Array.isArray(studRes) ? studRes : studRes.data || [];
       const visis = Array.isArray(visRes) ? visRes : visRes.data || [];
       console.log("[App] Loaded:", studs.length, "students,", visis.length, "visitors");
-      setStudents(studs);
-      setVisitors(visis);
+      // field mapping — DB columns → frontend fields
+      setStudents(studs.map(s => ({
+        ...s,
+        batch: s.batches?.name || s.batch || "",
+        school: s.schools?.name_en || s.school || "",
+        passport: s.passport_number || s.passport || "",
+        father: s.father_name || s.father || "",
+        mother: s.mother_name || s.mother || "",
+        created: s.created_at ? (s.created_at instanceof Date ? s.created_at.toISOString().slice(0,10) : String(s.created_at).slice(0,10)) : "",
+      })));
+      setVisitors(visis.map(v => ({
+        ...v,
+        name_en: v.name_en || v.name || "",
+        date: v.visit_date || v.date || "",
+        lastFollowUp: v.last_follow_up || v.lastFollowUp || "",
+      })));
     } catch (err) {
       console.log("[App] API থেকে data load ব্যর্থ:", err.message);
     }
