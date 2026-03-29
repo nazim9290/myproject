@@ -99,7 +99,10 @@ export default function SchoolDetailView({ school, students, onBack }) {
   // ── Template delete handler ──
   const handleTemplateDelete = async () => {
     try {
-      await api.delete(`/schools/${school.id}/interview-template`);
+      const res = await fetch(`${API_URL}/schools/${school.id}/interview-template`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${token()}` },
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "মুছতে ব্যর্থ"); }
       setTemplateName("");
       toast.success("টেমপ্লেট মুছে ফেলা হয়েছে — এখন ডিফল্ট ব্যবহার হবে");
     } catch (err) { toast.error(err.message); }
