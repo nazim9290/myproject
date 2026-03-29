@@ -356,6 +356,9 @@ export default function SchoolsPage({ students }) {
                       {school.fees && <span>💴 ¥{Number(school.fees).toLocaleString()}</span>}
                     </div>
                   )}
+                  <div className="flex justify-end mb-2">
+                    <button onClick={() => setSelectedSchool(school)} className="px-3 py-1 rounded-lg text-[10px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>👁 বিস্তারিত দেখুন</button>
+                  </div>
                   <div className="grid grid-cols-3 gap-3 pt-3 cursor-pointer" onClick={() => setSelectedSchool(school)} style={{ borderTop: `1px solid ${t.border}` }}>
                     <div className="text-center">
                       <p className="text-lg font-bold" style={{ color: t.cyan }}>{school.studentsReferred || 0}</p>

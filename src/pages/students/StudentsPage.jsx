@@ -504,6 +504,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                 ].map(col => (
                   <SortHeader key={col.key} label={col.label} sortKey={col.key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                 ))}
+                <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
               </tr>
             </thead>
             <tbody>
@@ -534,6 +535,9 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   <td className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.batch}</td>
                   <td className="py-3 px-3"><StatusBadge status={s.status} /></td>
                   <td className="py-3 px-3"><Badge color={s.type === "own" ? t.cyan : t.amber} size="xs">{s.type}</Badge></td>
+                  <td className="py-3 px-3" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => setSelectedId(s.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>👁 বিস্তারিত</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
