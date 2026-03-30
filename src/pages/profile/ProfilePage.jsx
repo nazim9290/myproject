@@ -41,17 +41,36 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
     } catch { toast.error("আপলোড করতে সমস্যা হয়েছে"); }
   };
 
-  const saveProfile = () => {
-    setCurrentUser((prev) => ({ ...prev, ...info }));
-    toast.success("প্রোফাইল আপডেট হয়েছে!");
+  const saveProfile = async () => {
+    try {
+      const token = localStorage.getItem("agencyos_token");
+      const res = await fetch(`${API_URL}/users/${currentUser.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: info.name, phone: info.phone }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUser(prev => ({ ...prev, ...data }));
+        toast.success("প্রোফাইল আপডেট হয়েছে!");
+      } else { toast.error("আপডেট ব্যর্থ"); }
+    } catch { toast.error("সার্ভার ত্রুটি"); }
   };
 
-  const changePassword = () => {
+  const changePassword = async () => {
     if (!passwords.old) { toast.error("পুরানো পাসওয়ার্ড দিন"); return; }
-    if (passwords.next.length < 6) { toast.error("নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে"); return; }
+    if (passwords.next.length < 8) { toast.error("নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষর হতে হবে"); return; }
     if (passwords.next !== passwords.confirm) { toast.error("পাসওয়ার্ড দুটি মিলছে না"); return; }
-    setPasswords({ old: "", next: "", confirm: "" });
-    toast.success("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!");
+    try {
+      const token = localStorage.getItem("agencyos_token");
+      const res = await fetch(`${API_URL}/users/${currentUser.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ password: passwords.next }),
+      });
+      if (res.ok) {
+        setPasswords({ old: "", next: "", confirm: "" });
+        toast.success("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!");
+      } else { const d = await res.json(); toast.error(d.error || "পরিবর্তন ব্যর্থ"); }
+    } catch { toast.error("সার্ভার ত্রুটি"); }
   };
 
   const savePrefs = () => {
@@ -94,14 +113,14 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold truncate">{currentUser.name}</h2>
             <p className="text-xs mt-0.5 truncate" style={{ color: t.muted }}>
-              {currentUser.designation} · {currentUser.branch}
+              {currentUser.email} · {currentUser.branch || "Main"}
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.cyan}20`, color: t.cyan }}>
-                {currentUser.role}
+                {{ owner: "মালিক", admin: "অ্যাডমিন", branch_manager: "ব্রাঞ্চ ম্যানেজার", counselor: "কাউন্সেলর", super_admin: "সুপার অ্যাডমিন" }[currentUser.role] || currentUser.role}
               </span>
               <span className="text-[10px]" style={{ color: t.muted }}>
-                যোগদান: {currentUser.joined}
+                যোগদান: {(currentUser.created_at || currentUser.joined || "").slice(0, 10)}
               </span>
             </div>
           </div>
