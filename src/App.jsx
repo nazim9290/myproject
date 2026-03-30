@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
   Home, Users, GraduationCap, BookOpen, ClipboardList, FileText, Building,
   FileCheck, Award, Plane, CheckCircle, Phone, Briefcase, Globe, DollarSign,
@@ -15,34 +15,36 @@ import { DEFAULT_STEPS_META } from "./data/pipelineSteps";
 import { students as studentsApi, visitors as visitorsApi } from "./lib/api";
 import { api } from "./hooks/useAPI";
 
+// ── Login — eager load (প্রথম পেজ) ──
 import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import VisitorsPage from "./pages/visitors/VisitorsPage";
-import StudentsPage from "./pages/students/StudentsPage";
-import LanguageCoursePage from "./pages/courses/LanguageCoursePage";
-import AttendancePage from "./pages/attendance/AttendancePage";
-import DocumentsPage from "./pages/documents/DocumentsPage";
-import SchoolsPage from "./pages/schools/SchoolsPage";
-import ExcelAutoFillPage from "./pages/excel/ExcelAutoFillPage";
-import CertificatePage from "./pages/certificates/CertificatePage";
-import PreDeparturePage from "./pages/predeparture/PreDeparturePage";
-import TasksPage from "./pages/tasks/TasksPage";
-import CommunicationPage from "./pages/communication/CommunicationPage";
-import AgentsPage from "./pages/agents/AgentsPage";
-import PartnerAgencyPage from "./pages/partners/PartnerAgencyPage";
-import AccountsPage from "./pages/accounts/AccountsPage";
-import InventoryPage from "./pages/inventory/InventoryPage";
-import HRPage from "./pages/hr/HRPage";
-import ReportsPage from "./pages/reports/ReportsPage";
-import CalendarPage from "./pages/calendar/CalendarPage";
-import UserRolePage from "./pages/users/UserRolePage";
-import StudentPortalPage from "./pages/portal/StudentPortalPage";
-import StudentLoginPage from "./pages/portal/StudentLoginPage";
+// ── বাকি সব — lazy load (code splitting) ──
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const VisitorsPage = lazy(() => import("./pages/visitors/VisitorsPage"));
+const StudentsPage = lazy(() => import("./pages/students/StudentsPage"));
+const LanguageCoursePage = lazy(() => import("./pages/courses/LanguageCoursePage"));
+const AttendancePage = lazy(() => import("./pages/attendance/AttendancePage"));
+const DocumentsPage = lazy(() => import("./pages/documents/DocumentsPage"));
+const SchoolsPage = lazy(() => import("./pages/schools/SchoolsPage"));
+const ExcelAutoFillPage = lazy(() => import("./pages/excel/ExcelAutoFillPage"));
+const CertificatePage = lazy(() => import("./pages/certificates/CertificatePage"));
+const PreDeparturePage = lazy(() => import("./pages/predeparture/PreDeparturePage"));
+const TasksPage = lazy(() => import("./pages/tasks/TasksPage"));
+const CommunicationPage = lazy(() => import("./pages/communication/CommunicationPage"));
+const AgentsPage = lazy(() => import("./pages/agents/AgentsPage"));
+const PartnerAgencyPage = lazy(() => import("./pages/partners/PartnerAgencyPage"));
+const AccountsPage = lazy(() => import("./pages/accounts/AccountsPage"));
+const InventoryPage = lazy(() => import("./pages/inventory/InventoryPage"));
+const HRPage = lazy(() => import("./pages/hr/HRPage"));
+const ReportsPage = lazy(() => import("./pages/reports/ReportsPage"));
+const CalendarPage = lazy(() => import("./pages/calendar/CalendarPage"));
+const UserRolePage = lazy(() => import("./pages/users/UserRolePage"));
+const StudentPortalPage = lazy(() => import("./pages/portal/StudentPortalPage"));
+const StudentLoginPage = lazy(() => import("./pages/portal/StudentLoginPage"));
 import AdminPortalPreview from "./pages/portal/AdminPortalPreview";
-import SuperAdminPage from "./pages/superadmin/SuperAdminPage";
-import SettingsPage from "./pages/settings/SettingsPage";
-import ProfilePage from "./pages/profile/ProfilePage";
-import HelpPage from "./pages/help/HelpPage";
+const SuperAdminPage = lazy(() => import("./pages/superadmin/SuperAdminPage"));
+const SettingsPage = lazy(() => import("./pages/settings/SettingsPage"));
+const ProfilePage = lazy(() => import("./pages/profile/ProfilePage"));
+const HelpPage = lazy(() => import("./pages/help/HelpPage"));
 import PageSkeleton from "./components/ui/PageSkeleton";
 
 const NAV_ICONS = {
@@ -336,7 +338,8 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     return <PageSkeleton type="table" />;
   }
 
-  switch (activePage) {
+  // Suspense wrapper — lazy loaded page-এর জন্য
+  const renderPage = () => { switch (activePage) {
     case "dashboard":
       return <DashboardPage />;
     case "visitors":
@@ -389,7 +392,8 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
       return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} onLogout={onLogout} isDark={isDark} setIsDark={setIsDark} />;
     default:
       return <DashboardPage />;
-  }
+  }};
+  return <Suspense fallback={<PageSkeleton type="table" />}>{renderPage()}</Suspense>;
 }
 
 function AppShell({ isDark, setIsDark }) {
