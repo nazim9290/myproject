@@ -11,6 +11,8 @@ import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import { api } from "../../hooks/useAPI";
 
+const INVENTORY_CATEGORIES = ["Electronics", "Furniture", "Stationery", "Books", "Kitchen", "Cleaning", "Vehicle", "Others"];
+
 export default function InventoryPage() {
   const t = useTheme();
   const toast = useToast();
