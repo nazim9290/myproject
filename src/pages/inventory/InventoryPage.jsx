@@ -55,8 +55,30 @@ export default function InventoryPage() {
   const consumableSort = useSortable("name", "asc");
   const logSort = useSortable("date", "desc");
 
-  // Movement log — ভবিষ্যতে API থেকে আসবে
-  const movementLogs = [];
+  // Movement log — activity_log API থেকে inventory-related logs
+  const [movementLogs, setMovementLogs] = useState([]);
+  useEffect(() => {
+    api.get("/activity-log?module=inventory&limit=50").then(data => {
+      if (Array.isArray(data)) {
+        setMovementLogs(data.map((l, i) => ({
+          id: l.id || i, date: l.created_at ? String(l.created_at).slice(0, 10) : "",
+          action: l.action === "create" ? "Purchase" : l.action === "update" ? "Update" : l.action === "delete" ? "Dispose" : l.action,
+          item: l.description || l.record_id || "—", branch: "—", by: l.user_name || "—", cost: 0,
+          icon: l.action === "create" ? "🛒" : l.action === "update" ? "🔄" : "🗑️",
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
+  // ── Movement Log ফিল্টার + সর্ট + পেজিনেশন ──
+  const filteredLogs = movementLogs.filter(l => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (l.item || "").toLowerCase().includes(q) || (l.action || "").toLowerCase().includes(q) || (l.branch || "").toLowerCase().includes(q) || (l.by || "").toLowerCase().includes(q);
+  });
+  const sortedLogs = logSort.sortFn(filteredLogs);
+  const logSafePage = Math.min(page, Math.max(1, Math.ceil(sortedLogs.length / pageSize)));
+  const paginatedLogs = sortedLogs.slice((logSafePage - 1) * pageSize, logSafePage * pageSize);
 
   // ── Assets ফিল্টার + সার্চ + সর্ট + পেজিনেশন ──
   const filteredAssets = items
