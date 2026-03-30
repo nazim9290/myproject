@@ -599,24 +599,29 @@ export default function AccountsPage({ students = [] }) {
                     </thead>
                     <tbody>
                       {paginatedIncome.map((inc) => {
-                        const cat = CATEGORY_CONFIG[inc.category];
-                        const due = inc.amount - inc.paidAmount;
+                        const cat = CATEGORY_CONFIG[inc.category] || { label: inc.category || "—", color: "#94a3b8", icon: "💰" };
+                        const amt = Number(inc.amount) || 0;
+                        const paid = Number(inc.paid_amount || inc.paidAmount) || 0;
+                        const tax = Number(inc.tax_amount || inc.tax) || 0;
+                        const due = amt - paid;
+                        const inst = inc.installments || 1;
+                        const paidInst = inc.paid_installments || inc.paid || 0;
                         return (
                           <tr key={inc.id} style={{ borderBottom: `1px solid ${t.border}` }}
                             onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
                             <td className="py-3 px-3">
-                              <p className="font-medium">{inc.studentName}</p>
-                              <p className="text-[9px]" style={{ color: t.muted }}>{inc.studentId}</p>
+                              <p className="font-medium">{inc.studentName || inc.label || "—"}</p>
+                              <p className="text-[9px]" style={{ color: t.muted }}>{inc.student_id || inc.studentId || ""}</p>
                             </td>
-                            <td className="py-3 px-3"><Badge color={cat?.color || t.muted} size="xs">{cat?.icon} {cat?.label}</Badge></td>
-                            <td className="py-3 px-3 font-semibold font-mono">৳{inc.amount.toLocaleString()}</td>
-                            <td className="py-3 px-3 font-mono" style={{ color: inc.tax > 0 ? t.purple : t.muted }}>{inc.tax > 0 ? `৳${inc.tax.toLocaleString()}` : "—"}</td>
-                            <td className="py-3 px-3 font-semibold font-mono" style={{ color: t.emerald }}>৳{inc.paidAmount.toLocaleString()}</td>
+                            <td className="py-3 px-3"><Badge color={cat.color} size="xs">{cat.icon} {cat.label}</Badge></td>
+                            <td className="py-3 px-3 font-semibold font-mono">৳{amt.toLocaleString()}</td>
+                            <td className="py-3 px-3 font-mono" style={{ color: tax > 0 ? t.purple : t.muted }}>{tax > 0 ? `৳${tax.toLocaleString()}` : "—"}</td>
+                            <td className="py-3 px-3 font-semibold font-mono" style={{ color: t.emerald }}>৳{paid.toLocaleString()}</td>
                             <td className="py-3 px-3 font-mono" style={{ color: due > 0 ? t.amber : t.muted }}>{due > 0 ? `৳${due.toLocaleString()}` : "—"}</td>
-                            <td className="py-3 px-3" style={{ color: t.textSecondary }}>{inc.paid}/{inc.installments}</td>
+                            <td className="py-3 px-3" style={{ color: t.textSecondary }}>{paidInst}/{inst}</td>
                             <td className="py-3 px-3">
-                              <Badge color={inc.status === "paid" ? t.emerald : inc.status === "partial" ? t.amber : t.rose} size="xs">
-                                {inc.status === "paid" ? "পরিশোধিত" : inc.status === "partial" ? "আংশিক" : "অপরিশোধিত"}
+                              <Badge color={inc.status === "paid" || inc.status === "collected" ? t.emerald : inc.status === "partial" ? t.amber : t.rose} size="xs">
+                                {inc.status === "paid" || inc.status === "collected" ? "পরিশোধিত" : inc.status === "partial" ? "আংশিক" : "অপরিশোধিত"}
                               </Badge>
                             </td>
                           </tr>
