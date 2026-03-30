@@ -7,7 +7,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
-import { INITIAL_BRANCHES, ALL_ROLES } from "../../data/mockData";
+import { ALL_ROLES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 export default function HRPage() {
@@ -30,7 +30,8 @@ export default function HRPage() {
   const [payForm, setPayForm] = useState({ month: "", amount: "", method: "Bank Transfer", note: "" });
   const [searchQ, setSearchQ] = useState("");
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
-  const branches = INITIAL_BRANCHES.filter((b) => b.status === "active");
+  const [branches, setBranches] = useState([]);
+  useEffect(() => { api.get("/branches").then(d => { if (Array.isArray(d)) setBranches(d); }).catch(() => {}); }, []);
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const activeEmps = employees.filter((e) => e.status === "active");
@@ -45,10 +46,13 @@ export default function HRPage() {
     )
   );
 
-  const emptyEmp = { name: "", role: "", branch: "", salary: "", phone: "", email: "" };
+  const emptyEmp = { name: "", role: "", branch: "", salary: "", phone: "", email: "", password: "", systemRole: "counselor", createAccount: false };
 
   const handleAdd = async () => {
     if (!newEmp.name.trim()) { toast.error("নাম দিন"); return; }
+    if (newEmp.createAccount && !newEmp.email.trim()) { toast.error("লগইন অ্যাকাউন্টের জন্য ইমেইল দিন"); return; }
+    if (newEmp.createAccount && (!newEmp.password || newEmp.password.length < 8)) { toast.error("পাসওয়ার্ড কমপক্ষে ৮ অক্ষর দিন"); return; }
+
     const empData = { name: newEmp.name, designation: newEmp.role, role: newEmp.role, branch: newEmp.branch, salary: parseInt(newEmp.salary) || 0, phone: newEmp.phone || "", email: newEmp.email || "" };
     try {
       if (editingId) {
@@ -56,9 +60,25 @@ export default function HRPage() {
         setEmployees(prev => prev.map(e => e.id === editingId ? { ...e, ...updated } : e));
         toast.updated("কর্মচারী");
       } else {
+        // 1. Employee তৈরি
         const saved = await api.post("/hr/employees", empData);
         setEmployees(prev => [...prev, saved]);
-        toast.success("কর্মচারী যোগ হয়েছে!");
+
+        // 2. System login account তৈরি (checkbox checked হলে)
+        if (newEmp.createAccount && newEmp.email) {
+          try {
+            await api.post("/auth/register", {
+              name: newEmp.name, email: newEmp.email, password: newEmp.password,
+              role: newEmp.systemRole || "counselor", branch: newEmp.branch,
+            });
+            toast.success(`কর্মচারী + লগইন অ্যাকাউন্ট তৈরি হয়েছে (${newEmp.email})`);
+          } catch (err) {
+            toast.success("কর্মচারী যোগ হয়েছে!");
+            toast.error("লগইন অ্যাকাউন্ট তৈরি ব্যর্থ: " + (err.message || "email ব্যবহৃত"));
+          }
+        } else {
+          toast.success("কর্মচারী যোগ হয়েছে!");
+        }
       }
     } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
     setNewEmp(emptyEmp); setShowAddForm(false); setEditingId(null);
@@ -150,9 +170,54 @@ export default function HRPage() {
               </select>
             </div>
           </div>
+
+          {/* ── লগইন অ্যাকাউন্ট সেকশন ── */}
+          {!editingId && (
+            <div className="mt-4 p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}20` }}>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={newEmp.createAccount} onChange={e => setNewEmp({ ...newEmp, createAccount: e.target.checked })}
+                  className="rounded" />
+                <span className="text-xs font-medium">🔑 লগইন অ্যাকাউন্ট তৈরি করুন (সিস্টেমে ঢুকতে পারবে)</span>
+              </label>
+              {newEmp.createAccount && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                  <div>
+                    <label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: t.muted }}>লগইন ইমেইল *</label>
+                    <input type="email" value={newEmp.email} onChange={e => setNewEmp({ ...newEmp, email: e.target.value })}
+                      placeholder="staff@agency.com" className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: t.muted }}>পাসওয়ার্ড * (৮+ অক্ষর)</label>
+                    <input type="password" value={newEmp.password} onChange={e => setNewEmp({ ...newEmp, password: e.target.value })}
+                      placeholder="********" className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: t.muted }}>সিস্টেম রোল</label>
+                    <select value={newEmp.systemRole} onChange={e => setNewEmp({ ...newEmp, systemRole: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      <option value="counselor">কাউন্সেলর</option>
+                      <option value="admission_officer">ভর্তি অফিসার</option>
+                      <option value="language_teacher">ভাষা শিক্ষক</option>
+                      <option value="document_collector">ডক কালেক্টর</option>
+                      <option value="document_processor">ডক প্রসেসর</option>
+                      <option value="accounts">একাউন্ট্যান্ট</option>
+                      <option value="follow-up_executive">ফলোআপ এক্সিকিউটিভ</option>
+                      <option value="branch_manager">ব্রাঞ্চ ম্যানেজার</option>
+                      <option value="admin">অ্যাডমিন</option>
+                      <option value="viewer">ভিউয়ার (শুধু দেখতে পারবে)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2 mt-3">
-            <Button size="sm" onClick={handleAdd}>যোগ করুন</Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>বাতিল</Button>
+            <Button size="sm" onClick={handleAdd}>{editingId ? "আপডেট করুন" : "যোগ করুন"}</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(false); setEditingId(null); }}>বাতিল</Button>
           </div>
         </Card>
       )}
