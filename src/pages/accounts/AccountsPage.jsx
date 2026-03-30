@@ -318,13 +318,30 @@ export default function AccountsPage({ students = [] }) {
         <AddEntryForm
           type={showAddForm}
           onCancel={() => setShowAddForm(null)}
-          onSave={(entry) => {
-            if (showAddForm === "income") {
-              setIncomeData(prev => [entry, ...prev]);
-              toast.success("আয় এন্ট্রি যোগ হয়েছে!");
-            } else {
-              setExpenseData(prev => [entry, ...prev]);
-              toast.success("ব্যয় এন্ট্রি যোগ হয়েছে!");
+          onSave={async (entry) => {
+            try {
+              if (showAddForm === "income") {
+                const saved = await api.post("/accounts/income", {
+                  student_id: entry.studentId, category: entry.category, label: entry.studentName,
+                  amount: entry.amount, tax_amount: entry.tax || 0, installments: entry.installments || 1,
+                  method: "Cash", note: entry.studentName,
+                });
+                setIncomeData(prev => [saved || entry, ...prev]);
+                toast.success("আয় এন্ট্রি যোগ হয়েছে!");
+              } else {
+                const saved = await api.post("/accounts/expenses", {
+                  category: entry.category, description: entry.description,
+                  amount: entry.amount, date: entry.date,
+                });
+                setExpenseData(prev => [saved || entry, ...prev]);
+                toast.success("ব্যয় এন্ট্রি যোগ হয়েছে!");
+              }
+            } catch (err) {
+              console.error("[Accounts Save]", err);
+              // Fallback: local-এও রাখি
+              if (showAddForm === "income") setIncomeData(prev => [entry, ...prev]);
+              else setExpenseData(prev => [entry, ...prev]);
+              toast.success("এন্ট্রি যোগ হয়েছে (local)");
             }
             setShowAddForm(null);
           }}
