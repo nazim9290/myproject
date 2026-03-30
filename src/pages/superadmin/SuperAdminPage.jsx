@@ -326,45 +326,45 @@ export default function SuperAdminPage() {
                         {agency.status === "active" ? "সক্রিয়" : agency.status === "suspended" ? "স্থগিত" : agency.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4" style={{ minWidth: 220 }}>
-                      <div className="flex flex-wrap items-center gap-1">
-                        {/* এজেন্সিতে সুইচ বাটন */}
-                        {switchConfirmId === agency.id ? (
-                          <div className="flex gap-1 items-center">
-                            <span className="text-[10px]" style={{ color: t.amber }}>সুইচ করবেন?</span>
-                            <button onClick={() => switchToAgency(agency)} className="px-2 py-1 rounded text-[10px] text-white" style={{ background: t.cyan }}>হ্যাঁ</button>
-                            <button onClick={() => setSwitchConfirmId(null)} className="px-2 py-1 rounded text-[10px]" style={{ color: t.muted }}>না</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setSwitchConfirmId(agency.id)}
-                            className="px-2 py-1 rounded text-[10px] flex items-center gap-1"
-                            style={{ color: t.cyan, background: `${t.cyan}10` }}
-                            title="এই এজেন্সিতে সুইচ করুন">
-                            <Globe size={11} /> সুইচ
+                    <td className="py-3 px-3">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex gap-1">
+                          {switchConfirmId === agency.id ? (
+                            <div className="flex gap-1 items-center">
+                              <span className="text-[10px]" style={{ color: t.amber }}>সুইচ?</span>
+                              <button onClick={() => switchToAgency(agency)} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: t.cyan }}>হ্যাঁ</button>
+                              <button onClick={() => setSwitchConfirmId(null)} className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.muted }}>না</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setSwitchConfirmId(agency.id)}
+                              className="px-2 py-1 rounded text-[10px]" style={{ color: t.cyan, background: `${t.cyan}15` }}>
+                              🔄 সুইচ
+                            </button>
+                          )}
+                          <button onClick={() => {
+                            setForm({ name: agency.name || "", name_bn: agency.name_bn || "", subdomain: agency.subdomain || "", phone: agency.phone || "", email: agency.email || "", address: agency.address || "", plan: agency.plan || "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: agency.dedicated || false });
+                            setEditingId(editingId === agency.id ? null : agency.id);
+                          }} className="px-2 py-1 rounded text-[10px]" style={{ color: t.amber, background: `${t.amber}15` }}>
+                            ✏️ সম্পাদনা
                           </button>
-                        )}
-                        {agency.status === "active" ? (
-                          <button onClick={() => updateAgency(agency.id, { status: "suspended" })}
-                            className="px-2 py-1 rounded text-[10px]" style={{ color: t.rose }}>স্থগিত</button>
-                        ) : (
-                          <button onClick={() => updateAgency(agency.id, { status: "active" })}
-                            className="px-2 py-1 rounded text-[10px]" style={{ color: t.emerald }}>সক্রিয়</button>
-                        )}
-                        <button onClick={() => {
-                          setForm({ name: agency.name || "", name_bn: agency.name_bn || "", subdomain: agency.subdomain || "", phone: agency.phone || "", email: agency.email || "", address: agency.address || "", plan: agency.plan || "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: agency.dedicated || false });
-                          setEditingId(agency.id); setShowCreateForm(true); window.scrollTo({ top: 0, behavior: "smooth" });
-                        }} className="px-2 py-1 rounded text-[10px] flex items-center gap-1"
-                          style={{ color: t.amber, background: `${t.amber}10` }}>
-                          <Edit3 size={11} /> সম্পাদনা
-                        </button>
-                        {deleteConfirmId === agency.id ? (
-                          <div className="flex gap-1">
-                            <button onClick={() => deleteAgency(agency.id)} className="px-2 py-1 rounded text-[10px] text-white" style={{ background: t.rose }}>মুছুন</button>
-                            <button onClick={() => setDeleteConfirmId(null)} className="px-2 py-1 rounded text-[10px]" style={{ color: t.muted }}>না</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setDeleteConfirmId(agency.id)} style={{ color: t.muted }}><Trash2 size={12} /></button>
-                        )}
+                        </div>
+                        <div className="flex gap-1">
+                          {agency.status === "active" ? (
+                            <button onClick={() => updateAgency(agency.id, { status: "suspended" })}
+                              className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.rose, background: `${t.rose}15` }}>স্থগিত</button>
+                          ) : (
+                            <button onClick={() => updateAgency(agency.id, { status: "active" })}
+                              className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.emerald, background: `${t.emerald}15` }}>সক্রিয়</button>
+                          )}
+                          {deleteConfirmId === agency.id ? (
+                            <div className="flex gap-1">
+                              <button onClick={() => deleteAgency(agency.id)} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: t.rose }}>মুছুন</button>
+                              <button onClick={() => setDeleteConfirmId(null)} className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.muted }}>না</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setDeleteConfirmId(agency.id)} className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.muted }}>🗑️ মুছুন</button>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
