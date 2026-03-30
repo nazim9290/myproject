@@ -237,12 +237,14 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
         >
           <Search size={13} style={{ color: t.muted }} />
           <input
-            type="text"
+            type="search"
             placeholder="স্টুডেন্ট, ভিজিটর, স্কুল খুঁজুন..."
             className="bg-transparent outline-none text-xs flex-1"
             style={{ color: t.text }}
-            autoComplete="off"
-            name="global-search"
+            autoComplete="new-password"
+            data-form-type="other"
+            name="agencybook-global-search"
+            id="agencybook-global-search"
           />
         </div>
       </div>

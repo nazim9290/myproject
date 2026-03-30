@@ -258,6 +258,8 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                   onChange={(e) => setPasswords((p) => ({ ...p, old: e.target.value }))}
                   className="flex-1 px-3 py-2 bg-transparent text-sm outline-none"
                   placeholder="••••••••"
+                  autoComplete="new-password"
+                  data-form-type="other"
                 />
                 <button className="px-3 py-2" onClick={() => setShowOld((v) => !v)} style={{ color: t.muted }}>
                   {showOld ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -273,6 +275,8 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                   onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
                   className="flex-1 px-3 py-2 bg-transparent text-sm outline-none"
                   placeholder="কমপক্ষে ৮ অক্ষর"
+                  autoComplete="new-password"
+                  data-form-type="other"
                 />
                 <button className="px-3 py-2" onClick={() => setShowNext((v) => !v)} style={{ color: t.muted }}>
                   {showNext ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -301,6 +305,8 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                 value={passwords.confirm}
                 onChange={(e) => setPasswords((p) => ({ ...p, confirm: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                autoComplete="new-password"
+                data-form-type="other"
                 style={{
                   ...is,
                   border: passwords.confirm && passwords.confirm !== passwords.next
