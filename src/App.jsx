@@ -503,10 +503,12 @@ function AppShell({ isDark, setIsDark }) {
     if (authUser) {
       setCurrentUser((prev) => ({
         ...prev,
+        id: authUser.id || prev.id,
         name: authUser.name || prev.name,
         email: authUser.email || prev.email,
         role: authUser.role || prev.role,
         branch: authUser.branch || prev.branch,
+        agency_id: authUser.agency_id || prev.agency_id,
       }));
     }
   }, [authUser]);
