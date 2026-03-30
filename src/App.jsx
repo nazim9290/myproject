@@ -800,7 +800,12 @@ function SidebarWithPermissions(props) {
 }
 
 export default function App() {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem("agencybook_theme");
+    return saved ? saved === "dark" : true; // default dark
+  });
+  // থিম পরিবর্তন হলে localStorage-এ save
+  useEffect(() => { localStorage.setItem("agencybook_theme", isDark ? "dark" : "light"); }, [isDark]);
 
   return (
     <AuthProvider>
