@@ -12,6 +12,14 @@ import useSortable from "../../hooks/useSortable";
 import { api } from "../../hooks/useAPI";
 
 const INVENTORY_CATEGORIES = ["Electronics", "Furniture", "Stationery", "Books", "Kitchen", "Cleaning", "Vehicle", "Others"];
+const CONDITION_OPTIONS = [
+  { value: "new", label: "নতুন", icon: "🟢" },
+  { value: "good", label: "ভালো", icon: "🔵" },
+  { value: "fair", label: "মোটামুটি", icon: "🟡" },
+  { value: "repair", label: "মেরামত দরকার", icon: "🟠" },
+  { value: "damaged", label: "ক্ষতিগ্রস্ত", icon: "🔴" },
+  { value: "disposed", label: "বাতিল", icon: "⚫" },
+];
 
 export default function InventoryPage() {
   const t = useTheme();
