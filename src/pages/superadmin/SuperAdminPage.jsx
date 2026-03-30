@@ -275,7 +275,7 @@ export default function SuperAdminPage() {
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["এজেন্সি", "সাবডোমেইন", "ফি/স্টুডেন্ট", "স্টুডেন্ট", "ট্রায়াল", "স্ট্যাটাস", ""].map(h => (
+                {["এজেন্সি", "সাবডোমেইন", "ফি/স্টুডেন্ট", "স্টুডেন্ট", "ট্রায়াল", "স্ট্যাটাস", "অ্যাকশন"].map(h => (
                   <th key={h} className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                 ))}
               </tr>
@@ -326,8 +326,8 @@ export default function SuperAdminPage() {
                         {agency.status === "active" ? "সক্রিয়" : agency.status === "suspended" ? "স্থগিত" : agency.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1">
+                    <td className="py-3 px-4" style={{ minWidth: 220 }}>
+                      <div className="flex flex-wrap items-center gap-1">
                         {/* এজেন্সিতে সুইচ বাটন */}
                         {switchConfirmId === agency.id ? (
                           <div className="flex gap-1 items-center">
