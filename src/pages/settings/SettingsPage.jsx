@@ -36,24 +36,18 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const [branch, setBranch] = useState("");
   const [agencyId, setAgencyId] = useState(null);
 
-  // ── API থেকে agency data load ──
+  // ── API থেকে নিজের agency data load ──
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("agencyos_user") || "{}");
-    if (user.agency_id) {
-      api.get(`/super-admin/agencies/${user.agency_id}`).then(data => {
-        if (data) {
-          setAgencyId(data.id);
-          setAgencyName(data.name || "");
-          setAgencyPhone(data.phone || "");
-          setAgencyEmail(data.email || "");
-          setAgencyAddress(data.address || "");
-          setAgencyLogo(data.logo_url || "");
-        }
-      }).catch(() => {
-        // Super admin API না থাকলে fallback
-        setAgencyName(user.name || "AgencyBook");
-      });
-    }
+    api.get("/agency/me").then(data => {
+      if (data) {
+        setAgencyId(data.id);
+        setAgencyName(data.name || "");
+        setAgencyPhone(data.phone || "");
+        setAgencyEmail(data.email || "");
+        setAgencyAddress(data.address || "");
+        setAgencyLogo(data.logo_url || "");
+      }
+    }).catch(() => {});
   }, []);
 
   // ── এজেন্সি লোগো আপলোড ──
@@ -267,15 +261,9 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             <h3 className="text-sm font-semibold flex items-center gap-2"><Building size={14} /> এজেন্সি তথ্য</h3>
             <Button icon={Save} size="xs" onClick={async () => {
               try {
-                const token = localStorage.getItem("agencyos_token");
-                const user = JSON.parse(localStorage.getItem("agencyos_user") || "{}");
-                const res = await fetch(`${API_URL}/super-admin/agencies/${user.agency_id}`, {
-                  method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                  body: JSON.stringify({ name: agencyName, phone: agencyPhone, email: agencyEmail, address: agencyAddress }),
-                });
-                if (res.ok) toast.success("এজেন্সি তথ্য সংরক্ষণ হয়েছে!");
-                else toast.error("সংরক্ষণ ব্যর্থ");
-              } catch { toast.error("সার্ভার ত্রুটি"); }
+                await api.patch("/agency/me", { name: agencyName, phone: agencyPhone, email: agencyEmail, address: agencyAddress });
+                toast.success("এজেন্সি তথ্য সংরক্ষণ হয়েছে!");
+              } catch { toast.error("সংরক্ষণ ব্যর্থ"); }
             }}>সংরক্ষণ</Button>
           </div>
           <div className="space-y-3">
