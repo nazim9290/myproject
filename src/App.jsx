@@ -324,12 +324,17 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
 
         {/* Profile avatar */}
         <button
-          className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ml-1 transition hover:scale-110"
-          style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})`, color: "#fff" }}
-          title={currentUser?.name || "Profile"}
+          className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ml-1 transition hover:scale-110 overflow-hidden"
+          style={{ background: currentUser?.avatar_url ? "transparent" : `linear-gradient(135deg, ${t.cyan}, ${t.purple})`, color: "#fff" }}
+          title={currentUser?.name || "প্রোফাইল"}
           onClick={() => setActivePage("profile")}
         >
-          {(currentUser?.name || "U").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+          {currentUser?.avatar_url ? (
+            <img src={currentUser.avatar_url.startsWith("http") ? currentUser.avatar_url : `${window.location.origin}${currentUser.avatar_url}`}
+              alt="" className="h-full w-full object-cover rounded-full" />
+          ) : (
+            (currentUser?.name || "U").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+          )}
         </button>
       </div>
     </header>
