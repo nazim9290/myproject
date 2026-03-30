@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Briefcase, Users, TrendingUp, Clock, Search, X } from "lucide-react";
+import { Plus, Briefcase, Users, TrendingUp, Clock, Search, X, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -30,6 +30,8 @@ export default function PartnerAgencyPage() {
   const [partnersList, setPartnersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [form, setForm] = useState({ name: "", contact_person: "", phone: "", email: "", address: "", services: [], commission_rate: "", notes: "" });
 
   // ── Search, pagination, sort ──
@@ -72,21 +74,40 @@ export default function PartnerAgencyPage() {
   const safePage = Math.min(page, Math.max(1, Math.ceil(sorted.length / pageSize)));
   const paginated = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  // ── নতুন partner save ──
+  // ── partner save (create/edit) ──
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("নাম দিন"); return; }
+    const payload = { ...form, commission_rate: Number(form.commission_rate) || 0 };
     try {
-      await partnersApi.create({
-        ...form,
-        commission_rate: Number(form.commission_rate) || 0,
-      });
-      toast.success("নতুন পার্টনার যোগ হয়েছে");
-      setShowForm(false);
+      if (editingId) {
+        await partnersApi.update(editingId, payload);
+        toast.updated("পার্টনার");
+      } else {
+        await partnersApi.create(payload);
+        toast.success("নতুন পার্টনার যোগ হয়েছে");
+      }
+      setShowForm(false); setEditingId(null);
       setForm({ name: "", contact_person: "", phone: "", email: "", address: "", services: [], commission_rate: "", notes: "" });
       loadData();
     } catch (err) {
       toast.error(err.message || "সমস্যা হয়েছে");
     }
+  };
+
+  // ── partner delete ──
+  const handleDelete = async (id) => {
+    try {
+      await partnersApi.remove(id);
+      toast.success("পার্টনার মুছে ফেলা হয়েছে");
+      setDeleteConfirmId(null);
+      loadData();
+    } catch (err) { toast.error(err.message || "মুছতে ব্যর্থ"); }
+  };
+
+  // ── Edit open ──
+  const openEdit = (p) => {
+    setForm({ name: p.name || "", contact_person: p.contact_person || "", phone: p.phone || "", email: p.email || "", address: p.address || "", services: p.services || [], commission_rate: String(p.commission_rate || ""), notes: p.notes || "" });
+    setEditingId(p.id); setShowForm(true);
   };
 
   // ── Currency ──
@@ -129,7 +150,7 @@ export default function PartnerAgencyPage() {
       {showForm && (
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">নতুন পার্টনার এজেন্সি যোগ</h3>
+            <h3 className="text-sm font-semibold">{editingId ? "পার্টনার সম্পাদনা" : "নতুন পার্টনার এজেন্সি যোগ"}</h3>
             <button onClick={() => setShowForm(false)}><X size={16} style={{ color: t.muted }} /></button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -158,7 +179,7 @@ export default function PartnerAgencyPage() {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="ghost" size="xs" onClick={() => setShowForm(false)}>বাতিল</Button>
+            <Button variant="ghost" size="xs" onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
             <Button size="xs" onClick={handleSave}>সেভ করুন</Button>
           </div>
         </Card>
@@ -190,6 +211,7 @@ export default function PartnerAgencyPage() {
                   <SortHeader label="আয়" sortKey="revenue" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                   <SortHeader label="বকেয়া" sortKey="due" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                   <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,6 +237,27 @@ export default function PartnerAgencyPage() {
                       <Badge color={p.status === "active" ? t.emerald : t.muted} size="xs">
                         {p.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
                       </Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                          onMouseEnter={e => e.currentTarget.style.color = t.cyan}
+                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
+                          <Edit3 size={14} />
+                        </button>
+                        {deleteConfirmId === p.id ? (
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => handleDelete(p.id)} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
+                            <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDeleteConfirmId(p.id)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                            onMouseEnter={e => e.currentTarget.style.color = t.rose}
+                            onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
