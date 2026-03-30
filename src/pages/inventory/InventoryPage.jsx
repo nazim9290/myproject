@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Layers, DollarSign, Building, AlertTriangle, Download, Search } from "lucide-react";
+import { Plus, Layers, DollarSign, Building, AlertTriangle, Download, Search, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -43,7 +43,9 @@ export default function InventoryPage() {
   const [filterBranch, setFilterBranch] = useState("All");
   const [filterCategory, setFilterCategory] = useState("All");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "ঢাকা (HQ)", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" });
+  const [editingId, setEditingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [addForm, setAddForm] = useState({ name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "Main", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" });
 
   // ── সার্চ, পেজিনেশন ও সর্টিং স্টেট ──
   const [search, setSearch] = useState("");
@@ -86,19 +88,46 @@ export default function InventoryPage() {
   const lowStock = consumables.filter((c) => (c.quantity || 0) <= 5).length;
   const branches = [...new Set(items.map((i) => i.branch))];
 
-  // ── API-তে নতুন item যোগ ──
+  const emptyForm = { name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "Main", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" };
+
+  // ── API-তে item যোগ / আপডেট ──
   const handleAdd = async () => {
     if (!addForm.name.trim()) { toast.error("সম্পদের নাম দিন"); return; }
+    const payload = {
+      name: addForm.name, category: addForm.category, quantity: Number(addForm.quantity) || 1,
+      unit_price: Number(addForm.price) || 0, branch: addForm.branch, condition: addForm.condition || "new",
+      status: addForm.condition || "new", brand: addForm.brand, model: addForm.model, vendor: addForm.vendor,
+      location: addForm.location, warranty: addForm.warranty, assigned_to: addForm.assignedTo, notes: addForm.notes,
+      purchase_date: addForm.purchaseDate || null,
+    };
     try {
-      const created = await api.post("/inventory", {
-        name: addForm.name, category: addForm.category, quantity: Number(addForm.quantity) || 1,
-        unit_price: Number(addForm.price) || 0, branch: addForm.branch, status: addForm.condition || "new",
-      });
-      setItems(prev => [{ ...created, price: created.unit_price || 0, brand: "", model: "", vendor: "" }, ...prev]);
-      setShowAddForm(false);
-      setAddForm({ name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "ঢাকা (HQ)", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" });
-      toast.success(`"${addForm.name}" — Inventory তে যোগ হয়েছে`);
-    } catch (err) { toast.error(err.message || "যোগ করতে সমস্যা"); }
+      if (editingId) {
+        const updated = await api.patch(`/inventory/${editingId}`, payload);
+        setItems(prev => prev.map(i => i.id === editingId ? { ...i, ...updated, price: updated.unit_price || i.price, condition: updated.condition || updated.status } : i));
+        toast.updated("আইটেম");
+      } else {
+        const created = await api.post("/inventory", payload);
+        setItems(prev => [{ ...created, price: created.unit_price || 0, condition: created.condition || created.status || "new" }, ...prev]);
+        toast.success(`"${addForm.name}" — Inventory তে যোগ হয়েছে`);
+      }
+      setShowAddForm(false); setEditingId(null); setAddForm(emptyForm);
+    } catch (err) { toast.error(err.message || "সমস্যা"); }
+  };
+
+  // ── Edit open ──
+  const openEdit = (item) => {
+    setAddForm({ name: item.name, category: item.category || "Electronics", brand: item.brand || "", model: item.model || "", quantity: item.quantity || 1, branch: item.branch || "Main", location: item.location || "", purchaseDate: item.purchase_date || "", price: String(item.price || item.unit_price || ""), vendor: item.vendor || "", warranty: item.warranty || "", condition: item.condition || item.status || "new", assignedTo: item.assigned_to || "", notes: item.notes || "" });
+    setEditingId(item.id); setShowAddForm(true);
+  };
+
+  // ── Delete ──
+  const handleDelete = async (id) => {
+    try {
+      await api.patch(`/inventory/${id}`, { status: "disposed" });
+      setItems(prev => prev.filter(i => i.id !== id));
+      toast.success("আইটেম মুছে ফেলা হয়েছে");
+    } catch { toast.error("মুছতে ব্যর্থ"); }
+    setDeleteConfirmId(null);
   };
 
   // ── Condition cycle — API-তে update ──
@@ -130,7 +159,7 @@ export default function InventoryPage() {
             const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url;
             a.download = `Inventory_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
           }}>Export</Button>
-          <Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>আইটেম যোগ করুন</Button>
+          <Button icon={Plus} onClick={() => { setAddForm(emptyForm); setEditingId(null); setShowAddForm(!showAddForm); }}>আইটেম যোগ করুন</Button>
         </div>
       </div>
 
@@ -260,6 +289,7 @@ export default function InventoryPage() {
                     <SortHeader label="মূল্য" sortKey="price" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
                     <SortHeader label="অবস্থা" sortKey="condition" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
                     <SortHeader label="তারিখ" sortKey="purchaseDate" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -296,7 +326,26 @@ export default function InventoryPage() {
                             {cond.icon} {cond.label}
                           </button>
                         </td>
-                        <td className="py-3 px-4 font-mono" style={{ color: t.muted }}>{item.purchaseDate || "—"}</td>
+                        <td className="py-3 px-4 font-mono" style={{ color: t.muted }}>{item.purchaseDate || item.purchase_date || "—"}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1 justify-end">
+                            <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                              onMouseEnter={e => e.currentTarget.style.color = t.cyan} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
+                              <Edit3 size={14} />
+                            </button>
+                            {deleteConfirmId === item.id ? (
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => handleDelete(item.id)} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
+                                <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setDeleteConfirmId(item.id)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                                onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
