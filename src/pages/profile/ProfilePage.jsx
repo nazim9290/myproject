@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Save, LogOut, Lock, Eye, EyeOff, Bell, Globe, Shield, Camera, User, Phone, Mail, Briefcase, Building2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -19,6 +19,8 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
   const initials = (info.name || "U").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const avatarRef = useRef(null);
   const [avatarUrl, setAvatarUrl] = useState(currentUser.avatar_url || "");
+  // currentUser update হলে avatar sync
+  useEffect(() => { if (currentUser.avatar_url) setAvatarUrl(currentUser.avatar_url); }, [currentUser.avatar_url]);
 
   // ── প্রোফাইল ছবি আপলোড ──
   const handleAvatarUpload = async (e) => {
