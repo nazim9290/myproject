@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, Save, X, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, Save, X, Search, ChevronDown, ChevronRight, Edit3, Trash2, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -22,6 +22,8 @@ export default function AgentsPage() {
     }).catch(() => {});
   }, []);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [form, setForm] = useState({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
   const [payingAgentId, setPayingAgentId] = useState(null);
   const [payForm, setPayForm] = useState({ amount: "", method: "Bank Transfer", note: "" });
@@ -78,17 +80,25 @@ export default function AgentsPage() {
       {showForm && (
         <Card delay={0}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold">নতুন Agent যোগ করুন</h3>
+            <h3 className="text-sm font-bold">{editingId ? "এজেন্ট সম্পাদনা" : "নতুন এজেন্ট যোগ করুন"}</h3>
             <div className="flex gap-2">
-              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
+              <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
               <Button icon={Save} size="xs" onClick={async () => {
                 if (!form.name.trim() || !form.phone.trim()) { toast.error("নাম ও ফোন দিন"); return; }
-                const newAgent = { name: form.name, phone: form.phone, area: form.area, nid: form.nid, bank_name: form.bank, commission_per_student: parseInt(form.commissionPerStudent) || 10000, status: "active" };
-                try { const saved = await api.post("/agents", newAgent); setAgents(prev => [...prev, { ...saved, students: [], commissionPerStudent: saved.commission_per_student }]); }
-                catch { setAgents(prev => [...prev, { id: `AG-${Date.now()}`, ...form, commissionPerStudent: parseInt(form.commissionPerStudent) || 10000, status: "active", students: [] }]); }
+                const payload = { name: form.name, phone: form.phone, area: form.area, nid: form.nid, bank_name: form.bank, commission_per_student: parseInt(form.commissionPerStudent) || 10000, status: "active" };
+                try {
+                  if (editingId) {
+                    const updated = await api.patch(`/agents/${editingId}`, payload);
+                    setAgents(prev => prev.map(a => a.id === editingId ? { ...a, ...updated, commissionPerStudent: updated.commission_per_student || a.commissionPerStudent } : a));
+                    toast.updated("এজেন্ট");
+                  } else {
+                    const saved = await api.post("/agents", payload);
+                    setAgents(prev => [...prev, { ...saved, students: [], commissionPerStudent: saved.commission_per_student }]);
+                    toast.success("এজেন্ট যোগ হয়েছে!");
+                  }
+                } catch (err) { toast.error(err.message || "সেভ ব্যর্থ"); }
                 setForm({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
-                setShowForm(false);
-                toast.success("Agent যোগ হয়েছে!");
+                setShowForm(false); setEditingId(null);
               }}>সংরক্ষণ</Button>
             </div>
           </div>
@@ -214,14 +224,43 @@ export default function AgentsPage() {
                       </td>
 
                       {/* অ্যাকশন */}
-                      <td className="py-3 px-4 text-right">
-                        {dueFee > 0 && (
-                          <button onClick={() => { setPayingAgentId(agent.id); setPayForm({ amount: String(dueFee), method: "Bank Transfer", note: "" }); }}
-                            className="text-[10px] px-2.5 py-1.5 rounded-lg font-medium"
-                            style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                            পরিশোধ
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1 justify-end">
+                          {dueFee > 0 && (
+                            <button onClick={() => { setPayingAgentId(agent.id); setPayForm({ amount: String(dueFee), method: "Bank Transfer", note: "" }); }}
+                              className="text-[10px] px-2.5 py-1.5 rounded-lg font-medium"
+                              style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                              পরিশোধ
+                            </button>
+                          )}
+                          <button onClick={() => {
+                            setForm({ name: agent.name, phone: agent.phone, area: agent.area || "", nid: agent.nid || "", bank: agent.bank_name || "", commissionPerStudent: String(agent.commissionPerStudent || 10000) });
+                            setEditingId(agent.id); setShowForm(true);
+                          }} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                            onMouseEnter={e => e.currentTarget.style.color = t.cyan}
+                            onMouseLeave={e => e.currentTarget.style.color = t.muted}
+                            title="সম্পাদনা">
+                            <Edit3 size={14} />
                           </button>
-                        )}
+                          {deleteConfirmId === agent.id ? (
+                            <div className="flex items-center gap-1">
+                              <button onClick={async () => {
+                                try { await api.patch(`/agents/${agent.id}`, { status: "inactive" }); setAgents(prev => prev.filter(a => a.id !== agent.id)); toast.success("এজেন্ট মুছে ফেলা হয়েছে"); }
+                                catch { toast.error("মুছতে ব্যর্থ"); }
+                                setDeleteConfirmId(null);
+                              }} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
+                              <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setDeleteConfirmId(agent.id)}
+                              className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                              onMouseEnter={e => e.currentTarget.style.color = t.rose}
+                              onMouseLeave={e => e.currentTarget.style.color = t.muted}
+                              title="মুছুন">
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
 
