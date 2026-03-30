@@ -191,7 +191,8 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
 
 function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, alertItems, onDismiss, onDismissAll, setActivePage, currentUser }) {
   const navItem = NAV_ITEMS.find((n) => n.key === activePage);
-  const pageLabel = navItem?.label || "Dashboard";
+  const EXTRA_LABELS = { profile: "প্রোফাইল", "super-admin": "সুপার অ্যাডমিন", help: "সাহায্য" };
+  const pageLabel = navItem?.label || EXTRA_LABELS[activePage] || "ড্যাশবোর্ড";
   const [showAlerts, setShowAlerts] = useState(false);
 
   useEffect(() => {
@@ -240,6 +241,8 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
             placeholder="স্টুডেন্ট, ভিজিটর, স্কুল খুঁজুন..."
             className="bg-transparent outline-none text-xs flex-1"
             style={{ color: t.text }}
+            autoComplete="off"
+            name="global-search"
           />
         </div>
       </div>

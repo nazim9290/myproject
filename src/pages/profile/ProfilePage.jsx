@@ -272,7 +272,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                   value={passwords.next}
                   onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
                   className="flex-1 px-3 py-2 bg-transparent text-sm outline-none"
-                  placeholder="কমপক্ষে ৬ অক্ষর"
+                  placeholder="কমপক্ষে ৮ অক্ষর"
                 />
                 <button className="px-3 py-2" onClick={() => setShowNext((v) => !v)} style={{ color: t.muted }}>
                   {showNext ? <EyeOff size={13} /> : <Eye size={13} />}
