@@ -51,7 +51,7 @@ export default function PreDeparturePage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold">প্রি-ডিপার্চার ও ভিএফএস</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>COE → Health → Tuition → VFS → Visa → Flight → Arrival</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>সিওই → হেলথ → টিউশন → ভিএফএস → ভিসা → ফ্লাইট → পৌঁছানো</p>
         </div>
       </div>
 
@@ -60,8 +60,8 @@ export default function PreDeparturePage() {
         {[
           { label: "COE+ স্টুডেন্ট", value: kpi.total, color: t.cyan, icon: FileText },
           { label: "ভিসা পেয়েছে", value: kpi.visaGranted, color: t.emerald, icon: CheckCircle },
-          { label: "Health বাকি", value: kpi.healthPending, color: t.amber, icon: Clock },
-          { label: "VFS বাকি", value: kpi.vfsPending, color: t.rose, icon: Calendar },
+          { label: "হেলথ বাকি", value: kpi.healthPending, color: t.amber, icon: Clock },
+          { label: "ভিএফএস বাকি", value: kpi.vfsPending, color: t.rose, icon: Calendar },
         ].map((k, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -86,12 +86,12 @@ export default function PreDeparturePage() {
         <div className="space-y-3">
           {students.map((st, i) => {
             const steps = [
-              { label: "COE", done: !!st.coe.number, icon: "📋" },
-              { label: "Health", done: st.health.status === "done", icon: "🏥" },
-              { label: "Tuition", done: st.tuition.remitted, icon: "💰" },
-              { label: "VFS", done: st.vfs.docsSubmitted, icon: "🛂" },
-              { label: "Visa", done: ["granted","VISA_GRANTED","ARRIVED","COMPLETED"].includes(st.visa.status) || ["VISA_GRANTED","ARRIVED","COMPLETED"].includes(st.status), icon: "✅" },
-              { label: "Flight", done: !!st.flight.date, icon: "✈️" },
+              { label: "সিওই", done: !!st.coe.number, icon: "📋" },
+              { label: "হেলথ", done: st.health.status === "done", icon: "🏥" },
+              { label: "টিউশন", done: st.tuition.remitted, icon: "💰" },
+              { label: "ভিএফএস", done: st.vfs.docsSubmitted, icon: "🛂" },
+              { label: "ভিসা", done: ["granted","VISA_GRANTED","ARRIVED","COMPLETED"].includes(st.visa.status) || ["VISA_GRANTED","ARRIVED","COMPLETED"].includes(st.status), icon: "✅" },
+              { label: "ফ্লাইট", done: !!st.flight.date, icon: "✈️" },
             ];
             const completedSteps = steps.filter(s => s.done).length;
             const pct = Math.round((completedSteps / steps.length) * 100);
@@ -183,14 +183,14 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
 
   const sections = [
     {
-      icon: "📋", title: "COE Information", color: t.cyan,
+      icon: "📋", title: "সিওই তথ্য", color: t.cyan,
       fields: [
         { key: "coe_number", label: "COE নম্বর", type: "text" },
         { key: "coe_date", label: "COE প্রাপ্তির তারিখ", type: "date" },
       ],
     },
     {
-      icon: "🏥", title: "Health Tests", color: t.emerald,
+      icon: "🏥", title: "হেলথ টেস্ট", color: t.emerald,
       fields: [
         { key: "health_status", label: "স্ট্যাটাস", type: "select", options: [
           { value: "pending", label: "বাকি" }, { value: "scheduled", label: "তারিখ নির্ধারিত" }, { value: "done", label: "সম্পন্ন" },
@@ -200,7 +200,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
       ],
     },
     {
-      icon: "💰", title: "Tuition Remittance", color: t.amber,
+      icon: "💰", title: "টিউশন রেমিটেন্স", color: t.amber,
       fields: [
         { key: "tuition_amount", label: "পরিমাণ (JPY)", type: "number" },
         { key: "tuition_remitted", label: "পাঠানো হয়েছে", type: "checkbox" },
@@ -208,14 +208,14 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
       ],
     },
     {
-      icon: "🛂", title: "VFS Application", color: t.purple,
+      icon: "🛂", title: "ভিএফএস আবেদন", color: t.purple,
       fields: [
         { key: "vfs_appointment_date", label: "অ্যাপয়েন্টমেন্ট তারিখ", type: "date" },
         { key: "vfs_docs_submitted", label: "ডকুমেন্ট জমা দেওয়া হয়েছে", type: "checkbox" },
       ],
     },
     {
-      icon: "✅", title: "Visa", color: t.emerald,
+      icon: "✅", title: "ভিসা", color: t.emerald,
       fields: [
         { key: "visa_status", label: "স্ট্যাটাস", type: "select", options: [
           { value: "pending", label: "অপেক্ষমাণ" }, { value: "applied", label: "আবেদন করা হয়েছে" }, { value: "granted", label: "পেয়েছে" }, { value: "rejected", label: "প্রত্যাখ্যাত" },
@@ -225,7 +225,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
       ],
     },
     {
-      icon: "✈️", title: "Flight", color: t.cyan,
+      icon: "✈️", title: "ফ্লাইট", color: t.cyan,
       fields: [
         { key: "flight_date", label: "ফ্লাইট তারিখ", type: "date" },
         { key: "flight_number", label: "ফ্লাইট নম্বর", type: "text" },

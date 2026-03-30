@@ -206,7 +206,7 @@ export default function TasksPage({ students = [] }) {
                               <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}10`, color: t.cyan }}>👤 {task.studentName}</span>
                             )}
                             {task.autoCreated && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}10`, color: t.purple }}>⚡ Auto</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}10`, color: t.purple }}>⚡ স্বয়ংক্রিয়</span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-2">

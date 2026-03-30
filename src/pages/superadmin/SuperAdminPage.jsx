@@ -33,6 +33,7 @@ export default function SuperAdminPage() {
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [detailAgency, setDetailAgency] = useState(null);
+  const [switchConfirmId, setSwitchConfirmId] = useState(null);
 
   const [form, setForm] = useState({
     name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "",
@@ -98,6 +99,15 @@ export default function SuperAdminPage() {
     } catch { toast.error("সার্ভার ত্রুটি"); }
   };
 
+  // ── এজেন্সিতে সুইচ করুন — agency_id localStorage-এ save + reload ──
+  const switchToAgency = (agency) => {
+    localStorage.setItem("agencyos_switch_agency_id", agency.id);
+    localStorage.setItem("agencyos_switch_agency_name", agency.name);
+    toast.success(`${agency.name} এজেন্সিতে সুইচ হচ্ছে...`);
+    setSwitchConfirmId(null);
+    setTimeout(() => window.location.reload(), 500);
+  };
+
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   if (loading) return <div className="text-center py-20 text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</div>;
@@ -122,7 +132,7 @@ export default function SuperAdminPage() {
             { label: "মোট এজেন্সি", value: stats.totalAgencies, color: t.cyan, icon: Building },
             { label: "সক্রিয়", value: stats.activeAgencies, color: t.emerald, icon: Check },
             { label: "মোট স্টুডেন্ট", value: stats.totalStudents, color: t.purple, icon: GraduationCap },
-            { label: "মোট User", value: stats.totalUsers, color: t.amber, icon: Users },
+            { label: "মোট ইউজার", value: stats.totalUsers, color: t.amber, icon: Users },
           ].map((kpi, i) => (
             <Card key={i} delay={i * 40}>
               <div className="flex items-center justify-between">
@@ -194,7 +204,7 @@ export default function SuperAdminPage() {
                   : (words[0] || "").slice(0, 3).toUpperCase();
                 return pfx ? (
                   <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: t.cyan }}>
-                    ID Prefix: <span className="font-mono font-bold px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}15` }}>{pfx}</span>
+                    আইডি প্রিফিক্স: <span className="font-mono font-bold px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}15` }}>{pfx}</span>
                     <span style={{ color: t.muted }}>→ {pfx}-S-2026-001</span>
                   </p>
                 ) : null;
@@ -236,7 +246,7 @@ export default function SuperAdminPage() {
               <input value={form.admin_email} onChange={e => setForm(p => ({ ...p, admin_email: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="owner@agency.com" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Password *</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পাসওয়ার্ড *</label>
               <input type="password" value={form.admin_password} onChange={e => setForm(p => ({ ...p, admin_password: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমপক্ষে ৬ অক্ষর" />
             </div>
           </div>
@@ -246,7 +256,7 @@ export default function SuperAdminPage() {
             <input type="checkbox" checked={form.dedicated} onChange={e => setForm(p => ({ ...p, dedicated: e.target.checked }))}
               className="w-4 h-4 rounded" style={{ accentColor: t.purple }} />
             <div>
-              <p className="text-xs font-semibold">Dedicated Mode</p>
+              <p className="text-xs font-semibold">ডেডিকেটেড মোড</p>
               <p className="text-[10px]" style={{ color: t.muted }}>এই এজেন্সি নিজে কোনো sub-agency তৈরি করতে পারবে না — শুধু নিজের জন্য</p>
             </div>
           </label>
@@ -286,14 +296,14 @@ export default function SuperAdminPage() {
                         </div>
                         <div>
                           <p className="font-semibold">{agency.name}</p>
-                          <p className="text-[9px]" style={{ color: t.muted }}>{agency.name_bn || ""} {isDedicated ? "• Dedicated" : ""}</p>
+                          <p className="text-[9px]" style={{ color: t.muted }}>{agency.name_bn || ""} {isDedicated ? "• ডেডিকেটেড" : ""}</p>
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4 font-mono text-[10px]" style={{ color: t.cyan }}>{agency.subdomain}.agencybook.net</td>
                     <td className="py-3 px-4">
                       {isDedicated ? (
-                        <Badge color={t.purple} size="xs">Dedicated</Badge>
+                        <Badge color={t.purple} size="xs">ডেডিকেটেড</Badge>
                       ) : (
                         <span className="text-xs font-mono font-bold" style={{ color: t.emerald }}>৳{(agency.per_student_fee || 0).toLocaleString("en-IN")}</span>
                       )}
@@ -317,6 +327,21 @@ export default function SuperAdminPage() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1">
+                        {/* এজেন্সিতে সুইচ বাটন */}
+                        {switchConfirmId === agency.id ? (
+                          <div className="flex gap-1 items-center">
+                            <span className="text-[10px]" style={{ color: t.amber }}>সুইচ করবেন?</span>
+                            <button onClick={() => switchToAgency(agency)} className="px-2 py-1 rounded text-[10px] text-white" style={{ background: t.cyan }}>হ্যাঁ</button>
+                            <button onClick={() => setSwitchConfirmId(null)} className="px-2 py-1 rounded text-[10px]" style={{ color: t.muted }}>না</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setSwitchConfirmId(agency.id)}
+                            className="px-2 py-1 rounded text-[10px] flex items-center gap-1"
+                            style={{ color: t.cyan, background: `${t.cyan}10` }}
+                            title="এই এজেন্সিতে সুইচ করুন">
+                            <Globe size={11} /> সুইচ
+                          </button>
+                        )}
                         {agency.status === "active" ? (
                           <button onClick={() => updateAgency(agency.id, { status: "suspended" })}
                             className="px-2 py-1 rounded text-[10px]" style={{ color: t.rose }}>স্থগিত</button>

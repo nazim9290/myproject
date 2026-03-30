@@ -55,7 +55,7 @@ export default function CommunicationPage({ students = [] }) {
     }
     setForm(BLANK);
     setShowForm(false);
-    toast.success("Communication log যোগ হয়েছে!");
+    toast.success("যোগাযোগ লগ যোগ হয়েছে!");
   };
 
   const deleteLog = async (id) => {
@@ -126,14 +126,14 @@ export default function CommunicationPage({ students = [] }) {
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Direction</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>দিক</label>
               <select value={form.direction} onChange={e => sf("direction", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="outbound">→ Outbound (আমরা করলাম)</option>
-                <option value="inbound">← Inbound (তারা করল)</option>
+                <option value="outbound">→ আউটবাউন্ড (আমরা করলাম)</option>
+                <option value="inbound">← ইনবাউন্ড (তারা করল)</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Staff</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
               <select value={form.user} onChange={e => sf("user", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                 <option>Mina</option><option>Sadia</option><option>Karim</option>
               </select>
@@ -195,7 +195,7 @@ export default function CommunicationPage({ students = [] }) {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs font-bold" style={{ color: t.cyan }}>{log.studentName || "—"}</p>
                         <Badge color={ct.color} size="xs">{ct.label}</Badge>
-                        <Badge color={log.direction === "inbound" ? t.emerald : t.amber} size="xs">{log.direction === "inbound" ? "← In" : "→ Out"}</Badge>
+                        <Badge color={log.direction === "inbound" ? t.emerald : t.amber} size="xs">{log.direction === "inbound" ? "← ইনবাউন্ড" : "→ আউটবাউন্ড"}</Badge>
                         {log.follow_up_date && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: isFollowUpDue ? `${t.rose}15` : `${t.amber}15`, color: isFollowUpDue ? t.rose : t.amber }}>
                             {isFollowUpDue ? "⚠️" : "📅"} ফলোআপ: {log.follow_up_date}

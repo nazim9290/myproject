@@ -1,0 +1,10 @@
+=== Console ===
+[log] [App] loadAllData called, token: আছে (eyJhbGciOiJIUzI...)
+[log] [App] Loaded: 26 students, 100 visitors
+
+=== Network (API calls) ===
+POST https://demo-api.agencybook.net/api/attendance/save
+
+Toast: NO TOAST
+Save buttons: 2
+Batch cards: 3

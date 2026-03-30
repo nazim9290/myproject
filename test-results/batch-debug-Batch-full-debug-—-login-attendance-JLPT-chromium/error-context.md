@@ -1,0 +1,337 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]: A
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: AgencyBook
+          - paragraph [ref=e10]: স্টুডেন্ট ও এজেন্সি ম্যানেজমেন্ট
+      - navigation [ref=e11]:
+        - button "ড্যাশবোর্ড" [ref=e12] [cursor=pointer]:
+          - img [ref=e13]
+          - generic [ref=e16]: ড্যাশবোর্ড
+        - button "ভিজিটর 19" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e23]: ভিজিটর
+          - generic [ref=e24]: "19"
+        - button "স্টুডেন্ট" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e29]: স্টুডেন্ট
+        - button "ভাষা কোর্স" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: ভাষা কোর্স
+        - button "উপস্থিতি" [ref=e34] [cursor=pointer]:
+          - img [ref=e35]
+          - generic [ref=e38]: উপস্থিতি
+        - button "ডকুমেন্টস" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: ডকুমেন্টস
+        - button "স্কুল" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+          - generic [ref=e48]: স্কুল
+        - button "এক্সেল অটোফিল" [ref=e49] [cursor=pointer]:
+          - img [ref=e50]
+          - generic [ref=e54]: এক্সেল অটোফিল
+        - button "সার্টিফিকেট" [ref=e55] [cursor=pointer]:
+          - img [ref=e56]
+          - generic [ref=e59]: সার্টিফিকেট
+        - button "প্রি-ডিপার্চার" [ref=e60] [cursor=pointer]:
+          - img [ref=e61]
+          - generic [ref=e63]: প্রি-ডিপার্চার
+        - button "টাস্ক" [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+          - generic [ref=e68]: টাস্ক
+        - button "যোগাযোগ" [ref=e69] [cursor=pointer]:
+          - img [ref=e70]
+          - generic [ref=e72]: যোগাযোগ
+        - button "এজেন্ট" [ref=e73] [cursor=pointer]:
+          - img [ref=e74]
+          - generic [ref=e77]: এজেন্ট
+        - button "পার্টনার এজেন্সি" [ref=e78] [cursor=pointer]:
+          - img [ref=e79]
+          - generic [ref=e82]: পার্টনার এজেন্সি
+        - button "হিসাব" [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+          - generic [ref=e86]: হিসাব
+        - button "ইনভেন্টরি" [ref=e87] [cursor=pointer]:
+          - img [ref=e88]
+          - generic [ref=e92]: ইনভেন্টরি
+        - button "এইচআর ও বেতন" [ref=e93] [cursor=pointer]:
+          - img [ref=e94]
+          - generic [ref=e99]: এইচআর ও বেতন
+        - button "রিপোর্ট" [ref=e100] [cursor=pointer]:
+          - img [ref=e101]
+          - generic [ref=e104]: রিপোর্ট
+        - button "ক্যালেন্ডার" [ref=e105] [cursor=pointer]:
+          - img [ref=e106]
+          - generic [ref=e108]: ক্যালেন্ডার
+        - button "ইউজার ও রোল" [ref=e109] [cursor=pointer]:
+          - img [ref=e110]
+          - generic [ref=e113]: ইউজার ও রোল
+        - button "স্টুডেন্ট পোর্টাল" [ref=e114] [cursor=pointer]:
+          - img [ref=e115]
+          - generic [ref=e118]: স্টুডেন্ট পোর্টাল
+        - button "সেটিংস" [ref=e119] [cursor=pointer]:
+          - img [ref=e120]
+          - generic [ref=e123]: সেটিংস
+        - button "সাহায্য" [ref=e124] [cursor=pointer]:
+          - img [ref=e125]
+          - generic [ref=e128]: সাহায্য
+      - button "Collapse sidebar" [ref=e130] [cursor=pointer]:
+        - img [ref=e131]
+    - generic [ref=e133]:
+      - banner [ref=e134]:
+        - paragraph [ref=e135]: উপস্থিতি
+        - generic [ref=e137]:
+          - img [ref=e138]
+          - textbox "স্টুডেন্ট, ভিজিটর, স্কুল খুঁজুন..." [ref=e141]
+        - generic [ref=e142]:
+          - button [ref=e144] [cursor=pointer]:
+            - img [ref=e145]
+          - button "লাইট মোডে যান" [ref=e148] [cursor=pointer]:
+            - generic [ref=e149]:
+              - img [ref=e150]
+              - img [ref=e156]
+          - button "A" [ref=e158] [cursor=pointer]
+      - main [ref=e159]:
+        - generic [ref=e160]:
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - heading "উপস্থিতি" [level=2] [ref=e163]
+              - paragraph [ref=e164]: দৈনিক উপস্থিতি ব্যবস্থাপনা
+            - generic [ref=e165]:
+              - button "এক্সপোর্ট" [ref=e166] [cursor=pointer]:
+                - img [ref=e167]
+                - text: এক্সপোর্ট
+              - button "সংরক্ষণ" [active] [ref=e170] [cursor=pointer]:
+                - img [ref=e171]
+                - text: সংরক্ষণ
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - generic [ref=e178]: তারিখ
+              - textbox [ref=e179]: 2026-03-29
+            - generic [ref=e180]:
+              - generic [ref=e181]: ব্যাচ
+              - combobox [ref=e182]:
+                - option "সব ব্যাচ" [selected]
+                - option "October 2026"
+            - generic [ref=e183]:
+              - img [ref=e184]
+              - textbox "স্টুডেন্ট খুঁজুন..." [ref=e187]
+            - generic [ref=e188]: "মোট: 26 জন"
+          - generic [ref=e189]:
+            - generic [ref=e191]:
+              - generic [ref=e192]:
+                - paragraph [ref=e193]: উপস্থিত
+                - paragraph [ref=e194]: "0"
+              - generic [ref=e195]: ✅
+            - generic [ref=e197]:
+              - generic [ref=e198]:
+                - paragraph [ref=e199]: অনুপস্থিত
+                - paragraph [ref=e200]: "26"
+              - generic [ref=e201]: ❌
+            - generic [ref=e203]:
+              - generic [ref=e204]:
+                - paragraph [ref=e205]: দেরিতে
+                - paragraph [ref=e206]: "0"
+              - generic [ref=e207]: ⏰
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - heading "উপস্থিতি — 2026-03-29" [level=3] [ref=e210]
+              - paragraph [ref=e211]: ক্লিক করে স্ট্যাটাস পরিবর্তন করুন
+            - table [ref=e213]:
+              - rowgroup [ref=e214]:
+                - row "নাম ID ব্যাচ হাজিরা" [ref=e215]:
+                  - columnheader "নাম" [ref=e216] [cursor=pointer]:
+                    - generic [ref=e217]:
+                      - text: নাম
+                      - img [ref=e218]
+                  - columnheader "ID" [ref=e220] [cursor=pointer]:
+                    - generic [ref=e221]:
+                      - text: ID
+                      - img [ref=e222]
+                  - columnheader "ব্যাচ" [ref=e225]
+                  - columnheader "হাজিরা" [ref=e226]
+              - rowgroup [ref=e227]:
+                - row "Abdul Karim AB-S-2026-007 October 2026 ❌ অনুপস্থিত" [ref=e228] [cursor=pointer]:
+                  - cell "Abdul Karim" [ref=e229]
+                  - cell "AB-S-2026-007" [ref=e230]
+                  - cell "October 2026" [ref=e231]
+                  - cell "❌ অনুপস্থিত" [ref=e232]:
+                    - generic [ref=e233]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP020 — ❌ অনুপস্থিত" [ref=e234] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e235]
+                  - cell "S-2026-IMP020" [ref=e236]
+                  - cell "—" [ref=e237]
+                  - cell "❌ অনুপস্থিত" [ref=e238]:
+                    - generic [ref=e239]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP019 — ❌ অনুপস্থিত" [ref=e240] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e241]
+                  - cell "S-2026-IMP019" [ref=e242]
+                  - cell "—" [ref=e243]
+                  - cell "❌ অনুপস্থিত" [ref=e244]:
+                    - generic [ref=e245]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP018 — ❌ অনুপস্থিত" [ref=e246] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e247]
+                  - cell "S-2026-IMP018" [ref=e248]
+                  - cell "—" [ref=e249]
+                  - cell "❌ অনুপস্থিত" [ref=e250]:
+                    - generic [ref=e251]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP017 — ❌ অনুপস্থিত" [ref=e252] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e253]
+                  - cell "S-2026-IMP017" [ref=e254]
+                  - cell "—" [ref=e255]
+                  - cell "❌ অনুপস্থিত" [ref=e256]:
+                    - generic [ref=e257]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP016 — ❌ অনুপস্থিত" [ref=e258] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e259]
+                  - cell "S-2026-IMP016" [ref=e260]
+                  - cell "—" [ref=e261]
+                  - cell "❌ অনুপস্থিত" [ref=e262]:
+                    - generic [ref=e263]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP015 — ❌ অনুপস্থিত" [ref=e264] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e265]
+                  - cell "S-2026-IMP015" [ref=e266]
+                  - cell "—" [ref=e267]
+                  - cell "❌ অনুপস্থিত" [ref=e268]:
+                    - generic [ref=e269]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP014 — ❌ অনুপস্থিত" [ref=e270] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e271]
+                  - cell "S-2026-IMP014" [ref=e272]
+                  - cell "—" [ref=e273]
+                  - cell "❌ অনুপস্থিত" [ref=e274]:
+                    - generic [ref=e275]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP013 — ❌ অনুপস্থিত" [ref=e276] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e277]
+                  - cell "S-2026-IMP013" [ref=e278]
+                  - cell "—" [ref=e279]
+                  - cell "❌ অনুপস্থিত" [ref=e280]:
+                    - generic [ref=e281]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP012 — ❌ অনুপস্থিত" [ref=e282] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e283]
+                  - cell "S-2026-IMP012" [ref=e284]
+                  - cell "—" [ref=e285]
+                  - cell "❌ অনুপস্থিত" [ref=e286]:
+                    - generic [ref=e287]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP011 — ❌ অনুপস্থিত" [ref=e288] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e289]
+                  - cell "S-2026-IMP011" [ref=e290]
+                  - cell "—" [ref=e291]
+                  - cell "❌ অনুপস্থিত" [ref=e292]:
+                    - generic [ref=e293]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP010 — ❌ অনুপস্থিত" [ref=e294] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e295]
+                  - cell "S-2026-IMP010" [ref=e296]
+                  - cell "—" [ref=e297]
+                  - cell "❌ অনুপস্থিত" [ref=e298]:
+                    - generic [ref=e299]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP009 — ❌ অনুপস্থিত" [ref=e300] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e301]
+                  - cell "S-2026-IMP009" [ref=e302]
+                  - cell "—" [ref=e303]
+                  - cell "❌ অনুপস্থিত" [ref=e304]:
+                    - generic [ref=e305]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP008 — ❌ অনুপস্থিত" [ref=e306] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e307]
+                  - cell "S-2026-IMP008" [ref=e308]
+                  - cell "—" [ref=e309]
+                  - cell "❌ অনুপস্থিত" [ref=e310]:
+                    - generic [ref=e311]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP007 — ❌ অনুপস্থিত" [ref=e312] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e313]
+                  - cell "S-2026-IMP007" [ref=e314]
+                  - cell "—" [ref=e315]
+                  - cell "❌ অনুপস্থিত" [ref=e316]:
+                    - generic [ref=e317]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP006 — ❌ অনুপস্থিত" [ref=e318] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e319]
+                  - cell "S-2026-IMP006" [ref=e320]
+                  - cell "—" [ref=e321]
+                  - cell "❌ অনুপস্থিত" [ref=e322]:
+                    - generic [ref=e323]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP005 — ❌ অনুপস্থিত" [ref=e324] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e325]
+                  - cell "S-2026-IMP005" [ref=e326]
+                  - cell "—" [ref=e327]
+                  - cell "❌ অনুপস্থিত" [ref=e328]:
+                    - generic [ref=e329]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP004 — ❌ অনুপস্থিত" [ref=e330] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e331]
+                  - cell "S-2026-IMP004" [ref=e332]
+                  - cell "—" [ref=e333]
+                  - cell "❌ অনুপস্থিত" [ref=e334]:
+                    - generic [ref=e335]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP003 — ❌ অনুপস্থিত" [ref=e336] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e337]
+                  - cell "S-2026-IMP003" [ref=e338]
+                  - cell "—" [ref=e339]
+                  - cell "❌ অনুপস্থিত" [ref=e340]:
+                    - generic [ref=e341]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP002 — ❌ অনুপস্থিত" [ref=e342] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e343]
+                  - cell "S-2026-IMP002" [ref=e344]
+                  - cell "—" [ref=e345]
+                  - cell "❌ অনুপস্থিত" [ref=e346]:
+                    - generic [ref=e347]: ❌ অনুপস্থিত
+                - row "Fatema Begum S-2026-IMP001 — ❌ অনুপস্থিত" [ref=e348] [cursor=pointer]:
+                  - cell "Fatema Begum" [ref=e349]
+                  - cell "S-2026-IMP001" [ref=e350]
+                  - cell "—" [ref=e351]
+                  - cell "❌ অনুপস্থিত" [ref=e352]:
+                    - generic [ref=e353]: ❌ অনুপস্থিত
+                - row "Mohammad Rahim S-2026-001 — ❌ অনুপস্থিত" [ref=e354] [cursor=pointer]:
+                  - cell "Mohammad Rahim" [ref=e355]
+                  - cell "S-2026-001" [ref=e356]
+                  - cell "—" [ref=e357]
+                  - cell "❌ অনুপস্থিত" [ref=e358]:
+                    - generic [ref=e359]: ❌ অনুপস্থিত
+                - row "nazim S-2026-024 — ❌ অনুপস্থিত" [ref=e360] [cursor=pointer]:
+                  - cell "nazim" [ref=e361]
+                  - cell "S-2026-024" [ref=e362]
+                  - cell "—" [ref=e363]
+                  - cell "❌ অনুপস্থিত" [ref=e364]:
+                    - generic [ref=e365]: ❌ অনুপস্থিত
+                - row "Nazim Uddin S-2026-003 — ❌ অনুপস্থিত" [ref=e366] [cursor=pointer]:
+                  - cell "Nazim Uddin" [ref=e367]
+                  - cell "S-2026-003" [ref=e368]
+                  - cell "—" [ref=e369]
+                  - cell "❌ অনুপস্থিত" [ref=e370]:
+                    - generic [ref=e371]: ❌ অনুপস্থিত
+                - row "sakib S-2026-002 — ❌ অনুপস্থিত" [ref=e372] [cursor=pointer]:
+                  - cell "sakib" [ref=e373]
+                  - cell "S-2026-002" [ref=e374]
+                  - cell "—" [ref=e375]
+                  - cell "❌ অনুপস্থিত" [ref=e376]:
+                    - generic [ref=e377]: ❌ অনুপস্থিত
+                - row "Test V AB-S-2026-006 — ❌ অনুপস্থিত" [ref=e378] [cursor=pointer]:
+                  - cell "Test V" [ref=e379]
+                  - cell "AB-S-2026-006" [ref=e380]
+                  - cell "—" [ref=e381]
+                  - cell "❌ অনুপস্থিত" [ref=e382]:
+                    - generic [ref=e383]: ❌ অনুপস্থিত
+            - button "সংরক্ষণ করুন" [ref=e385] [cursor=pointer]:
+              - img [ref=e386]
+              - text: সংরক্ষণ করুন
+          - generic [ref=e390]:
+            - heading "সাপ্তাহিক সারাংশ" [level=3] [ref=e391]
+            - generic [ref=e392]:
+              - generic [ref=e393]:
+                - paragraph [ref=e394]: রবি
+                - paragraph [ref=e395]: 88%
+              - generic [ref=e398]:
+                - paragraph [ref=e399]: সোম
+                - paragraph [ref=e400]: 92%
+              - generic [ref=e403]:
+                - paragraph [ref=e404]: মঙ্গল
+                - paragraph [ref=e405]: 75%
+              - generic [ref=e408]:
+                - paragraph [ref=e409]: বুধ
+                - paragraph [ref=e410]: 85%
+              - generic [ref=e413]:
+                - paragraph [ref=e414]: বৃহ
+                - paragraph [ref=e415]: 83%
+  - generic [ref=e418]: ভর্তি
+```
