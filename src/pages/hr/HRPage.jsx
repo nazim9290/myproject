@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DollarSign, Users, CheckCircle, Building, Plus, Save, X, Search } from "lucide-react";
+import { DollarSign, Users, CheckCircle, Building, Plus, Save, X, Search, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -16,6 +16,8 @@ export default function HRPage() {
   const [employees, setEmployees] = useState([]);
   const [activeTab, setActiveTab] = useState("employees");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [newEmp, setNewEmp] = useState({ name: "", role: "", branch: "", salary: "", phone: "", email: "" });
   const [salaryHistory, setSalaryHistory] = useState([]);
 
@@ -43,20 +45,37 @@ export default function HRPage() {
     )
   );
 
+  const emptyEmp = { name: "", role: "", branch: "", salary: "", phone: "", email: "" };
+
   const handleAdd = async () => {
     if (!newEmp.name.trim()) { toast.error("নাম দিন"); return; }
-    if (!newEmp.role) { toast.error("পদবি নির্বাচন করুন"); return; }
-    if (!newEmp.branch) { toast.error("ব্রাঞ্চ নির্বাচন করুন"); return; }
     const empData = { name: newEmp.name, designation: newEmp.role, role: newEmp.role, branch: newEmp.branch, salary: parseInt(newEmp.salary) || 0, phone: newEmp.phone || "", email: newEmp.email || "" };
     try {
-      const saved = await api.post("/hr/employees", empData);
-      setEmployees(prev => [...prev, saved]);
-    } catch {
-      setEmployees(prev => [...prev, { id: `EMP-${Date.now()}`, ...empData, status: "active" }]);
-    }
-    setNewEmp({ name: "", role: "", branch: "", salary: "", phone: "", email: "" });
-    setShowAddForm(false);
-    toast.success("কর্মচারী যোগ হয়েছে!");
+      if (editingId) {
+        const updated = await api.patch(`/hr/employees/${editingId}`, empData);
+        setEmployees(prev => prev.map(e => e.id === editingId ? { ...e, ...updated } : e));
+        toast.updated("কর্মচারী");
+      } else {
+        const saved = await api.post("/hr/employees", empData);
+        setEmployees(prev => [...prev, saved]);
+        toast.success("কর্মচারী যোগ হয়েছে!");
+      }
+    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+    setNewEmp(emptyEmp); setShowAddForm(false); setEditingId(null);
+  };
+
+  const openEdit = (emp) => {
+    setNewEmp({ name: emp.name || "", role: emp.designation || emp.role || "", branch: emp.branch || "", salary: String(emp.salary || ""), phone: emp.phone || "", email: emp.email || "" });
+    setEditingId(emp.id); setShowAddForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.patch(`/hr/employees/${id}`, { status: "inactive" });
+      setEmployees(prev => prev.filter(e => e.id !== id));
+      toast.success("কর্মচারী মুছে ফেলা হয়েছে");
+    } catch { toast.error("মুছতে ব্যর্থ"); }
+    setDeleteConfirmId(null);
   };
 
   return (
@@ -178,6 +197,7 @@ export default function HRPage() {
                   <SortHeader label="যোগদান" sortKey="joinDate" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                   <SortHeader label="বেতন" sortKey="salary" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                   <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,6 +221,25 @@ export default function HRPage() {
                     <td className="py-3 px-4 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
                     <td className="py-3 px-4">
                       <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button onClick={() => openEdit(emp)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                          onMouseEnter={e => e.currentTarget.style.color = t.cyan} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
+                          <Edit3 size={14} />
+                        </button>
+                        {deleteConfirmId === emp.id ? (
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => handleDelete(emp.id)} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
+                            <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDeleteConfirmId(emp.id)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                            onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
