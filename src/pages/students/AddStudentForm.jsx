@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Plus, Trash2, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import { INITIAL_BRANCHES } from "../../data/mockData";
+import { api } from "../../hooks/useAPI";
 
 // ─── helpers ────────────────────────────────────────────
 const uid = () => Math.random().toString(36).slice(2, 8);
@@ -74,6 +74,9 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
   const [form, setForm] = useState(BLANK_FORM);
   const [errors, setErrors] = useState({});
+  // API থেকে branches load (mock data সরানো)
+  const [branchesList, setBranchesList] = useState([]);
+  useEffect(() => { api.get("/branches").then(d => { if (Array.isArray(d)) setBranchesList(d); }).catch(() => {}); }, []);
   // which sections are open
   const [open, setOpen] = useState({ personal: true, education: true, employment: false, jpStudy: false, jpExam: false, destination: true, drive: false, notes: false });
 
@@ -386,7 +389,7 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                   className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
                   style={{ ...is, borderColor: errors.branch ? t.rose : t.inputBorder }}>
                   <option value="">— Branch নির্বাচন করুন —</option>
-                  {INITIAL_BRANCHES.filter(b => b.status === "active").map(b => (
+                  {branchesList.map(b => (
                     <option key={b.id} value={b.name}>{b.name} ({b.city})</option>
                   ))}
                 </select>

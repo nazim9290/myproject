@@ -5,7 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { INITIAL_BRANCHES, AGENTS_DATA } from "../../data/mockData";
+// Mock data সরানো হয়েছে — API থেকে load হবে
 import Pagination from "../../components/ui/Pagination";
 import useSortable from "../../hooks/useSortable";
 import SortHeader from "../../components/ui/SortHeader";
@@ -15,6 +15,13 @@ function NewVisitorForm({ onSave, onCancel }) {
   const t = useTheme();
   const toast = useToast();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+  // API থেকে branches ও agents load (mock data সরানো হয়েছে)
+  const [branchesList, setBranchesList] = useState([]);
+  const [agentsList, setAgentsList] = useState([]);
+  useEffect(() => {
+    api.get("/branches").then(d => { if (Array.isArray(d)) setBranchesList(d); }).catch(() => {});
+    api.get("/agents").then(d => { if (Array.isArray(d)) setAgentsList(d); }).catch(() => {});
+  }, []);
   const [form, setForm] = useState({
     name: "", name_en: "", phone: "", guardian_phone: "", email: "", address: "", dob: "", gender: "Male", branch: "",
     education: [
@@ -169,14 +176,14 @@ function NewVisitorForm({ onSave, onCancel }) {
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch / শাখা <span className="req-star">*</span></label>
         <select value={form.branch} onChange={e => set("branch", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: !form.branch ? `${t.amber}60` : t.inputBorder }}>
           <option value="">— Branch নির্বাচন করুন —</option>
-          {INITIAL_BRANCHES.filter(b => b.status === "active").map(b => <option key={b.id} value={b.name}>{b.name} ({b.city})</option>)}
+          {branchesList.map(b => <option key={b.id || b.name} value={b.name}>{b.name} {b.city ? `(${b.city})` : ""}</option>)}
         </select></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সোর্স</label>
         <select value={form.source} onChange={e => set("source", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Walk-in</option><option>Facebook</option><option>Agent</option><option>Referral</option><option>Website</option><option>YouTube</option></select></div>
         {form.source === "Agent" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্ট নির্বাচন করুন <span className="req-star">*</span></label>
         <select value={form.agent_name} onChange={e => set("agent_name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: !form.agent_name ? `${t.amber}60` : t.inputBorder }}>
           <option value="">— এজেন্ট সিলেক্ট করুন —</option>
-          {AGENTS_DATA.filter(a => a.status === "active").map(a => <option key={a.id} value={a.name}>{a.name} ({a.area})</option>)}
+          {agentsList.filter(a => a.status === "active").map(a => <option key={a.id} value={a.name}>{a.name} {a.area ? `(${a.area})` : ""}</option>)}
         </select></div>}
         {form.source === "Referral" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>রেফারার নাম / ফোন</label>
         <input value={form.referral_info || ""} onChange={e => set("referral_info", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যিনি রেফার করেছেন তার নাম বা ফোন" /></div>}
