@@ -108,6 +108,19 @@ export default function UserRolePage() {
     }
   };
 
+  // ── Password Reset ──
+  const [resetPasswordId, setResetPasswordId] = useState(null);
+  const [newPassword, setNewPassword] = useState("");
+
+  const resetPassword = async () => {
+    if (newPassword.length < 8) { toast.error("Password কমপক্ষে ৮ অক্ষর"); return; }
+    try {
+      await usersApi.update(resetPasswordId, { password: newPassword });
+      toast.success("পাসওয়ার্ড রিসেট হয়েছে");
+      setResetPasswordId(null); setNewPassword("");
+    } catch (err) { toast.error(err.message || "রিসেট ব্যর্থ"); }
+  };
+
   const deleteUser = async (id) => {
     try {
       await usersApi.remove(id);
@@ -319,12 +332,35 @@ export default function UserRolePage() {
                             <Button variant="ghost" size="xs" onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}>
                               Role
                             </Button>
+                            <button onClick={() => { setResetPasswordId(resetPasswordId === user.id ? null : user.id); setNewPassword(""); }}
+                              className="p-1.5 rounded-lg text-[10px] transition"
+                              style={{ color: t.amber }}
+                              title="পাসওয়ার্ড রিসেট">
+                              🔑
+                            </button>
+                            <button onClick={() => toggleUserActive(user.id, user.is_active)}
+                              className="p-1.5 rounded-lg transition"
+                              style={{ color: user.is_active !== false ? t.emerald : t.muted }}
+                              title={user.is_active !== false ? "নিষ্ক্রিয় করুন" : "সক্রিয় করুন"}>
+                              {user.is_active !== false ? "✅" : "⏸️"}
+                            </button>
                             <button onClick={() => deleteUser(user.id)} className="p-1.5 rounded-lg transition"
                               style={{ color: t.muted }} onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
                               onMouseLeave={e => e.currentTarget.style.color = t.muted}>
                               <Trash2 size={13} />
                             </button>
                           </div>
+                          {/* Password reset inline */}
+                          {resetPasswordId === user.id && (
+                            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
+                              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                placeholder="নতুন পাসওয়ার্ড (৮+ অক্ষর)" className="flex-1 px-2 py-1 rounded text-xs outline-none"
+                                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                              <button onClick={resetPassword} className="px-2 py-1 rounded text-xs font-medium"
+                                style={{ background: t.amber, color: "#000" }}>রিসেট</button>
+                              <button onClick={() => setResetPasswordId(null)} className="text-xs" style={{ color: t.muted }}>✕</button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
