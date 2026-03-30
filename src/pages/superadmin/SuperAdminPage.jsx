@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Building, Plus, Users, GraduationCap, TrendingUp, Edit3, Trash2, Save, X, Eye, Shield, Globe, Check, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -285,7 +285,8 @@ export default function SuperAdminPage() {
                 const planInfo = PLANS.find(p => p.id === agency.plan) || PLANS[0];
                 const isDedicated = agency.settings?.dedicated;
                 return (
-                  <tr key={agency.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                  <React.Fragment key={agency.id}>
+                  <tr style={{ borderBottom: `1px solid ${t.border}` }}
                     onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                     <td className="py-3 px-4">
@@ -349,6 +350,13 @@ export default function SuperAdminPage() {
                           <button onClick={() => updateAgency(agency.id, { status: "active" })}
                             className="px-2 py-1 rounded text-[10px]" style={{ color: t.emerald }}>সক্রিয়</button>
                         )}
+                        <button onClick={() => {
+                          setForm({ name: agency.name || "", name_bn: agency.name_bn || "", subdomain: agency.subdomain || "", phone: agency.phone || "", email: agency.email || "", address: agency.address || "", plan: agency.plan || "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: agency.dedicated || false });
+                          setEditingId(agency.id); setShowCreateForm(true); window.scrollTo({ top: 0, behavior: "smooth" });
+                        }} className="px-2 py-1 rounded text-[10px] flex items-center gap-1"
+                          style={{ color: t.amber, background: `${t.amber}10` }}>
+                          <Edit3 size={11} /> সম্পাদনা
+                        </button>
                         {deleteConfirmId === agency.id ? (
                           <div className="flex gap-1">
                             <button onClick={() => deleteAgency(agency.id)} className="px-2 py-1 rounded text-[10px] text-white" style={{ background: t.rose }}>মুছুন</button>
@@ -360,6 +368,53 @@ export default function SuperAdminPage() {
                       </div>
                     </td>
                   </tr>
+                  {/* ── Inline Edit Form ── */}
+                  {editingId === agency.id && !showCreateForm && (
+                    <tr>
+                      <td colSpan={7} style={{ background: `${t.amber}08` }}>
+                        <div className="p-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                            {[
+                              { key: "name", label: "নাম (EN)" },
+                              { key: "name_bn", label: "নাম (বাংলা)" },
+                              { key: "phone", label: "ফোন" },
+                              { key: "email", label: "ইমেইল" },
+                              { key: "address", label: "ঠিকানা" },
+                              { key: "subdomain", label: "সাবডোমেইন" },
+                            ].map(f => (
+                              <div key={f.key}>
+                                <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{f.label}</label>
+                                <input value={form[f.key] || ""} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                                  className="w-full mt-1 px-3 py-1.5 rounded-lg text-xs outline-none" style={is} />
+                              </div>
+                            ))}
+                            <div>
+                              <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>প্ল্যান</label>
+                              <select value={form.plan || "standard"} onChange={e => setForm({ ...form, plan: e.target.value })}
+                                className="w-full mt-1 px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                                {PLANS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>স্ট্যাটাস</label>
+                              <select value={agency.status || "active"} onChange={e => updateAgency(agency.id, { status: e.target.value })}
+                                className="w-full mt-1 px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                                <option value="active">সক্রিয়</option>
+                                <option value="suspended">স্থগিত</option>
+                                <option value="trial">ট্রায়াল</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => { updateAgency(agency.id, { name: form.name, name_bn: form.name_bn, phone: form.phone, email: form.email, address: form.address, subdomain: form.subdomain, plan: form.plan }); }}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: t.emerald, color: "#000" }}>💾 সংরক্ষণ</button>
+                            <button onClick={() => setEditingId(null)} className="px-3 py-1.5 rounded-lg text-xs" style={{ color: t.muted }}>বাতিল</button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
               {agencies.length === 0 && (
