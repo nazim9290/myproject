@@ -15,7 +15,7 @@ import { users as usersApi, auth } from "../../lib/api";
  */
 
 const ALL_ROLES = ["owner", "admin", "branch_manager", "counselor", "accountant", "teacher", "viewer"];
-const ROLE_LABELS = { owner: "Owner", admin: "Admin", branch_manager: "Branch Manager", counselor: "Counselor", accountant: "Accountant", teacher: "Teacher", viewer: "Viewer" };
+const ROLE_LABELS = { owner: "মালিক", admin: "অ্যাডমিন", branch_manager: "ব্রাঞ্চ ম্যানেজার", counselor: "কাউন্সেলর", accountant: "একাউন্ট্যান্ট", teacher: "শিক্ষক", viewer: "ভিউয়ার" };
 
 const MODULES = [
   { key: "dashboard", label: "Dashboard" }, { key: "visitors", label: "Visitors" },
@@ -157,9 +157,9 @@ export default function UserRolePage() {
   };
 
   const tabs = [
-    { key: "users", label: "👥 Users" },
-    { key: "branches", label: "🏢 Branches" },
-    { key: "permissions", label: "🔐 Permissions" },
+    { key: "users", label: "👥 ইউজার" },
+    { key: "branches", label: "🏢 ব্রাঞ্চ" },
+    { key: "permissions", label: "🔐 পারমিশন" },
   ];
 
   // ── ফিল্টার ──
@@ -176,7 +176,7 @@ export default function UserRolePage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Users & Branches</h2>
+          <h2 className="text-xl font-bold">ইউজার ও রোল</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>শাখা ব্যবস্থাপনা, ইউজার ও রোল কন্ট্রোল</p>
         </div>
         {activeTab === "users" && <Button icon={Plus} onClick={() => setShowUserForm(true)}>নতুন User</Button>}
@@ -185,10 +185,10 @@ export default function UserRolePage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট Branch", value: branches.length, color: t.cyan, icon: Building2 },
-          { label: "মোট User", value: usersList.length, color: t.purple, icon: Users },
-          { label: "Active User", value: activeUsers, color: t.emerald, icon: CheckCircle },
-          { label: "মোট Role", value: ALL_ROLES.length, color: t.amber, icon: Layers },
+          { label: "মোট ব্রাঞ্চ", value: branches.length, color: t.cyan, icon: Building2 },
+          { label: "মোট ইউজার", value: usersList.length, color: t.purple, icon: Users },
+          { label: "সক্রিয় ইউজার", value: activeUsers, color: t.emerald, icon: CheckCircle },
+          { label: "মোট রোল", value: ALL_ROLES.length, color: t.amber, icon: Layers },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
