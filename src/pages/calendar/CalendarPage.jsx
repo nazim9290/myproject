@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Calendar, ClipboardList, AlertTriangle, Users, Save, X } from "lucide-react";
+import { Plus, Calendar, ClipboardList, AlertTriangle, Users, Save, X, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -27,7 +27,7 @@ export default function CalendarPage({ students = [] }) {
   const today = new Date().toISOString().slice(0, 10);
   const sorted = [...events].sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.time || "").localeCompare(b.time || ""));
   const filtered = filterType === "all" ? sorted : sorted.filter((e) => e.type === filterType);
-  const grouped = filtered.reduce((acc, ev) => { if (ev.date) { (acc[ev.date] = acc[ev.date] || []).push(ev); } return acc; }, {});
+  const grouped = filtered.reduce((acc, ev) => { const d = ev.date ? String(ev.date).slice(0, 10) : ""; if (d) { (acc[d] = acc[d] || []).push(ev); } return acc; }, {});
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
   const weekEndStr = weekEnd.toISOString().slice(0, 10);
   const thisWeek = Object.keys(grouped).filter((d) => d >= today && d <= weekEndStr).length;
@@ -109,10 +109,10 @@ export default function CalendarPage({ students = [] }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "এই সপ্তাহে", value: thisWeek + " দিনে event", color: t.cyan, icon: Calendar },
-          { label: "মোট Event", value: events.length, color: t.purple, icon: ClipboardList },
+          { label: "এই সপ্তাহে", value: thisWeek + " দিনে ইভেন্ট", color: t.cyan, icon: Calendar },
+          { label: "মোট ইভেন্ট", value: events.length, color: t.purple, icon: ClipboardList },
           { label: "ডেডলাইন", value: deadlines, color: t.rose, icon: AlertTriangle },
-          { label: "আগামী Interview", value: events.filter((e) => e.type === "interview").length, color: t.amber, icon: Users },
+          { label: "আগামী ইন্টারভিউ", value: events.filter((e) => e.type === "interview").length, color: t.amber, icon: Users },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -149,11 +149,11 @@ export default function CalendarPage({ students = [] }) {
           const { year, month } = calMonth;
           const firstDay = new Date(year, month, 1).getDay();
           const daysInMonth = new Date(year, month + 1, 0).getDate();
-          const monthName = new Date(year, month, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
+          const monthName = new Date(year, month, 1).toLocaleString("bn-BD", { month: "long", year: "numeric" });
           const cells = [];
           for (let i = 0; i < firstDay; i++) cells.push(null);
           for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-          const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+          const DAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র", "শনি"];
           return (
             <>
               <div className="flex items-center justify-between mb-3">
@@ -204,9 +204,9 @@ export default function CalendarPage({ students = [] }) {
                 </div>
                 <div>
                   <p className="text-xs font-semibold" style={{ color: isToday ? t.cyan : t.text }}>
-                    {isToday ? "আজ" : ""} {date}
+                    {isToday ? "আজ" : ""} {date.slice(0, 10)}
                   </p>
-                  <p className="text-[10px]" style={{ color: t.muted }}>{events.length} event</p>
+                  <p className="text-[10px]" style={{ color: t.muted }}>{events.length} টি ইভেন্ট</p>
                 </div>
               </div>
               <div className="ml-11 space-y-2">
@@ -227,6 +227,14 @@ export default function CalendarPage({ students = [] }) {
                           {ev.notes && <span className="text-[10px]" style={{ color: t.muted }}>{ev.notes}</span>}
                         </div>
                       </div>
+                      <button onClick={async () => {
+                        try { await api.patch(`/calendar/${ev.id}`, { status: "deleted" }); setEvents(prev => prev.filter(e => e.id !== ev.id)); toast.success("ইভেন্ট মুছে ফেলা হয়েছে"); }
+                        catch { toast.error("মুছতে ব্যর্থ"); }
+                      }} className="p-1.5 rounded-lg shrink-0 transition" style={{ color: t.muted }}
+                        onMouseEnter={e => e.currentTarget.style.color = t.rose}
+                        onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   );
                 })}
