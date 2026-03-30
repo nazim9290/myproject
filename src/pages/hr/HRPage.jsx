@@ -21,10 +21,16 @@ export default function HRPage() {
   const [newEmp, setNewEmp] = useState({ name: "", role: "", branch: "", salary: "", phone: "", email: "" });
   const [salaryHistory, setSalaryHistory] = useState([]);
 
-  // ── Backend থেকে employees ও salary history load ──
+  // ── ছুটি state ──
+  const [leaveList, setLeaveList] = useState([]);
+  const [showLeaveForm, setShowLeaveForm] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({ employee_id: "", type: "casual", start_date: "", end_date: "", reason: "" });
+
+  // ── Backend থেকে employees, salary, leaves load ──
   useEffect(() => {
     api.get("/hr/employees").then(data => { if (Array.isArray(data)) setEmployees(data); }).catch(() => {});
     api.get("/hr/salary").then(data => { if (Array.isArray(data)) setSalaryHistory(data); }).catch(() => {});
+    api.get("/hr/leaves").then(data => { if (Array.isArray(data)) setLeaveList(data); }).catch(() => {});
   }, []);
   const [payingEmpId, setPayingEmpId] = useState(null);
   const [payForm, setPayForm] = useState({ month: "", amount: "", method: "Bank Transfer", note: "" });
@@ -447,48 +453,108 @@ export default function HRPage() {
       )}
 
       {activeTab === "leave" && (() => {
-        // ছুটি ট্যাবে active ও সার্চ ফিল্টার করা কর্মী
-        const leaveEmps = filteredEmps.filter((e) => e.status === "active");
+        const LEAVE_TYPES = { casual: "নৈমিত্তিক", sick: "অসুস্থতা", annual: "বার্ষিক", emergency: "জরুরি", maternity: "মাতৃত্বকালীন", other: "অন্যান্য" };
+        const STATUS_COLORS = { pending: t.amber, approved: t.emerald, rejected: t.rose };
+        const STATUS_LABELS = { pending: "অপেক্ষমাণ", approved: "অনুমোদিত", rejected: "বাতিল" };
         return (
           <Card delay={100}>
-            <h3 className="text-sm font-semibold mb-3">ছুটির তালিকা</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">🏖️ ছুটি ব্যবস্থাপনা</h3>
+              <Button size="xs" icon={Plus} onClick={() => setShowLeaveForm(!showLeaveForm)}>ছুটি আবেদন</Button>
+            </div>
+
+            {/* ── ছুটি আবেদন ফর্ম ── */}
+            {showLeaveForm && (
+              <div className="p-4 rounded-xl mb-4" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}20` }}>
+                <h4 className="text-xs font-bold mb-3">নতুন ছুটি আবেদন</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>কর্মচারী *</label>
+                    <select value={leaveForm.employee_id} onChange={e => setLeaveForm({ ...leaveForm, employee_id: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      <option value="">— নির্বাচন —</option>
+                      {employees.filter(e => e.status === "active").map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>ছুটির ধরন</label>
+                    <select value={leaveForm.type} onChange={e => setLeaveForm({ ...leaveForm, type: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      {Object.entries(LEAVE_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>শুরু *</label>
+                    <input type="date" value={leaveForm.start_date} onChange={e => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>শেষ *</label>
+                    <input type="date" value={leaveForm.end_date} onChange={e => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>কারণ</label>
+                  <input value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                    placeholder="ছুটির কারণ লিখুন..." className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Button size="xs" onClick={async () => {
+                    if (!leaveForm.employee_id || !leaveForm.start_date || !leaveForm.end_date) { toast.error("কর্মচারী ও তারিখ দিন"); return; }
+                    try {
+                      const saved = await api.post("/hr/leaves", leaveForm);
+                      setLeaveList(prev => [saved, ...prev]);
+                      toast.success("ছুটি আবেদন যোগ হয়েছে");
+                      setLeaveForm({ employee_id: "", type: "casual", start_date: "", end_date: "", reason: "" });
+                      setShowLeaveForm(false);
+                    } catch (err) { toast.error(err.message || "সমস্যা"); }
+                  }}>আবেদন করুন</Button>
+                  <Button size="xs" variant="ghost" onClick={() => setShowLeaveForm(false)}>বাতিল</Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── ছুটি তালিকা ── */}
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    <SortHeader label="কর্মী" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                    <SortHeader label="পদবি" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                    <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>মোট ছুটি</th>
-                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ব্যবহৃত</th>
-                    <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>বাকি</th>
+                    {["কর্মচারী", "ধরন", "শুরু", "শেষ", "দিন", "কারণ", "স্ট্যাটাস", "অ্যাকশন"].map(h => (
+                      <th key={h} className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {leaveEmps.map((emp) => {
-                    const leaves = emp.leaves || { total: 18, used: 0 };
-                    const total = leaves.total || 18;
-                    const used = leaves.used || 0;
-                    const remaining = total - used;
-                    const pct = Math.round((remaining / total) * 100);
-                    return (
-                      <tr key={emp.id} style={{ borderBottom: `1px solid ${t.border}` }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                        <td className="py-3 px-4 font-medium">{emp.name}</td>
-                        <td className="py-3 px-4" style={{ color: t.muted }}>{emp.role}</td>
-                        <td className="py-3 px-4" style={{ color: t.muted }}>{emp.branch}</td>
-                        <td className="py-3 px-4">{total}</td>
-                        <td className="py-3 px-4" style={{ color: t.amber }}>{used}</td>
-                        <td className="py-3 px-4 font-bold" style={{ color: pct >= 50 ? t.emerald : t.amber }}>{remaining}</td>
-                      </tr>
-                    );
-                  })}
+                  {leaveList.map(l => (
+                    <tr key={l.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                      onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td className="py-3 px-4 font-medium">{l.employees?.name || "—"}</td>
+                      <td className="py-3 px-4"><Badge color={t.cyan} size="xs">{LEAVE_TYPES[l.type] || l.type}</Badge></td>
+                      <td className="py-3 px-4 font-mono">{l.start_date?.slice(0, 10)}</td>
+                      <td className="py-3 px-4 font-mono">{l.end_date?.slice(0, 10)}</td>
+                      <td className="py-3 px-4 font-bold" style={{ color: t.cyan }}>{l.days}</td>
+                      <td className="py-3 px-4" style={{ color: t.muted }}>{l.reason || "—"}</td>
+                      <td className="py-3 px-4"><Badge color={STATUS_COLORS[l.status] || t.muted} size="xs">{STATUS_LABELS[l.status] || l.status}</Badge></td>
+                      <td className="py-3 px-4">
+                        {l.status === "pending" && (
+                          <div className="flex gap-1">
+                            <button onClick={async () => {
+                              try { const u = await api.patch(`/hr/leaves/${l.id}`, { status: "approved" }); setLeaveList(prev => prev.map(x => x.id === l.id ? { ...x, ...u } : x)); toast.success("অনুমোদিত"); } catch { toast.error("ব্যর্থ"); }
+                            }} className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.emerald, background: `${t.emerald}15` }}>✓ অনুমোদন</button>
+                            <button onClick={async () => {
+                              try { const u = await api.patch(`/hr/leaves/${l.id}`, { status: "rejected" }); setLeaveList(prev => prev.map(x => x.id === l.id ? { ...x, ...u } : x)); toast.success("বাতিল করা হয়েছে"); } catch { toast.error("ব্যর্থ"); }
+                            }} className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.rose, background: `${t.rose}15` }}>✗ বাতিল</button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-              {leaveEmps.length === 0 && (
-                <p className="text-center text-xs py-6" style={{ color: t.muted }}>কোনো কর্মী পাওয়া যায়নি</p>
-              )}
+              {leaveList.length === 0 && <p className="text-center text-xs py-8" style={{ color: t.muted }}>কোনো ছুটির আবেদন নেই</p>}
             </div>
           </Card>
         );
