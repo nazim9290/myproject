@@ -21,7 +21,9 @@ export default function CalendarPage({ students = [] }) {
   }, []);
   const [filterType, setFilterType] = useState("all");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", type: "interview", date: new Date().toISOString().slice(0, 10), time: "10:00", staff: "", studentId: "", notes: "" });
+  const [editingId, setEditingId] = useState(null);
+  const emptyForm = { title: "", type: "interview", date: new Date().toISOString().slice(0, 10), time: "10:00", staff: "", studentId: "", notes: "" };
+  const [form, setForm] = useState(emptyForm);
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -40,7 +42,7 @@ export default function CalendarPage({ students = [] }) {
           <h2 className="text-xl font-bold">ক্যালেন্ডার</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>অ্যাপয়েন্টমেন্ট, ইন্টারভিউ ও শিডিউল</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowForm(true)}>নতুন ইভেন্ট</Button>
+        <Button icon={Plus} onClick={() => { setForm(emptyForm); setEditingId(null); setShowForm(true); }}>নতুন ইভেন্ট</Button>
       </div>
 
       {showForm && (() => {
@@ -48,21 +50,25 @@ export default function CalendarPage({ students = [] }) {
         return (
           <Card delay={0}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold">নতুন ইভেন্ট</h3>
+              <h3 className="text-sm font-bold">{editingId ? "ইভেন্ট সম্পাদনা" : "নতুন ইভেন্ট"}</h3>
               <div className="flex gap-2">
-                <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
+                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
                 <Button icon={Save} size="xs" onClick={async () => {
                   if (!form.title.trim() || !form.date) { toast.error("টাইটেল ও তারিখ দিন"); return; }
-                  const linked = students.find((s) => s.id === form.studentId);
+                  const payload = { title: form.title, date: form.date, time: form.time || null, type: form.type, description: form.notes || "", student_id: form.studentId || null };
                   try {
-                    const saved = await api.post("/calendar", { title: form.title, date: form.date, time: form.time || null, type: form.type, description: form.notes || "", student_id: form.studentId || null });
-                    setEvents(prev => [...prev, { ...saved, students: linked ? [linked.name_en] : [] }]);
-                  } catch {
-                    setEvents(prev => [...prev, { id: `EV-${Date.now()}`, ...form, students: linked ? [linked.name_en] : [] }]);
-                  }
-                  setForm({ title: "", type: "interview", date: new Date().toISOString().slice(0, 10), time: "10:00", staff: "", studentId: "", notes: "" });
-                  setShowForm(false);
-                  toast.success("Event যোগ হয়েছে!");
+                    if (editingId) {
+                      const updated = await api.patch(`/calendar/${editingId}`, payload);
+                      setEvents(prev => prev.map(e => e.id === editingId ? { ...e, ...updated } : e));
+                      toast.updated("ইভেন্ট");
+                    } else {
+                      const linked = students.find((s) => s.id === form.studentId);
+                      const saved = await api.post("/calendar", payload);
+                      setEvents(prev => [...prev, { ...saved, students: linked ? [linked.name_en] : [] }]);
+                      toast.success("ইভেন্ট যোগ হয়েছে!");
+                    }
+                  } catch (err) { toast.error(err.message || "সমস্যা"); }
+                  setForm(emptyForm); setShowForm(false); setEditingId(null);
                 }}>সংরক্ষণ</Button>
               </div>
             </div>
@@ -227,14 +233,24 @@ export default function CalendarPage({ students = [] }) {
                           {ev.notes && <span className="text-[10px]" style={{ color: t.muted }}>{ev.notes}</span>}
                         </div>
                       </div>
-                      <button onClick={async () => {
-                        try { await api.patch(`/calendar/${ev.id}`, { status: "deleted" }); setEvents(prev => prev.filter(e => e.id !== ev.id)); toast.success("ইভেন্ট মুছে ফেলা হয়েছে"); }
-                        catch { toast.error("মুছতে ব্যর্থ"); }
-                      }} className="p-1.5 rounded-lg shrink-0 transition" style={{ color: t.muted }}
-                        onMouseEnter={e => e.currentTarget.style.color = t.rose}
-                        onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <button onClick={() => {
+                          setForm({ title: ev.title || "", type: ev.type || "interview", date: String(ev.date || "").slice(0, 10), time: ev.time || "", staff: ev.staff || "", studentId: ev.student_id || "", notes: ev.description || ev.notes || "" });
+                          setEditingId(ev.id); setShowForm(true); window.scrollTo({ top: 0, behavior: "smooth" });
+                        }} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                          onMouseEnter={e => e.currentTarget.style.color = t.cyan}
+                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
+                          ✏️
+                        </button>
+                        <button onClick={async () => {
+                          try { await api.patch(`/calendar/${ev.id}`, { status: "deleted" }); setEvents(prev => prev.filter(e => e.id !== ev.id)); toast.success("ইভেন্ট মুছে ফেলা হয়েছে"); }
+                          catch { toast.error("মুছতে ব্যর্থ"); }
+                        }} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                          onMouseEnter={e => e.currentTarget.style.color = t.rose}
+                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
