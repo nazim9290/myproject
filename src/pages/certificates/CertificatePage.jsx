@@ -95,6 +95,17 @@ export default function CertificatePage({ students }) {
     ]},
   ];
 
+  // Doc type fields কে SYSTEM_FIELDS-এ merge — Birth Certificate etc. fields mapping-এ আসবে
+  const allSystemFields = [...SYSTEM_FIELDS];
+  docTypes.forEach(dt => {
+    const docFields = (dt.fields || [])
+      .filter(f => f.type !== "section_header" && f.type !== "repeatable")
+      .map(f => ({ key: f.key, label: `${f.label_en || f.label} (${dt.name})` }));
+    if (docFields.length > 0) {
+      allSystemFields.push({ group: `📄 ${dt.name}`, fields: docFields });
+    }
+  });
+
   useEffect(() => {
     api.get("/docgen/templates").then(data => {
       if (Array.isArray(data)) setTemplates(data);
@@ -118,6 +129,7 @@ export default function CertificatePage({ students }) {
       formData.append("file", uploadFile);
       formData.append("template_name", uploadName);
       formData.append("category", uploadCategory);
+      if (linkedDocType) formData.append("linked_doc_type", linkedDocType);
       const res = await fetch(`${API_URL}/docgen/upload`, { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -127,9 +139,9 @@ export default function CertificatePage({ students }) {
       setDetectedPlaceholders(phs);
       setActiveTemplate(data.template);
 
-      // Auto-map: placeholder key === system field হলে auto-select
+      // Auto-map: placeholder key === system/doc-type field হলে auto-select
       const autoMap = {};
-      const allKeys = SYSTEM_FIELDS.flatMap(g => g.fields.map(f => f.key));
+      const allKeys = allSystemFields.flatMap(g => g.fields.map(f => f.key));
       phs.forEach(p => { if (allKeys.includes(p.key)) autoMap[p.key] = p.key; });
       setMappings(autoMap);
 
@@ -253,6 +265,21 @@ export default function CertificatePage({ students }) {
               </select>
             </div>
           </div>
+          {/* Template কোন Doc Type-এর সাথে linked — data auto-pull হবে */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Linked Document Type</label>
+              <select value={linkedDocType} onChange={e => setLinkedDocType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}>
+                <option value="">— None —</option>
+                {docTypes.map(dt => <option key={dt.id} value={dt.name}>{dt.name_bn || dt.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <p className="text-[10px] mt-6" style={{ color: t.muted }}>
+                Link করলে generate-এর সময় ঐ doc type-এ save করা data auto-fill হবে
+              </p>
+            </div>
+          </div>
           <div>
             {uploadFile ? (
               <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
@@ -268,10 +295,10 @@ export default function CertificatePage({ students }) {
           </div>
           <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}15` }}>
             <p className="text-[11px]" style={{ color: t.textSecondary }}>
-              <strong>Placeholder তালিকা:</strong>{" "}
-              <code style={{ color: t.cyan }}>{"{{name_en}}"}</code>, <code style={{ color: t.cyan }}>{"{{name_bn}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob:year}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob:month}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob:day}}"}</code>,{" "}
-              <code style={{ color: t.cyan }}>{"{{father_name}}"}</code>, <code style={{ color: t.cyan }}>{"{{mother_name}}"}</code>, <code style={{ color: t.cyan }}>{"{{passport_number}}"}</code>, <code style={{ color: t.cyan }}>{"{{nid}}"}</code>,{" "}
-              <code style={{ color: t.cyan }}>{"{{permanent_address}}"}</code>, <code style={{ color: t.cyan }}>{"{{gender}}"}</code>, <code style={{ color: t.cyan }}>{"{{nationality}}"}</code>, <code style={{ color: t.cyan }}>{"{{today}}"}</code>
+              <strong>System placeholders:</strong>{" "}
+              <code style={{ color: t.cyan }}>{"{{name_en}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob}}"}</code>, <code style={{ color: t.cyan }}>{"{{father_name}}"}</code>, <code style={{ color: t.cyan }}>{"{{mother_name}}"}</code>, <code style={{ color: t.cyan }}>{"{{passport_number}}"}</code>, <code style={{ color: t.cyan }}>{"{{permanent_address}}"}</code>, <code style={{ color: t.cyan }}>{"{{gender}}"}</code>, <code style={{ color: t.cyan }}>{"{{today}}"}</code>
+              <br /><strong>Birth Cert:</strong>{" "}
+              <code style={{ color: t.emerald }}>{"{{birth_reg_no}}"}</code>, <code style={{ color: t.emerald }}>{"{{register_no}}"}</code>, <code style={{ color: t.emerald }}>{"{{birth_place}}"}</code>, <code style={{ color: t.emerald }}>{"{{dob_in_word}}"}</code>, <code style={{ color: t.emerald }}>{"{{father_nationality}}"}</code>, <code style={{ color: t.emerald }}>{"{{mother_nationality}}"}</code>
             </p>
           </div>
           <div className="flex justify-end gap-2">
@@ -320,7 +347,7 @@ export default function CertificatePage({ students }) {
                       className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
                       style={{ ...is, borderColor: mappings[p.key] ? `${t.emerald}60` : t.inputBorder }}>
                       <option value="">— field সিলেক্ট করুন —</option>
-                      {SYSTEM_FIELDS.map(g => (
+                      {allSystemFields.map(g => (
                         <optgroup key={g.group} label={`── ${g.group} ──`}>
                           {g.fields.map(f => <option key={f.key} value={f.key}>{f.label} ({f.key})</option>)}
                         </optgroup>
