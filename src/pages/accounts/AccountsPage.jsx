@@ -161,12 +161,15 @@ export default function AccountsPage({ students = [] }) {
   const expenseSort = useSortable("date", "desc");
 
   // ── Backend থেকে payments ও expenses load ──
+  // API response format: { data: [...], total, page, limit } অথবা সরাসরি array
   useEffect(() => {
-    api.get("/accounts/payments").then(data => {
-      if (Array.isArray(data)) setIncomeData(data.map(p => ({ ...p, studentName: p.students?.name_en || p.student_id, status: p.status === "paid" ? "collected" : p.status })));
+    api.get("/accounts/payments").then(res => {
+      const items = Array.isArray(res) ? res : res?.data || [];
+      setIncomeData(items.map(p => ({ ...p, studentName: p.students?.name_en || p.student_id, status: p.status === "paid" ? "collected" : p.status })));
     }).catch((err) => { console.error("[Accounts Payments Load]", err); toast.error("আয় ডাটা লোড করতে সমস্যা হয়েছে"); });
-    api.get("/accounts/expenses").then(data => {
-      if (Array.isArray(data)) setExpenseData(data);
+    api.get("/accounts/expenses").then(res => {
+      const items = Array.isArray(res) ? res : res?.data || [];
+      setExpenseData(items);
     }).catch((err) => { console.error("[Accounts Expenses Load]", err); toast.error("ব্যয় ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
 
