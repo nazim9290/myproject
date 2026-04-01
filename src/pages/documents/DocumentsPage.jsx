@@ -366,13 +366,26 @@ export default function DocumentsPage({ students }) {
                           </select>
                         ) : sf.type === "select" ? (
                           /* select টাইপ — conditional_options বা সাধারণ options থেকে dropdown */
-                          <select value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
-                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                            <option value="">— Select —</option>
-                            {getSubfieldOptions(sf).map(o => (
-                              <option key={o} value={o}>{o}</option>
-                            ))}
-                          </select>
+                          /* allow_custom থাকলে "Other" option + text input দেখাবে */
+                          <>
+                            <select
+                              value={getSubfieldOptions(sf).includes(member[sf.key]) ? member[sf.key] : member[sf.key] ? "__custom__" : ""}
+                              onChange={e => {
+                                if (e.target.value === "__custom__") updateMember(idx, sf.key, "");
+                                else updateMember(idx, sf.key, e.target.value);
+                              }}
+                              className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                              <option value="">— Select —</option>
+                              {getSubfieldOptions(sf).map(o => (
+                                <option key={o} value={o}>{o}</option>
+                              ))}
+                              {(sf.allow_custom || sf.conditional_options?.allow_custom) && <option value="__custom__">✏️ Other (custom)</option>}
+                            </select>
+                            {(sf.allow_custom || sf.conditional_options?.allow_custom) && !getSubfieldOptions(sf).includes(member[sf.key]) && (
+                              <input type="text" value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
+                                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none mt-1" style={is} placeholder="Type subject name..." />
+                            )}
+                          </>
                         ) : (
                           <input type={sf.type === "date" ? "date" : "text"} value={member[sf.key] || ""}
                             onChange={e => updateMember(idx, sf.key, e.target.value)}
