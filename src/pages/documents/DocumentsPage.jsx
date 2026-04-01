@@ -167,8 +167,33 @@ export default function DocumentsPage({ students }) {
         }
       });
 
+      // গ্রুপ পরিবর্তন হলে বিষয়ের তালিকা auto-populate করো (SSC/HSC)
+      if (key === "group" && value) {
+        const subjectsField = allFields.find(f => f.key === "subjects" && f.type === "repeatable");
+        if (subjectsField) {
+          const subjectSubfield = (subjectsField.subfields || []).find(sf => sf.key === "Subject");
+          if (subjectSubfield?.conditional_options?.values?.[value]) {
+            const subjects = subjectSubfield.conditional_options.values[value];
+            const newMembers = subjects.map(s => ({ Subject: s, Grade: "", Point: "" }));
+            updated._members = newMembers;
+          }
+        }
+      }
+
       return updated;
     });
+  };
+
+  // conditional_options বা সাধারণ options থেকে subfield-এর dropdown options বের করো
+  const getSubfieldOptions = (sf) => {
+    if (sf.conditional_options) {
+      const triggerValue = fieldValues[sf.conditional_options.when];
+      if (triggerValue && sf.conditional_options.values[triggerValue]) {
+        return sf.conditional_options.values[triggerValue];
+      }
+      return sf.conditional_options.default || [];
+    }
+    return sf.options || [];
   };
 
   if (selectedStudent && activeDocType) {
@@ -307,12 +332,12 @@ export default function DocumentsPage({ students }) {
           <Card delay={100}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">{repeatableField.label_en || repeatableField.label} ({members.length})</h3>
-              <Button size="xs" icon={Plus} onClick={addMember}>সদস্য যোগ করুন</Button>
+              <Button size="xs" icon={Plus} onClick={addMember}>Add</Button>
             </div>
 
             {members.length === 0 && (
               <div className="text-center py-6" style={{ color: t.muted }}>
-                <p className="text-xs">কোনো সদস্য যোগ হয়নি — উপরে "সদস্য যোগ করুন" বাটন চাপুন</p>
+                <p className="text-xs">No entries yet — click "Add" above</p>
               </div>
             )}
 
@@ -320,7 +345,7 @@ export default function DocumentsPage({ students }) {
               {members.map((member, idx) => (
                 <div key={idx} className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-semibold" style={{ color: t.cyan }}>সদস্য {idx + 1}</p>
+                    <p className="text-xs font-semibold" style={{ color: t.cyan }}>#{idx + 1}</p>
                     <button onClick={() => removeMember(idx)} className="text-[10px] px-2 py-1 rounded-lg transition"
                       style={{ color: t.muted }} onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
                       <X size={14} />
@@ -329,13 +354,23 @@ export default function DocumentsPage({ students }) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {(repeatableField.subfields || []).map(sf => (
                       <div key={sf.key}>
-                        <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{sf.label}</label>
+                        <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{sf.label_en || sf.label}</label>
+                        {/* Relation ফিল্ড — Birth Certificate-এর জন্য হার্ডকোডেড dropdown */}
                         {sf.key === "Relation" ? (
                           <select value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
                             className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
                             <option value="">— Select —</option>
                             {["SELF", "Father", "Mother", "Brother", "Sister", "Spouse", "Son", "Daughter", "Grandfather", "Grandmother", "Uncle", "Aunt", "Other"].map(r => (
                               <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
+                        ) : sf.type === "select" ? (
+                          /* select টাইপ — conditional_options বা সাধারণ options থেকে dropdown */
+                          <select value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                            <option value="">— Select —</option>
+                            {getSubfieldOptions(sf).map(o => (
+                              <option key={o} value={o}>{o}</option>
                             ))}
                           </select>
                         ) : (
