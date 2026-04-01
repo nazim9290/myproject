@@ -47,6 +47,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         setAgencyEmail(data.email || "");
         setAgencyAddress(data.address || "");
         setAgencyLogo(data.logo_url || "");
+        setBranch(data.branch || "");
       }
     }).catch((err) => { console.error("[Settings Load]", err); toast.error("সেটিংস ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
@@ -456,7 +457,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             <h3 className="text-sm font-semibold flex items-center gap-2"><Building size={14} /> এজেন্সি তথ্য</h3>
             <Button icon={Save} size="xs" onClick={async () => {
               try {
-                await api.patch("/agency/me", { name: agencyName, phone: agencyPhone, email: agencyEmail, address: agencyAddress });
+                await api.patch("/agency/me", { name: agencyName, branch, phone: agencyPhone, email: agencyEmail, address: agencyAddress });
                 toast.success("এজেন্সি তথ্য সংরক্ষণ হয়েছে!");
               } catch { toast.error("সংরক্ষণ ব্যর্থ"); }
             }}>সংরক্ষণ</Button>
