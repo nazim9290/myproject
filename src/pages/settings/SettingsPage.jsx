@@ -248,11 +248,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
     return null;
   };
 
-  // Subject Editor খোলো
+  // Subject Editor খোলো + auto scroll
   const openSubjectEditor = (dt) => {
     setSubjectEditorDocType(dt);
     setSubjectEditorFields(JSON.parse(JSON.stringify(dt.fields || [])));
     setNewSubjectInputs({});
+    setTimeout(() => document.getElementById("subject-editor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
   };
 
   // Subject Editor বন্ধ করো
@@ -852,7 +853,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
           return (
             <Card delay={100}>
-              <div className="flex items-center justify-between mb-4">
+              <div id="subject-editor-panel" className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-semibold flex items-center gap-2">
                     <List size={14} style={{ color: t.purple }} />
