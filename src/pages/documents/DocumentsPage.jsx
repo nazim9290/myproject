@@ -185,7 +185,7 @@ export default function DocumentsPage({ students }) {
                   return (
                     <div key={f.key} className="col-span-2 mt-4 mb-1">
                       <h4 className="text-sm font-semibold" style={{ color: t.cyan }}>
-                        {f.label}
+                        {f.label_en || f.label}
                       </h4>
                       {f.description && (
                         <p className="text-[10px]" style={{ color: t.muted }}>{f.description}</p>
@@ -197,13 +197,13 @@ export default function DocumentsPage({ students }) {
                 return (
                   <div key={f.key}>
                     <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                      {f.label} {f.label_en && <span className="text-[9px] font-normal" style={{ color: t.textSecondary }}>({f.label_en})</span>}
+                      {f.label_en || f.label}
                       {f.required && <span style={{ color: t.rose }}> *</span>}
                     </label>
                     {f.type === "select" ? (
                       <select value={fieldValues[f.key] || ""} onChange={e => handleFieldChange(f.key, e.target.value)}
                         className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                        <option value="">— সিলেক্ট —</option>
+                        <option value="">— Select —</option>
                         {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                     ) : (
@@ -221,7 +221,7 @@ export default function DocumentsPage({ students }) {
         {repeatableField && (
           <Card delay={100}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold">{repeatableField.label} ({members.length} জন)</h3>
+              <h3 className="text-sm font-semibold">{repeatableField.label_en || repeatableField.label} ({members.length})</h3>
               <Button size="xs" icon={Plus} onClick={addMember}>সদস্য যোগ করুন</Button>
             </div>
 
@@ -248,7 +248,7 @@ export default function DocumentsPage({ students }) {
                         {sf.key === "Relation" ? (
                           <select value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
                             className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                            <option value="">— সিলেক্ট —</option>
+                            <option value="">— Select —</option>
                             {["SELF", "Father", "Mother", "Brother", "Sister", "Spouse", "Son", "Daughter", "Grandfather", "Grandmother", "Uncle", "Aunt", "Other"].map(r => (
                               <option key={r} value={r}>{r}</option>
                             ))}
