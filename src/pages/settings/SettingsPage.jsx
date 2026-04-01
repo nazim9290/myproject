@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw } from "lucide-react";
+import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw, List } from "lucide-react";
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -219,6 +219,141 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const [docTypeFields, setDocTypeFields] = useState([]); // [{key, label, label_en, type}]
   const [editingDocTypeId, setEditingDocTypeId] = useState(null);
   const [deleteDocTypeId, setDeleteDocTypeId] = useState(null);
+
+  // ── Subject List Editor state — conditional_options সম্পাদনা ──
+  const [subjectEditorDocType, setSubjectEditorDocType] = useState(null); // যে doc type edit হচ্ছে
+  const [subjectEditorFields, setSubjectEditorFields] = useState(null);   // edited fields (deep copy)
+  const [newSubjectInputs, setNewSubjectInputs] = useState({});           // { "Science": "", "Commerce": "" }
+  const [savingSubjects, setSavingSubjects] = useState(false);
+
+  // doc type-এ conditional_options আছে কিনা চেক করো
+  const hasConditionalOptions = (dt) => {
+    if (!dt?.fields) return false;
+    return dt.fields.some(f => f.type === "repeatable" &&
+      (f.subfields || []).some(sf => sf.conditional_options?.values));
+  };
+
+  // conditional_options সহ repeatable field ও subfield খুঁজে বের করো
+  const getConditionalInfo = (fields) => {
+    if (!fields) return null;
+    for (const f of fields) {
+      if (f.type === "repeatable") {
+        for (const sf of (f.subfields || [])) {
+          if (sf.conditional_options?.values) {
+            return { repeatableKey: f.key, subfieldKey: sf.key, groups: sf.conditional_options.values, defaultList: sf.conditional_options.default || [] };
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  // Subject Editor খোলো
+  const openSubjectEditor = (dt) => {
+    setSubjectEditorDocType(dt);
+    setSubjectEditorFields(JSON.parse(JSON.stringify(dt.fields || [])));
+    setNewSubjectInputs({});
+  };
+
+  // Subject Editor বন্ধ করো
+  const closeSubjectEditor = () => {
+    setSubjectEditorDocType(null);
+    setSubjectEditorFields(null);
+    setNewSubjectInputs({});
+  };
+
+  // একটি group-এ নতুন subject যোগ করো
+  const addSubjectToGroup = (group) => {
+    const val = (newSubjectInputs[group] || "").trim();
+    if (!val) { toast.error("Subject নাম দিন"); return; }
+    setSubjectEditorFields(prev => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      for (const f of updated) {
+        if (f.type === "repeatable") {
+          for (const sf of (f.subfields || [])) {
+            if (sf.conditional_options?.values?.[group]) {
+              if (sf.conditional_options.values[group].includes(val)) { toast.error(`"${val}" ইতিমধ্যে আছে`); return prev; }
+              sf.conditional_options.values[group].push(val);
+            }
+          }
+        }
+      }
+      return updated;
+    });
+    setNewSubjectInputs(prev => ({ ...prev, [group]: "" }));
+  };
+
+  // একটি group থেকে subject সরাও
+  const removeSubjectFromGroup = (group, subject) => {
+    setSubjectEditorFields(prev => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      for (const f of updated) {
+        if (f.type === "repeatable") {
+          for (const sf of (f.subfields || [])) {
+            if (sf.conditional_options?.values?.[group]) {
+              sf.conditional_options.values[group] = sf.conditional_options.values[group].filter(s => s !== subject);
+            }
+          }
+        }
+      }
+      return updated;
+    });
+  };
+
+  // default list-এ subject যোগ/সরাও
+  const addSubjectToDefault = () => {
+    const val = (newSubjectInputs["__default__"] || "").trim();
+    if (!val) { toast.error("Subject নাম দিন"); return; }
+    setSubjectEditorFields(prev => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      for (const f of updated) {
+        if (f.type === "repeatable") {
+          for (const sf of (f.subfields || [])) {
+            if (sf.conditional_options) {
+              if (!sf.conditional_options.default) sf.conditional_options.default = [];
+              if (sf.conditional_options.default.includes(val)) { toast.error(`"${val}" ইতিমধ্যে আছে`); return prev; }
+              sf.conditional_options.default.push(val);
+            }
+          }
+        }
+      }
+      return updated;
+    });
+    setNewSubjectInputs(prev => ({ ...prev, "__default__": "" }));
+  };
+
+  const removeSubjectFromDefault = (subject) => {
+    setSubjectEditorFields(prev => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      for (const f of updated) {
+        if (f.type === "repeatable") {
+          for (const sf of (f.subfields || [])) {
+            if (sf.conditional_options?.default) {
+              sf.conditional_options.default = sf.conditional_options.default.filter(s => s !== subject);
+            }
+          }
+        }
+      }
+      return updated;
+    });
+  };
+
+  // Subject changes সংরক্ষণ করো
+  const saveSubjectChanges = async () => {
+    if (!subjectEditorDocType || !subjectEditorFields) return;
+    setSavingSubjects(true);
+    try {
+      const updated = await api.patch(`/docdata/types/${subjectEditorDocType.id}`, { fields: subjectEditorFields });
+      setDocTypes(prev => prev.map(d => d.id === subjectEditorDocType.id ? updated : d));
+      setSubjectEditorDocType(updated);
+      setSubjectEditorFields(JSON.parse(JSON.stringify(updated.fields || [])));
+      toast.success(`${subjectEditorDocType.name} — Subject list আপডেট হয়েছে`);
+    } catch (err) {
+      toast.error(err.message || "আপডেট ব্যর্থ");
+    } finally {
+      setSavingSubjects(false);
+    }
+  };
 
   useEffect(() => {
     api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[DocTypes Load]", err); });
@@ -668,6 +803,13 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  {hasConditionalOptions(dt) && (
+                    <button onClick={() => openSubjectEditor(dt)}
+                      className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1"
+                      style={{ color: t.purple, background: subjectEditorDocType?.id === dt.id ? `${t.purple}18` : "transparent" }}>
+                      <List size={11} /> Subjects
+                    </button>
+                  )}
                   <button onClick={() => {
                     setEditingDocTypeId(dt.id);
                     setDocTypeForm({ name: dt.name, name_bn: dt.name_bn || "", category: dt.category || "personal" });
@@ -691,6 +833,133 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             {docTypes.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো document type নেই</p>}
           </div>
         </Card>
+
+        {/* ── Subject List Editor Panel ── */}
+        {subjectEditorDocType && subjectEditorFields && (() => {
+          const info = getConditionalInfo(subjectEditorFields);
+          if (!info) return null;
+          const groups = Object.entries(info.groups);
+          const defaultList = (() => {
+            for (const f of subjectEditorFields) {
+              if (f.type === "repeatable") {
+                for (const sf of (f.subfields || [])) {
+                  if (sf.conditional_options?.default) return sf.conditional_options.default;
+                }
+              }
+            }
+            return [];
+          })();
+
+          return (
+            <Card delay={100}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <List size={14} style={{ color: t.purple }} />
+                    {subjectEditorDocType.name_bn || subjectEditorDocType.name} — Subject Lists
+                  </h3>
+                  <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
+                    প্রতিটি group-এর জন্য subject dropdown কাস্টমাইজ করুন
+                  </p>
+                </div>
+                <button onClick={closeSubjectEditor} className="p-1 rounded-lg" style={{ color: t.muted }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* ── প্রতিটি Group (Science, Commerce, Arts/Humanities ইত্যাদি) ── */}
+                {groups.map(([groupName, subjects]) => (
+                  <div key={groupName} className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                    <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.purple }} />
+                      {groupName}
+                      <span className="font-normal" style={{ color: t.muted }}>({subjects.length} subjects)</span>
+                    </p>
+
+                    {/* বিদ্যমান subjects তালিকা */}
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {subjects.map(sub => (
+                        <span key={sub} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px]"
+                          style={{ background: `${t.purple}12`, color: t.text, border: `1px solid ${t.purple}25` }}>
+                          {sub}
+                          <button onClick={() => removeSubjectFromGroup(groupName, sub)}
+                            className="ml-0.5 hover:opacity-80" style={{ color: t.rose }}>
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+                      {subjects.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো subject নেই</p>}
+                    </div>
+
+                    {/* নতুন subject যোগ করার input */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={newSubjectInputs[groupName] || ""}
+                        onChange={e => setNewSubjectInputs(prev => ({ ...prev, [groupName]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === "Enter") addSubjectToGroup(groupName); }}
+                        className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
+                        style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                        placeholder={`নতুন subject যোগ করুন (${groupName})...`}
+                      />
+                      <button onClick={() => addSubjectToGroup(groupName)}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium"
+                        style={{ background: `${t.purple}18`, color: t.purple, border: `1px solid ${t.purple}30` }}>
+                        <Plus size={11} /> যোগ
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* ── Default Subject List (যখন কোনো group select না থাকে) ── */}
+                <div className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                  <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.amber }} />
+                    Default Subjects
+                    <span className="font-normal" style={{ color: t.muted }}>(group সিলেক্ট না হলে এগুলো দেখাবে)</span>
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {defaultList.map(sub => (
+                      <span key={sub} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px]"
+                        style={{ background: `${t.amber}12`, color: t.text, border: `1px solid ${t.amber}25` }}>
+                        {sub}
+                        <button onClick={() => removeSubjectFromDefault(sub)}
+                          className="ml-0.5 hover:opacity-80" style={{ color: t.rose }}>
+                          <X size={11} />
+                        </button>
+                      </span>
+                    ))}
+                    {defaultList.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো default subject নেই</p>}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={newSubjectInputs["__default__"] || ""}
+                      onChange={e => setNewSubjectInputs(prev => ({ ...prev, "__default__": e.target.value }))}
+                      onKeyDown={e => { if (e.key === "Enter") addSubjectToDefault(); }}
+                      className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
+                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                      placeholder="নতুন default subject যোগ করুন..."
+                    />
+                    <button onClick={addSubjectToDefault}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium"
+                      style={{ background: `${t.amber}18`, color: t.amber, border: `1px solid ${t.amber}30` }}>
+                      <Plus size={11} /> যোগ
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── সংরক্ষণ বাটন ── */}
+              <div className="flex justify-end mt-4">
+                <Button icon={Save} size="sm" onClick={saveSubjectChanges} disabled={savingSubjects}>
+                  {savingSubjects ? "সংরক্ষণ হচ্ছে..." : "পরিবর্তন সংরক্ষণ করুন"}
+                </Button>
+              </div>
+            </Card>
+          );
+        })()}
       </div>}
 
       {/* ── পাইপলাইন সেটিংস — Dynamic Checklist Admin ── */}
