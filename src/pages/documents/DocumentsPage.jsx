@@ -6,8 +6,8 @@
  * Data এখানে input করলে Doc Generator-এ auto-available হয়
  */
 
-import { useState, useEffect } from "react";
-import { Users, CheckCircle, Clock, FileText, ChevronRight, Search, ArrowLeft, Save, Plus, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Users, CheckCircle, Clock, FileText, ChevronRight, Search, ArrowLeft, Save, Plus, X, Camera } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -37,6 +37,55 @@ export default function DocumentsPage({ students }) {
   const [activeDocType, setActiveDocType] = useState(null);
   const [fieldValues, setFieldValues] = useState({});
   const [saving, setSaving] = useState(false);
+
+  // OCR Scan — ডকুমেন্ট ইমেজ থেকে auto-fill
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+  const scanInputRef = useRef(null);
+
+  /**
+   * handleScanUpload — ডকুমেন্ট ইমেজ আপলোড করলে OCR API call করে
+   * extracted fields দিয়ে form auto-fill করে
+   */
+  const handleScanUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setScanning(true);
+    setScanResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // OCR API call — FormData পাঠাচ্ছে, api.upload ব্যবহার
+      const data = await api.upload("/ocr/scan", formData);
+
+      setScanResult(data);
+
+      // Auto-fill — extracted fields দিয়ে form পূরণ
+      const extracted = data.extracted_fields || {};
+      const newValues = { ...fieldValues };
+      let filledCount = 0;
+
+      Object.entries(extracted).forEach(([key, value]) => {
+        if (key === "_confidence") return;
+        // শুধুমাত্র doc type-এ থাকা ফিল্ড এবং ফাঁকা ফিল্ডই fill হবে
+        const fieldExists = (activeDocType?.fields || []).some(f => f.key === key);
+        if (fieldExists && !newValues[key]) {
+          newValues[key] = value;
+          filledCount++;
+        }
+      });
+
+      setFieldValues(newValues);
+      toast.success(`স্ক্যান সম্পন্ন — ${filledCount} টি ফিল্ড auto-fill হয়েছে`);
+    } catch (err) {
+      toast.error("স্ক্যান ব্যর্থ: " + err.message);
+    }
+
+    setScanning(false);
+  };
 
   // Load doc types from API
   useEffect(() => {
@@ -84,7 +133,7 @@ export default function DocumentsPage({ students }) {
       });
       toast.success(`${activeDocType.name_bn || activeDocType.name} — ডাটা সংরক্ষণ হয়েছে`);
       await loadStudentDocs(selectedStudent.id); // refresh
-      setActiveDocType(null);
+      setActiveDocType(null); setScanResult(null);
     } catch (err) { toast.error(err.message); }
     setSaving(false);
   };
@@ -157,7 +206,7 @@ export default function DocumentsPage({ students }) {
         await api.post("/docdata/save", { student_id: selectedStudent.id, doc_type_id: activeDocType.id, field_data: flat });
         toast.success(`${activeDocType.name_bn || activeDocType.name} — ডাটা সংরক্ষণ হয়েছে`);
         await loadStudentDocs(selectedStudent.id);
-        setActiveDocType(null);
+        setActiveDocType(null); setScanResult(null);
       } catch (err) { toast.error(err.message); }
       setSaving(false);
     };
@@ -165,12 +214,48 @@ export default function DocumentsPage({ students }) {
     return (
       <div className="space-y-5 anim-fade">
         <div className="flex items-center gap-4">
-          <button onClick={() => setActiveDocType(null)} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
+          <button onClick={() => { setActiveDocType(null); setScanResult(null); }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
           <div className="flex-1">
             <h2 className="text-xl font-bold">{activeDocType.name_bn || activeDocType.name}</h2>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.name_en} ({selectedStudent.id}) — ডকুমেন্টের তথ্য পূরণ করুন</p>
           </div>
           <Button icon={Save} onClick={saveWithFlatten} disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}</Button>
+        </div>
+
+        {/* OCR Scan — document image upload করলে auto-fill হবে */}
+        <div className="mb-0 p-4 rounded-xl" style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}20` }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Camera size={16} style={{ color: t.purple }} />
+              <span className="text-xs font-semibold" style={{ color: t.text }}>Scan & Auto-fill</span>
+            </div>
+            {scanning && <span className="text-[10px]" style={{ color: t.muted }}>স্ক্যান হচ্ছে...</span>}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={handleScanUpload}
+              className="text-xs"
+              style={{ color: t.text }}
+              ref={scanInputRef}
+            />
+            {scanResult && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full"
+                style={{
+                  background: scanResult.confidence === "high" ? `${t.emerald}15` : `${t.amber}15`,
+                  color: scanResult.confidence === "high" ? t.emerald : t.amber
+                }}>
+                {scanResult.confidence === "high" ? "High confidence" : "Review needed"}
+                {" — "}{Object.keys(scanResult.extracted_fields || {}).filter(k => k !== "_confidence").length} fields found
+              </span>
+            )}
+          </div>
+
+          <p className="text-[9px] mt-2" style={{ color: t.muted }}>
+            ডকুমেন্টের ছবি বা PDF আপলোড করুন — OCR দিয়ে তথ্য বের করে ফিল্ড auto-fill হবে। সব ফিল্ড verify করে সংরক্ষণ করুন।
+          </p>
         </div>
 
         {/* Normal fields + section headers — কন্ডিশনাল ফিল্ড সাপোর্ট সহ */}
