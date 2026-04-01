@@ -220,6 +220,50 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const [editingDocTypeId, setEditingDocTypeId] = useState(null);
   const [deleteDocTypeId, setDeleteDocTypeId] = useState(null);
 
+  // ── Field Editor state — doc type-এর fields add/remove/reorder ──
+  const [fieldEditorDocType, setFieldEditorDocType] = useState(null);
+  const [fieldEditorFields, setFieldEditorFields] = useState([]);
+  const [savingFields, setSavingFields] = useState(false);
+  const [newField, setNewField] = useState({ key: "", label_en: "", type: "text", required: false });
+
+  const openFieldEditor = (dt) => {
+    setFieldEditorDocType(dt);
+    setFieldEditorFields(JSON.parse(JSON.stringify(dt.fields || [])));
+    setSubjectEditorDocType(null); // close subject editor
+    setTimeout(() => document.getElementById("field-editor-panel")?.scrollIntoView({ behavior: "smooth" }), 150);
+  };
+
+  const addNewField = () => {
+    if (!newField.key.trim() || !newField.label_en.trim()) { toast.error("Key and Label required"); return; }
+    const keyExists = fieldEditorFields.some(f => f.key === newField.key.trim());
+    if (keyExists) { toast.error("Field key already exists"); return; }
+    setFieldEditorFields(prev => [...prev, { ...newField, key: newField.key.trim(), label_en: newField.label_en.trim() }]);
+    setNewField({ key: "", label_en: "", type: "text", required: false });
+  };
+
+  const removeField = (idx) => setFieldEditorFields(prev => prev.filter((_, i) => i !== idx));
+
+  const moveField = (idx, dir) => {
+    setFieldEditorFields(prev => {
+      const arr = [...prev];
+      const target = idx + dir;
+      if (target < 0 || target >= arr.length) return arr;
+      [arr[idx], arr[target]] = [arr[target], arr[idx]];
+      return arr;
+    });
+  };
+
+  const saveFieldEditor = async () => {
+    setSavingFields(true);
+    try {
+      await api.patch(`/docdata/types/${fieldEditorDocType.id}`, { fields: fieldEditorFields });
+      setDocTypes(prev => prev.map(dt => dt.id === fieldEditorDocType.id ? { ...dt, fields: fieldEditorFields } : dt));
+      toast.success("Fields updated!");
+      setFieldEditorDocType(null);
+    } catch (err) { toast.error(err.message); }
+    setSavingFields(false);
+  };
+
   // ── Subject List Editor state — conditional_options সম্পাদনা ──
   const [subjectEditorDocType, setSubjectEditorDocType] = useState(null); // যে doc type edit হচ্ছে
   const [subjectEditorFields, setSubjectEditorFields] = useState(null);   // edited fields (deep copy)
@@ -804,6 +848,11 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <button onClick={() => openFieldEditor(dt)}
+                    className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1"
+                    style={{ color: t.emerald, background: fieldEditorDocType?.id === dt.id ? `${t.emerald}18` : "transparent" }}>
+                    Fields
+                  </button>
                   {hasConditionalOptions(dt) && (
                     <button onClick={() => openSubjectEditor(dt)}
                       className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1"
@@ -834,6 +883,72 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             {docTypes.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো document type নেই</p>}
           </div>
         </Card>
+
+        {/* ── Field Editor Panel ── */}
+        {fieldEditorDocType && (
+          <Card delay={100}>
+            <div id="field-editor-panel" className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: t.emerald }}>{fieldEditorDocType.name} — Fields</h3>
+                <p className="text-[10px]" style={{ color: t.muted }}>Add, remove, or reorder fields. Custom fields will only apply to your agency.</p>
+              </div>
+              <button onClick={() => setFieldEditorDocType(null)} className="p-1 rounded-lg" style={{ color: t.muted }}><X size={16} /></button>
+            </div>
+
+            {/* Field list */}
+            <div className="space-y-1.5 mb-4">
+              {fieldEditorFields.map((f, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-2 rounded-lg text-xs" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                  <div className="flex flex-col gap-0.5">
+                    <button onClick={() => moveField(idx, -1)} disabled={idx === 0} className="text-[10px] px-1 rounded" style={{ color: idx === 0 ? t.muted : t.cyan }}>▲</button>
+                    <button onClick={() => moveField(idx, 1)} disabled={idx === fieldEditorFields.length - 1} className="text-[10px] px-1 rounded" style={{ color: idx === fieldEditorFields.length - 1 ? t.muted : t.cyan }}>▼</button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold">{f.label_en || f.label || f.key}</span>
+                    <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>{f.type}</span>
+                    {f.required && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.rose}15`, color: t.rose }}>required</span>}
+                    <span className="ml-2 text-[9px]" style={{ color: t.muted }}>key: {f.key}</span>
+                  </div>
+                  <button onClick={() => removeField(idx)} className="p-1 rounded" style={{ color: t.muted }}
+                    onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add new field */}
+            <div className="p-3 rounded-xl mb-4" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}20` }}>
+              <p className="text-[10px] font-semibold mb-2" style={{ color: t.emerald }}>+ Add Custom Field</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <input value={newField.key} onChange={e => setNewField(p => ({ ...p, key: e.target.value.replace(/\s/g, "_") }))}
+                  className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="field_key" />
+                <input value={newField.label_en} onChange={e => setNewField(p => ({ ...p, label_en: e.target.value }))}
+                  className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Label (English)" />
+                <select value={newField.type} onChange={e => setNewField(p => ({ ...p, type: e.target.value }))}
+                  className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                  <option value="text">Text</option>
+                  <option value="date">Date</option>
+                  <option value="select">Select</option>
+                  <option value="section_header">Section Header</option>
+                </select>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1 text-[10px]" style={{ color: t.muted }}>
+                    <input type="checkbox" checked={newField.required} onChange={e => setNewField(p => ({ ...p, required: e.target.checked }))} /> Required
+                  </label>
+                  <button onClick={addNewField} className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                    style={{ background: t.emerald, color: "#fff" }}>Add</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button icon={Save} size="sm" onClick={saveFieldEditor} disabled={savingFields}>
+                {savingFields ? "Saving..." : "Save Fields"}
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* ── Subject List Editor Panel ── */}
         {subjectEditorDocType && subjectEditorFields && (() => {
