@@ -394,7 +394,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "portal":
       return <AdminPortalPreview students={students} />;
     case "settings":
-      return <SettingsPage isDark={isDark} setIsDark={setIsDark} students={students} visitors={visitors} stepConfigs={stepConfigs} updateStepConfigs={updateStepConfigs} />;
+      return <SettingsPage isDark={isDark} setIsDark={setIsDark} students={students} visitors={visitors} stepConfigs={stepConfigs} updateStepConfigs={updateStepConfigs} currentUser={currentUser} />;
     case "help":
       return <HelpPage />;
     case "super-admin":

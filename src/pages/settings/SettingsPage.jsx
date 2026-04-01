@@ -23,10 +23,12 @@ const ADMIN_TABS = [
   { key: "backup", label: "ডাটা ব্যাকআপ", icon: Database },
 ];
 
-export default function SettingsPage({ isDark, setIsDark, students, visitors, stepConfigs, updateStepConfigs }) {
+export default function SettingsPage({ isDark, setIsDark, students, visitors, stepConfigs, updateStepConfigs, currentUser }) {
   const t = useTheme();
   const toast = useToast();
   const { labelSettings, updateLabelSettings } = useLabelSettings();
+  const isSuperAdmin = currentUser?.role === "owner" || currentUser?.role === "super_admin";
+  const visibleTabs = ADMIN_TABS.filter(tab => tab.key !== "backup" || isSuperAdmin);
   const [activeTab, setActiveTab] = useState("agency");
   const [agencyName, setAgencyName] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
@@ -434,7 +436,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
       {/* ── ট্যাব Navigation ── */}
       <div className="flex flex-wrap gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
-        {ADMIN_TABS.map(tab => (
+        {visibleTabs.map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
             style={{
