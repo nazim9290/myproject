@@ -574,7 +574,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
           </div>
         </Card>
 
-        <Card delay={250}>
+        {isSuperAdmin && <Card delay={250}>
           <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Download size={14} /> ডেটা ব্যাকআপ ও এক্সপোর্ট</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
@@ -696,7 +696,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               ))}
             </div>
           </div>
-        </Card>
+        </Card>}
 
       </div>}
 
