@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, Pencil } from "lucide-react";
+import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, LayoutDashboard, Users } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -15,12 +15,26 @@ import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 
 const MAIN_STEPS = PIPELINE_STATUSES.filter(s => !["CANCELLED","PAUSED"].includes(s.code));
 
+// ── ট্যাব কনফিগারেশন ──
+const TABS = [
+  { key: "overview", label: "ওভারভিউ", icon: LayoutDashboard },
+  { key: "profile", label: "প্রোফাইল", icon: User },
+  { key: "fees", label: "ফি ও পেমেন্ট", icon: CreditCard },
+  { key: "sponsor", label: "স্পনসর", icon: Users },
+  { key: "timeline", label: "টাইমলাইন", icon: Clock },
+];
+
 export default function StudentDetailView({ student, onBack, onUpdate, onDelete, stepConfigs }) {
   // stepConfigs prop থেকে dynamic checklist — না পেলে default fallback
   const STEPS_META = stepConfigs || DEFAULT_STEPS_META;
   const t = useTheme();
   const toast = useToast();
-  const [isEditing, setIsEditing] = useState(false);
+
+  // ── ট্যাব স্টেট ──
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // ── Profile Edit Modal স্টেট ──
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [editForm, setEditForm] = useState({ ...student });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -60,22 +74,18 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [portalPassword, setPortalPassword] = useState("");
   const [showStepCard, setShowStepCard] = useState(false);
 
-  // ── Timeline state ──
-  const [timelineOpen, setTimelineOpen] = useState(false);
-
   // ── Sponsor state ──
   const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", address: "", nid: "", company_name: "", trade_license_no: "", work_address: "", tin: "", annual_income_y1: "", annual_income_y2: "", annual_income_y3: "", tax_y1: "", tax_y2: "", tax_y3: "", banks: [], tuition_jpy: "", living_jpy_monthly: "", payment_method: "Bank Transfer", exchange_rate: "" };
   const [sponsor, setSponsor] = useState(student.sponsor || BLANK_SPONSOR);
   const [sponsorForm, setSponsorForm] = useState(student.sponsor || BLANK_SPONSOR);
-  const [sponsorEditing, setSponsorEditing] = useState(false);
-  const [sponsorOpen, setSponsorOpen] = useState(false);
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
   const [showAddBank, setShowAddBank] = useState(false);
   const [bankForm, setBankForm] = useState({ bank_name: "", branch: "", account_no: "", balance: "", balance_date: "", name_in_statement: "", address_in_statement: "" });
 
   const saveSponsor = () => {
     setSponsor(sponsorForm);
     onUpdate({ ...student, sponsor: sponsorForm });
-    setSponsorEditing(false);
+    setShowSponsorModal(false);
     logActivity("স্পনসর তথ্য আপডেট হয়েছে", "edit");
     toast.updated("Sponsor");
   };
@@ -163,11 +173,15 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     toast.success("নোট যোগ হয়েছে");
   };
 
-  // Edit
-  const handleSave = () => { api.patch(`/students/${student.id}`, editForm).catch((err) => { console.error("[Student Save]", err); toast.error("সার্ভারে সেভ ব্যর্থ"); }); onUpdate(editForm); setIsEditing(false); logActivity("তথ্য আপডেট হয়েছে", "edit"); toast.updated("Student"); };
+  // Edit — Profile Modal save
+  const handleSave = () => {
+    api.patch(`/students/${student.id}`, editForm).catch((err) => { console.error("[Student Save]", err); toast.error("সার্ভারে সেভ ব্যর্থ"); });
+    onUpdate(editForm);
+    setShowProfileModal(false);
+    logActivity("তথ্য আপডেট হয়েছে", "edit");
+    toast.updated("Student");
+  };
   const setField = (k, v) => setEditForm({ ...editForm, [k]: v });
-
-  const current = isEditing ? editForm : student;
 
   const logIcon = { create: "🟢", status: "🔵", action: "🟡", note: "📝", edit: "✏️", payment: "💰" };
 
@@ -187,7 +201,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
   const addFeeItem = async () => {
     const amount = parseInt(feeItemForm.amount, 10);
-    if (!amount || amount <= 0) { toast.error("সঠิক পরিমাণ দিন"); return; }
+    if (!amount || amount <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
     const catCfg = CATEGORY_CONFIG[feeItemForm.category];
     const label = feeItemForm.label.trim() || catCfg?.label || feeItemForm.category;
     let newItem = { id: `fi-${Date.now()}`, category: feeItemForm.category, label, amount };
@@ -244,10 +258,87 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     toast.success("মুছে ফেলা হয়েছে");
   };
 
+  // ── Timeline helper — combined events ──
+  const TL_COLORS = { create: t.emerald, status: t.cyan, payment: t.purple, note: t.amber, edit: t.muted, action: t.muted };
+  const buildTimeline = () => {
+    const feeEvents = payments.map(p => ({
+      time: p.date + " 00:00",
+      text: `পেমেন্ট — ৳${Number(p.amount).toLocaleString("en-IN")} [${p.category}] (${p.method})${p.note ? ` — ${p.note}` : ""}`,
+      type: "payment"
+    }));
+    return [...activityLog, ...feeEvents].sort((a, b) => b.time.localeCompare(a.time));
+  };
+
+  // ── Personal fields config (Profile ট্যাব ও Modal-এ ব্যবহার হবে) ──
+  const personalFields = [
+    { label: "নাম (EN)", key: "name_en" },
+    { label: "নাম (বাংলা)", key: "name_bn" },
+    { label: "নাম (カタカナ)", key: "name_katakana" },
+    { label: "জন্ম তারিখ", key: "dob", type: "date" },
+    { label: "লিঙ্গ", key: "gender", type: "select", options: ["Male","Female","Other"] },
+    { label: "বৈবাহিক অবস্থা", key: "marital_status", type: "select", options: ["Single","Married","Divorced","Widowed"] },
+    { label: "জাতীয়তা", key: "nationality" },
+    { label: "রক্তের গ্রুপ", key: "blood_group", type: "select", options: ["","A+","A-","B+","B-","AB+","AB-","O+","O-"] },
+    { label: "ফোন", key: "phone" },
+    { label: "WhatsApp", key: "whatsapp" },
+    { label: "ইমেইল", key: "email" },
+    { label: "NID নম্বর", key: "nid" },
+    { label: "বর্তমান ঠিকানা", key: "current_address" },
+    { label: "স্থায়ী ঠিকানা", key: "permanent_address" },
+  ];
+
+  const passportFields = [
+    { label: "পাসপোর্ট নম্বর", key: "passport" },
+    { label: "পাসপোর্ট ইস্যু", key: "passport_issue", type: "date" },
+    { label: "পাসপোর্ট মেয়াদ", key: "passport_expiry", type: "date" },
+    { label: "পিতার নাম (বাংলা)", key: "father" },
+    { label: "পিতার নাম (EN)", key: "father_name_en" },
+    { label: "মাতার নাম (বাংলা)", key: "mother" },
+    { label: "মাতার নাম (EN)", key: "mother_name_en" },
+  ];
+
+  const destinationExtraFields = [
+    { label: "Intake", key: "intake" },
+    { label: "ভিসার ধরন", key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
+    { label: "Branch", key: "branch" },
+    { label: "সোর্স", key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral","Website","YouTube"] },
+    { label: "টাইপ", key: "student_type", type: "select", options: ["own","agent","partner"] },
+    { label: "কাউন্সেলর", key: "counselor" },
+    { label: "ভর্তির তারিখ", key: "created" },
+  ];
+
+  // ── Read-only field renderer ──
+  const ReadOnlyField = ({ label, value }) => (
+    <div className="flex justify-between items-center text-xs gap-2">
+      <span style={{ color: t.muted }} className="shrink-0">{label}</span>
+      <span className="font-medium text-right">{value || "—"}</span>
+    </div>
+  );
+
+  // ── Editable field renderer (Modal-এর জন্য) ──
+  const EditableField = ({ field }) => (
+    <div>
+      <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{field.label}</label>
+      {field.type === "select" ? (
+        <select value={editForm[field.key] || ""} onChange={e => setField(field.key, e.target.value)}
+          className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+          {field.options.map(o => <option key={o} value={o}>{o || "—"}</option>)}
+        </select>
+      ) : (
+        <input type={field.type || "text"} value={editForm[field.key] || ""} onChange={e => setField(field.key, e.target.value)}
+          className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-5 anim-fade">
 
-      {/* ── Header ── */}
+      {/* ══════════════════════════════════════
+          HEADER — সবসময় দেখাবে
+      ══════════════════════════════════════ */}
       <div className="flex items-center gap-3 flex-wrap">
         <button onClick={onBack} className="p-2 rounded-xl transition flex items-center gap-1 text-xs font-medium"
           style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
@@ -265,19 +356,723 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.name_bn} • {student.id} • {student.country}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {isEditing ? (
-            <>
-              <Button variant="ghost" size="xs" onClick={() => { setIsEditing(false); setEditForm({ ...student }); }}>বাতিল</Button>
-              <Button icon={Save} size="xs" onClick={handleSave}>সংরক্ষণ</Button>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setIsEditing(true)}>সম্পাদনা</Button>
-              <Button variant="danger" icon={Trash2} size="xs" onClick={() => setShowDeleteConfirm(true)}>মুছুন</Button>
-            </>
-          )}
+          <Button variant="danger" icon={Trash2} size="xs" onClick={() => setShowDeleteConfirm(true)}>মুছুন</Button>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════
+          TAB BAR — SettingsPage-এর মতো স্টাইল
+      ══════════════════════════════════════ */}
+      <div className="flex flex-wrap gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
+        {TABS.map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+            style={{
+              background: activeTab === tab.key ? t.cardSolid : "transparent",
+              color: activeTab === tab.key ? t.cyan : t.muted,
+              boxShadow: activeTab === tab.key ? `0 1px 3px rgba(0,0,0,0.2)` : "none",
+            }}>
+            <tab.icon size={13} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════
+          TAB 1: OVERVIEW — ড্যাশবোর্ড স্টাইল ওভারভিউ
+      ══════════════════════════════════════ */}
+      {activeTab === "overview" && (
+        <>
+          {/* ── স্ট্যাট কার্ড — 4 কলাম ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* Pipeline Step */}
+            <Card delay={30}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-xl flex items-center justify-center text-sm shrink-0"
+                  style={{ background: `${stepColor}15` }}>
+                  {meta.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px]" style={{ color: t.muted }}>পাইপলাইন</p>
+                  <p className="text-sm font-bold truncate" style={{ color: stepColor }}>
+                    {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[10px]" style={{ color: t.muted }}>
+                ধাপ {Math.max(currentStepIdx + 1, 1)} / {MAIN_STEPS.length}
+                {isTerminal && <span className="ml-1 px-1.5 py-0.5 rounded-full font-bold" style={{ background: `${t.rose}20`, color: t.rose }}>{currentStatus}</span>}
+              </p>
+            </Card>
+
+            {/* Payment Progress */}
+            <Card delay={40}>
+              <p className="text-[10px] mb-1" style={{ color: t.muted }}>পেমেন্ট</p>
+              <p className="text-sm font-bold" style={{ color: paidPercent >= 100 ? t.emerald : paidPercent >= 50 ? t.cyan : t.amber }}>
+                {taka(totalPaid)} / {taka(totalFee)}
+              </p>
+              <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: t.inputBg }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${paidPercent}%`, background: paidPercent >= 100 ? t.emerald : paidPercent >= 50 ? t.cyan : t.amber }} />
+              </div>
+              <p className="text-[10px] mt-1 text-right" style={{ color: t.muted }}>{Math.round(paidPercent)}%</p>
+            </Card>
+
+            {/* Documents (checklist progress) */}
+            <Card delay={50}>
+              <p className="text-[10px] mb-1" style={{ color: t.muted }}>চেকলিস্ট</p>
+              <p className="text-sm font-bold" style={{ color: allRequiredDone ? t.emerald : t.amber }}>
+                {checkedRequired} / {requiredItems.length} আবশ্যক
+              </p>
+              <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: t.inputBg }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${requiredItems.length > 0 ? (checkedRequired / requiredItems.length) * 100 : 0}%`, background: allRequiredDone ? t.emerald : t.amber }} />
+              </div>
+              <p className="text-[10px] mt-1" style={{ color: t.muted }}>{meta.hint}</p>
+            </Card>
+
+            {/* Portal Access */}
+            <Card delay={60}>
+              <p className="text-[10px] mb-1" style={{ color: t.muted }}>স্টুডেন্ট পোর্টাল</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-lg">{portalAccess ? "✅" : "❌"}</span>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: portalAccess ? t.emerald : t.muted }}>
+                    {portalAccess ? "চালু" : "বন্ধ"}
+                  </p>
+                  {portalAccess && <p className="text-[10px]" style={{ color: t.muted }}>{student.phone}</p>}
+                </div>
+              </div>
+              <button onClick={() => setShowPortalForm(true)}
+                className="mt-2 w-full px-2 py-1 rounded-lg text-[10px] font-medium transition"
+                style={{ background: portalAccess ? `${t.rose}15` : `${t.emerald}15`, color: portalAccess ? t.rose : t.emerald }}>
+                {portalAccess ? "বন্ধ করুন" : "চালু করুন"}
+              </button>
+            </Card>
+          </div>
+
+          {/* ── Pipeline Progress — horizontal stepper ── */}
+          <Card delay={70}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold">পাইপলাইন অগ্রগতি</h3>
+              <p className="text-[11px]" style={{ color: t.muted }}>
+                ধাপ {Math.max(currentStepIdx + 1, 1)} / {MAIN_STEPS.length}
+              </p>
+            </div>
+            {/* Step circles */}
+            <div className="overflow-x-auto pb-2">
+              <div className="flex items-center min-w-max">
+                {MAIN_STEPS.map((step, i) => {
+                  const done = i < currentStepIdx;
+                  const active = i === currentStepIdx;
+                  const color = step.color;
+                  return (
+                    <div key={step.code} className="flex items-center">
+                      <button
+                        onClick={() => !isTerminal && changeStatus(step.code, `Status → ${step.label}`)}
+                        title={step.label}
+                        className="flex flex-col items-center gap-1.5 group transition-all"
+                        style={{ minWidth: 52 }}
+                      >
+                        <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2"
+                          style={{
+                            background: done ? `${t.emerald}20` : active ? `${color}25` : t.inputBg,
+                            borderColor: done ? t.emerald : active ? color : t.inputBorder,
+                            color: done ? t.emerald : active ? color : t.muted,
+                            boxShadow: active ? `0 0 0 3px ${color}30` : "none",
+                          }}>
+                          {done ? <Check size={14} /> : i + 1}
+                        </div>
+                        <span className="text-[9px] text-center leading-tight max-w-[52px]"
+                          style={{ color: done ? t.emerald : active ? color : `${t.muted}70`, fontWeight: active ? 700 : 400 }}>
+                          {step.label}
+                        </span>
+                      </button>
+                      {i < MAIN_STEPS.length - 1 && (
+                        <div className="h-0.5 w-5 mx-0.5 shrink-0 rounded-full transition-all"
+                          style={{ background: i < currentStepIdx ? t.emerald : t.inputBorder }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+
+          {/* ── Current Step Action Card + Quick Info (2-column) ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            {/* Current Step Action Card — 3 col wide */}
+            <div className="lg:col-span-3">
+              {!isTerminal ? (
+                <Card delay={80}>
+                  {/* Collapsible toggle header */}
+                  <button
+                    onClick={() => setShowStepCard(v => !v)}
+                    className="w-full flex items-center justify-between gap-3 group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-xl flex items-center justify-center text-lg shrink-0"
+                        style={{ background: `${stepColor}15` }}>
+                        {meta.icon}
+                      </div>
+                      <div className="text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold" style={{ color: stepColor }}>
+                            {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${stepColor}15`, color: stepColor }}>
+                            {checkedRequired}/{requiredItems.length} আবশ্যক ✓
+                          </span>
+                          {!allRequiredDone && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.rose}15`, color: t.rose }}>
+                              {requiredItems.length - checkedRequired}টি বাকি
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{meta.hint}</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} style={{ color: t.muted, transform: showStepCard ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+                  </button>
+
+                  {!showStepCard ? null : (<div className="mt-4" style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16 }}>
+                  {/* Checklist */}
+                  <div className="space-y-2 mb-5">
+                    <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>এই ধাপে যা করতে হবে</p>
+                    {meta.checklist.map(item => {
+                      const ticked = isChecked(item.id);
+                      return (
+                        <button key={item.id} onClick={() => toggleCheck(item.id)}
+                          className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all"
+                          style={{ background: ticked ? `${t.emerald}10` : t.inputBg, border: `1px solid ${ticked ? `${t.emerald}30` : "transparent"}` }}>
+                          <div className="h-5 w-5 rounded-md flex items-center justify-center shrink-0 border-2 transition-all"
+                            style={{ background: ticked ? t.emerald : "transparent", borderColor: ticked ? t.emerald : t.inputBorder }}>
+                            {ticked && <Check size={11} color="#fff" />}
+                          </div>
+                          <span className="text-xs flex-1" style={{ color: ticked ? t.textSecondary : t.text, textDecoration: ticked ? "line-through" : "none" }}>
+                            {item.text}
+                          </span>
+                          {item.req && !ticked && (
+                            <span className="text-[9px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: `${t.rose}15`, color: t.rose }}>আবশ্যক</span>
+                          )}
+                          {ticked && <Check size={13} style={{ color: t.emerald, shrink: 0 }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap items-center gap-2 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+                    {currentStepIdx > 0 && (
+                      <button onClick={goPrev}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
+                        style={{ background: t.inputBg, color: t.muted, border: `1px solid ${t.inputBorder}` }}
+                        onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                        onMouseLeave={e => { const el = e.currentTarget; el.style.background = t.inputBg; }}>
+                        <ChevronLeft size={13} /> পূর্ববর্তী ধাপ
+                      </button>
+                    )}
+                    {!["COMPLETED"].includes(currentStatus) && (
+                      <button onClick={() => setShowPauseConfirm(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
+                        style={{ background: `${t.amber}15`, color: t.amber, border: `1px solid ${t.amber}30` }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${t.amber}25`}
+                        onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.amber}15`; }}>
+                        ⏸ বিরতি
+                      </button>
+                    )}
+                    {!["COMPLETED"].includes(currentStatus) && (
+                      <button onClick={() => setShowCancelConfirm(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
+                        style={{ background: `${t.rose}12`, color: t.rose, border: `1px solid ${t.rose}25` }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${t.rose}22`}
+                        onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.rose}12`; }}>
+                        ✕ বাতিল
+                      </button>
+                    )}
+                    <div className="flex-1" />
+                    {meta.nextStatus && (
+                      <div className="flex items-center gap-2">
+                        {!allRequiredDone && (
+                          <p className="text-[10px]" style={{ color: t.rose }}>
+                            {requiredItems.length - checkedRequired}টি আবশ্যক বাকি
+                          </p>
+                        )}
+                        <button
+                          onClick={goNext}
+                          disabled={!allRequiredDone}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                          style={{
+                            background: allRequiredDone ? `linear-gradient(135deg, ${stepColor}, ${stepColor}cc)` : `${stepColor}20`,
+                            color: allRequiredDone ? "#fff" : `${stepColor}80`,
+                            cursor: allRequiredDone ? "pointer" : "not-allowed",
+                            boxShadow: allRequiredDone ? `0 4px 12px ${stepColor}40` : "none",
+                          }}>
+                          {meta.nextLabel} <ChevronRight size={13} />
+                        </button>
+                        {!allRequiredDone && (
+                          <button onClick={goNext}
+                            className="text-[10px] px-2 py-1 rounded-lg transition"
+                            style={{ background: t.inputBg, color: t.muted }}
+                            onMouseEnter={e => e.currentTarget.style.color = t.text}
+                            onMouseLeave={e => { const el = e.currentTarget; el.style.color = t.muted; }}
+                            title="Checklist ছাড়াই এগিয়ে যান">
+                            ওভাররাইড →
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  </div>)}
+                </Card>
+              ) : (
+                /* Terminal state (PAUSED/CANCELLED) */
+                <Card delay={80}>
+                  <div className="flex items-center gap-4">
+                    <div className="text-3xl">{currentStatus === "PAUSED" ? "⏸" : "❌"}</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold" style={{ color: currentStatus === "PAUSED" ? t.amber : t.rose }}>
+                        {currentStatus === "PAUSED" ? "সাময়িক বিরতি" : "বাদ দেওয়া হয়েছে"}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+                        {currentStatus === "PAUSED" ? "পরিস্থিতি ঠিক হলে Re-activate করুন" : "কারণ নোট করুন এবং Re-activate করা যাবে"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        changeStatus("ENROLLED", "Pipeline Re-activate করা হয়েছে");
+                      }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold transition"
+                      style={{ background: `${t.emerald}20`, color: t.emerald, border: `1px solid ${t.emerald}40` }}
+                      onMouseEnter={e => e.currentTarget.style.background = `${t.emerald}30`}
+                      onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.emerald}20`; }}>
+                      ▶ Re-activate করুন
+                    </button>
+                  </div>
+                </Card>
+              )}
+            </div>
+
+            {/* Quick Info — 2 col wide */}
+            <div className="lg:col-span-2">
+              <Card delay={90}>
+                <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
+                  <User size={12} /> দ্রুত তথ্য
+                </h4>
+                <div className="space-y-2.5">
+                  <ReadOnlyField label="ফোন" value={student.phone} />
+                  <ReadOnlyField label="ইমেইল" value={student.email} />
+                  <ReadOnlyField label="দেশ" value={student.country} />
+                  <ReadOnlyField label="স্কুল" value={student.school} />
+                  <ReadOnlyField label="ব্যাচ" value={student.batch} />
+                  <ReadOnlyField label="কাউন্সেলর" value={student.counselor} />
+                  <ReadOnlyField label="সোর্স" value={student.source} />
+                  <ReadOnlyField label="ভর্তির তারিখ" value={student.created} />
+                  <ReadOnlyField label="টাইপ" value={student.student_type === "own" ? "Own" : student.student_type === "agent" ? "Agent" : "Partner"} />
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          {/* ── Activity Log (সর্বশেষ ৫টি) ── */}
+          <Card delay={100}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <MessageSquare size={14} style={{ color: t.cyan }} /> সাম্প্রতিক কার্যকলাপ
+              </h3>
+              <button onClick={() => setActiveTab("timeline")}
+                className="text-[10px] px-2 py-1 rounded-lg transition"
+                style={{ background: `${t.cyan}15`, color: t.cyan }}>
+                সব দেখুন →
+              </button>
+            </div>
+            <div className="space-y-2">
+              {[...activityLog].reverse().slice(0, 5).map((entry, i) => (
+                <div key={i} className="flex items-start gap-2.5 text-xs">
+                  <span className="text-sm shrink-0 mt-0.5">{logIcon[entry.type] || "⚪"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="leading-snug" style={{ color: entry.type === "note" ? t.text : t.textSecondary }}>{entry.text}</p>
+                    <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: t.muted }}>
+                      <Clock size={9} /> {entry.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {activityLog.length === 0 && <p className="text-xs text-center py-3" style={{ color: t.muted }}>কোনো কার্যকলাপ নেই</p>}
+            </div>
+          </Card>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════
+          TAB 2: PROFILE — Read-only + Edit Modal
+      ══════════════════════════════════════ */}
+      {activeTab === "profile" && (
+        <>
+          {/* Edit button — top right */}
+          <div className="flex justify-end">
+            <Button variant="ghost" icon={Edit3} size="xs" onClick={() => { setEditForm({ ...student }); setShowProfileModal(true); }}>
+              প্রোফাইল সম্পাদনা
+            </Button>
+          </div>
+
+          {/* 3-column read-only grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {/* Personal */}
+            <Card delay={50}>
+              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><User size={12} /> ব্যক্তিগত তথ্য</h4>
+              <div className="space-y-2.5">
+                {personalFields.map(f => (
+                  <ReadOnlyField key={f.key} label={f.label} value={student[f.key]} />
+                ))}
+              </div>
+            </Card>
+
+            {/* Passport & Family */}
+            <Card delay={80}>
+              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><FileCheck size={12} /> পাসপোর্ট ও পরিবার</h4>
+              <div className="space-y-2.5">
+                {passportFields.map(f => (
+                  <ReadOnlyField key={f.key} label={f.label} value={student[f.key]} />
+                ))}
+              </div>
+            </Card>
+
+            {/* Destination */}
+            <Card delay={110}>
+              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> গন্তব্য তথ্য</h4>
+              <div className="space-y-2.5">
+                <ReadOnlyField label="দেশ" value={student.country} />
+                <ReadOnlyField label="স্কুল" value={student.school} />
+                <ReadOnlyField label="ব্যাচ" value={student.batch} />
+                {destinationExtraFields.map(f => (
+                  <ReadOnlyField key={f.key} label={f.label}
+                    value={f.key === "student_type" ? (student[f.key] === "own" ? "Own" : student[f.key] === "agent" ? "Agent" : "Partner") : student[f.key]} />
+                ))}
+              </div>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════
+          TAB 3: FEES — ফি কাঠামো ও পেমেন্ট
+      ══════════════════════════════════════ */}
+      {activeTab === "fees" && (
+        <>
+          {/* Header with action buttons */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <CreditCard size={14} style={{ color: t.cyan }} /> ফি কাঠামো ও পেমেন্ট
+            </h3>
+            <div className="flex gap-2">
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => { setShowFeeItemForm(true); }}>ফি খাত</Button>
+              <Button icon={Plus} size="xs" onClick={() => { setShowPayForm(true); }}>পেমেন্ট</Button>
+            </div>
+          </div>
+
+          {/* Summary row — 3 stat boxes */}
+          <div className="grid grid-cols-3 gap-3">
+            <Card delay={30}>
+              <p className="text-[10px] mb-1" style={{ color: t.muted }}>মোট নির্ধারিত ফি</p>
+              <p className="text-lg font-bold">{taka(totalFee)}</p>
+            </Card>
+            <Card delay={40}>
+              <div className="p-0">
+                <p className="text-[10px] mb-1" style={{ color: t.muted }}>কালেক্ট হয়েছে</p>
+                <p className="text-lg font-bold" style={{ color: t.emerald }}>{taka(totalPaid)}</p>
+              </div>
+            </Card>
+            <Card delay={50}>
+              <div className="p-0">
+                <p className="text-[10px] mb-1" style={{ color: t.muted }}>বাকি আছে</p>
+                <p className="text-lg font-bold" style={{ color: balance > 0 ? t.rose : t.emerald }}>{taka(Math.max(0, balance))}</p>
+              </div>
+            </Card>
+          </div>
+
+          {/* Overall progress bar */}
+          <Card delay={60}>
+            <div className="flex justify-between text-[10px] mb-2" style={{ color: t.muted }}>
+              <span>সার্বিক পরিশোধ</span>
+              <span>{Math.round(paidPercent)}%</span>
+            </div>
+            <div className="h-2.5 rounded-full overflow-hidden" style={{ background: t.inputBg }}>
+              <div className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${paidPercent}%`, background: paidPercent >= 100 ? t.emerald : paidPercent >= 50 ? t.cyan : t.amber }} />
+            </div>
+          </Card>
+
+          {/* Fee Categories — per-category progress */}
+          <Card delay={70}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.muted }}>খাত অনুযায়ী ফি বিবরণ</p>
+            {feeItems.length === 0 ? (
+              <p className="text-xs py-3 text-center" style={{ color: t.muted }}>কোনো ফি খাত নির্ধারণ করা হয়নি — "ফি খাত" বাটনে ক্লিক করুন</p>
+            ) : (
+              <div className="space-y-2">
+                {feeItems.map(item => {
+                  const catCfg = CATEGORY_CONFIG[item.category] || {};
+                  const paid = paidByCategory(item.category);
+                  const due = item.amount - paid;
+                  const pct = item.amount > 0 ? Math.min(100, (paid / item.amount) * 100) : 0;
+                  return (
+                    <div key={item.id} className="p-3 rounded-xl group" style={{ background: t.inputBg }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">{catCfg.icon || "💰"}</span>
+                        <span className="text-xs font-semibold flex-1">{item.label}</span>
+                        <span className="text-xs font-bold">{taka(item.amount)}</span>
+                        <button onClick={() => deleteFeeItem(item.id)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition"
+                          style={{ color: t.rose }}
+                          onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
+                          onMouseLeave={e => { const el = e.currentTarget; el.style.background = "transparent"; }}>
+                          <X size={11} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px]" style={{ color: t.muted }}>
+                        <span style={{ color: t.emerald }}>কালেক্ট: {taka(paid)}</span>
+                        <span style={{ color: due > 0 ? t.rose : t.emerald }}>বাকি: {taka(Math.max(0, due))}</span>
+                        <div className="flex-1 h-1 rounded-full overflow-hidden ml-1" style={{ background: t.border }}>
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: catCfg.color || t.cyan }} />
+                        </div>
+                        <span>{Math.round(pct)}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Payment history */}
+          <Card delay={80}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.muted }}>পেমেন্ট ইতিহাস</p>
+            {payments.length === 0 ? (
+              <p className="text-xs text-center py-3" style={{ color: t.muted }}>এখনো কোনো পেমেন্ট নেই</p>
+            ) : (
+              <div className="space-y-1.5">
+                {[...payments].reverse().map((p) => {
+                  const catCfg = CATEGORY_CONFIG[p.category] || {};
+                  return (
+                    <div key={p.id} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs group"
+                      style={{ background: t.inputBg }}>
+                      <span className="text-base shrink-0">{catCfg.icon || "💰"}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold" style={{ color: t.emerald }}>{taka(p.amount)}</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${catCfg.color || t.cyan}20`, color: catCfg.color || t.cyan }}>{catCfg.label || p.category}</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: t.border, color: t.muted }}>{p.method}</span>
+                          {p.note && <span style={{ color: t.muted }}>{p.note}</span>}
+                        </div>
+                        <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: t.muted }}>
+                          <Clock size={9} /> {p.date}
+                        </p>
+                      </div>
+                      <button onClick={() => deletePayment(p.id)}
+                        className="opacity-0 group-hover:opacity-100 transition p-1 rounded"
+                        style={{ color: t.rose }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
+                        onMouseLeave={e => { const el = e.currentTarget; el.style.background = "transparent"; }}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════
+          TAB 4: SPONSOR — Read-only + Edit Modal
+      ══════════════════════════════════════ */}
+      {activeTab === "sponsor" && (
+        <>
+          {/* Header with action buttons */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-base">👨‍👩‍👧</span>
+              <h3 className="text-sm font-bold">স্পনসর তথ্য</h3>
+              {sponsor.name && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${t.emerald}15`, color: t.emerald }}>{sponsor.name} ({sponsor.relationship})</span>}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" icon={Edit3} size="xs" onClick={() => { setSponsorForm({ ...sponsor }); setShowSponsorModal(true); }}>
+                স্পনসর সম্পাদনা
+              </Button>
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => setShowAddBank(true)}>
+                ব্যাংক যোগ
+              </Button>
+            </div>
+          </div>
+
+          {/* Basic Info — read-only */}
+          <Card delay={50}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.cyan }}>👤 মূল তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
+              {[
+                { label: "নাম", key: "name" },
+                { label: "সম্পর্ক", key: "relationship" },
+                { label: "ফোন", key: "phone" },
+                { label: "NID", key: "nid" },
+                { label: "ঠিকানা", key: "address" },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{f.label}</label>
+                  <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Business Info — read-only */}
+          <Card delay={70}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.purple }}>🏢 ব্যবসায়িক তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
+              {[
+                { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
+                { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
+                { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{f.label}</label>
+                  <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Tax Info — read-only */}
+          <Card delay={90}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.amber }}>🧾 ট্যাক্স তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-2">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>TIN</label>
+                <p className="text-xs font-medium py-1">{sponsor.tin || "—"}</p>
+              </div>
+              {["y1","y2","y3"].map(y => (
+                <div key={y}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>বার্ষিক আয় ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
+                  <p className="text-xs font-medium py-1">{sponsor[`annual_income_${y}`] ? `৳${Number(sponsor[`annual_income_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
+                </div>
+              ))}
+              {["y1","y2","y3"].map(y => (
+                <div key={`t${y}`}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>কর প্রদান ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
+                  <p className="text-xs font-medium py-1">{sponsor[`tax_${y}`] ? `৳${Number(sponsor[`tax_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Bank Accounts — read-only list */}
+          <Card delay={110}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: t.emerald }}>🏦 ব্যাংক অ্যাকাউন্ট</p>
+            </div>
+            <div className="space-y-2">
+              {(sponsor.banks || []).length === 0 && <p className="text-xs py-2" style={{ color: t.muted }}>কোনো ব্যাংক অ্যাকাউন্ট নেই</p>}
+              {(sponsor.banks || []).map(b => (
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl group" style={{ background: t.inputBg }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold">{b.bank_name} — {b.branch}</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>A/C: {b.account_no} | ব্যালেন্স: ৳{Number(b.balance || 0).toLocaleString("en-IN")} ({b.balance_date})</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>{b.name_in_statement}</p>
+                  </div>
+                  <button onClick={() => removeBank(b.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded transition" style={{ color: t.rose }}>
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Japan Expense — read-only */}
+          <Card delay={130}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.rose }}>🇯🇵 জাপান খরচ</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2">
+              {[
+                { label: "টিউশন ফি (JPY)", key: "tuition_jpy" },
+                { label: "মাসিক জীবনযাত্রা (JPY)", key: "living_jpy_monthly" },
+                { label: "বিনিময় হার (JPY→BDT)", key: "exchange_rate" },
+                { label: "পেমেন্ট পদ্ধতি", key: "payment_method" },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{f.label}</label>
+                  <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════
+          TAB 5: TIMELINE — পূর্ণ combined timeline + note input
+      ══════════════════════════════════════ */}
+      {activeTab === "timeline" && (
+        <>
+          {/* Note input */}
+          <Card delay={30}>
+            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+              <MessageSquare size={14} style={{ color: t.cyan }} /> কার্যকলাপ লগ
+            </h3>
+            <div className="flex gap-2">
+              <input
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addNote()}
+                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                placeholder="নোট যোগ করুন... (Enter চাপুন)"
+              />
+              <button onClick={addNote}
+                className="px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 transition"
+                style={{ background: `${t.cyan}20`, color: t.cyan }}
+                onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}30`}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.cyan}20`; }}>
+                <Plus size={13} /> যোগ করুন
+              </button>
+            </div>
+          </Card>
+
+          {/* Full combined Timeline */}
+          <Card delay={50}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-base">📅</span>
+              <h3 className="text-sm font-bold">Timeline</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.cyan}15`, color: t.cyan }}>{activityLog.length + payments.length} ইভেন্ট</span>
+            </div>
+            <div className="relative">
+              <div className="absolute left-3.5 top-0 bottom-0 w-px" style={{ background: t.border }} />
+              <div className="space-y-4">
+                {buildTimeline().map((entry, i) => {
+                  const color = TL_COLORS[entry.type] || t.muted;
+                  return (
+                    <div key={i} className="flex gap-4 relative pl-8">
+                      <div className="absolute left-0 h-7 w-7 rounded-full flex items-center justify-center text-xs shrink-0"
+                        style={{ background: `${color}15`, border: `2px solid ${color}40` }}>
+                        {logIcon[entry.type] || "⚪"}
+                      </div>
+                      <div className="flex-1 min-w-0 pb-1">
+                        <p className="text-xs leading-snug" style={{ color: t.text }}>{entry.text}</p>
+                        <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: t.muted }}>
+                          <Clock size={9} /> {entry.time}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {buildTimeline().length === 0 && <p className="text-xs text-center py-3 pl-8" style={{ color: t.muted }}>কোনো ইভেন্ট নেই</p>}
+              </div>
+            </div>
+          </Card>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════
+          MODALS — সব Modal এখানে একসাথে
+      ══════════════════════════════════════ */}
 
       {/* ── Delete confirm Modal ── */}
       <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Student" size="sm">
@@ -293,37 +1088,6 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>নিশ্চিত মুছুন</Button>
         </div>
       </Modal>
-
-      {/* ── Portal Access Toggle ── */}
-      <Card delay={55}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl flex items-center justify-center text-base"
-              style={{ background: portalAccess ? `${t.emerald}15` : `${t.muted}15` }}>
-              🎓
-            </div>
-            <div>
-              <p className="text-sm font-semibold">স্টুডেন্ট পোর্টাল</p>
-              <p className="text-[10px]" style={{ color: t.muted }}>
-                {portalAccess ? "✅ পোর্টাল চালু — স্টুডেন্ট ফোন নম্বর দিয়ে লগইন করতে পারবে" : "পোর্টাল বন্ধ — স্টুডেন্ট লগইন করতে পারবে না"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {portalAccess && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                ফোন: {student.phone}
-              </span>
-            )}
-            <button onClick={() => setShowPortalForm(!showPortalForm)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition"
-              style={{ background: portalAccess ? `${t.rose}15` : `${t.emerald}15`, color: portalAccess ? t.rose : t.emerald }}>
-              {portalAccess ? "বন্ধ করুন" : "চালু করুন"}
-            </button>
-          </div>
-        </div>
-
-      </Card>
 
       {/* ── Portal Access Modal ── */}
       <Modal isOpen={showPortalForm} onClose={() => setShowPortalForm(false)} title="Student Portal Access" size="md">
@@ -379,733 +1143,6 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         </div>
       </Modal>
 
-      {/* ══════════════════════════════════════
-          PIPELINE STEPPER
-      ══════════════════════════════════════ */}
-      <Card delay={50}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold">পাইপলাইন অগ্রগতি</h3>
-          <p className="text-[11px]" style={{ color: t.muted }}>
-            ধাপ {Math.max(currentStepIdx + 1, 1)} / {MAIN_STEPS.length}
-            {isTerminal && <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: `${t.rose}20`, color: t.rose }}>{currentStatus}</span>}
-          </p>
-        </div>
-
-        {/* Step circles */}
-        <div className="overflow-x-auto pb-2">
-          <div className="flex items-center min-w-max">
-            {MAIN_STEPS.map((step, i) => {
-              const done = i < currentStepIdx;
-              const active = i === currentStepIdx;
-              const color = step.color;
-              return (
-                <div key={step.code} className="flex items-center">
-                  <button
-                    onClick={() => !isTerminal && changeStatus(step.code, `Status → ${step.label}`)}
-                    title={step.label}
-                    className="flex flex-col items-center gap-1.5 group transition-all"
-                    style={{ minWidth: 52 }}
-                  >
-                    <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2"
-                      style={{
-                        background: done ? `${t.emerald}20` : active ? `${color}25` : t.inputBg,
-                        borderColor: done ? t.emerald : active ? color : t.inputBorder,
-                        color: done ? t.emerald : active ? color : t.muted,
-                        boxShadow: active ? `0 0 0 3px ${color}30` : "none",
-                      }}>
-                      {done ? <Check size={14} /> : i + 1}
-                    </div>
-                    <span className="text-[9px] text-center leading-tight max-w-[52px]"
-                      style={{ color: done ? t.emerald : active ? color : `${t.muted}70`, fontWeight: active ? 700 : 400 }}>
-                      {step.label}
-                    </span>
-                  </button>
-                  {i < MAIN_STEPS.length - 1 && (
-                    <div className="h-0.5 w-5 mx-0.5 shrink-0 rounded-full transition-all"
-                      style={{ background: i < currentStepIdx ? t.emerald : t.inputBorder }} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Card>
-
-      {/* ══════════════════════════════════════
-          CURRENT STEP ACTION CARD
-      ══════════════════════════════════════ */}
-      {!isTerminal ? (
-        <Card delay={80}>
-          {/* Collapsible toggle header */}
-          <button
-            onClick={() => setShowStepCard(v => !v)}
-            className="w-full flex items-center justify-between gap-3 group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl flex items-center justify-center text-lg shrink-0"
-                style={{ background: `${stepColor}15` }}>
-                {meta.icon}
-              </div>
-              <div className="text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold" style={{ color: stepColor }}>
-                    {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label}
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${stepColor}15`, color: stepColor }}>
-                    {checkedRequired}/{requiredItems.length} আবশ্যক ✓
-                  </span>
-                  {!allRequiredDone && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.rose}15`, color: t.rose }}>
-                      {requiredItems.length - checkedRequired}টি বাকি
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{meta.hint}</p>
-              </div>
-            </div>
-            <ChevronRight size={16} style={{ color: t.muted, transform: showStepCard ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-          </button>
-
-          {!showStepCard ? null : (<div className="mt-4" style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16 }}>
-          {/* Checklist */}
-          <div className="space-y-2 mb-5">
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>এই ধাপে যা করতে হবে</p>
-            {meta.checklist.map(item => {
-              const ticked = isChecked(item.id);
-              return (
-                <button key={item.id} onClick={() => toggleCheck(item.id)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all"
-                  style={{ background: ticked ? `${t.emerald}10` : t.inputBg, border: `1px solid ${ticked ? `${t.emerald}30` : "transparent"}` }}>
-                  <div className="h-5 w-5 rounded-md flex items-center justify-center shrink-0 border-2 transition-all"
-                    style={{ background: ticked ? t.emerald : "transparent", borderColor: ticked ? t.emerald : t.inputBorder }}>
-                    {ticked && <Check size={11} color="#fff" />}
-                  </div>
-                  <span className="text-xs flex-1" style={{ color: ticked ? t.textSecondary : t.text, textDecoration: ticked ? "line-through" : "none" }}>
-                    {item.text}
-                  </span>
-                  {item.req && !ticked && (
-                    <span className="text-[9px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: `${t.rose}15`, color: t.rose }}>আবশ্যক</span>
-                  )}
-                  {ticked && <Check size={13} style={{ color: t.emerald, shrink: 0 }} />}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap items-center gap-2 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-            {/* Prev step */}
-            {currentStepIdx > 0 && (
-              <button onClick={goPrev}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
-                style={{ background: t.inputBg, color: t.muted, border: `1px solid ${t.inputBorder}` }}
-                onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                onMouseLeave={e => { const el = e.currentTarget; el.style.background = t.inputBg; }}>
-                <ChevronLeft size={13} /> পূর্ববর্তী ধাপ
-              </button>
-            )}
-
-            {/* Pause */}
-            {!["COMPLETED"].includes(currentStatus) && (
-              <button onClick={() => setShowPauseConfirm(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
-                style={{ background: `${t.amber}15`, color: t.amber, border: `1px solid ${t.amber}30` }}
-                onMouseEnter={e => e.currentTarget.style.background = `${t.amber}25`}
-                onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.amber}15`; }}>
-                ⏸ বিরতি
-              </button>
-            )}
-
-            {/* Cancel */}
-            {!["COMPLETED"].includes(currentStatus) && (
-              <button onClick={() => setShowCancelConfirm(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition"
-                style={{ background: `${t.rose}12`, color: t.rose, border: `1px solid ${t.rose}25` }}
-                onMouseEnter={e => e.currentTarget.style.background = `${t.rose}22`}
-                onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.rose}12`; }}>
-                ✕ বাতিল
-              </button>
-            )}
-
-            <div className="flex-1" />
-
-            {/* Next step — main action */}
-            {meta.nextStatus && (
-              <div className="flex items-center gap-2">
-                {!allRequiredDone && (
-                  <p className="text-[10px]" style={{ color: t.rose }}>
-                    {requiredItems.length - checkedRequired}টি আবশ্যক বাকি
-                  </p>
-                )}
-                <button
-                  onClick={goNext}
-                  disabled={!allRequiredDone}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all"
-                  style={{
-                    background: allRequiredDone ? `linear-gradient(135deg, ${stepColor}, ${stepColor}cc)` : `${stepColor}20`,
-                    color: allRequiredDone ? "#fff" : `${stepColor}80`,
-                    cursor: allRequiredDone ? "pointer" : "not-allowed",
-                    boxShadow: allRequiredDone ? `0 4px 12px ${stepColor}40` : "none",
-                  }}>
-                  {meta.nextLabel} <ChevronRight size={13} />
-                </button>
-                {!allRequiredDone && (
-                  <button onClick={goNext}
-                    className="text-[10px] px-2 py-1 rounded-lg transition"
-                    style={{ background: t.inputBg, color: t.muted }}
-                    onMouseEnter={e => e.currentTarget.style.color = t.text}
-                    onMouseLeave={e => { const el = e.currentTarget; el.style.color = t.muted; }}
-                    title="Checklist ছাড়াই এগিয়ে যান">
-                    ওভাররাইড →
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Pause ও Cancel Modal গুলো নিচে component-level-এ আছে */}
-          </div>)}
-        </Card>
-      ) : (
-        /* Terminal state (PAUSED/CANCELLED) */
-        <Card delay={80}>
-          <div className="flex items-center gap-4">
-            <div className="text-3xl">{currentStatus === "PAUSED" ? "⏸" : "❌"}</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold" style={{ color: currentStatus === "PAUSED" ? t.amber : t.rose }}>
-                {currentStatus === "PAUSED" ? "সাময়িক বিরতি" : "বাদ দেওয়া হয়েছে"}
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: t.muted }}>
-                {currentStatus === "PAUSED" ? "পরিস্থিতি ঠিক হলে Re-activate করুন" : "কারণ নোট করুন এবং Re-activate করা যাবে"}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                const prevStatus = PIPELINE_STATUSES.find(s => s.code === (student.prevStatus || "ENROLLED"))?.code || "ENROLLED";
-                changeStatus("ENROLLED", "Pipeline Re-activate করা হয়েছে");
-              }}
-              className="px-4 py-2 rounded-xl text-xs font-bold transition"
-              style={{ background: `${t.emerald}20`, color: t.emerald, border: `1px solid ${t.emerald}40` }}
-              onMouseEnter={e => e.currentTarget.style.background = `${t.emerald}30`}
-              onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.emerald}20`; }}>
-              ▶ Re-activate করুন
-            </button>
-          </div>
-        </Card>
-      )}
-
-      {/* ══════════════════════════════════════
-          ACTIVITY LOG + NOTE
-      ══════════════════════════════════════ */}
-      <Card delay={120}>
-        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-          <MessageSquare size={14} style={{ color: t.cyan }} /> কার্যকলাপ লগ
-        </h3>
-
-        {/* Add note */}
-        <div className="flex gap-2 mb-4">
-          <input
-            value={noteText}
-            onChange={e => setNoteText(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addNote()}
-            className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
-            style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-            placeholder="নোট যোগ করুন... (Enter চাপুন)"
-          />
-          <button onClick={addNote}
-            className="px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 transition"
-            style={{ background: `${t.cyan}20`, color: t.cyan }}
-            onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}30`}
-            onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.cyan}20`; }}>
-            <Plus size={13} /> যোগ করুন
-          </button>
-        </div>
-
-        {/* Log entries */}
-        <div className="space-y-2 max-h-52 overflow-y-auto">
-          {[...activityLog].reverse().map((entry, i) => (
-            <div key={i} className="flex items-start gap-2.5 text-xs">
-              <span className="text-sm shrink-0 mt-0.5">{logIcon[entry.type] || "⚪"}</span>
-              <div className="flex-1 min-w-0">
-                <p className="leading-snug" style={{ color: entry.type === "note" ? t.text : t.textSecondary }}>{entry.text}</p>
-                <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: t.muted }}>
-                  <Clock size={9} /> {entry.time}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* ══════════════════════════════════════
-          FEE & PAYMENT
-      ══════════════════════════════════════ */}
-      <Card delay={130}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h3 className="text-sm font-bold flex items-center gap-2">
-            <CreditCard size={14} style={{ color: t.cyan }} /> ফি কাঠামো ও পেমেন্ট
-          </h3>
-          <div className="flex gap-2">
-            <button onClick={() => { setShowFeeItemForm(v => !v); setShowPayForm(false); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-              style={{ background: `${t.purple}20`, color: t.purple }}
-              onMouseEnter={e => e.currentTarget.style.background = `${t.purple}30`}
-              onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.purple}20`; }}>
-              <Plus size={12} /> ফি খাত
-            </button>
-            <button onClick={() => { setShowPayForm(v => !v); setShowFeeItemForm(false); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-              style={{ background: `${t.cyan}20`, color: t.cyan }}
-              onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}30`}
-              onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.cyan}20`; }}>
-              <Plus size={12} /> পেমেন্ট
-            </button>
-          </div>
-        </div>
-
-        {/* Summary row */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="p-3 rounded-xl" style={{ background: t.inputBg }}>
-            <p className="text-[10px] mb-1" style={{ color: t.muted }}>মোট নির্ধারিত ফি</p>
-            <p className="text-sm font-bold">{taka(totalFee)}</p>
-          </div>
-          <div className="p-3 rounded-xl" style={{ background: `${t.emerald}10`, border: `1px solid ${t.emerald}20` }}>
-            <p className="text-[10px] mb-1" style={{ color: t.muted }}>কালেক্ট হয়েছে</p>
-            <p className="text-sm font-bold" style={{ color: t.emerald }}>{taka(totalPaid)}</p>
-          </div>
-          <div className="p-3 rounded-xl" style={{ background: balance > 0 ? `${t.rose}10` : `${t.emerald}10`, border: `1px solid ${balance > 0 ? `${t.rose}20` : `${t.emerald}20`}` }}>
-            <p className="text-[10px] mb-1" style={{ color: t.muted }}>বাকি আছে</p>
-            <p className="text-sm font-bold" style={{ color: balance > 0 ? t.rose : t.emerald }}>{taka(Math.max(0, balance))}</p>
-          </div>
-        </div>
-
-        {/* Overall progress bar */}
-        <div className="mb-5">
-          <div className="flex justify-between text-[10px] mb-1" style={{ color: t.muted }}>
-            <span>সার্বিক পরিশোধ</span>
-            <span>{Math.round(paidPercent)}%</span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: t.inputBg }}>
-            <div className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${paidPercent}%`, background: paidPercent >= 100 ? t.emerald : paidPercent >= 50 ? t.cyan : t.amber }} />
-          </div>
-        </div>
-
-        {/* ── Fee Structure Table (by category) ── */}
-        <div className="mb-5">
-          <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>খাত অনুযায়ী ফি বিবরণ</p>
-          {feeItems.length === 0 ? (
-            <p className="text-xs py-3 text-center" style={{ color: t.muted }}>কোনো ফি খাত নির্ধারণ করা হয়নি — "ফি খাত" বাটনে ক্লিক করুন</p>
-          ) : (
-            <div className="space-y-2">
-              {feeItems.map(item => {
-                const catCfg = CATEGORY_CONFIG[item.category] || {};
-                const paid = paidByCategory(item.category);
-                const due = item.amount - paid;
-                const pct = item.amount > 0 ? Math.min(100, (paid / item.amount) * 100) : 0;
-                return (
-                  <div key={item.id} className="p-3 rounded-xl group" style={{ background: t.inputBg }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm">{catCfg.icon || "💰"}</span>
-                      <span className="text-xs font-semibold flex-1">{item.label}</span>
-                      <span className="text-xs font-bold">{taka(item.amount)}</span>
-                      <button onClick={() => deleteFeeItem(item.id)}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition"
-                        style={{ color: t.rose }}
-                        onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
-                        onMouseLeave={e => { const el = e.currentTarget; el.style.background = "transparent"; }}>
-                        <X size={11} />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-3 text-[10px]" style={{ color: t.muted }}>
-                      <span style={{ color: t.emerald }}>কালেক্ট: {taka(paid)}</span>
-                      <span style={{ color: due > 0 ? t.rose : t.emerald }}>বাকি: {taka(Math.max(0, due))}</span>
-                      <div className="flex-1 h-1 rounded-full overflow-hidden ml-1" style={{ background: t.border }}>
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: catCfg.color || t.cyan }} />
-                      </div>
-                      <span>{Math.round(pct)}%</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Fee Item Form — Modal নিচে component-level-এ আছে */}
-
-        {/* Payment Form — Modal নিচে component-level-এ আছে */}
-
-        {/* Payment history */}
-        <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>পেমেন্ট ইতিহাস</p>
-          {payments.length === 0 ? (
-            <p className="text-xs text-center py-3" style={{ color: t.muted }}>এখনো কোনো পেমেন্ট নেই</p>
-          ) : [...payments].reverse().map((p) => {
-            const catCfg = CATEGORY_CONFIG[p.category] || {};
-            return (
-              <div key={p.id} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs group"
-                style={{ background: t.inputBg }}>
-                <span className="text-base shrink-0">{catCfg.icon || "💰"}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold" style={{ color: t.emerald }}>{taka(p.amount)}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${catCfg.color || t.cyan}20`, color: catCfg.color || t.cyan }}>{catCfg.label || p.category}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: t.border, color: t.muted }}>{p.method}</span>
-                    {p.note && <span style={{ color: t.muted }}>{p.note}</span>}
-                  </div>
-                  <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: t.muted }}>
-                    <Clock size={9} /> {p.date}
-                  </p>
-                </div>
-                <button onClick={() => deletePayment(p.id)}
-                  className="opacity-0 group-hover:opacity-100 transition p-1 rounded"
-                  style={{ color: t.rose }}
-                  onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
-                  onMouseLeave={e => { const el = e.currentTarget; el.style.background = "transparent"; }}>
-                  <X size={12} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* ══════════════════════════════════════
-          STUDENT INFO (editable)
-      ══════════════════════════════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {/* Personal */}
-        <Card delay={150}>
-          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><User size={12} /> ব্যক্তিগত তথ্য</h4>
-          <div className="space-y-2.5">
-            {[
-              { label: "নাম (EN)", key: "name_en" },
-              { label: "নাম (বাংলা)", key: "name_bn" },
-              { label: "নাম (カタカナ)", key: "name_katakana" },
-              { label: "জন্ম তারিখ", key: "dob", type: "date" },
-              { label: "লিঙ্গ", key: "gender", type: "select", options: ["Male","Female","Other"] },
-              { label: "বৈবাহিক অবস্থা", key: "marital_status", type: "select", options: ["Single","Married","Divorced","Widowed"] },
-              { label: "জাতীয়তা", key: "nationality" },
-              { label: "রক্তের গ্রুপ", key: "blood_group", type: "select", options: ["","A+","A-","B+","B-","AB+","AB-","O+","O-"] },
-              { label: "ফোন", key: "phone" },
-              { label: "WhatsApp", key: "whatsapp" },
-              { label: "ইমেইল", key: "email" },
-              { label: "NID নম্বর", key: "nid" },
-              { label: "বর্তমান ঠিকানা", key: "current_address" },
-              { label: "স্থায়ী ঠিকানা", key: "permanent_address" },
-            ].map(f => (
-              <div key={f.key} className="flex justify-between items-center text-xs gap-2">
-                <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
-                {isEditing ? (
-                  f.type === "select" ? (
-                    <select value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
-                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
-                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                      {f.options.map(o => <option key={o}>{o}</option>)}
-                    </select>
-                  ) : (
-                    <input type={f.type || "text"} value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
-                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
-                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                  )
-                ) : <span className="font-medium text-right">{current[f.key] || "—"}</span>}
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Passport & Family */}
-        <Card delay={180}>
-          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><FileCheck size={12} /> পাসপোর্ট ও পরিবার</h4>
-          <div className="space-y-2.5">
-            {[
-              { label: "পাসপোর্ট নম্বর", key: "passport" },
-              { label: "পাসপোর্ট ইস্যু", key: "passport_issue", type: "date" },
-              { label: "পাসপোর্ট মেয়াদ", key: "passport_expiry", type: "date" },
-              { label: "পিতার নাম (বাংলা)", key: "father" },
-              { label: "পিতার নাম (EN)", key: "father_name_en" },
-              { label: "মাতার নাম (বাংলা)", key: "mother" },
-              { label: "মাতার নাম (EN)", key: "mother_name_en" },
-            ].map(f => (
-              <div key={f.key} className="flex justify-between items-center text-xs gap-2">
-                <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
-                {isEditing ? (
-                  <input value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
-                    className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
-                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                ) : <span className="font-medium text-right">{current[f.key] || "—"}</span>}
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Destination */}
-        <Card delay={210}>
-          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> গন্তব্য তথ্য</h4>
-          <div className="space-y-2.5">
-            {/* ── দেশ ── */}
-            <div className="flex justify-between items-center text-xs gap-2">
-              <span style={{ color: t.muted }} className="shrink-0">দেশ</span>
-              {isEditing ? <select value={editForm.country || ""} onChange={e => setField("country", e.target.value)} className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                {["Japan","Germany","Korea","Canada","UK","USA","Australia","China"].map(o => <option key={o}>{o}</option>)}
-              </select> : <span className="font-medium text-right">{current.country || "—"}</span>}
-            </div>
-            {/* ── স্কুল (DB থেকে dropdown) ── */}
-            <div className="flex justify-between items-center text-xs gap-2">
-              <span style={{ color: t.muted }} className="shrink-0">স্কুল</span>
-              {isEditing ? <select value={editForm.school || ""} onChange={e => setField("school", e.target.value)} className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                <option value="">— স্কুল সিলেক্ট —</option>
-                {schoolOptions.map(s => <option key={s.id} value={s.name_en}>{s.name_en}</option>)}
-              </select> : <span className="font-medium text-right">{current.school || "—"}</span>}
-            </div>
-            {/* ── ব্যাচ (DB থেকে dropdown) ── */}
-            <div className="flex justify-between items-center text-xs gap-2">
-              <span style={{ color: t.muted }} className="shrink-0">ব্যাচ</span>
-              {isEditing ? <select value={editForm.batch || ""} onChange={e => setField("batch", e.target.value)} className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                <option value="">— ব্যাচ সিলেক্ট —</option>
-                {batchOptions.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-              </select> : <span className="font-medium text-right">{current.batch || "—"}</span>}
-            </div>
-            {/* ── বাকি fields ── */}
-            {[
-              { label: "Intake", key: "intake" },
-              { label: "ভিসার ধরন", key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
-              { label: "Branch", key: "branch" },
-              { label: "সোর্স", key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral","Website","YouTube"] },
-              { label: "টাইপ", key: "student_type", type: "select", options: ["own","agent","partner"] },
-              { label: "কাউন্সেলর", key: "counselor" },
-              { label: "ভর্তির তারিখ", key: "created" },
-            ].map(f => (
-              <div key={f.key} className="flex justify-between items-center text-xs gap-2">
-                <span style={{ color: t.muted }} className="shrink-0">{f.label}</span>
-                {isEditing && f.key !== "created" ? (
-                  f.type === "select" ? (
-                    <select value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
-                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
-                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                      {f.options.map(o => <option key={o} value={o}>{o || "—"}</option>)}
-                    </select>
-                  ) : (
-                    <input value={editForm[f.key] || ""} onChange={e => setField(f.key, e.target.value)}
-                      className="flex-1 max-w-[60%] px-2 py-1 rounded text-xs text-right outline-none"
-                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                  )
-                ) : (
-                  <span className="font-medium text-right">
-                    {f.key === "student_type" ? (current[f.key] === "own" ? "Own" : current[f.key] === "agent" ? "Agent" : "Partner") : current[f.key] || "—"}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* ══════════════════════════════════════
-          TIMELINE
-      ══════════════════════════════════════ */}
-      <Card delay={215}>
-        <button onClick={() => setTimelineOpen(v => !v)} className="w-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">📅</span>
-            <h3 className="text-sm font-bold">Timeline</h3>
-            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${t.cyan}15`, color: t.cyan }}>{activityLog.length} ইভেন্ট</span>
-          </div>
-          <ChevronRight size={16} style={{ color: t.muted, transform: timelineOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-        </button>
-
-        {timelineOpen && (
-          <div className="mt-4" style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16 }}>
-            {/* Payment events from fees */}
-            {(() => {
-              const feeEvents = payments.map(p => ({
-                time: p.date + " 00:00",
-                text: `পেমেন্ট — ৳${Number(p.amount).toLocaleString("en-IN")} [${p.category}] (${p.method})${p.note ? ` — ${p.note}` : ""}`,
-                type: "payment"
-              }));
-              const all = [...activityLog, ...feeEvents].sort((a, b) => b.time.localeCompare(a.time));
-              const TL_COLORS = { create: t.emerald, status: t.cyan, payment: t.purple, note: t.amber, edit: t.muted, action: t.muted };
-              return (
-                <div className="relative">
-                  <div className="absolute left-3.5 top-0 bottom-0 w-px" style={{ background: t.border }} />
-                  <div className="space-y-4">
-                    {all.map((entry, i) => {
-                      const color = TL_COLORS[entry.type] || t.muted;
-                      return (
-                        <div key={i} className="flex gap-4 relative pl-8">
-                          <div className="absolute left-0 h-7 w-7 rounded-full flex items-center justify-center text-xs shrink-0"
-                            style={{ background: `${color}15`, border: `2px solid ${color}40` }}>
-                            {logIcon[entry.type] || "⚪"}
-                          </div>
-                          <div className="flex-1 min-w-0 pb-1">
-                            <p className="text-xs leading-snug" style={{ color: t.text }}>{entry.text}</p>
-                            <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: t.muted }}>
-                              <Clock size={9} /> {entry.time}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        )}
-      </Card>
-
-      {/* ══════════════════════════════════════
-          SPONSOR SECTION
-      ══════════════════════════════════════ */}
-      <Card delay={220}>
-        <button onClick={() => setSponsorOpen(v => !v)} className="w-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">👨‍👩‍👧</span>
-            <h3 className="text-sm font-bold">স্পনসর তথ্য</h3>
-            {sponsor.name && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${t.emerald}15`, color: t.emerald }}>{sponsor.name} ({sponsor.relationship})</span>}
-          </div>
-          <ChevronRight size={16} style={{ color: t.muted, transform: sponsorOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-        </button>
-
-        {sponsorOpen && (
-          <div className="mt-4" style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16 }}>
-            <div className="flex justify-end mb-3 gap-2">
-              {sponsorEditing ? (
-                <>
-                  <Button variant="ghost" size="xs" onClick={() => { setSponsorForm(sponsor); setSponsorEditing(false); }}>বাতিল</Button>
-                  <Button icon={Save} size="xs" onClick={saveSponsor}>সংরক্ষণ</Button>
-                </>
-              ) : (
-                <Button variant="ghost" icon={Edit3} size="xs" onClick={() => setSponsorEditing(true)}>সম্পাদনা</Button>
-              )}
-            </div>
-
-            {/* ── Basic Info ── */}
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.cyan }}>👤 মূল তথ্য</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-              {[
-                { label: "নাম", key: "name" },
-                { label: "সম্পর্ক", key: "relationship", type: "select", opts: ["Father","Mother","Brother","Sister","Uncle","Aunt","Other"] },
-                { label: "ফোন", key: "phone" },
-                { label: "NID", key: "nid" },
-                { label: "ঠিকানা", key: "address" },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                  {sponsorEditing ? (
-                    f.type === "select" ? (
-                      <select value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                        style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                        {f.opts.map(o => <option key={o}>{o}</option>)}
-                      </select>
-                    ) : (
-                      <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                        style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                    )
-                  ) : <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>}
-                </div>
-              ))}
-            </div>
-
-            {/* ── Business ── */}
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.purple }}>🏢 ব্যবসায়িক তথ্য</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-              {[
-                { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
-                { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
-                { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                  {sponsorEditing ? (
-                    <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                  ) : <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>}
-                </div>
-              ))}
-            </div>
-
-            {/* ── Tax ── */}
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.amber }}>🧾 ট্যাক্স তথ্য</p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-              <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>TIN</label>
-                {sponsorEditing ? <input value={sponsorForm.tin || ""} onChange={e => sf("tin", e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} /> : <p className="text-xs font-medium py-1">{sponsor.tin || "—"}</p>}
-              </div>
-              {["y1","y2","y3"].map(y => (
-                <div key={y}>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বার্ষিক আয় ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
-                  {sponsorEditing ? <input type="number" value={sponsorForm[`annual_income_${y}`] || ""} onChange={e => sf(`annual_income_${y}`, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} placeholder="৳" /> : <p className="text-xs font-medium py-1">{sponsor[`annual_income_${y}`] ? `৳${Number(sponsor[`annual_income_${y}`]).toLocaleString("en-IN")}` : "—"}</p>}
-                </div>
-              ))}
-              {["y1","y2","y3"].map(y => (
-                <div key={`t${y}`}>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কর প্রদান ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
-                  {sponsorEditing ? <input type="number" value={sponsorForm[`tax_${y}`] || ""} onChange={e => sf(`tax_${y}`, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} placeholder="৳" /> : <p className="text-xs font-medium py-1">{sponsor[`tax_${y}`] ? `৳${Number(sponsor[`tax_${y}`]).toLocaleString("en-IN")}` : "—"}</p>}
-                </div>
-              ))}
-            </div>
-
-            {/* ── Bank Accounts ── */}
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: t.emerald }}>🏦 ব্যাংক অ্যাকাউন্ট</p>
-              <button onClick={() => setShowAddBank(v => !v)} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg" style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                <Plus size={10} /> ব্যাংক যোগ করুন
-              </button>
-            </div>
-            {/* Add Bank — Modal নিচে component-level-এ আছে */}
-            <div className="space-y-2 mb-4">
-              {(sponsor.banks || []).length === 0 && <p className="text-xs py-2" style={{ color: t.muted }}>কোনো ব্যাংক অ্যাকাউন্ট নেই</p>}
-              {(sponsor.banks || []).map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl group" style={{ background: t.inputBg }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold">{b.bank_name} — {b.branch}</p>
-                    <p className="text-[10px]" style={{ color: t.muted }}>A/C: {b.account_no} | ব্যালেন্স: ৳{Number(b.balance || 0).toLocaleString("en-IN")} ({b.balance_date})</p>
-                    <p className="text-[10px]" style={{ color: t.muted }}>{b.name_in_statement}</p>
-                  </div>
-                  <button onClick={() => removeBank(b.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded transition" style={{ color: t.rose }}>
-                    <X size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* ── Japan Expense ── */}
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.rose }}>🇯🇵 জাপান খরচ</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { label: "টিউশন ফি (JPY)", key: "tuition_jpy" },
-                { label: "মাসিক জীবনযাত্রা (JPY)", key: "living_jpy_monthly" },
-                { label: "বিনিময় হার (JPY→BDT)", key: "exchange_rate" },
-                { label: "পেমেন্ট পদ্ধতি", key: "payment_method", type: "select", opts: ["Bank Transfer","Wire Transfer","Cheque","Cash","Other"] },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                  {sponsorEditing ? (
-                    f.type === "select" ? (
-                      <select value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                        {f.opts.map(o => <option key={o}>{o}</option>)}
-                      </select>
-                    ) : (
-                      <input type="number" value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                    )
-                  ) : <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* ══════════════════════════════════════
-          MODALS — Pause / Cancel / Fee Item / Payment / Add Bank
-      ══════════════════════════════════════ */}
-
       {/* ── Pause confirm Modal ── */}
       <Modal isOpen={showPauseConfirm} onClose={() => setShowPauseConfirm(false)} title="Pause Student" size="sm">
         <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
@@ -1135,6 +1172,198 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <button onClick={() => setShowCancelConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
           <button onClick={() => { changeStatus("CANCELLED", "পাইপলাইন বাতিল করা হয়েছে"); setShowCancelConfirm(false); }}
             className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>বাতিল করুন</button>
+        </div>
+      </Modal>
+
+      {/* ── Profile Edit Modal (xl size) ── */}
+      <Modal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} title="প্রোফাইল সম্পাদনা" subtitle={`${student.name_en} — ${student.id}`} size="xl">
+        <div className="space-y-5">
+          {/* Personal fields */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.cyan }}>
+              <User size={11} /> ব্যক্তিগত তথ্য
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {personalFields.map(f => <EditableField key={f.key} field={f} />)}
+            </div>
+          </div>
+
+          {/* Passport & Family fields */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.purple }}>
+              <FileCheck size={11} /> পাসপোর্ট ও পরিবার
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {passportFields.map(f => <EditableField key={f.key} field={f} />)}
+            </div>
+          </div>
+
+          {/* Destination fields */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.emerald }}>
+              <Globe size={11} /> গন্তব্য তথ্য
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {/* দেশ — custom select */}
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>দেশ</label>
+                <select value={editForm.country || ""} onChange={e => setField("country", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                  {["Japan","Germany","Korea","Canada","UK","USA","Australia","China"].map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+              {/* স্কুল — DB dropdown */}
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>স্কুল</label>
+                <select value={editForm.school || ""} onChange={e => setField("school", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                  <option value="">— স্কুল সিলেক্ট —</option>
+                  {schoolOptions.map(s => <option key={s.id} value={s.name_en}>{s.name_en}</option>)}
+                </select>
+              </div>
+              {/* ব্যাচ — DB dropdown */}
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ব্যাচ</label>
+                <select value={editForm.batch || ""} onChange={e => setField("batch", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                  <option value="">— ব্যাচ সিলেক্ট —</option>
+                  {batchOptions.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                </select>
+              </div>
+              {/* বাকি destination fields */}
+              {destinationExtraFields.filter(f => f.key !== "created").map(f => <EditableField key={f.key} field={f} />)}
+              {/* ভর্তির তারিখ — read-only */}
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ভর্তির তারিখ</label>
+                <p className="px-3 py-2 rounded-lg text-xs" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.muted }}>{student.created || "—"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Save / Cancel buttons */}
+          <div className="flex gap-2 justify-end pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <Button variant="ghost" size="xs" onClick={() => setShowProfileModal(false)}>বাতিল</Button>
+            <Button icon={Save} size="xs" onClick={handleSave}>সংরক্ষণ</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Sponsor Edit Modal (xl size) ── */}
+      <Modal isOpen={showSponsorModal} onClose={() => setShowSponsorModal(false)} title="স্পনসর সম্পাদনা" subtitle={sponsor.name || "নতুন স্পনসর"} size="xl">
+        <div className="space-y-5">
+          {/* Basic Info */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.cyan }}>👤 মূল তথ্য</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[
+                { label: "নাম", key: "name" },
+                { label: "সম্পর্ক", key: "relationship", type: "select", opts: ["Father","Mother","Brother","Sister","Uncle","Aunt","Other"] },
+                { label: "ফোন", key: "phone" },
+                { label: "NID", key: "nid" },
+                { label: "ঠিকানা", key: "address" },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  {f.type === "select" ? (
+                    <select value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      {f.opts.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Business */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.purple }}>🏢 ব্যবসায়িক তথ্য</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[
+                { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
+                { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
+                { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tax */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.amber }}>🧾 ট্যাক্স তথ্য</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>TIN</label>
+                <input value={sponsorForm.tin || ""} onChange={e => sf("tin", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              </div>
+              {["y1","y2","y3"].map(y => (
+                <div key={y}>
+                  <label className="text-[10px] block mb-1" style={{ color: t.muted }}>বার্ষিক আয় ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
+                  <input type="number" value={sponsorForm[`annual_income_${y}`] || ""} onChange={e => sf(`annual_income_${y}`, e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} placeholder="৳" />
+                </div>
+              ))}
+              {["y1","y2","y3"].map(y => (
+                <div key={`t${y}`}>
+                  <label className="text-[10px] block mb-1" style={{ color: t.muted }}>কর প্রদান ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
+                  <input type="number" value={sponsorForm[`tax_${y}`] || ""} onChange={e => sf(`tax_${y}`, e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} placeholder="৳" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Japan Expense */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.rose }}>🇯🇵 জাপান খরচ</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "টিউশন ফি (JPY)", key: "tuition_jpy" },
+                { label: "মাসিক জীবনযাত্রা (JPY)", key: "living_jpy_monthly" },
+                { label: "বিনিময় হার (JPY→BDT)", key: "exchange_rate" },
+                { label: "পেমেন্ট পদ্ধতি", key: "payment_method", type: "select", opts: ["Bank Transfer","Wire Transfer","Cheque","Cash","Other"] },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  {f.type === "select" ? (
+                    <select value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      {f.opts.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input type="number" value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Save / Cancel */}
+          <div className="flex gap-2 justify-end pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <Button variant="ghost" size="xs" onClick={() => setShowSponsorModal(false)}>বাতিল</Button>
+            <Button icon={Save} size="xs" onClick={saveSponsor}>সংরক্ষণ</Button>
+          </div>
         </div>
       </Modal>
 
