@@ -38,6 +38,7 @@ export default function CertificatePage({ students }) {
   // Upload
   const [uploadName, setUploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("translation");
+  const [uploadDesc, setUploadDesc] = useState("");
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [linkedDocType, setLinkedDocType] = useState(""); // template-কে কোন doc type-এর সাথে link
@@ -129,6 +130,7 @@ export default function CertificatePage({ students }) {
       formData.append("file", uploadFile);
       formData.append("template_name", uploadName);
       formData.append("category", uploadCategory);
+      if (uploadDesc.trim()) formData.append("description", uploadDesc.trim());
       if (linkedDocType) formData.append("linked_doc_type", linkedDocType);
       const res = await fetch(`${API_URL}/docgen/upload`, { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData });
       const data = await res.json();
@@ -264,6 +266,10 @@ export default function CertificatePage({ students }) {
                 {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ (Description)</label>
+            <input value={uploadDesc} onChange={e => setUploadDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="e.g. Paurashava format birth certificate for Japan visa" />
           </div>
           {/* Template কোন Doc Type-এর সাথে linked — data auto-pull হবে */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -612,6 +618,7 @@ export default function CertificatePage({ students }) {
               </div>
               <div>
                 <p className="text-sm font-semibold">{tmpl.name}</p>
+                {tmpl.description && <p className="text-[10px]" style={{ color: t.textSecondary }}>{tmpl.description}</p>}
                 <p className="text-[10px]" style={{ color: t.muted }}>
                   {tmpl.file_name} • {tmpl.total_fields} fields •{" "}
                   <Badge color={tmpl.category === "translation" ? "purple" : "emerald"} size="xs">{CATEGORIES.find(c => c.value === tmpl.category)?.label || tmpl.category}</Badge>
