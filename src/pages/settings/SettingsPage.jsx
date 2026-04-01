@@ -220,6 +220,22 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const [editingDocTypeId, setEditingDocTypeId] = useState(null);
   const [deleteDocTypeId, setDeleteDocTypeId] = useState(null);
 
+  // ── Variables Viewer — doc type-এর সব placeholder দেখায় ──
+  const [variablesDocType, setVariablesDocType] = useState(null);
+
+  const copyVariable = (key) => {
+    navigator.clipboard.writeText(`{{${key}}}`);
+    toast.success(`Copied {{${key}}}`);
+  };
+
+  const copyAllVariables = (dt) => {
+    const keys = (dt.fields || [])
+      .filter(f => f.type !== "section_header" && f.type !== "repeatable")
+      .map(f => `{{${f.key}}}`).join("\n");
+    navigator.clipboard.writeText(keys);
+    toast.success(`${dt.name} — all variables copied!`);
+  };
+
   // ── Field Editor state — doc type-এর fields add/remove/reorder ──
   const [fieldEditorDocType, setFieldEditorDocType] = useState(null);
   const [fieldEditorFields, setFieldEditorFields] = useState([]);
@@ -848,6 +864,11 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <button onClick={() => setVariablesDocType(variablesDocType?.id === dt.id ? null : dt)}
+                    className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1"
+                    style={{ color: t.cyan, background: variablesDocType?.id === dt.id ? `${t.cyan}18` : "transparent" }}>
+                    {"{{}}"}
+                  </button>
                   <button onClick={() => openFieldEditor(dt)}
                     className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1"
                     style={{ color: t.emerald, background: fieldEditorDocType?.id === dt.id ? `${t.emerald}18` : "transparent" }}>
@@ -883,6 +904,46 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             {docTypes.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো document type নেই</p>}
           </div>
         </Card>
+
+        {/* ── Variables Viewer Panel ── */}
+        {variablesDocType && (
+          <Card delay={50}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: t.cyan }}>{variablesDocType.name} — Template Variables</h3>
+                <p className="text-[10px]" style={{ color: t.muted }}>Click any variable to copy. Use these in .docx templates.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => copyAllVariables(variablesDocType)} className="text-[10px] px-2 py-1 rounded-lg"
+                  style={{ background: `${t.cyan}15`, color: t.cyan }}>Copy All</button>
+                <button onClick={() => setVariablesDocType(null)} style={{ color: t.muted }}><X size={16} /></button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(variablesDocType.fields || []).filter(f => f.type !== "section_header").map(f => (
+                f.type === "repeatable" ? (
+                  (f.subfields || []).map(sf => (
+                    <button key={`${f.key}_${sf.key}`} onClick={() => copyVariable(`Member1_${sf.key}`)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-mono transition-all"
+                      style={{ background: `${t.amber}12`, color: t.amber, border: `1px solid ${t.amber}25` }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${t.amber}25`; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = `${t.amber}12`; }}>
+                      {"{{"}Member1_{sf.key}{"}}"}
+                    </button>
+                  ))
+                ) : (
+                  <button key={f.key} onClick={() => copyVariable(f.key)}
+                    className="px-2 py-1 rounded-lg text-[10px] font-mono transition-all"
+                    style={{ background: `${t.cyan}12`, color: t.cyan, border: `1px solid ${t.cyan}25` }}
+                    onMouseEnter={e => { e.currentTarget.style.background = `${t.cyan}25`; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = `${t.cyan}12`; }}>
+                    {`{{${f.key}}}`}
+                  </button>
+                )
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* ── Field Editor Panel ── */}
         {fieldEditorDocType && (
