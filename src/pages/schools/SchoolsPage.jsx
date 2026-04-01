@@ -46,8 +46,8 @@ export default function SchoolsPage({ students }) {
 
   // ── Backend থেকে load ──
   useEffect(() => {
-    api.get("/schools").then(data => { if (Array.isArray(data)) setSchools(data); }).catch(() => {});
-    api.get("/submissions").then(data => { if (Array.isArray(data)) setSubmissionsData(data); }).catch(() => {});
+    api.get("/schools").then(data => { if (Array.isArray(data)) setSchools(data); }).catch((err) => { console.error("[Schools Load]", err); toast.error("স্কুল ডাটা লোড করতে সমস্যা হয়েছে"); });
+    api.get("/submissions").then(data => { if (Array.isArray(data)) setSubmissionsData(data); }).catch((err) => { console.error("[Submissions Load]", err); });
   }, []);
 
   if (selectedSchool) {

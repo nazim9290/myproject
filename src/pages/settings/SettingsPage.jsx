@@ -47,7 +47,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         setAgencyAddress(data.address || "");
         setAgencyLogo(data.logo_url || "");
       }
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Settings Load]", err); toast.error("সেটিংস ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
 
   // ── এজেন্সি লোগো আপলোড ──
@@ -166,7 +166,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
   // API থেকে branch লোড
   useEffect(() => {
-    api.get("/branches").then(data => { if (Array.isArray(data)) setBranches(data); }).catch(() => {});
+    api.get("/branches").then(data => { if (Array.isArray(data)) setBranches(data); }).catch((err) => { console.error("[Branches Load]", err); toast.error("ব্রাঞ্চ ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
 
   // Branch save (create/update)
@@ -221,7 +221,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const [deleteDocTypeId, setDeleteDocTypeId] = useState(null);
 
   useEffect(() => {
-    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch(() => {});
+    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[DocTypes Load]", err); });
   }, []);
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };

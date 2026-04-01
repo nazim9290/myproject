@@ -28,9 +28,9 @@ export default function HRPage() {
 
   // ── Backend থেকে employees, salary, leaves load ──
   useEffect(() => {
-    api.get("/hr/employees").then(data => { if (Array.isArray(data)) setEmployees(data); }).catch(() => {});
-    api.get("/hr/salary").then(data => { if (Array.isArray(data)) setSalaryHistory(data); }).catch(() => {});
-    api.get("/hr/leaves").then(data => { if (Array.isArray(data)) setLeaveList(data); }).catch(() => {});
+    api.get("/hr/employees").then(data => { if (Array.isArray(data)) setEmployees(data); }).catch((err) => { console.error("[HR Employees Load]", err); toast.error("কর্মচারী ডাটা লোড করতে সমস্যা হয়েছে"); });
+    api.get("/hr/salary").then(data => { if (Array.isArray(data)) setSalaryHistory(data); }).catch((err) => { console.error("[HR Salary Load]", err); });
+    api.get("/hr/leaves").then(data => { if (Array.isArray(data)) setLeaveList(data); }).catch((err) => { console.error("[HR Leaves Load]", err); });
   }, []);
   const [payingEmpId, setPayingEmpId] = useState(null);
   const [payForm, setPayForm] = useState({ month: "", amount: "", method: "Bank Transfer", note: "" });
@@ -419,7 +419,7 @@ export default function HRPage() {
                     if (!amt || amt <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
                     const salaryData = { employee_id: emp.id, month: payForm.month, amount: amt, method: payForm.method, note: payForm.note };
                     let record = { id: `SAL-${Date.now()}`, empId: emp.id, empName: emp.name, ...salaryData, date: new Date().toISOString().slice(0, 10), paid: true };
-                    try { const saved = await api.post("/hr/salary", salaryData); if (saved) record = { ...record, ...saved }; } catch {}
+                    try { const saved = await api.post("/hr/salary", salaryData); if (saved) record = { ...record, ...saved }; } catch (err) { console.error("[Salary Save]", err); toast.error("বেতন সার্ভারে সেভ ব্যর্থ"); }
                     setSalaryHistory((prev) => [record, ...prev]);
                     setPayingEmpId(null);
                     toast.success(`${emp.name} — ৳${amt.toLocaleString()} বেতন পরিশোধ হয়েছে`);

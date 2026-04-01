@@ -28,7 +28,7 @@ export default function TasksPage({ students = [] }) {
         dueDate: tk.due_date || tk.dueDate,
         studentName: tk.students?.name_en || "",
       })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Tasks Load]", err); toast.error("টাস্ক ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
@@ -44,7 +44,7 @@ export default function TasksPage({ students = [] }) {
       if (tk.id !== id) return tk;
       const next = tk.status === "todo" ? "in_progress" : tk.status === "in_progress" ? "done" : "todo";
       const apiStatus = next === "todo" ? "pending" : next === "done" ? "completed" : "in_progress";
-      api.patch(`/tasks/${id}`, { status: apiStatus }).catch(() => {});
+      api.patch(`/tasks/${id}`, { status: apiStatus }).catch((err) => { console.error("[Task Status Update]", err); toast.error("স্ট্যাটাস আপডেট সার্ভারে সেভ ব্যর্থ"); });
       toast.updated(TASK_STATUS_CONFIG[next]?.label || next);
       return { ...tk, status: next };
     }));
@@ -57,7 +57,9 @@ export default function TasksPage({ students = [] }) {
     try {
       const saved = await api.post("/tasks", payload);
       setTasks(prev => [{ ...saved, status: "todo", studentName: student?.name_en || "", dueDate: saved.due_date }, ...prev]);
-    } catch {
+    } catch (err) {
+      console.error("[Task Create]", err);
+      toast.error("সার্ভারে সেভ ব্যর্থ, লোকালে রাখা হয়েছে");
       setTasks(prev => [{ id: `T-${Date.now()}`, title: newTask.title, priority: newTask.priority, dueDate: newTask.dueDate, status: "todo", studentName: student?.name_en || "" }, ...prev]);
     }
     setNewTask({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "" });
@@ -66,7 +68,7 @@ export default function TasksPage({ students = [] }) {
   };
 
   const deleteTask = async (id) => {
-    try { await api.del(`/tasks/${id}`); } catch {}
+    try { await api.del(`/tasks/${id}`); } catch (err) { console.error("[Task Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
     setTasks(prev => prev.filter(tk => tk.id !== id));
     setDeleteId(null);
     toast.success("টাস্ক মুছে ফেলা হয়েছে");

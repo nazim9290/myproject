@@ -19,7 +19,7 @@ export default function AgentsPage() {
   useEffect(() => {
     api.get("/agents").then(data => {
       if (Array.isArray(data)) setAgents(data.map(a => ({ ...a, students: a.students || [], commissionPerStudent: a.commission_per_student || 0 })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Agents Load]", err); toast.error("এজেন্ট ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);

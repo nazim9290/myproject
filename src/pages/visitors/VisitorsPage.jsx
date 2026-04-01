@@ -215,7 +215,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       if (data.length > 0) setVisitors(data.map(v => ({
         ...v, name_en: v.name_en || v.name, date: v.visit_date || v.date, lastFollowUp: v.last_follow_up || v.lastFollowUp,
       })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Visitors Load]", err); toast.error("ভিজিটর ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewTab, setViewTab] = useState("active");
@@ -272,7 +272,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
   // === ACTIONS ===
   const updateVisitor = async (id, updates) => {
-    try { await api.patch(`/visitors/${id}`, updates); } catch {}
+    try { await api.patch(`/visitors/${id}`, updates); } catch (err) { console.error("[Visitor Update]", err); toast.error("আপডেট সার্ভারে সেভ ব্যর্থ"); }
     setVisitors(visitors.map(v => v.id === id ? {...v, ...updates} : v));
   };
 
@@ -295,7 +295,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   };
 
   const doDelete = async (v) => {
-    try { await api.del(`/visitors/${v.id}`); } catch {}
+    try { await api.del(`/visitors/${v.id}`); } catch (err) { console.error("[Visitor Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
     setVisitors(visitors.filter(x => x.id !== v.id));
     setConfirmAction(null);
     setDetailId(null);
@@ -700,7 +700,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       </div></Card>}
 
       {showForm && <Card delay={0}><h3 className="text-sm font-semibold mb-4">+ নতুন ভিজিটর</h3>
-        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch{setVisitors([v,...visitors]);}setShowForm(false);toast.created("ভিজিটর");}} onCancel={()=>setShowForm(false)}/></Card>}
+        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch(err){console.error("[Visitor Create]",err);toast.error("সার্ভারে সেভ ব্যর্থ, লোকালে রাখা হয়েছে");setVisitors([v,...visitors]);}setShowForm(false);toast.created("ভিজিটর");}} onCancel={()=>setShowForm(false)}/></Card>}
 
       <Card delay={100}>
         <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {sortedFiltered.length} জন ভিজিটর</p>

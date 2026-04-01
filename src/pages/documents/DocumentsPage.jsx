@@ -40,7 +40,7 @@ export default function DocumentsPage({ students }) {
 
   // Load doc types from API
   useEffect(() => {
-    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch(() => {});
+    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[DocTypes Load]", err); toast.error("ডকুমেন্ট টাইপ লোড করতে সমস্যা হয়েছে"); });
   }, []);
 
   // Student list
@@ -55,7 +55,10 @@ export default function DocumentsPage({ students }) {
     try {
       const data = await api.get(`/docdata/student/${studentId}`);
       setStudentDocData(Array.isArray(data) ? data : []);
-    } catch { setStudentDocData([]); }
+    } catch {
+      setStudentDocData([]);
+      toast.error("ডকুমেন্ট ডাটা লোড করতে সমস্যা হয়েছে");
+    }
   };
 
   // Get completion for a doc type

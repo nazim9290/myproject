@@ -53,7 +53,7 @@ export default function SuperAdminPage() {
       if (agRes.ok) setAgencies(await agRes.json());
       if (stRes.ok) setStats(await stRes.json());
       if (prRes.ok) setPricing(await prRes.json());
-    } catch {}
+    } catch (err) { console.error("[SuperAdmin Load]", err); toast.error("ডাটা লোড করতে সমস্যা হয়েছে"); }
     setLoading(false);
   };
 

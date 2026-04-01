@@ -104,7 +104,7 @@ export default function LanguageCoursePage({ students }) {
   useEffect(() => {
     batchesApi.list().then(data => {
       if (Array.isArray(data)) setBatches(data);
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Batches Load]", err); toast.error("ব্যাচ ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
 
   if (selectedBatch) {

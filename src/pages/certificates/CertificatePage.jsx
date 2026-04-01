@@ -45,7 +45,7 @@ export default function CertificatePage({ students }) {
   // Doc types from DB (Admin-defined document types with custom fields)
   const [docTypes, setDocTypes] = useState([]);
   useEffect(() => {
-    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch(() => {});
+    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[CertDocTypes Load]", err); });
   }, []);
 
   // Mapping — upload-এর পর placeholder → system field map
@@ -98,7 +98,7 @@ export default function CertificatePage({ students }) {
   useEffect(() => {
     api.get("/docgen/templates").then(data => {
       if (Array.isArray(data)) setTemplates(data);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((err) => { console.error("[Templates Load]", err); toast.error("টেমপ্লেট লোড করতে সমস্যা হয়েছে"); }).finally(() => setLoading(false));
   }, []);
 
   const eligibleStudents = (students || []).filter(s => !["VISITOR", "CANCELLED"].includes(s.status));

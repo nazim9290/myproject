@@ -45,7 +45,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                 base.jlptScore = exam.score ? parseInt(exam.score) : null;
                 base.jlptStatus = exam.result === "Passed" ? "Passed" : exam.result === "Failed" ? "Failed" : "Preparing";
               }
-            } catch {}
+            } catch (err) { console.error("[Batch] Student detail load error:", err); }
             return base;
           }));
           setBStudents(enriched);
@@ -61,6 +61,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         }
       } catch (err) {
         console.error("Batch detail load error:", err);
+        toast.error("ব্যাচ ডাটা লোড করতে সমস্যা হয়েছে");
       }
     })();
   }, [batch.id]);
@@ -112,6 +113,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         }
       } catch (err) {
         console.error("[Attendance Load Error]", err);
+        toast.error("উপস্থিতি ডাটা লোড করতে সমস্যা হয়েছে");
       }
     })();
   }, [attDate, bStudents.length]);
@@ -169,7 +171,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       const { api: apiHook } = await import("../../hooks/useAPI");
       const dbTest = await apiHook.post(`/batches/${batch.id}/tests`, { test_name: testForm.testName, date: testForm.date, avg_score: avg, scores: testScores });
       if (dbTest && dbTest.id) newTest.id = dbTest.id;
-    } catch {}
+    } catch (err) { console.error("[Class Test Save]", err); toast.error("ক্লাস টেস্ট সার্ভারে সেভ ব্যর্থ"); }
     setTestForm({ testName: "", date: today });
     setTestScores({});
     setTestExtraStudents([]);
@@ -201,7 +203,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           }).catch(() => {});
         }
       }
-    } catch {}
+    } catch (err) { console.error("[Exam Result Save]", err); toast.error("পরীক্ষার ফলাফল সার্ভারে সেভ ব্যর্থ"); }
     setExamUpdates({});
     setShowExamForm(false);
     toast.success("পরীক্ষার ফলাফল সংরক্ষণ হয়েছে");

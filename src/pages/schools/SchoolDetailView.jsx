@@ -55,7 +55,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
   useEffect(() => {
     api.get(`/submissions?school_id=${school.id}`).then(data => {
       if (Array.isArray(data)) setSubs(data);
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Submissions Load]", err); toast.error("সাবমিশন ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, [school.id]);
   const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
@@ -130,7 +130,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
             setMappingFormat(data.mapping.format || "row");
             setMappingHeaderRow(data.mapping.header_row || 3);
           }
-        }).catch(() => {});
+        }).catch((err) => { console.error("[Template Load]", err); toast.error("টেমপ্লেট ডাটা লোড করতে সমস্যা হয়েছে"); });
     }
   }, [school.id, school.interview_template]);
 

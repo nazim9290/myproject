@@ -45,7 +45,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
         if (profileRes.ok) { setProfile(p); setEditData({ ...p }); }
         if (configRes.ok && Array.isArray(c)) setFormConfig(c);
         if (feesRes.ok) setFees(f);
-      } catch {}
+      } catch (err) { console.error("[Portal Load]", err); toast.error("ডাটা লোড করতে সমস্যা হয়েছে"); }
       setLoading(false);
     };
     load();

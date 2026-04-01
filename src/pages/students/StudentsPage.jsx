@@ -30,7 +30,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         passport: s.passport_number || "", father: s.father_name || "", mother: s.mother_name || "",
         created: s.created_at?.slice(0, 10) || "",
       })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Students Load]", err); toast.error("স্টুডেন্ট ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [searchQ, setSearchQ] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -168,12 +168,12 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         stepConfigs={stepConfigs}
         onBack={() => setSelectedId(null)}
         onUpdate={async (updated) => {
-          try { await api.patch(`/students/${updated.id}`, updated); } catch {}
+          try { await api.patch(`/students/${updated.id}`, updated); } catch (err) { console.error("[Student Update]", err); toast.error("সার্ভারে আপডেট ব্যর্থ"); }
           setStudents(students.map((s) => s.id === updated.id ? updated : s));
           toast.updated("Student");
         }}
         onDelete={async (id) => {
-          try { await api.del(`/students/${id}`); } catch {}
+          try { await api.del(`/students/${id}`); } catch (err) { console.error("[Student Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
           setStudents(students.filter((s) => s.id !== id));
           setSelectedId(null);
           toast.deleted("Student");

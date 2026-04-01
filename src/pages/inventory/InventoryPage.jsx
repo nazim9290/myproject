@@ -37,7 +37,7 @@ export default function InventoryPage() {
         model: i.model || "",
         vendor: i.vendor || "",
       })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Inventory Load]", err); toast.error("ইনভেন্টরি ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [activeTab, setActiveTab] = useState("assets");
   const [filterBranch, setFilterBranch] = useState("All");
@@ -162,7 +162,7 @@ export default function InventoryPage() {
     try {
       await api.patch(`/inventory/${id}`, { status: newCond });
       setItems(prev => prev.map(i => i.id === id ? { ...i, condition: newCond, status: newCond } : i));
-    } catch {}
+    } catch (err) { console.error("[Inventory Condition]", err); toast.error("স্ট্যাটাস আপডেট ব্যর্থ"); }
   };
 
   const inputStyle = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };

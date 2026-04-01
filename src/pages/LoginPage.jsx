@@ -114,7 +114,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               🎓 স্টুডেন্ট পোর্টাল লগইন
             </button>
           )}
-          <p className="text-center text-[10px] opacity-30 mt-4">Demo: admin@agencybook.net / admin123</p>
+          {/* প্রডাকশনে demo credentials সরানো হয়েছে */}
         </div>
       </div>
     </div>

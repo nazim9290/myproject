@@ -164,10 +164,10 @@ export default function AccountsPage({ students = [] }) {
   useEffect(() => {
     api.get("/accounts/payments").then(data => {
       if (Array.isArray(data)) setIncomeData(data.map(p => ({ ...p, studentName: p.students?.name_en || p.student_id, status: p.status === "paid" ? "collected" : p.status })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Accounts Payments Load]", err); toast.error("আয় ডাটা লোড করতে সমস্যা হয়েছে"); });
     api.get("/accounts/expenses").then(data => {
       if (Array.isArray(data)) setExpenseData(data);
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Accounts Expenses Load]", err); toast.error("ব্যয় ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
 
   // ── Student fee data — students prop থেকে (যদি fees embedded থাকে) ──
@@ -338,10 +338,10 @@ export default function AccountsPage({ students = [] }) {
               }
             } catch (err) {
               console.error("[Accounts Save]", err);
+              toast.error("সার্ভারে সেভ ব্যর্থ, লোকালে রাখা হয়েছে");
               // Fallback: local-এও রাখি
               if (showAddForm === "income") setIncomeData(prev => [entry, ...prev]);
               else setExpenseData(prev => [entry, ...prev]);
-              toast.success("এন্ট্রি যোগ হয়েছে (local)");
             }
             setShowAddForm(null);
           }}

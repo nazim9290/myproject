@@ -28,6 +28,7 @@ export default function PreDeparturePage() {
       setKpi(res.kpi || {});
     } catch (err) {
       console.error("Pre-departure load error:", err);
+      toast.error("প্রি-ডিপার্চার ডাটা লোড করতে সমস্যা হয়েছে");
     }
     setLoading(false);
   };

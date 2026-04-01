@@ -154,7 +154,7 @@ export default function ExcelAutoFillPage({ students }) {
   const [schoolsList, setSchoolsList] = useState([]);
   useEffect(() => {
     fetch(`${API}/schools`, { headers: { Authorization: `Bearer ${token()}` } })
-      .then(r => r.json()).then(data => { if (Array.isArray(data)) setSchoolsList(data); }).catch(() => {});
+      .then(r => r.json()).then(data => { if (Array.isArray(data)) setSchoolsList(data); }).catch((err) => { console.error("[Excel Schools Load]", err); });
   }, []);
 
   // Upload state

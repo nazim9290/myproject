@@ -24,7 +24,7 @@ export default function CommunicationPage({ students = [] }) {
         id: c.id, studentId: c.student_id, studentName: c.students?.name_en || "", type: c.type, direction: c.direction,
         notes: c.notes, follow_up_date: c.follow_up_date, date: c.created_at?.slice(0, 10), user: "Staff"
       })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Communication Load]", err); toast.error("যোগাযোগ লগ লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
@@ -50,7 +50,9 @@ export default function CommunicationPage({ students = [] }) {
     try {
       const saved = await api.post("/communications", entry);
       setLogs(prev => [{ ...saved, studentName: student?.name_en || "—", summary: saved.notes || saved.content, date: (saved.created_at || "").slice(0, 10) }, ...prev]);
-    } catch {
+    } catch (err) {
+      console.error("[Communication Save]", err);
+      toast.error("সার্ভারে সেভ ব্যর্থ, লোকালে রাখা হয়েছে");
       setLogs(prev => [{ id: `LOG-${Date.now()}`, ...entry, studentName: student?.name_en || "—", summary: form.notes, date: now.toISOString().slice(0, 10) }, ...prev]);
     }
     setForm(BLANK);
@@ -59,7 +61,7 @@ export default function CommunicationPage({ students = [] }) {
   };
 
   const deleteLog = async (id) => {
-    try { await api.del(`/communications/${id}`); } catch {}
+    try { await api.del(`/communications/${id}`); } catch (err) { console.error("[Communication Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
     setLogs(prev => prev.filter(l => l.id !== id));
     setDeleteId(null);
     toast.success("মুছে ফেলা হয়েছে");

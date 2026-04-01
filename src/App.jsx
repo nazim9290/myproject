@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle, useLabelSettings } from "./context/ThemeContext";
-import { ToastProvider } from "./context/ToastContext";
+import { ToastProvider, useToast } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { PermissionProvider, usePermissions } from "./context/PermissionContext";
 import { NAV_ITEMS } from "./data/mockData";
@@ -46,6 +46,7 @@ const SettingsPage = lazy(() => import("./pages/settings/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/profile/ProfilePage"));
 const HelpPage = lazy(() => import("./pages/help/HelpPage"));
 import PageSkeleton from "./components/ui/PageSkeleton";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 
 const NAV_ICONS = {
   dashboard: Home,
@@ -408,6 +409,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
 
 function AppShell({ isDark, setIsDark }) {
   const t = THEMES[isDark ? "dark" : "light"];
+  const toast = useToast();
   const { user: authUser, login, setMockUser, logout, loading: authLoading } = useAuth();
   const [activePage, setActivePage] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);   // desktop collapse
@@ -435,15 +437,16 @@ function AppShell({ isDark, setIsDark }) {
     setStepConfigs(newConfigs);
     localStorage.setItem("agencybook_step_configs", JSON.stringify(newConfigs));
   };
+  // ডিফল্ট ইউজার — AuthContext থেকে আসল ডাটা sync হবে
   const [currentUser, setCurrentUser] = useState({
-    name: "Admin",
-    name_bn: "অ্যাডমিন",
-    email: "admin@agencyos.com",
+    name: "",
+    name_bn: "",
+    email: "",
     phone: "",
-    role: "owner",
-    designation: "Agency Manager",
-    branch: "Main",
-    joined: "2026-01-01",
+    role: "",
+    designation: "",
+    branch: "",
+    joined: "",
     notifications: true,
     language: "bn",
   });
@@ -487,6 +490,7 @@ function AppShell({ isDark, setIsDark }) {
       })));
     } catch (err) {
       console.log("[App] API থেকে data load ব্যর্থ:", err.message);
+      toast.error("ডাটা লোড করতে সমস্যা হয়েছে");
     }
     setDataLoaded(true);
   };
@@ -552,7 +556,9 @@ function AppShell({ isDark, setIsDark }) {
         batch: newStudent.batch,
       });
       setStudents((prev) => [apiStudent, ...prev]);
-    } catch {
+    } catch (err) {
+      console.error("[App] Visitor convert error:", err);
+      toast.error("সার্ভারে সেভ ব্যর্থ, লোকালে রাখা হয়েছে");
       setStudents((prev) => [newStudent, ...prev]);
     }
 
@@ -706,6 +712,7 @@ function AppShell({ isDark, setIsDark }) {
   if (studentUser && studentToken) {
     return (
       <ThemeContext.Provider value={t}>
+        <ErrorBoundary>
         <ToastProvider>
           <div className="min-h-screen p-4 lg:p-6" style={{ background: t.bg }}>
             <StudentPortalPage
@@ -720,6 +727,7 @@ function AppShell({ isDark, setIsDark }) {
             />
           </div>
         </ToastProvider>
+        </ErrorBoundary>
       </ThemeContext.Provider>
     );
   }
@@ -748,6 +756,8 @@ function AppShell({ isDark, setIsDark }) {
 
   return (
     <ThemeContext.Provider value={t}>
+      {/* ── গ্লোবাল Error Boundary — রেন্ডার এরর ধরে fallback UI দেখায় ── */}
+      <ErrorBoundary>
       <PermissionProvider userRole={userRole}>
       <div className="flex h-screen overflow-hidden" style={{ background: t.bg }}>
         <SidebarWithPermissions
@@ -804,6 +814,7 @@ function AppShell({ isDark, setIsDark }) {
         </div>
       </div>
       </PermissionProvider>
+      </ErrorBoundary>
     </ThemeContext.Provider>
   );
 }

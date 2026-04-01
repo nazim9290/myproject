@@ -17,7 +17,7 @@ export default function CalendarPage({ students = [] }) {
   useEffect(() => {
     api.get("/calendar").then(data => {
       if (Array.isArray(data)) setEvents(data.map(e => ({ ...e, time: e.time || "", staff: "" })));
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Calendar Load]", err); toast.error("ক্যালেন্ডার ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [filterType, setFilterType] = useState("all");
   const [showForm, setShowForm] = useState(false);

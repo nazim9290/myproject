@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Users, DollarSign, FileText, Plane, TrendingUp, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../context/ThemeContext";
+import { useToast } from "../context/ToastContext";
 import Card from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { PIPELINE_STATUSES } from "../data/students";
@@ -13,6 +14,7 @@ import { dashboard } from "../lib/api";
  */
 export default function DashboardPage() {
   const t = useTheme();
+  const toast = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +26,7 @@ export default function DashboardPage() {
         setData(d);
       } catch (err) {
         console.error("Dashboard load error:", err);
+        toast.error("ড্যাশবোর্ড ডাটা লোড করতে সমস্যা হয়েছে");
       }
       setLoading(false);
     })();

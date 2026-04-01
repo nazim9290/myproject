@@ -59,6 +59,7 @@ export default function UserRolePage() {
       setBranches(Array.isArray(branchData) ? branchData : []);
     } catch (err) {
       console.error("Users load error:", err);
+      toast.error("ইউজার ডাটা লোড করতে সমস্যা হয়েছে");
     }
     setLoading(false);
   };
@@ -459,7 +460,7 @@ export default function UserRolePage() {
                 for (const user of usersList) {
                   const rolePerm = permMatrix[user.role];
                   if (rolePerm) {
-                    try { await usersApi.update(user.id, { permissions: rolePerm }); } catch {}
+                    try { await usersApi.update(user.id, { permissions: rolePerm }); } catch (err) { console.error("[Permission Update]", err); }
                   }
                 }
                 toast.success("পারমিশন সংরক্ষণ হয়েছে!");

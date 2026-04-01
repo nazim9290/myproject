@@ -104,10 +104,10 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     // DB থেকে fee items ও payments load
     api.get(`/students/${student.id}/fee-items`).then(data => {
       if (Array.isArray(data) && data.length > 0) setFeeItems(data);
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Fee Items Load]", err); toast.error("ফি আইটেম লোড করতে সমস্যা হয়েছে"); });
     api.get(`/students/${student.id}/payments-list`).then(data => {
       if (Array.isArray(data) && data.length > 0) setPayments(data);
-    }).catch(() => {});
+    }).catch((err) => { console.error("[Payments Load]", err); toast.error("পেমেন্ট ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, [student.id]);
   const [showPayForm, setShowPayForm] = useState(false);
   const [payForm, setPayForm] = useState({ amount: "", method: "Cash", category: "", note: "" });
@@ -139,7 +139,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
   // Status change — API-তেও save
   const changeStatus = (newStatus, msg) => {
-    api.patch(`/students/${student.id}`, { status: newStatus }).catch(() => {});
+    api.patch(`/students/${student.id}`, { status: newStatus }).catch((err) => { console.error("[Student Status Update]", err); toast.error("স্ট্যাটাস সার্ভারে সেভ ব্যর্থ"); });
     const updated = { ...student, status: newStatus };
     onUpdate(updated);
     const stepLabel = PIPELINE_STATUSES.find(s => s.code === newStatus)?.label || newStatus;
@@ -163,7 +163,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   };
 
   // Edit
-  const handleSave = () => { api.patch(`/students/${student.id}`, editForm).catch(() => {}); onUpdate(editForm); setIsEditing(false); logActivity("তথ্য আপডেট হয়েছে", "edit"); toast.updated("Student"); };
+  const handleSave = () => { api.patch(`/students/${student.id}`, editForm).catch((err) => { console.error("[Student Save]", err); toast.error("সার্ভারে সেভ ব্যর্থ"); }); onUpdate(editForm); setIsEditing(false); logActivity("তথ্য আপডেট হয়েছে", "edit"); toast.updated("Student"); };
   const setField = (k, v) => setEditForm({ ...editForm, [k]: v });
 
   const current = isEditing ? editForm : student;
@@ -193,7 +193,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     try {
       const saved = await api.post(`/students/${student.id}/fee-items`, { category: feeItemForm.category, label, amount });
       if (saved && saved.id) newItem = saved;
-    } catch {}
+    } catch (err) { console.error("[Fee Item Save]", err); toast.error("সার্ভারে ফি সেভ ব্যর্থ"); }
     const updated = [...feeItems, newItem];
     setFeeItems(updated);
     syncFees(updated, payments);

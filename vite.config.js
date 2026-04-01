@@ -9,4 +9,8 @@ export default defineConfig({
     sourcemap: false,
     target: "es2020",
   },
+  // প্রোডাকশনে console.log/warn সরিয়ে ফেলো, console.error রাখো (error tracking-এর জন্য)
+  esbuild: {
+    pure: process.env.NODE_ENV === "production" ? ["console.log", "console.warn"] : [],
+  },
 })
