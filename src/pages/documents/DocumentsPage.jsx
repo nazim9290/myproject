@@ -79,9 +79,9 @@ export default function DocumentsPage({ students }) {
       });
 
       setFieldValues(newValues);
-      toast.success(`স্ক্যান সম্পন্ন — ${filledCount} টি ফিল্ড auto-fill হয়েছে`);
+      toast.success(`Scan complete — ${filledCount} fields auto-filled`);
     } catch (err) {
-      toast.error("স্ক্যান ব্যর্থ: " + err.message);
+      toast.error("Scan failed: " + err.message);
     }
 
     setScanning(false);
@@ -241,10 +241,10 @@ export default function DocumentsPage({ students }) {
         <div className="flex items-center gap-4">
           <button onClick={() => { setActiveDocType(null); setScanResult(null); }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
           <div className="flex-1">
-            <h2 className="text-xl font-bold">{activeDocType.name_bn || activeDocType.name}</h2>
-            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.name_en} ({selectedStudent.id}) — ডকুমেন্টের তথ্য পূরণ করুন</p>
+            <h2 className="text-xl font-bold">{activeDocType.name}</h2>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.name_en} ({selectedStudent.id}) — Fill document data</p>
           </div>
-          <Button icon={Save} onClick={saveWithFlatten} disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}</Button>
+          <Button icon={Save} onClick={saveWithFlatten} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
         </div>
 
         {/* OCR Scan — document image upload করলে auto-fill হবে */}
@@ -254,7 +254,7 @@ export default function DocumentsPage({ students }) {
               <Camera size={16} style={{ color: t.purple }} />
               <span className="text-xs font-semibold" style={{ color: t.text }}>Scan & Auto-fill</span>
             </div>
-            {scanning && <span className="text-[10px]" style={{ color: t.muted }}>স্ক্যান হচ্ছে...</span>}
+            {scanning && <span className="text-[10px]" style={{ color: t.muted }}>Scanning...</span>}
           </div>
 
           <div className="flex items-center gap-3">
@@ -279,7 +279,7 @@ export default function DocumentsPage({ students }) {
           </div>
 
           <p className="text-[9px] mt-2" style={{ color: t.muted }}>
-            ডকুমেন্টের ছবি বা PDF আপলোড করুন — OCR দিয়ে তথ্য বের করে ফিল্ড auto-fill হবে। সব ফিল্ড verify করে সংরক্ষণ করুন।
+Upload document image or PDF — OCR will extract data and auto-fill fields. Verify all fields before saving.
           </p>
         </div>
 
@@ -414,7 +414,7 @@ export default function DocumentsPage({ students }) {
           <button onClick={() => { setSelectedStudent(null); setStudentDocData([]); }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
           <div>
             <h2 className="text-xl font-bold">{selectedStudent.name_en}</h2>
-            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.id} • {selectedStudent.batch || "—"} • {completedTypes}/{totalTypes} ডকুমেন্ট সম্পন্ন</p>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.id} • {selectedStudent.batch || "—"} • {completedTypes}/{totalTypes} documents completed</p>
           </div>
         </div>
 
@@ -476,12 +476,12 @@ export default function DocumentsPage({ students }) {
                         <FileText size={14} style={{ color: catColor }} />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{dt.name_bn || dt.name}</p>
-                        <p className="text-[9px]" style={{ color: t.muted }}>{dt.name} • {(dt.fields || []).length} ফিল্ড</p>
+                        <p className="text-sm font-semibold">{dt.name}</p>
+                        <p className="text-[9px]" style={{ color: t.muted }}>{dt.category} • {(dt.fields || []).length} fields</p>
                       </div>
                     </div>
                     <Badge color={comp.pct === 100 ? "emerald" : comp.pct > 0 ? "amber" : "gray"} size="xs">
-                      {comp.pct === 100 ? "সম্পন্ন" : comp.pct > 0 ? `${comp.pct}%` : "শুরু হয়নি"}
+                      {comp.pct === 100 ? "Complete" : comp.pct > 0 ? `${comp.pct}%` : "Not started"}
                     </Badge>
                   </div>
 
@@ -492,8 +492,8 @@ export default function DocumentsPage({ students }) {
                   </div>
 
                   <p className="text-[10px]" style={{ color: t.muted }}>
-                    {comp.filled}/{comp.total} ফিল্ড পূরণ
-                    {saved && <span> • সর্বশেষ: {saved.updated_at?.slice(0, 10)}</span>}
+                    {comp.filled}/{comp.total} fields filled
+                    {saved && <span> • Last saved: {saved.updated_at?.slice(0, 10)}</span>}
                   </p>
                 </div>
               </Card>
@@ -509,18 +509,18 @@ export default function DocumentsPage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">ডকুমেন্টস</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>ডকুমেন্ট ডাটা ইনপুট — ট্রান্সলেশন ও Doc Generator-এ ব্যবহার হবে</p>
+          <h2 className="text-xl font-bold">Documents</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>Document data input — used for translation & Doc Generator</p>
         </div>
       </div>
 
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট স্টুডেন্ট", value: allStudents.length, color: t.cyan },
-          { label: "ডকুমেন্ট ধরন", value: docTypes.length, color: t.purple },
-          { label: "ব্যাচ", value: allBatches.length - 1, color: t.amber },
-          { label: "মোট ফিল্ড", value: docTypes.reduce((s, dt) => s + (dt.fields || []).length, 0), color: t.emerald },
+          { label: "Total Students", value: allStudents.length, color: t.cyan },
+          { label: "Doc Types", value: docTypes.length, color: t.purple },
+          { label: "Batches", value: allBatches.length - 1, color: t.amber },
+          { label: "Total Fields", value: docTypes.reduce((s, dt) => s + (dt.fields || []).length, 0), color: t.emerald },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
@@ -532,17 +532,17 @@ export default function DocumentsPage({ students }) {
       {/* Filter + Search */}
       <Card delay={200}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">স্টুডেন্ট ডকুমেন্টস</h3>
+          <h3 className="text-sm font-semibold">Student Documents</h3>
           <div className="flex items-center gap-2">
             <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }}
               className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
-              {allBatches.map(b => <option key={b} value={b}>{b === "All" ? "সব ব্যাচ" : b}</option>)}
+              {allBatches.map(b => <option key={b} value={b}>{b === "All" ? "All Batches" : b}</option>)}
             </select>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={12} style={{ color: t.muted }} />
               <input value={searchDoc} onChange={e => { setSearchDoc(e.target.value); setPage(1); }}
                 className="bg-transparent text-xs outline-none w-32" style={{ color: t.text }}
-                placeholder="স্টুডেন্ট খুঁজুন..." />
+                placeholder="Search student..." />
             </div>
           </div>
         </div>
@@ -559,11 +559,11 @@ export default function DocumentsPage({ students }) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      <SortHeader label="নাম" sortKey="name_en" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="Name" sortKey="name_en" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                       <SortHeader label="ID" sortKey="id" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="ব্যাচ" sortKey="batch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+                      <SortHeader label="Batch" sortKey="batch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
