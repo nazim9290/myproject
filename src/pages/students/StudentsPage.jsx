@@ -4,6 +4,7 @@ import DropZone from "../../components/ui/DropZone";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { PIPELINE_STATUSES } from "../../data/students";
@@ -331,7 +332,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         ))}
       </div>
 
-      {showAddForm && (
+      {/* ══════════ ADD STUDENT MODAL ══════════ */}
+      <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} title="নতুন স্টুডেন্ট যোগ করুন" size="xl">
         <AddStudentForm
           studentsCount={serverTotal}
           onCancel={() => setShowAddForm(false)}
@@ -346,25 +348,15 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             fetchStudents(); // সার্ভার থেকে re-fetch
           }}
         />
-      )}
+      </Modal>
 
       {/* ══════════ EXCEL IMPORT MODAL ══════════ */}
-      {showImport && (
-        <Card delay={0}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              {importStep !== "upload" && <button onClick={() => setImportStep(importStep === "done" ? "upload" : importStep === "preview" ? "mapping" : "upload")} className="p-1.5 rounded-lg" style={{ background: t.inputBg }}><ArrowLeft size={14} /></button>}
-              <div>
-                <h3 className="text-sm font-bold flex items-center gap-2"><Upload size={14} /> Excel থেকে Student Import</h3>
-                <p className="text-[10px]" style={{ color: t.muted }}>
-                  {importStep === "upload" && "Step 1: Excel ফাইল আপলোড করুন"}
-                  {importStep === "mapping" && `Step 2: Column Mapping — ${importTotal} জন student পাওয়া গেছে`}
-                  {importStep === "done" && "Import সম্পন্ন"}
-                </p>
-              </div>
-            </div>
-            <button onClick={() => setShowImport(false)} className="p-1.5 rounded-lg" style={{ color: t.muted }}><X size={16} /></button>
-          </div>
+      <Modal isOpen={showImport} onClose={() => setShowImport(false)} title="Excel থেকে Student Import" subtitle={
+        importStep === "upload" ? "Step 1: Excel ফাইল আপলোড করুন" :
+        importStep === "mapping" ? `Step 2: Column Mapping — ${importTotal} জন student পাওয়া গেছে` :
+        "Import সম্পন্ন"
+      } size="xl">
+          {importStep !== "upload" && <div className="mb-4"><button onClick={() => setImportStep(importStep === "done" ? "upload" : importStep === "preview" ? "mapping" : "upload")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: t.inputBg, color: t.text }}><ArrowLeft size={14} /> পেছনে যান</button></div>}
 
           {/* Step 1: Upload */}
           {importStep === "upload" && (
@@ -497,8 +489,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               <Button className="mt-6" onClick={() => { setShowImport(false); fetchStudents(); if (reloadData) reloadData(); }}>বন্ধ করুন</Button>
             </div>
           )}
-        </Card>
-      )}
+      </Modal>
 
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>

@@ -111,6 +111,8 @@ export const getGlobalStyles = (t) => `
   @keyframes slideIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes modalOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalScaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
   .anim-fade { animation: fadeIn 0.4s ease forwards; }
   .anim-slide { animation: slideIn 0.35s ease forwards; }
   .skeleton-shimmer {

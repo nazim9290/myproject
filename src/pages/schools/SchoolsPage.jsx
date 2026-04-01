@@ -3,6 +3,7 @@ import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X,
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
@@ -200,16 +201,8 @@ export default function SchoolsPage({ students }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {showForm && (
-            <Card delay={0} className="md:col-span-2 xl:col-span-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold">{editingId ? "স্কুল এডিট করুন" : "নতুন স্কুল যোগ করুন"}</h3>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
-                  <Button icon={Save} size="xs" onClick={saveSchool}>সংরক্ষণ</Button>
-                </div>
-              </div>
+          {/* ── স্কুল যোগ/সম্পাদনা Modal ── */}
+          <Modal isOpen={!!showForm} onClose={() => { setShowForm(false); setEditingId(null); }} title={editingId ? "স্কুল এডিট করুন" : "নতুন স্কুল যোগ করুন"} size="xl">
               {/* ── Basic Info ── */}
               <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>মূল তথ্য</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -348,8 +341,13 @@ export default function SchoolsPage({ students }) {
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট / মন্তব্য</label>
                 <textarea value={form.notes || ""} onChange={e => sf("notes", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="বিশেষ তথ্য, শর্ত, চুক্তি ইত্যাদি..." />
               </div>
-            </Card>
-          )}
+              <div className="flex gap-2 mt-4 justify-end">
+                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
+                <Button icon={Save} size="xs" onClick={saveSchool}>সংরক্ষণ</Button>
+              </div>
+          </Modal>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* সার্ভার থেকে ইতিমধ্যে সার্চ ও পেজিনেট করা data এসেছে */}
           {schools.map((school, i) => {
             const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;

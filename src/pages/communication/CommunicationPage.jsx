@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import { COMM_TYPES } from "../../data/mockData";
@@ -103,54 +104,49 @@ export default function CommunicationPage({ students = [] }) {
         ))}
       </div>
 
-      {/* Add form */}
-      {showForm && (
-        <Card delay={0}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold">নতুন যোগাযোগ লগ</h3>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
-              <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
-            </div>
+      {/* Add form — Modal */}
+      <Modal isOpen={!!showForm} onClose={() => setShowForm(false)} title="নতুন যোগাযোগ লগ" size="md">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট</label>
+            <select value={form.studentId} onChange={e => sf("studentId", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option value="">— স্টুডেন্ট নির্বাচন করুন —</option>
+              {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
+            </select>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট</label>
-              <select value={form.studentId} onChange={e => sf("studentId", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="">— স্টুডেন্ট নির্বাচন করুন —</option>
-                {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
-              <select value={form.type} onChange={e => sf("type", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                {Object.entries(COMM_TYPES).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>দিক</label>
-              <select value={form.direction} onChange={e => sf("direction", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="outbound">→ আউটবাউন্ড (আমরা করলাম)</option>
-                <option value="inbound">← ইনবাউন্ড (তারা করল)</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
-              <select value={form.user} onChange={e => sf("user", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option>Mina</option><option>Sadia</option><option>Karim</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফলোআপ তারিখ</label>
-              <input type="date" value={form.follow_up_date} onChange={e => sf("follow_up_date", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} min={today} />
-            </div>
-            <div className="md:col-span-3">
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট <span className="req-star">*</span></label>
-              <textarea value={form.notes} onChange={e => sf("notes", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="কথোপকথনের সারসংক্ষেপ..." />
-            </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
+            <select value={form.type} onChange={e => sf("type", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              {Object.entries(COMM_TYPES).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
+            </select>
           </div>
-        </Card>
-      )}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>দিক</label>
+            <select value={form.direction} onChange={e => sf("direction", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option value="outbound">→ আউটবাউন্ড (আমরা করলাম)</option>
+              <option value="inbound">← ইনবাউন্ড (তারা করল)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
+            <select value={form.user} onChange={e => sf("user", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option>Mina</option><option>Sadia</option><option>Karim</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফলোআপ তারিখ</label>
+            <input type="date" value={form.follow_up_date} onChange={e => sf("follow_up_date", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} min={today} />
+          </div>
+          <div className="md:col-span-3">
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট <span className="req-star">*</span></label>
+            <textarea value={form.notes} onChange={e => sf("notes", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="কথোপকথনের সারসংক্ষেপ..." />
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4">
+          <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
+          <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
+        </div>
+      </Modal>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">

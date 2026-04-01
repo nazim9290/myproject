@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import { EVENT_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -45,13 +46,50 @@ export default function CalendarPage({ students = [] }) {
         <Button icon={Plus} onClick={() => { setForm(emptyForm); setEditingId(null); setShowForm(true); }}>নতুন ইভেন্ট</Button>
       </div>
 
-      {showForm && (() => {
-        const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
-        return (
-          <Card delay={0}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold">{editingId ? "ইভেন্ট সম্পাদনা" : "নতুন ইভেন্ট"}</h3>
-              <div className="flex gap-2">
+      {/* ── ইভেন্ট ফর্ম Modal ── */}
+      <Modal isOpen={!!showForm} onClose={() => { setShowForm(false); setEditingId(null); }} title={editingId ? "ইভেন্ট সম্পাদনা" : "নতুন ইভেন্ট"} size="md">
+        {(() => {
+          const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+          return (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="md:col-span-2">
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টাইটেল <span className="req-star">*</span></label>
+                  <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Event টাইটেল..." />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
+                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    {Object.entries(EVENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট</label>
+                  <select value={form.studentId} onChange={e => setForm(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="">— কেউ নেই —</option>
+                    {students.map((s) => <option key={s.id} value={s.id}>{s.name_en}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
+                  <select value={form.staff} onChange={e => setForm(p => ({ ...p, staff: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="">—</option><option>Mina</option><option>Sadia</option><option>Karim</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ <span className="req-star">*</span></label>
+                  <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সময়</label>
+                  <input type="time" value={form.time} onChange={e => setForm(p => ({ ...p, time: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট</label>
+                  <input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="ঐচ্ছিক বিবরণ..." />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end mt-4">
                 <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
                 <Button icon={Save} size="xs" onClick={async () => {
                   if (!form.title.trim() || !form.date) { toast.error("টাইটেল ও তারিখ দিন"); return; }
@@ -71,47 +109,10 @@ export default function CalendarPage({ students = [] }) {
                   setForm(emptyForm); setShowForm(false); setEditingId(null);
                 }}>সংরক্ষণ</Button>
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="md:col-span-2">
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টাইটেল <span className="req-star">*</span></label>
-                <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Event টাইটেল..." />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
-                <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                  {Object.entries(EVENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট</label>
-                <select value={form.studentId} onChange={e => setForm(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                  <option value="">— কেউ নেই —</option>
-                  {students.map((s) => <option key={s.id} value={s.id}>{s.name_en}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
-                <select value={form.staff} onChange={e => setForm(p => ({ ...p, staff: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                  <option value="">—</option><option>Mina</option><option>Sadia</option><option>Karim</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ <span className="req-star">*</span></label>
-                <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সময়</label>
-                <input type="time" value={form.time} onChange={e => setForm(p => ({ ...p, time: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট</label>
-                <input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="ঐচ্ছিক বিবরণ..." />
-              </div>
-            </div>
-          </Card>
-        );
-      })()}
+            </>
+          );
+        })()}
+      </Modal>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[

@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import { PRIORITY_CONFIG, TASK_STATUS_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -109,48 +110,43 @@ export default function TasksPage({ students = [] }) {
         ))}
       </div>
 
-      {/* Add form */}
-      {showAddForm && (
-        <Card delay={0}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold">নতুন টাস্ক</h3>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>বাতিল</Button>
-              <Button icon={Save} size="xs" onClick={addTask}>সংরক্ষণ</Button>
-            </div>
+      {/* Add form — Modal */}
+      <Modal isOpen={!!showAddForm} onClose={() => setShowAddForm(false)} title="নতুন টাস্ক" size="md">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-3">
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টাস্কের বিবরণ <span className="req-star">*</span></label>
+            <input value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কী করতে হবে..." />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-3">
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টাস্কের বিবরণ <span className="req-star">*</span></label>
-              <input value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কী করতে হবে..." />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অ্যাসাইনি</label>
-              <select value={newTask.assignee} onChange={e => setNewTask(p => ({ ...p, assignee: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="">নির্বাচন করুন</option>
-                <option>Mina</option><option>Sadia</option><option>Karim</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অগ্রাধিকার</label>
-              <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="high">জরুরি</option><option value="medium">মাঝারি</option><option value="low">সাধারণ</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষ তারিখ</label>
-              <input type="date" value={newTask.dueDate} onChange={e => setNewTask(p => ({ ...p, dueDate: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট লিংক (ঐচ্ছিক)</label>
-              <select value={newTask.studentId} onChange={e => setNewTask(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="">— কোনো স্টুডেন্ট না —</option>
-                {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
-              </select>
-            </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অ্যাসাইনি</label>
+            <select value={newTask.assignee} onChange={e => setNewTask(p => ({ ...p, assignee: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option value="">নির্বাচন করুন</option>
+              <option>Mina</option><option>Sadia</option><option>Karim</option>
+            </select>
           </div>
-        </Card>
-      )}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অগ্রাধিকার</label>
+            <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option value="high">জরুরি</option><option value="medium">মাঝারি</option><option value="low">সাধারণ</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষ তারিখ</label>
+            <input type="date" value={newTask.dueDate} onChange={e => setNewTask(p => ({ ...p, dueDate: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট লিংক (ঐচ্ছিক)</label>
+            <select value={newTask.studentId} onChange={e => setNewTask(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option value="">— কোনো স্টুডেন্ট না —</option>
+              {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4">
+          <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>বাতিল</Button>
+          <Button icon={Save} size="xs" onClick={addTask}>সংরক্ষণ</Button>
+        </div>
+      </Modal>
 
       {/* Kanban board */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

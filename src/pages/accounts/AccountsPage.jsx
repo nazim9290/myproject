@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
@@ -54,14 +55,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
   const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
 
   return (
-    <Card delay={0}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold">{type === "income" ? "নতুন আয় এন্ট্রি" : "নতুন ব্যয় এন্ট্রি"}</h3>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
-        </div>
-      </div>
+    <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
@@ -122,7 +116,11 @@ function AddEntryForm({ type, onSave, onCancel }) {
           </div>
         )}
       </div>
-    </Card>
+      <div className="flex gap-2 mt-4 justify-end">
+        <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>বাতিল</Button>
+        <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
+      </div>
+    </>
   );
 }
 
@@ -317,8 +315,9 @@ export default function AccountsPage({ students = [] }) {
         ))}
       </div>
 
-      {showAddForm && (
-        <AddEntryForm
+      {/* ── আয়/ব্যয় এন্ট্রি Modal ── */}
+      <Modal isOpen={!!showAddForm} onClose={() => setShowAddForm(null)} title={showAddForm === "income" ? "নতুন আয় এন্ট্রি" : "নতুন ব্যয় এন্ট্রি"} size="lg">
+        {showAddForm && <AddEntryForm
           type={showAddForm}
           onCancel={() => setShowAddForm(null)}
           onSave={async (entry) => {
@@ -348,8 +347,8 @@ export default function AccountsPage({ students = [] }) {
             }
             setShowAddForm(null);
           }}
-        />
-      )}
+        />}
+      </Modal>
 
       {activeTab === "overview" && (
         <div className="grid grid-cols-12 gap-5">

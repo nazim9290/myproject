@@ -3,6 +3,7 @@ import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronL
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { PIPELINE_STATUSES } from "../../data/students";
@@ -278,20 +279,20 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         </div>
       </div>
 
-      {/* ── Delete confirm ── */}
-      {showDeleteConfirm && (
-        <Card delay={0}>
-          <div className="flex items-center gap-3">
-            <AlertTriangle size={20} style={{ color: t.rose }} />
-            <div className="flex-1">
-              <p className="text-sm font-semibold" style={{ color: t.rose }}>স্টুডেন্ট ডিলিট করবেন?</p>
-              <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.name_en} — এই অ্যাকশন undo করা যাবে না</p>
-            </div>
-            <Button variant="ghost" size="xs" onClick={() => setShowDeleteConfirm(false)}>বাতিল</Button>
-            <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>নিশ্চিত মুছুন</Button>
+      {/* ── Delete confirm Modal ── */}
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Student" size="sm">
+        <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
+          <AlertTriangle size={20} style={{ color: t.rose }} />
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: t.rose }}>স্টুডেন্ট ডিলিট করবেন?</p>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.name_en} — এই অ্যাকশন undo করা যাবে না</p>
           </div>
-        </Card>
-      )}
+        </div>
+        <div className="flex gap-2 justify-end mt-4">
+          <Button variant="ghost" size="xs" onClick={() => setShowDeleteConfirm(false)}>বাতিল</Button>
+          <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>নিশ্চিত মুছুন</Button>
+        </div>
+      </Modal>
 
       {/* ── Portal Access Toggle ── */}
       <Card delay={55}>
@@ -322,59 +323,61 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           </div>
         </div>
 
-        {showPortalForm && (
-          <div className="mt-4 pt-4 space-y-3" style={{ borderTop: `1px solid ${t.border}` }}>
-            {!portalAccess ? (
-              <>
-                <p className="text-xs" style={{ color: t.textSecondary }}>
-                  পোর্টাল চালু করলে স্টুডেন্ট <strong style={{ color: t.text }}>{student.phone}</strong> নম্বর দিয়ে লগইন করবে। একটি পাসওয়ার্ড সেট করুন:
-                </p>
-                <div className="flex items-center gap-3">
-                  <input type="text" value={portalPassword} onChange={e => setPortalPassword(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
-                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                    placeholder="পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর)" />
-                  <button onClick={async () => {
-                    if (portalPassword.length < 6) { toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর"); return; }
-                    try {
-                      await api.post(`/students/${student.id}/portal-access`, { enabled: true, password: portalPassword });
-                      setPortalAccess(true);
-                      setShowPortalForm(false);
-                      setPortalPassword("");
-                      toast.success(`${student.name_en} — পোর্টাল চালু হয়েছে`);
-                    } catch { toast.error("সার্ভার ত্রুটি"); }
-                  }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white shrink-0"
-                    style={{ background: t.emerald }}>
-                    চালু করুন
-                  </button>
-                </div>
-                <p className="text-[10px]" style={{ color: t.muted }}>
-                  লগইন: ফোন <strong>{student.phone}</strong> + পাসওয়ার্ড → স্টুডেন্ট পোর্টাল
-                </p>
-              </>
-            ) : (
+      </Card>
+
+      {/* ── Portal Access Modal ── */}
+      <Modal isOpen={showPortalForm} onClose={() => setShowPortalForm(false)} title="Student Portal Access" size="md">
+        <div className="space-y-3">
+          {!portalAccess ? (
+            <>
+              <p className="text-xs" style={{ color: t.textSecondary }}>
+                পোর্টাল চালু করলে স্টুডেন্ট <strong style={{ color: t.text }}>{student.phone}</strong> নম্বর দিয়ে লগইন করবে। একটি পাসওয়ার্ড সেট করুন:
+              </p>
               <div className="flex items-center gap-3">
-                <p className="text-xs flex-1" style={{ color: t.textSecondary }}>
-                  পোর্টাল বন্ধ করলে স্টুডেন্ট আর লগইন করতে পারবে না। ডাটা মুছবে না।
-                </p>
+                <input type="text" value={portalPassword} onChange={e => setPortalPassword(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                  placeholder="পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর)" />
                 <button onClick={async () => {
+                  if (portalPassword.length < 6) { toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর"); return; }
                   try {
-                    await api.post(`/students/${student.id}/portal-access`, { enabled: false });
-                    setPortalAccess(false);
+                    await api.post(`/students/${student.id}/portal-access`, { enabled: true, password: portalPassword });
+                    setPortalAccess(true);
                     setShowPortalForm(false);
-                    toast.success("পোর্টাল বন্ধ হয়েছে");
+                    setPortalPassword("");
+                    toast.success(`${student.name_en} — পোর্টাল চালু হয়েছে`);
                   } catch { toast.error("সার্ভার ত্রুটি"); }
                 }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white shrink-0"
-                  style={{ background: t.rose }}>
-                  নিশ্চিত — বন্ধ করুন
+                  style={{ background: t.emerald }}>
+                  চালু করুন
                 </button>
-                <button onClick={() => setShowPortalForm(false)}
-                  className="px-3 py-2 rounded-lg text-xs" style={{ color: t.muted }}>বাতিল</button>
               </div>
-            )}
-          </div>
-        )}
-      </Card>
+              <p className="text-[10px]" style={{ color: t.muted }}>
+                লগইন: ফোন <strong>{student.phone}</strong> + পাসওয়ার্ড → স্টুডেন্ট পোর্টাল
+              </p>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <p className="text-xs flex-1" style={{ color: t.textSecondary }}>
+                পোর্টাল বন্ধ করলে স্টুডেন্ট আর লগইন করতে পারবে না। ডাটা মুছবে না।
+              </p>
+              <button onClick={async () => {
+                try {
+                  await api.post(`/students/${student.id}/portal-access`, { enabled: false });
+                  setPortalAccess(false);
+                  setShowPortalForm(false);
+                  toast.success("পোর্টাল বন্ধ হয়েছে");
+                } catch { toast.error("সার্ভার ত্রুটি"); }
+              }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white shrink-0"
+                style={{ background: t.rose }}>
+                নিশ্চিত — বন্ধ করুন
+              </button>
+              <button onClick={() => setShowPortalForm(false)}
+                className="px-3 py-2 rounded-lg text-xs" style={{ color: t.muted }}>বাতিল</button>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* ══════════════════════════════════════
           PIPELINE STEPPER
@@ -560,33 +563,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             )}
           </div>
 
-          {/* Pause confirm */}
-          {showPauseConfirm && (
-            <div className="mt-3 p-3 rounded-xl flex items-center gap-3" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
-              <span className="text-lg">⏸</span>
-              <div className="flex-1">
-                <p className="text-xs font-semibold" style={{ color: t.amber }}>পাইপলাইন বিরতি দেবেন?</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>স্টুডেন্ট সাময়িক বিরতিতে যাবে — পরে Re-activate করা যাবে</p>
-              </div>
-              <button onClick={() => setShowPauseConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
-              <button onClick={() => { changeStatus("PAUSED", "পাইপলাইন বিরতি দেওয়া হয়েছে"); setShowPauseConfirm(false); }}
-                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.amber, color: "#fff" }}>বিরতি দিন</button>
-            </div>
-          )}
-
-          {/* Cancel confirm */}
-          {showCancelConfirm && (
-            <div className="mt-3 p-3 rounded-xl flex items-center gap-3" style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
-              <AlertTriangle size={16} style={{ color: t.rose }} />
-              <div className="flex-1">
-                <p className="text-xs font-semibold" style={{ color: t.rose }}>পাইপলাইন বাতিল করবেন?</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>ভবিষ্যতে Re-activate করা যাবে</p>
-              </div>
-              <button onClick={() => setShowCancelConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
-              <button onClick={() => { changeStatus("CANCELLED", "পাইপলাইন বাতিল করা হয়েছে"); setShowCancelConfirm(false); }}
-                className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>বাতিল করুন</button>
-            </div>
-          )}
+          {/* Pause ও Cancel Modal গুলো নিচে component-level-এ আছে */}
           </div>)}
         </Card>
       ) : (
@@ -756,96 +733,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           )}
         </div>
 
-        {/* Add Fee Item Form */}
-        {showFeeItemForm && (
-          <div className="p-3 rounded-xl mb-4 space-y-2.5" style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}25` }}>
-            <p className="text-xs font-semibold" style={{ color: t.purple }}>নতুন ফি খাত যোগ করুন</p>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি ক্যাটাগরি <span className="req-star">*</span></label>
-                <select value={feeItemForm.category}
-                  onChange={e => { const cat = FEE_CATEGORIES.find(c => c.id === e.target.value); setFeeItemForm(f => ({ ...f, category: e.target.value, label: cat?.label || "" })); }}
-                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                  {FEE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
-                <input type="number" value={feeItemForm.amount}
-                  onChange={e => setFeeItemForm(f => ({ ...f, amount: e.target.value }))}
-                  placeholder="যেমন: 30000"
-                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>কাস্টম লেবেল (ঐচ্ছিক)</label>
-              <input value={feeItemForm.label}
-                onChange={e => setFeeItemForm(f => ({ ...f, label: e.target.value }))}
-                placeholder="যেমন: কোর্স ফি — ব্যাচ April 2026"
-                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowFeeItemForm(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
-              <button onClick={addFeeItem} className="text-xs px-4 py-1.5 rounded-lg font-bold" style={{ background: t.purple, color: "#fff" }}>যোগ করুন</button>
-            </div>
-          </div>
-        )}
+        {/* Fee Item Form — Modal নিচে component-level-এ আছে */}
 
-        {/* Add Payment Form */}
-        {showPayForm && (
-          <div className="p-3 rounded-xl mb-4 space-y-2.5" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}25` }}>
-            <p className="text-xs font-semibold" style={{ color: t.cyan }}>নতুন পেমেন্ট এন্ট্রি</p>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি খাত <span className="req-star">*</span></label>
-                <select value={payForm.category}
-                  onChange={e => setPayForm(p => ({ ...p, category: e.target.value }))}
-                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${!payForm.category ? t.rose : t.inputBorder}`, color: t.text }}>
-                  <option value="">— খাত বেছে নিন —</option>
-                  {feeItems.length > 0
-                    ? feeItems.map(fi => <option key={fi.id} value={fi.category}>{CATEGORY_CONFIG[fi.category]?.icon} {fi.label}</option>)
-                    : FEE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)
-                  }
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
-                <input type="number" value={payForm.amount}
-                  onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))}
-                  placeholder="20000"
-                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পদ্ধতি</label>
-                <select value={payForm.method} onChange={e => setPayForm(p => ({ ...p, method: e.target.value }))}
-                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                  {["Cash", "bKash", "Nagad", "Bank Transfer", "Rocket", "Card"].map(m => <option key={m}>{m}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>নোট (ঐচ্ছিক)</label>
-                <input value={payForm.note}
-                  onChange={e => setPayForm(p => ({ ...p, note: e.target.value }))}
-                  onKeyDown={e => e.key === "Enter" && addPayment()}
-                  placeholder="যেমন: ১ম কিস্তি..."
-                  className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowPayForm(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
-              <button onClick={addPayment} className="text-xs px-4 py-1.5 rounded-lg font-bold" style={{ background: t.cyan, color: "#fff" }}>সংরক্ষণ</button>
-            </div>
-          </div>
-        )}
+        {/* Payment Form — Modal নিচে component-level-এ আছে */}
 
         {/* Payment history */}
         <div className="space-y-1.5">
@@ -1168,30 +1058,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <Plus size={10} /> ব্যাংক যোগ করুন
               </button>
             </div>
-            {showAddBank && (
-              <div className="p-3 rounded-xl mb-3" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                  {[
-                    { label: "ব্যাংকের নাম", key: "bank_name" }, { label: "শাখা", key: "branch" },
-                    { label: "অ্যাকাউন্ট নম্বর", key: "account_no" }, { label: "ব্যালেন্স", key: "balance" },
-                    { label: "ব্যালেন্স তারিখ", key: "balance_date", type: "date" },
-                    { label: "স্টেটমেন্টে নাম", key: "name_in_statement" },
-                    { label: "স্টেটমেন্টে ঠিকানা", key: "address_in_statement" },
-                  ].map(f => (
-                    <div key={f.key}>
-                      <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                      <input type={f.type || "text"} value={bankForm[f.key] || ""} onChange={e => setBankForm(p => ({ ...p, [f.key]: e.target.value }))}
-                        className="w-full px-2 py-1.5 rounded text-xs outline-none"
-                        style={{ background: t.card, border: `1px solid ${t.border}`, color: t.text }} />
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowAddBank(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
-                  <button onClick={addBank} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.emerald, color: "#fff" }}>যোগ করুন</button>
-                </div>
-              </div>
-            )}
+            {/* Add Bank — Modal নিচে component-level-এ আছে */}
             <div className="space-y-2 mb-4">
               {(sponsor.banks || []).length === 0 && <p className="text-xs py-2" style={{ color: t.muted }}>কোনো ব্যাংক অ্যাকাউন্ট নেই</p>}
               {(sponsor.banks || []).map(b => (
@@ -1234,6 +1101,155 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           </div>
         )}
       </Card>
+
+      {/* ══════════════════════════════════════
+          MODALS — Pause / Cancel / Fee Item / Payment / Add Bank
+      ══════════════════════════════════════ */}
+
+      {/* ── Pause confirm Modal ── */}
+      <Modal isOpen={showPauseConfirm} onClose={() => setShowPauseConfirm(false)} title="Pause Student" size="sm">
+        <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
+          <span className="text-lg">⏸</span>
+          <div className="flex-1">
+            <p className="text-xs font-semibold" style={{ color: t.amber }}>পাইপলাইন বিরতি দেবেন?</p>
+            <p className="text-[10px]" style={{ color: t.muted }}>স্টুডেন্ট সাময়িক বিরতিতে যাবে — পরে Re-activate করা যাবে</p>
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4">
+          <button onClick={() => setShowPauseConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+          <button onClick={() => { changeStatus("PAUSED", "পাইপলাইন বিরতি দেওয়া হয়েছে"); setShowPauseConfirm(false); }}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.amber, color: "#fff" }}>বিরতি দিন</button>
+        </div>
+      </Modal>
+
+      {/* ── Cancel confirm Modal ── */}
+      <Modal isOpen={showCancelConfirm} onClose={() => setShowCancelConfirm(false)} title="Cancel Student" size="sm">
+        <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
+          <AlertTriangle size={16} style={{ color: t.rose }} />
+          <div className="flex-1">
+            <p className="text-xs font-semibold" style={{ color: t.rose }}>পাইপলাইন বাতিল করবেন?</p>
+            <p className="text-[10px]" style={{ color: t.muted }}>ভবিষ্যতে Re-activate করা যাবে</p>
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4">
+          <button onClick={() => setShowCancelConfirm(false)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+          <button onClick={() => { changeStatus("CANCELLED", "পাইপলাইন বাতিল করা হয়েছে"); setShowCancelConfirm(false); }}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>বাতিল করুন</button>
+        </div>
+      </Modal>
+
+      {/* ── Fee Item Form Modal ── */}
+      <Modal isOpen={showFeeItemForm} onClose={() => setShowFeeItemForm(false)} title="Add Fee Item" size="md">
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি ক্যাটাগরি <span className="req-star">*</span></label>
+              <select value={feeItemForm.category}
+                onChange={e => { const cat = FEE_CATEGORIES.find(c => c.id === e.target.value); setFeeItemForm(f => ({ ...f, category: e.target.value, label: cat?.label || "" })); }}
+                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                {FEE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
+              <input type="number" value={feeItemForm.amount}
+                onChange={e => setFeeItemForm(f => ({ ...f, amount: e.target.value }))}
+                placeholder="যেমন: 30000"
+                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] block mb-1" style={{ color: t.muted }}>কাস্টম লেবেল (ঐচ্ছিক)</label>
+            <input value={feeItemForm.label}
+              onChange={e => setFeeItemForm(f => ({ ...f, label: e.target.value }))}
+              placeholder="যেমন: কোর্স ফি — ব্যাচ April 2026"
+              className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setShowFeeItemForm(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+            <button onClick={addFeeItem} className="text-xs px-4 py-1.5 rounded-lg font-bold" style={{ background: t.purple, color: "#fff" }}>যোগ করুন</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Payment Form Modal ── */}
+      <Modal isOpen={showPayForm} onClose={() => setShowPayForm(false)} title="Record Payment" size="md">
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফি খাত <span className="req-star">*</span></label>
+              <select value={payForm.category}
+                onChange={e => setPayForm(p => ({ ...p, category: e.target.value }))}
+                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${!payForm.category ? t.rose : t.inputBorder}`, color: t.text }}>
+                <option value="">— খাত বেছে নিন —</option>
+                {feeItems.length > 0
+                  ? feeItems.map(fi => <option key={fi.id} value={fi.category}>{CATEGORY_CONFIG[fi.category]?.icon} {fi.label}</option>)
+                  : FEE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)
+                }
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
+              <input type="number" value={payForm.amount}
+                onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))}
+                placeholder="20000"
+                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পদ্ধতি</label>
+              <select value={payForm.method} onChange={e => setPayForm(p => ({ ...p, method: e.target.value }))}
+                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                {["Cash", "bKash", "Nagad", "Bank Transfer", "Rocket", "Card"].map(m => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>নোট (ঐচ্ছিক)</label>
+              <input value={payForm.note}
+                onChange={e => setPayForm(p => ({ ...p, note: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && addPayment()}
+                placeholder="যেমন: ১ম কিস্তি..."
+                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setShowPayForm(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+            <button onClick={addPayment} className="text-xs px-4 py-1.5 rounded-lg font-bold" style={{ background: t.cyan, color: "#fff" }}>সংরক্ষণ</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Add Bank Account Modal ── */}
+      <Modal isOpen={showAddBank} onClose={() => setShowAddBank(false)} title="Add Bank Account" size="md">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+          {[
+            { label: "ব্যাংকের নাম", key: "bank_name" }, { label: "শাখা", key: "branch" },
+            { label: "অ্যাকাউন্ট নম্বর", key: "account_no" }, { label: "ব্যালেন্স", key: "balance" },
+            { label: "ব্যালেন্স তারিখ", key: "balance_date", type: "date" },
+            { label: "স্টেটমেন্টে নাম", key: "name_in_statement" },
+            { label: "স্টেটমেন্টে ঠিকানা", key: "address_in_statement" },
+          ].map(f => (
+            <div key={f.key}>
+              <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{f.label}</label>
+              <input type={f.type || "text"} value={bankForm[f.key] || ""} onChange={e => setBankForm(p => ({ ...p, [f.key]: e.target.value }))}
+                className="w-full px-2 py-1.5 rounded text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button onClick={() => setShowAddBank(false)} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+          <button onClick={addBank} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: t.emerald, color: "#fff" }}>যোগ করুন</button>
+        </div>
+      </Modal>
     </div>
   );
 }

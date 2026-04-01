@@ -3,6 +3,7 @@ import { DollarSign, Users, CheckCircle, Building, Plus, Save, X, Search, Edit3,
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import SortHeader from "../../components/ui/SortHeader";
@@ -135,9 +136,8 @@ export default function HRPage() {
         ))}
       </div>
 
-      {showAddForm && (
-        <Card delay={0}>
-          <h3 className="text-sm font-semibold mb-3">নতুন কর্মী যোগ করুন</h3>
+      {/* ── কর্মী যোগ/সম্পাদনা Modal ── */}
+      <Modal isOpen={!!showAddForm} onClose={() => { setShowAddForm(false); setEditingId(null); }} title={editingId ? "কর্মী সম্পাদনা" : "নতুন কর্মী যোগ করুন"} size="xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[
               { key: "name", label: "নাম *", placeholder: "কর্মচারীর পুরো নাম" },
@@ -225,8 +225,7 @@ export default function HRPage() {
             <Button size="sm" onClick={handleAdd}>{editingId ? "আপডেট করুন" : "যোগ করুন"}</Button>
             <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(false); setEditingId(null); }}>বাতিল</Button>
           </div>
-        </Card>
-      )}
+      </Modal>
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
@@ -463,11 +462,9 @@ export default function HRPage() {
               <Button size="xs" icon={Plus} onClick={() => setShowLeaveForm(!showLeaveForm)}>ছুটি আবেদন</Button>
             </div>
 
-            {/* ── ছুটি আবেদন ফর্ম ── */}
-            {showLeaveForm && (
-              <div className="p-4 rounded-xl mb-4" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}20` }}>
-                <h4 className="text-xs font-bold mb-3">নতুন ছুটি আবেদন</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* ── ছুটি আবেদন Modal ── */}
+            <Modal isOpen={!!showLeaveForm} onClose={() => setShowLeaveForm(false)} title="নতুন ছুটি আবেদন" size="md">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>কর্মচারী *</label>
                     <select value={leaveForm.employee_id} onChange={e => setLeaveForm({ ...leaveForm, employee_id: e.target.value })}
@@ -513,8 +510,7 @@ export default function HRPage() {
                   }}>আবেদন করুন</Button>
                   <Button size="xs" variant="ghost" onClick={() => setShowLeaveForm(false)}>বাতিল</Button>
                 </div>
-              </div>
-            )}
+            </Modal>
 
             {/* ── ছুটি তালিকা ── */}
             <div className="overflow-x-auto">

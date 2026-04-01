@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import { api } from "../../hooks/useAPI";
 import useSortable from "../../hooks/useSortable";
 import SortHeader from "../../components/ui/SortHeader";
@@ -77,48 +78,44 @@ export default function AgentsPage() {
         ))}
       </div>
 
-      {showForm && (
-        <Card delay={0}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold">{editingId ? "এজেন্ট সম্পাদনা" : "নতুন এজেন্ট যোগ করুন"}</h3>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
-              <Button icon={Save} size="xs" onClick={async () => {
-                if (!form.name.trim() || !form.phone.trim()) { toast.error("নাম ও ফোন দিন"); return; }
-                const payload = { name: form.name, phone: form.phone, area: form.area, nid: form.nid, bank_name: form.bank, commission_per_student: parseInt(form.commissionPerStudent) || 10000, status: "active" };
-                try {
-                  if (editingId) {
-                    const updated = await api.patch(`/agents/${editingId}`, payload);
-                    setAgents(prev => prev.map(a => a.id === editingId ? { ...a, ...updated, commissionPerStudent: updated.commission_per_student || a.commissionPerStudent } : a));
-                    toast.updated("এজেন্ট");
-                  } else {
-                    const saved = await api.post("/agents", payload);
-                    setAgents(prev => [...prev, { ...saved, students: [], commissionPerStudent: saved.commission_per_student }]);
-                    toast.success("এজেন্ট যোগ হয়েছে!");
-                  }
-                } catch (err) { toast.error(err.message || "সেভ ব্যর্থ"); }
-                setForm({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
-                setShowForm(false); setEditingId(null);
-              }}>সংরক্ষণ</Button>
+      {/* ── এজেন্ট ফর্ম Modal ── */}
+      <Modal isOpen={!!showForm} onClose={() => { setShowForm(false); setEditingId(null); }} title={editingId ? "এজেন্ট সম্পাদনা" : "নতুন এজেন্ট যোগ করুন"} size="md">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[
+            { label: "নাম *", key: "name", ph: "Agent name..." },
+            { label: "ফোন *", key: "phone", ph: "01XXXXXXXXX" },
+            { label: "এলাকা", key: "area", ph: "ঢাকা, সিলেট..." },
+            { label: "NID", key: "nid", ph: "NID নম্বর" },
+            { label: "ব্যাংক অ্যাকাউন্ট", key: "bank", ph: "ব্যাংক ও A/C নম্বর" },
+            { label: "কমিশন/স্টুডেন্ট (৳)", key: "commissionPerStudent", ph: "10000", type: "number" },
+          ].map(f => (
+            <div key={f.key}>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+              <input type={f.type || "text"} value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.ph} />
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {[
-              { label: "নাম *", key: "name", ph: "Agent name..." },
-              { label: "ফোন *", key: "phone", ph: "01XXXXXXXXX" },
-              { label: "এলাকা", key: "area", ph: "ঢাকা, সিলেট..." },
-              { label: "NID", key: "nid", ph: "NID নম্বর" },
-              { label: "ব্যাংক অ্যাকাউন্ট", key: "bank", ph: "ব্যাংক ও A/C নম্বর" },
-              { label: "কমিশন/স্টুডেন্ট (৳)", key: "commissionPerStudent", ph: "10000", type: "number" },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                <input type={f.type || "text"} value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.ph} />
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+          ))}
+        </div>
+        <div className="flex gap-2 justify-end mt-4">
+          <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
+          <Button icon={Save} size="xs" onClick={async () => {
+            if (!form.name.trim() || !form.phone.trim()) { toast.error("নাম ও ফোন দিন"); return; }
+            const payload = { name: form.name, phone: form.phone, area: form.area, nid: form.nid, bank_name: form.bank, commission_per_student: parseInt(form.commissionPerStudent) || 10000, status: "active" };
+            try {
+              if (editingId) {
+                const updated = await api.patch(`/agents/${editingId}`, payload);
+                setAgents(prev => prev.map(a => a.id === editingId ? { ...a, ...updated, commissionPerStudent: updated.commission_per_student || a.commissionPerStudent } : a));
+                toast.updated("এজেন্ট");
+              } else {
+                const saved = await api.post("/agents", payload);
+                setAgents(prev => [...prev, { ...saved, students: [], commissionPerStudent: saved.commission_per_student }]);
+                toast.success("এজেন্ট যোগ হয়েছে!");
+              }
+            } catch (err) { toast.error(err.message || "সেভ ব্যর্থ"); }
+            setForm({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
+            setShowForm(false); setEditingId(null);
+          }}>সংরক্ষণ</Button>
+        </div>
+      </Modal>
 
       {/* ── সার্চ বার ── */}
       <Card delay={100}>

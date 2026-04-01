@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
@@ -271,53 +272,50 @@ export default function InventoryPage() {
       {/* ══════════════════════ Assets ট্যাব ══════════════════════ */}
       {activeTab === "assets" && (
         <>
-          {/* ── নতুন সম্পদ যোগ ফর্ম ── */}
-          {showAddForm && (
-            <Card delay={0}>
-              <h3 className="text-sm font-semibold mb-3">নতুন সম্পদ যোগ করুন</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                {[
-                  { key: "name", label: "সম্পদের নাম *", placeholder: "e.g. Desktop Computer" },
-                  { key: "brand", label: "ব্র্যান্ড", placeholder: "e.g. Dell" },
-                  { key: "model", label: "মডেল", placeholder: "e.g. OptiPlex 3090" },
-                  { key: "quantity", label: "পরিমাণ", placeholder: "1", type: "number" },
-                  { key: "price", label: "ক্রয়মূল্য (৳/unit)", placeholder: "45000", type: "number" },
-                  { key: "vendor", label: "বিক্রেতা", placeholder: "e.g. Star Tech" },
-                  { key: "location", label: "ঠিক কোথায়", placeholder: "e.g. ক্লাসরুম ১" },
-                  { key: "assignedTo", label: "ব্যবহারকারী", placeholder: "e.g. Shared" },
-                  { key: "purchaseDate", label: "ক্রয় তারিখ", type: "date" },
-                  { key: "warranty", label: "ওয়ারেন্টি শেষ", type: "date" },
-                ].map((f) => (
-                  <div key={f.key}>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                    <input type={f.type || "text"} value={addForm[f.key]} onChange={(e) => setAddForm({ ...addForm, [f.key]: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} placeholder={f.placeholder} />
-                  </div>
-                ))}
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
-                  <select value={addForm.category} onChange={(e) => setAddForm({ ...addForm, category: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
-                    {INVENTORY_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                  </select>
+          {/* ── সম্পদ যোগ/সম্পাদনা Modal ── */}
+          <Modal isOpen={!!showAddForm} onClose={() => { setShowAddForm(false); setEditingId(null); }} title={editingId ? "আইটেম সম্পাদনা" : "নতুন আইটেম যোগ করুন"} size="lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {[
+                { key: "name", label: "সম্পদের নাম *", placeholder: "e.g. Desktop Computer" },
+                { key: "brand", label: "ব্র্যান্ড", placeholder: "e.g. Dell" },
+                { key: "model", label: "মডেল", placeholder: "e.g. OptiPlex 3090" },
+                { key: "quantity", label: "পরিমাণ", placeholder: "1", type: "number" },
+                { key: "price", label: "ক্রয়মূল্য (৳/unit)", placeholder: "45000", type: "number" },
+                { key: "vendor", label: "বিক্রেতা", placeholder: "e.g. Star Tech" },
+                { key: "location", label: "ঠিক কোথায়", placeholder: "e.g. ক্লাসরুম ১" },
+                { key: "assignedTo", label: "ব্যবহারকারী", placeholder: "e.g. Shared" },
+                { key: "purchaseDate", label: "ক্রয় তারিখ", type: "date" },
+                { key: "warranty", label: "ওয়ারেন্টি শেষ", type: "date" },
+              ].map((f) => (
+                <div key={f.key}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  <input type={f.type || "text"} value={addForm[f.key]} onChange={(e) => setAddForm({ ...addForm, [f.key]: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} placeholder={f.placeholder} />
                 </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
-                  <select value={addForm.branch} onChange={(e) => setAddForm({ ...addForm, branch: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
-                    <option>ঢাকা (HQ)</option><option>চট্টগ্রাম</option><option>সিলেট</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অবস্থা</label>
-                  <select value={addForm.condition} onChange={(e) => setAddForm({ ...addForm, condition: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
-                    {CONDITION_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
-                  </select>
-                </div>
+              ))}
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+                <select value={addForm.category} onChange={(e) => setAddForm({ ...addForm, category: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
+                  {INVENTORY_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                </select>
               </div>
-              <div className="flex gap-2 justify-end mt-3">
-                <Button variant="ghost" size="xs" onClick={() => setShowAddForm(false)}>বাতিল</Button>
-                <Button size="xs" onClick={handleAdd}>সংরক্ষণ করুন</Button>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
+                <select value={addForm.branch} onChange={(e) => setAddForm({ ...addForm, branch: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
+                  <option>ঢাকা (HQ)</option><option>চট্টগ্রাম</option><option>সিলেট</option>
+                </select>
               </div>
-            </Card>
-          )}
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অবস্থা</label>
+                <select value={addForm.condition} onChange={(e) => setAddForm({ ...addForm, condition: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
+                  {CONDITION_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <Button variant="ghost" size="xs" onClick={() => { setShowAddForm(false); setEditingId(null); }}>বাতিল</Button>
+              <Button size="xs" onClick={handleAdd}>সংরক্ষণ করুন</Button>
+            </div>
+          </Modal>
 
           {/* ── Assets টেবিল ── */}
           <Card delay={100}>

@@ -3,6 +3,7 @@ import { AlertCircle, Save, Plus, Download, Settings, Search, X, ArrowLeft, Phon
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
@@ -645,16 +646,20 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           ))}
         </div>
 
-        {/* Confirm Actions */}
-        {confirmAction && <Card delay={0}><div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
-          <div className="flex-1">
-            <p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p>
-            <p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name} — {confirmAction.type==="delete"?"সব ডাটা মুছে যাবে":"স্টুডেন্ট তালিকায় যোগ হবে"}</p>
-          </div>
-          <Button variant="ghost" size="xs" onClick={() => setConfirmAction(null)}>বাতিল</Button>
-          <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={() => confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
-        </div></Card>}
+        {/* ══════════ CONFIRM ACTION MODAL (DETAIL VIEW) ══════════ */}
+        <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.type==="delete"?"ভিজিটর মুছে ফেলুন":"ভর্তি নিশ্চিত করুন"} size="sm">
+          {confirmAction && <div className="flex items-center gap-4">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
+            <div className="flex-1">
+              <p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p>
+              <p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name} — {confirmAction.type==="delete"?"সব ডাটা মুছে যাবে":"স্টুডেন্ট তালিকায় যোগ হবে"}</p>
+            </div>
+          </div>}
+          {confirmAction && <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" size="xs" onClick={() => setConfirmAction(null)}>বাতিল</Button>
+            <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={() => confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
+          </div>}
+        </Modal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>ব্যক্তিগত তথ্য</h4>
@@ -739,15 +744,22 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         </select>
       </div>
 
-      {confirmAction && <Card delay={0}><div className="flex items-center gap-4">
-        <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
-        <div className="flex-1"><p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p><p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name}</p></div>
-        <Button variant="ghost" size="xs" onClick={()=>setConfirmAction(null)}>বাতিল</Button>
-        <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={()=>confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
-      </div></Card>}
+      {/* ══════════ CONFIRM ACTION MODAL (LIST VIEW) ══════════ */}
+      <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.type==="delete"?"ভিজিটর মুছে ফেলুন":"ভর্তি নিশ্চিত করুন"} size="sm">
+        {confirmAction && <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
+          <div className="flex-1"><p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p><p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name}</p></div>
+        </div>}
+        {confirmAction && <div className="flex justify-end gap-2 mt-4">
+          <Button variant="ghost" size="xs" onClick={()=>setConfirmAction(null)}>বাতিল</Button>
+          <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={()=>confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
+        </div>}
+      </Modal>
 
-      {showForm && <Card delay={0}><h3 className="text-sm font-semibold mb-4">+ নতুন ভিজিটর</h3>
-        <NewVisitorForm onSave={async (v)=>{try{await api.post("/visitors",v);}catch(err){console.error("[Visitor Create]",err);toast.error("সার্ভারে সেভ ব্যর্থ");}setShowForm(false);toast.created("ভিজিটর");fetchVisitors();}} onCancel={()=>setShowForm(false)}/></Card>}
+      {/* ══════════ NEW VISITOR MODAL ══════════ */}
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="নতুন ভিজিটর যোগ করুন" size="xl">
+        <NewVisitorForm onSave={async (v)=>{try{await api.post("/visitors",v);}catch(err){console.error("[Visitor Create]",err);toast.error("সার্ভারে সেভ ব্যর্থ");}setShowForm(false);toast.created("ভিজিটর");fetchVisitors();}} onCancel={()=>setShowForm(false)}/>
+      </Modal>
 
       <Card delay={100}>
         <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {serverTotal} জন ভিজিটর{loading && " — লোড হচ্ছে..."}</p>

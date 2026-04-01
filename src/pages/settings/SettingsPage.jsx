@@ -3,6 +3,7 @@ import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, 
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
@@ -246,7 +247,6 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
     setFieldEditorDocType(dt);
     setFieldEditorFields(JSON.parse(JSON.stringify(dt.fields || [])));
     setSubjectEditorDocType(null); // close subject editor
-    setTimeout(() => document.getElementById("field-editor-panel")?.scrollIntoView({ behavior: "smooth" }), 150);
   };
 
   const addNewField = () => {
@@ -308,12 +308,11 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
     return null;
   };
 
-  // Subject Editor খোলো + auto scroll
+  // Subject Editor খোলো
   const openSubjectEditor = (dt) => {
     setSubjectEditorDocType(dt);
     setSubjectEditorFields(JSON.parse(JSON.stringify(dt.fields || [])));
     setNewSubjectInputs({});
-    setTimeout(() => document.getElementById("subject-editor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
   };
 
   // Subject Editor বন্ধ করো
@@ -782,75 +781,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             <Button icon={Plus} size="xs" onClick={() => { setShowDocTypeForm(true); setEditingDocTypeId(null); setDocTypeForm({ name: "", name_bn: "", category: "personal" }); setDocTypeFields([]); }}>নতুন টাইপ</Button>
           </div>
 
-          {/* Add/Edit Form */}
-          {showDocTypeForm && (
-            <div className="mb-4 p-4 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English) <span className="req-star">*</span></label>
-                  <input value={docTypeForm.name} onChange={e => setDocTypeForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Birth Certificate" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
-                  <input value={docTypeForm.name_bn} onChange={e => setDocTypeForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="জন্ম সনদ" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
-                  <select value={docTypeForm.category} onChange={e => setDocTypeForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="personal">ব্যক্তিগত</option>
-                    <option value="academic">একাডেমিক</option>
-                    <option value="financial">আর্থিক</option>
-                    <option value="other">অন্যান্য</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Fields */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>Custom Fields ({docTypeFields.length})</label>
-                  <button onClick={() => setDocTypeFields(prev => [...prev, { key: "", label: "", label_en: "", type: "text" }])}
-                    className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>+ Field যোগ</button>
-                </div>
-                <div className="space-y-2">
-                  {docTypeFields.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <input value={f.key} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], key: e.target.value }; setDocTypeFields(u); }}
-                        className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="key (e.g. BirthRegNo)" />
-                      <input value={f.label} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label: e.target.value }; setDocTypeFields(u); }}
-                        className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="লেবেল (বাংলা)" />
-                      <input value={f.label_en} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label_en: e.target.value }; setDocTypeFields(u); }}
-                        className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Label (English)" />
-                      <select value={f.type} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], type: e.target.value }; setDocTypeFields(u); }}
-                        className="px-2 py-1.5 rounded-lg text-xs outline-none w-20" style={is}>
-                        <option value="text">Text</option><option value="date">Date</option><option value="select">Select</option>
-                      </select>
-                      <button onClick={() => setDocTypeFields(prev => prev.filter((_, j) => j !== i))} style={{ color: t.muted }}><X size={14} /></button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="xs" icon={X} onClick={() => setShowDocTypeForm(false)}>বাতিল</Button>
-                <Button size="xs" icon={Save} onClick={async () => {
-                  if (!docTypeForm.name.trim()) { toast.error("নাম দিন"); return; }
-                  try {
-                    if (editingDocTypeId) {
-                      const updated = await api.patch(`/docdata/types/${editingDocTypeId}`, { ...docTypeForm, fields: docTypeFields });
-                      setDocTypes(prev => prev.map(d => d.id === editingDocTypeId ? updated : d));
-                      toast.updated(docTypeForm.name);
-                    } else {
-                      const saved = await api.post("/docdata/types", { ...docTypeForm, fields: docTypeFields });
-                      setDocTypes(prev => [...prev, saved]);
-                      toast.success(`${docTypeForm.name} — যোগ হয়েছে`);
-                    }
-                    setShowDocTypeForm(false);
-                  } catch (err) { toast.error(err.message); }
-                }}>সংরক্ষণ</Button>
-              </div>
-            </div>
-          )}
+          {/* Add/Edit Form — Modal */}
 
           {/* List */}
           <div className="space-y-2">
@@ -905,407 +836,438 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
           </div>
         </Card>
 
-        {/* ── Variables Viewer Panel ── */}
-        {variablesDocType && (
-          <Card delay={50}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-semibold" style={{ color: t.cyan }}>{variablesDocType.name} — Template Variables</h3>
-                <p className="text-[10px]" style={{ color: t.muted }}>Click any variable to copy. Use these in .docx templates.</p>
-              </div>
-              <div className="flex items-center gap-2">
+        {/* ── Variables Viewer Modal ── */}
+        <Modal isOpen={!!variablesDocType} onClose={() => setVariablesDocType(null)}
+          title={variablesDocType ? `${variablesDocType.name} — Template Variables` : ""} subtitle="Click any variable to copy. Use these in .docx templates." size="lg">
+          {variablesDocType && (
+            <>
+              <div className="flex justify-end mb-3">
                 <button onClick={() => copyAllVariables(variablesDocType)} className="text-[10px] px-2 py-1 rounded-lg"
                   style={{ background: `${t.cyan}15`, color: t.cyan }}>Copy All</button>
-                <button onClick={() => setVariablesDocType(null)} style={{ color: t.muted }}><X size={16} /></button>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(variablesDocType.fields || []).filter(f => f.type !== "section_header").map(f => (
-                f.type === "repeatable" ? (
-                  (f.subfields || []).map(sf => (
-                    <button key={`${f.key}_${sf.key}`} onClick={() => copyVariable(`Member1_${sf.key}`)}
+              <div className="flex flex-wrap gap-1.5">
+                {(variablesDocType.fields || []).filter(f => f.type !== "section_header").map(f => (
+                  f.type === "repeatable" ? (
+                    (f.subfields || []).map(sf => (
+                      <button key={`${f.key}_${sf.key}`} onClick={() => copyVariable(`Member1_${sf.key}`)}
+                        className="px-2 py-1 rounded-lg text-[10px] font-mono transition-all"
+                        style={{ background: `${t.amber}12`, color: t.amber, border: `1px solid ${t.amber}25` }}
+                        onMouseEnter={e => { e.currentTarget.style.background = `${t.amber}25`; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = `${t.amber}12`; }}>
+                        {"{{"}Member1_{sf.key}{"}}"}
+                      </button>
+                    ))
+                  ) : (
+                    <button key={f.key} onClick={() => copyVariable(f.key)}
                       className="px-2 py-1 rounded-lg text-[10px] font-mono transition-all"
-                      style={{ background: `${t.amber}12`, color: t.amber, border: `1px solid ${t.amber}25` }}
-                      onMouseEnter={e => { e.currentTarget.style.background = `${t.amber}25`; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = `${t.amber}12`; }}>
-                      {"{{"}Member1_{sf.key}{"}}"}
+                      style={{ background: `${t.cyan}12`, color: t.cyan, border: `1px solid ${t.cyan}25` }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${t.cyan}25`; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = `${t.cyan}12`; }}>
+                      {`{{${f.key}}}`}
                     </button>
-                  ))
-                ) : (
-                  <button key={f.key} onClick={() => copyVariable(f.key)}
-                    className="px-2 py-1 rounded-lg text-[10px] font-mono transition-all"
-                    style={{ background: `${t.cyan}12`, color: t.cyan, border: `1px solid ${t.cyan}25` }}
-                    onMouseEnter={e => { e.currentTarget.style.background = `${t.cyan}25`; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = `${t.cyan}12`; }}>
-                    {`{{${f.key}}}`}
-                  </button>
-                )
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {/* ── Field Editor Panel ── */}
-        {fieldEditorDocType && (
-          <Card delay={100}>
-            <div id="field-editor-panel" className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-semibold" style={{ color: t.emerald }}>{fieldEditorDocType.name} — Fields</h3>
-                <p className="text-[10px]" style={{ color: t.muted }}>Add, remove, or reorder fields. Custom fields will only apply to your agency.</p>
+                  )
+                ))}
               </div>
-              <button onClick={() => setFieldEditorDocType(null)} className="p-1 rounded-lg" style={{ color: t.muted }}><X size={16} /></button>
-            </div>
+            </>
+          )}
+        </Modal>
 
-            {/* Field list */}
-            <div className="space-y-1.5 mb-4">
-              {fieldEditorFields.map((f, idx) => (
-                <div key={idx} className="flex items-center gap-2 p-2 rounded-lg text-xs" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
-                  <div className="flex flex-col gap-0.5">
-                    <button onClick={() => moveField(idx, -1)} disabled={idx === 0} className="text-[10px] px-1 rounded" style={{ color: idx === 0 ? t.muted : t.cyan }}>▲</button>
-                    <button onClick={() => moveField(idx, 1)} disabled={idx === fieldEditorFields.length - 1} className="text-[10px] px-1 rounded" style={{ color: idx === fieldEditorFields.length - 1 ? t.muted : t.cyan }}>▼</button>
+        {/* ── Field Editor Modal ── */}
+        <Modal isOpen={!!fieldEditorDocType} onClose={() => setFieldEditorDocType(null)}
+          title={fieldEditorDocType ? `${fieldEditorDocType.name} — Fields` : ""} subtitle="Add, remove, or reorder fields. Custom fields will only apply to your agency." size="xl">
+          {fieldEditorDocType && (
+            <>
+              {/* Field list */}
+              <div className="space-y-1.5 mb-4">
+                {fieldEditorFields.map((f, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg text-xs" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                    <div className="flex flex-col gap-0.5">
+                      <button onClick={() => moveField(idx, -1)} disabled={idx === 0} className="text-[10px] px-1 rounded" style={{ color: idx === 0 ? t.muted : t.cyan }}>▲</button>
+                      <button onClick={() => moveField(idx, 1)} disabled={idx === fieldEditorFields.length - 1} className="text-[10px] px-1 rounded" style={{ color: idx === fieldEditorFields.length - 1 ? t.muted : t.cyan }}>▼</button>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold">{f.label_en || f.label || f.key}</span>
+                      <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>{f.type}</span>
+                      {f.required && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.rose}15`, color: t.rose }}>required</span>}
+                      <span className="ml-2 text-[9px]" style={{ color: t.muted }}>key: {f.key}</span>
+                    </div>
+                    <button onClick={() => removeField(idx)} className="p-1 rounded" style={{ color: t.muted }}
+                      onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
+                      <X size={13} />
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-semibold">{f.label_en || f.label || f.key}</span>
-                    <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>{f.type}</span>
-                    {f.required && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.rose}15`, color: t.rose }}>required</span>}
-                    <span className="ml-2 text-[9px]" style={{ color: t.muted }}>key: {f.key}</span>
-                  </div>
-                  <button onClick={() => removeField(idx)} className="p-1 rounded" style={{ color: t.muted }}
-                    onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
-                    <X size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Add new field */}
-            <div className="p-3 rounded-xl mb-4" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}20` }}>
-              <p className="text-[10px] font-semibold mb-2" style={{ color: t.emerald }}>+ Add Custom Field</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <input value={newField.key} onChange={e => setNewField(p => ({ ...p, key: e.target.value.replace(/\s/g, "_") }))}
-                  className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="field_key" />
-                <input value={newField.label_en} onChange={e => setNewField(p => ({ ...p, label_en: e.target.value }))}
-                  className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Label (English)" />
-                <select value={newField.type} onChange={e => setNewField(p => ({ ...p, type: e.target.value }))}
-                  className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                  <option value="text">Text</option>
-                  <option value="date">Date</option>
-                  <option value="select">Select</option>
-                  <option value="section_header">Section Header</option>
-                </select>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1 text-[10px]" style={{ color: t.muted }}>
-                    <input type="checkbox" checked={newField.required} onChange={e => setNewField(p => ({ ...p, required: e.target.checked }))} /> Required
-                  </label>
-                  <button onClick={addNewField} className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                    style={{ background: t.emerald, color: "#fff" }}>Add</button>
+              {/* Add new field */}
+              <div className="p-3 rounded-xl mb-4" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}20` }}>
+                <p className="text-[10px] font-semibold mb-2" style={{ color: t.emerald }}>+ Add Custom Field</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <input value={newField.key} onChange={e => setNewField(p => ({ ...p, key: e.target.value.replace(/\s/g, "_") }))}
+                    className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="field_key" />
+                  <input value={newField.label_en} onChange={e => setNewField(p => ({ ...p, label_en: e.target.value }))}
+                    className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Label (English)" />
+                  <select value={newField.type} onChange={e => setNewField(p => ({ ...p, type: e.target.value }))}
+                    className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                    <option value="text">Text</option>
+                    <option value="date">Date</option>
+                    <option value="select">Select</option>
+                    <option value="section_header">Section Header</option>
+                  </select>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1 text-[10px]" style={{ color: t.muted }}>
+                      <input type="checkbox" checked={newField.required} onChange={e => setNewField(p => ({ ...p, required: e.target.checked }))} /> Required
+                    </label>
+                    <button onClick={addNewField} className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ background: t.emerald, color: "#fff" }}>Add</button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end">
-              <Button icon={Save} size="sm" onClick={saveFieldEditor} disabled={savingFields}>
-                {savingFields ? "Saving..." : "Save Fields"}
-              </Button>
-            </div>
-          </Card>
-        )}
+              <div className="flex justify-end">
+                <Button icon={Save} size="sm" onClick={saveFieldEditor} disabled={savingFields}>
+                  {savingFields ? "Saving..." : "Save Fields"}
+                </Button>
+              </div>
+            </>
+          )}
+        </Modal>
 
-        {/* ── Subject List Editor Panel ── */}
-        {subjectEditorDocType && subjectEditorFields && (() => {
-          const info = getConditionalInfo(subjectEditorFields);
-          if (!info) return null;
-          const groups = Object.entries(info.groups);
-          const defaultList = (() => {
-            for (const f of subjectEditorFields) {
-              if (f.type === "repeatable") {
-                for (const sf of (f.subfields || [])) {
-                  if (sf.conditional_options?.default) return sf.conditional_options.default;
+        {/* ── Subject List Editor Modal ── */}
+        <Modal isOpen={!!(subjectEditorDocType && subjectEditorFields)} onClose={closeSubjectEditor}
+          title={subjectEditorDocType ? `${subjectEditorDocType.name_bn || subjectEditorDocType.name} — Subject Lists` : ""}
+          subtitle="প্রতিটি group-এর জন্য subject dropdown কাস্টমাইজ করুন" size="xl">
+          {subjectEditorDocType && subjectEditorFields && (() => {
+            const info = getConditionalInfo(subjectEditorFields);
+            if (!info) return null;
+            const groups = Object.entries(info.groups);
+            const defaultList = (() => {
+              for (const f of subjectEditorFields) {
+                if (f.type === "repeatable") {
+                  for (const sf of (f.subfields || [])) {
+                    if (sf.conditional_options?.default) return sf.conditional_options.default;
+                  }
                 }
               }
-            }
-            return [];
-          })();
+              return [];
+            })();
 
-          return (
-            <Card delay={100}>
-              <div id="subject-editor-panel" className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <List size={14} style={{ color: t.purple }} />
-                    {subjectEditorDocType.name_bn || subjectEditorDocType.name} — Subject Lists
-                  </h3>
-                  <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
-                    প্রতিটি group-এর জন্য subject dropdown কাস্টমাইজ করুন
-                  </p>
-                </div>
-                <button onClick={closeSubjectEditor} className="p-1 rounded-lg" style={{ color: t.muted }}>
-                  <X size={16} />
-                </button>
-              </div>
+            return (
+              <>
+                <div className="space-y-4">
+                  {/* ── প্রতিটি Group (Science, Commerce, Arts/Humanities ইত্যাদি) ── */}
+                  {groups.map(([groupName, subjects]) => (
+                    <div key={groupName} className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                      <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.purple }} />
+                        {groupName}
+                        <span className="font-normal" style={{ color: t.muted }}>({subjects.length} subjects)</span>
+                      </p>
 
-              <div className="space-y-4">
-                {/* ── প্রতিটি Group (Science, Commerce, Arts/Humanities ইত্যাদি) ── */}
-                {groups.map(([groupName, subjects]) => (
-                  <div key={groupName} className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                      {/* বিদ্যমান subjects তালিকা */}
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {subjects.map(sub => (
+                          <span key={sub} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px]"
+                            style={{ background: `${t.purple}12`, color: t.text, border: `1px solid ${t.purple}25` }}>
+                            {sub}
+                            <button onClick={() => removeSubjectFromGroup(groupName, sub)}
+                              className="ml-0.5 hover:opacity-80" style={{ color: t.rose }}>
+                              <X size={11} />
+                            </button>
+                          </span>
+                        ))}
+                        {subjects.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো subject নেই</p>}
+                      </div>
+
+                      {/* নতুন subject যোগ করার input */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={newSubjectInputs[groupName] || ""}
+                          onChange={e => setNewSubjectInputs(prev => ({ ...prev, [groupName]: e.target.value }))}
+                          onKeyDown={e => { if (e.key === "Enter") addSubjectToGroup(groupName); }}
+                          className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
+                          style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                          placeholder={`নতুন subject যোগ করুন (${groupName})...`}
+                        />
+                        <button onClick={() => addSubjectToGroup(groupName)}
+                          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium"
+                          style={{ background: `${t.purple}18`, color: t.purple, border: `1px solid ${t.purple}30` }}>
+                          <Plus size={11} /> যোগ
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* ── Default Subject List (যখন কোনো group select না থাকে) ── */}
+                  <div className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
                     <p className="text-xs font-semibold mb-2 flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.purple }} />
-                      {groupName}
-                      <span className="font-normal" style={{ color: t.muted }}>({subjects.length} subjects)</span>
+                      <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.amber }} />
+                      Default Subjects
+                      <span className="font-normal" style={{ color: t.muted }}>(group সিলেক্ট না হলে এগুলো দেখাবে)</span>
                     </p>
 
-                    {/* বিদ্যমান subjects তালিকা */}
                     <div className="flex flex-wrap gap-1.5 mb-2">
-                      {subjects.map(sub => (
+                      {defaultList.map(sub => (
                         <span key={sub} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px]"
-                          style={{ background: `${t.purple}12`, color: t.text, border: `1px solid ${t.purple}25` }}>
+                          style={{ background: `${t.amber}12`, color: t.text, border: `1px solid ${t.amber}25` }}>
                           {sub}
-                          <button onClick={() => removeSubjectFromGroup(groupName, sub)}
+                          <button onClick={() => removeSubjectFromDefault(sub)}
                             className="ml-0.5 hover:opacity-80" style={{ color: t.rose }}>
                             <X size={11} />
                           </button>
                         </span>
                       ))}
-                      {subjects.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো subject নেই</p>}
+                      {defaultList.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো default subject নেই</p>}
                     </div>
 
-                    {/* নতুন subject যোগ করার input */}
                     <div className="flex items-center gap-2">
                       <input
-                        value={newSubjectInputs[groupName] || ""}
-                        onChange={e => setNewSubjectInputs(prev => ({ ...prev, [groupName]: e.target.value }))}
-                        onKeyDown={e => { if (e.key === "Enter") addSubjectToGroup(groupName); }}
+                        value={newSubjectInputs["__default__"] || ""}
+                        onChange={e => setNewSubjectInputs(prev => ({ ...prev, "__default__": e.target.value }))}
+                        onKeyDown={e => { if (e.key === "Enter") addSubjectToDefault(); }}
                         className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
                         style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                        placeholder={`নতুন subject যোগ করুন (${groupName})...`}
+                        placeholder="নতুন default subject যোগ করুন..."
                       />
-                      <button onClick={() => addSubjectToGroup(groupName)}
+                      <button onClick={addSubjectToDefault}
                         className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium"
-                        style={{ background: `${t.purple}18`, color: t.purple, border: `1px solid ${t.purple}30` }}>
+                        style={{ background: `${t.amber}18`, color: t.amber, border: `1px solid ${t.amber}30` }}>
                         <Plus size={11} /> যোগ
                       </button>
                     </div>
                   </div>
-                ))}
-
-                {/* ── Default Subject List (যখন কোনো group select না থাকে) ── */}
-                <div className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
-                  <p className="text-xs font-semibold mb-2 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.amber }} />
-                    Default Subjects
-                    <span className="font-normal" style={{ color: t.muted }}>(group সিলেক্ট না হলে এগুলো দেখাবে)</span>
-                  </p>
-
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {defaultList.map(sub => (
-                      <span key={sub} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px]"
-                        style={{ background: `${t.amber}12`, color: t.text, border: `1px solid ${t.amber}25` }}>
-                        {sub}
-                        <button onClick={() => removeSubjectFromDefault(sub)}
-                          className="ml-0.5 hover:opacity-80" style={{ color: t.rose }}>
-                          <X size={11} />
-                        </button>
-                      </span>
-                    ))}
-                    {defaultList.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো default subject নেই</p>}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={newSubjectInputs["__default__"] || ""}
-                      onChange={e => setNewSubjectInputs(prev => ({ ...prev, "__default__": e.target.value }))}
-                      onKeyDown={e => { if (e.key === "Enter") addSubjectToDefault(); }}
-                      className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
-                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                      placeholder="নতুন default subject যোগ করুন..."
-                    />
-                    <button onClick={addSubjectToDefault}
-                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium"
-                      style={{ background: `${t.amber}18`, color: t.amber, border: `1px solid ${t.amber}30` }}>
-                      <Plus size={11} /> যোগ
-                    </button>
-                  </div>
                 </div>
-              </div>
 
-              {/* ── সংরক্ষণ বাটন ── */}
-              <div className="flex justify-end mt-4">
-                <Button icon={Save} size="sm" onClick={saveSubjectChanges} disabled={savingSubjects}>
-                  {savingSubjects ? "সংরক্ষণ হচ্ছে..." : "পরিবর্তন সংরক্ষণ করুন"}
-                </Button>
+                {/* ── সংরক্ষণ বাটন ── */}
+                <div className="flex justify-end mt-4">
+                  <Button icon={Save} size="sm" onClick={saveSubjectChanges} disabled={savingSubjects}>
+                    {savingSubjects ? "সংরক্ষণ হচ্ছে..." : "পরিবর্তন সংরক্ষণ করুন"}
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
+        </Modal>
+
+        {/* ── Doc Type Add/Edit Form Modal ── */}
+        <Modal isOpen={showDocTypeForm} onClose={() => setShowDocTypeForm(false)}
+          title={editingDocTypeId ? "ডকুমেন্ট টাইপ সম্পাদনা" : "নতুন ডকুমেন্ট টাইপ যোগ"} size="md">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English) <span className="req-star">*</span></label>
+                <input value={docTypeForm.name} onChange={e => setDocTypeForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Birth Certificate" />
               </div>
-            </Card>
-          );
-        })()}
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
+                <input value={docTypeForm.name_bn} onChange={e => setDocTypeForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="জন্ম সনদ" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+                <select value={docTypeForm.category} onChange={e => setDocTypeForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                  <option value="personal">ব্যক্তিগত</option>
+                  <option value="academic">একাডেমিক</option>
+                  <option value="financial">আর্থিক</option>
+                  <option value="other">অন্যান্য</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Fields */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>Custom Fields ({docTypeFields.length})</label>
+                <button onClick={() => setDocTypeFields(prev => [...prev, { key: "", label: "", label_en: "", type: "text" }])}
+                  className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>+ Field যোগ</button>
+              </div>
+              <div className="space-y-2">
+                {docTypeFields.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input value={f.key} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], key: e.target.value }; setDocTypeFields(u); }}
+                      className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="key (e.g. BirthRegNo)" />
+                    <input value={f.label} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label: e.target.value }; setDocTypeFields(u); }}
+                      className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="লেবেল (বাংলা)" />
+                    <input value={f.label_en} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label_en: e.target.value }; setDocTypeFields(u); }}
+                      className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Label (English)" />
+                    <select value={f.type} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], type: e.target.value }; setDocTypeFields(u); }}
+                      className="px-2 py-1.5 rounded-lg text-xs outline-none w-20" style={is}>
+                      <option value="text">Text</option><option value="date">Date</option><option value="select">Select</option>
+                    </select>
+                    <button onClick={() => setDocTypeFields(prev => prev.filter((_, j) => j !== i))} style={{ color: t.muted }}><X size={14} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowDocTypeForm(false)}>বাতিল</Button>
+              <Button size="xs" icon={Save} onClick={async () => {
+                if (!docTypeForm.name.trim()) { toast.error("নাম দিন"); return; }
+                try {
+                  if (editingDocTypeId) {
+                    const updated = await api.patch(`/docdata/types/${editingDocTypeId}`, { ...docTypeForm, fields: docTypeFields });
+                    setDocTypes(prev => prev.map(d => d.id === editingDocTypeId ? updated : d));
+                    toast.updated(docTypeForm.name);
+                  } else {
+                    const saved = await api.post("/docdata/types", { ...docTypeForm, fields: docTypeFields });
+                    setDocTypes(prev => [...prev, saved]);
+                    toast.success(`${docTypeForm.name} — যোগ হয়েছে`);
+                  }
+                  setShowDocTypeForm(false);
+                } catch (err) { toast.error(err.message); }
+              }}>সংরক্ষণ</Button>
+            </div>
+          </div>
+        </Modal>
       </div>}
 
       {/* ── পাইপলাইন সেটিংস — Dynamic Checklist Admin ── */}
       {activeTab === "pipeline" && <div className="space-y-5">
         {/* ── ধাপ তালিকা ── */}
-        {!editingStep && (
-          <Card delay={50}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-semibold flex items-center gap-2"><GitBranch size={14} /> পাইপলাইন ধাপ ও চেকলিস্ট</h3>
-                <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>প্রতিটি ধাপে ক্লিক করে চেকলিস্ট আইটেম add/edit/delete করুন</p>
+        <Card delay={50}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><GitBranch size={14} /> পাইপলাইন ধাপ ও চেকলিস্ট</h3>
+              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>প্রতিটি ধাপে ক্লিক করে চেকলিস্ট আইটেম add/edit/delete করুন</p>
+            </div>
+            <Button variant="ghost" size="xs" icon={RotateCcw} onClick={resetToDefaults}>ডিফল্ট রিসেট</Button>
+          </div>
+          <div className="space-y-1.5">
+            {pipelineStatuses.map((s, i) => {
+              const ps = PIPELINE_STATUSES.find(p => p.code === s);
+              const conf = stepConfigs?.[s] || {};
+              const itemCount = (conf.checklist || []).length;
+              const reqCount = (conf.checklist || []).filter(c => c.req).length;
+              return (
+                <div key={s} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+                  style={{ background: t.inputBg }}
+                  onClick={() => openStepEdit(s)}
+                  onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                  onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
+                  <span className="text-[10px] font-mono w-6 text-center" style={{ color: t.muted }}>{i + 1}</span>
+                  <span className="text-base">{conf.icon || "📋"}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold">{ps?.label || s}</span>
+                      <span className="text-[9px] font-mono" style={{ color: t.muted }}>{s}</span>
+                    </div>
+                    <p className="text-[10px] truncate" style={{ color: t.muted }}>{conf.hint || "—"}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px]" style={{ color: t.textSecondary }}>{itemCount} আইটেম</p>
+                    <p className="text-[9px]" style={{ color: t.muted }}>{reqCount} আবশ্যক</p>
+                  </div>
+                  <Edit3 size={13} style={{ color: t.muted }} />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* ── ধাপ Edit Modal ── */}
+        <Modal isOpen={!!editingStep} onClose={() => setEditingStep(null)}
+          title={editingStep ? `${(() => { const ps = PIPELINE_STATUSES.find(p => p.code === editingStep); return ps?.label || editingStep; })()} — চেকলিস্ট সম্পাদনা` : ""}
+          subtitle={editingStep ? `ধাপ: ${editingStep}` : ""} size="xl">
+          {editingStep && (
+            <>
+              {/* ── Step meta fields ── */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>আইকন (Emoji)</label>
+                  <input value={editStepIcon} onChange={e => setEditStepIcon(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                    placeholder="🚶" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরবর্তী ধাপের বাটন টেক্সট</label>
+                  <input value={editStepNextLabel} onChange={e => setEditStepNextLabel(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                    placeholder="পরবর্তী ধাপে যান" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধাপের বিবরণ / Hint</label>
+                  <input value={editStepHint} onChange={e => setEditStepHint(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                    placeholder="এই ধাপে কী করতে হবে..." />
+                </div>
               </div>
-              <Button variant="ghost" size="xs" icon={RotateCcw} onClick={resetToDefaults}>ডিফল্ট রিসেট</Button>
-            </div>
-            <div className="space-y-1.5">
-              {pipelineStatuses.map((s, i) => {
-                const ps = PIPELINE_STATUSES.find(p => p.code === s);
-                const conf = stepConfigs?.[s] || {};
-                const itemCount = (conf.checklist || []).length;
-                const reqCount = (conf.checklist || []).filter(c => c.req).length;
-                return (
-                  <div key={s} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
-                    style={{ background: t.inputBg }}
-                    onClick={() => openStepEdit(s)}
-                    onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                    onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
-                    <span className="text-[10px] font-mono w-6 text-center" style={{ color: t.muted }}>{i + 1}</span>
-                    <span className="text-base">{conf.icon || "📋"}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold">{ps?.label || s}</span>
-                        <span className="text-[9px] font-mono" style={{ color: t.muted }}>{s}</span>
-                      </div>
-                      <p className="text-[10px] truncate" style={{ color: t.muted }}>{conf.hint || "—"}</p>
+
+              {/* ── চেকলিস্ট আইটেম তালিকা ── */}
+              <div className="mb-3">
+                <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>
+                  চেকলিস্ট আইটেম ({editChecklist.length} টি)
+                </p>
+
+                <div className="space-y-1">
+                  {editChecklist.map((item, idx) => (
+                    <div key={item.id} className="flex items-center gap-2 px-3 py-2 rounded-lg group"
+                      style={{ background: t.inputBg }}>
+                      <span className="text-[10px] font-mono w-5 text-center shrink-0" style={{ color: t.muted }}>{idx + 1}</span>
+
+                      {/* Required toggle */}
+                      <button onClick={() => toggleItemReq(item.id)} className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold transition"
+                        style={{ background: item.req ? `${t.rose}15` : `${t.muted}15`, color: item.req ? t.rose : t.muted }}
+                        title={item.req ? "আবশ্যক — ক্লিক করে ঐচ্ছিক করুন" : "ঐচ্ছিক — ক্লিক করে আবশ্যক করুন"}>
+                        {item.req ? "আবশ্যক" : "ঐচ্ছিক"}
+                      </button>
+
+                      {/* Item text (inline edit) */}
+                      {editingItemId === item.id ? (
+                        <div className="flex-1 flex items-center gap-1">
+                          <input value={editItemText} onChange={e => setEditItemText(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") saveItemEdit(item.id); if (e.key === "Escape") setEditingItemId(null); }}
+                            className="flex-1 px-2 py-1 rounded text-xs outline-none" autoFocus
+                            style={{ background: t.card, border: `1px solid ${t.cyan}`, color: t.text }} />
+                          <button onClick={() => saveItemEdit(item.id)} className="p-1 rounded" style={{ color: t.emerald }}><CheckCircle size={14} /></button>
+                          <button onClick={() => setEditingItemId(null)} className="p-1 rounded" style={{ color: t.muted }}><X size={12} /></button>
+                        </div>
+                      ) : (
+                        <span className="flex-1 text-xs cursor-pointer" style={{ color: t.text }}
+                          onClick={() => { setEditingItemId(item.id); setEditItemText(item.text); }}>
+                          {item.text}
+                        </span>
+                      )}
+
+                      {/* Edit & Delete buttons */}
+                      {editingItemId !== item.id && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                          <button onClick={() => { setEditingItemId(item.id); setEditItemText(item.text); }} className="p-1 rounded transition"
+                            style={{ color: t.cyan }} title="এডিট করুন"><Edit3 size={12} /></button>
+                          <button onClick={() => removeChecklistItem(item.id)} className="p-1 rounded transition"
+                            style={{ color: t.rose }} title="মুছে ফেলুন"><Trash2 size={12} /></button>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-[10px]" style={{ color: t.textSecondary }}>{itemCount} আইটেম</p>
-                      <p className="text-[9px]" style={{ color: t.muted }}>{reqCount} আবশ্যক</p>
-                    </div>
-                    <Edit3 size={13} style={{ color: t.muted }} />
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        )}
+                  ))}
 
-        {/* ── ধাপ Edit UI ── */}
-        {editingStep && (() => {
-          const ps = PIPELINE_STATUSES.find(p => p.code === editingStep);
-          return (
-            <div className="space-y-4">
-              <Card delay={0}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => setEditingStep(null)} className="p-1.5 rounded-lg transition" style={{ background: t.inputBg }}
-                      onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
-                      <X size={14} />
-                    </button>
-                    <div>
-                      <h3 className="text-sm font-semibold flex items-center gap-2">
-                        <span className="text-base">{editStepIcon}</span>
-                        {ps?.label || editingStep} — চেকলিস্ট সম্পাদনা
-                      </h3>
-                      <p className="text-[10px]" style={{ color: t.muted }}>ধাপ: {editingStep}</p>
-                    </div>
-                  </div>
-                  <Button icon={Save} size="xs" onClick={saveStepConfig}>সংরক্ষণ</Button>
+                  {editChecklist.length === 0 && (
+                    <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো আইটেম নেই — নিচে নতুন আইটেম যোগ করুন</p>
+                  )}
                 </div>
+              </div>
 
-                {/* ── Step meta fields ── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>আইকন (Emoji)</label>
-                    <input value={editStepIcon} onChange={e => setEditStepIcon(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                      placeholder="🚶" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরবর্তী ধাপের বাটন টেক্সট</label>
-                    <input value={editStepNextLabel} onChange={e => setEditStepNextLabel(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                      placeholder="পরবর্তী ধাপে যান" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধাপের বিবরণ / Hint</label>
-                    <input value={editStepHint} onChange={e => setEditStepHint(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                      placeholder="এই ধাপে কী করতে হবে..." />
-                  </div>
-                </div>
+              {/* ── নতুন আইটেম যোগ ── */}
+              <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: `${t.cyan}06`, border: `1px solid ${t.cyan}15` }}>
+                <Plus size={14} style={{ color: t.cyan }} />
+                <input value={newItemText} onChange={e => setNewItemText(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") addChecklistItem(); }}
+                  className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }}
+                  placeholder="নতুন চেকলিস্ট আইটেম লিখুন..." />
+                <button onClick={() => setNewItemReq(!newItemReq)} className="shrink-0 px-2 py-1 rounded text-[9px] font-bold transition"
+                  style={{ background: newItemReq ? `${t.rose}15` : `${t.muted}15`, color: newItemReq ? t.rose : t.muted }}>
+                  {newItemReq ? "আবশ্যক" : "ঐচ্ছিক"}
+                </button>
+                <Button size="xs" onClick={addChecklistItem}>যোগ করুন</Button>
+              </div>
 
-                {/* ── চেকলিস্ট আইটেম তালিকা ── */}
-                <div className="mb-3">
-                  <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>
-                    চেকলিস্ট আইটেম ({editChecklist.length} টি)
-                  </p>
-
-                  <div className="space-y-1">
-                    {editChecklist.map((item, idx) => (
-                      <div key={item.id} className="flex items-center gap-2 px-3 py-2 rounded-lg group"
-                        style={{ background: t.inputBg }}>
-                        <span className="text-[10px] font-mono w-5 text-center shrink-0" style={{ color: t.muted }}>{idx + 1}</span>
-
-                        {/* Required toggle */}
-                        <button onClick={() => toggleItemReq(item.id)} className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold transition"
-                          style={{ background: item.req ? `${t.rose}15` : `${t.muted}15`, color: item.req ? t.rose : t.muted }}
-                          title={item.req ? "আবশ্যক — ক্লিক করে ঐচ্ছিক করুন" : "ঐচ্ছিক — ক্লিক করে আবশ্যক করুন"}>
-                          {item.req ? "আবশ্যক" : "ঐচ্ছিক"}
-                        </button>
-
-                        {/* Item text (inline edit) */}
-                        {editingItemId === item.id ? (
-                          <div className="flex-1 flex items-center gap-1">
-                            <input value={editItemText} onChange={e => setEditItemText(e.target.value)}
-                              onKeyDown={e => { if (e.key === "Enter") saveItemEdit(item.id); if (e.key === "Escape") setEditingItemId(null); }}
-                              className="flex-1 px-2 py-1 rounded text-xs outline-none" autoFocus
-                              style={{ background: t.card, border: `1px solid ${t.cyan}`, color: t.text }} />
-                            <button onClick={() => saveItemEdit(item.id)} className="p-1 rounded" style={{ color: t.emerald }}><CheckCircle size={14} /></button>
-                            <button onClick={() => setEditingItemId(null)} className="p-1 rounded" style={{ color: t.muted }}><X size={12} /></button>
-                          </div>
-                        ) : (
-                          <span className="flex-1 text-xs cursor-pointer" style={{ color: t.text }}
-                            onClick={() => { setEditingItemId(item.id); setEditItemText(item.text); }}>
-                            {item.text}
-                          </span>
-                        )}
-
-                        {/* Edit & Delete buttons */}
-                        {editingItemId !== item.id && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
-                            <button onClick={() => { setEditingItemId(item.id); setEditItemText(item.text); }} className="p-1 rounded transition"
-                              style={{ color: t.cyan }} title="এডিট করুন"><Edit3 size={12} /></button>
-                            <button onClick={() => removeChecklistItem(item.id)} className="p-1 rounded transition"
-                              style={{ color: t.rose }} title="মুছে ফেলুন"><Trash2 size={12} /></button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {editChecklist.length === 0 && (
-                      <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো আইটেম নেই — নিচে নতুন আইটেম যোগ করুন</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* ── নতুন আইটেম যোগ ── */}
-                <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: `${t.cyan}06`, border: `1px solid ${t.cyan}15` }}>
-                  <Plus size={14} style={{ color: t.cyan }} />
-                  <input value={newItemText} onChange={e => setNewItemText(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") addChecklistItem(); }}
-                    className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }}
-                    placeholder="নতুন চেকলিস্ট আইটেম লিখুন..." />
-                  <button onClick={() => setNewItemReq(!newItemReq)} className="shrink-0 px-2 py-1 rounded text-[9px] font-bold transition"
-                    style={{ background: newItemReq ? `${t.rose}15` : `${t.muted}15`, color: newItemReq ? t.rose : t.muted }}>
-                    {newItemReq ? "আবশ্যক" : "ঐচ্ছিক"}
-                  </button>
-                  <Button size="xs" onClick={addChecklistItem}>যোগ করুন</Button>
-                </div>
-
-                {/* ── Bottom actions ── */}
-                <div className="flex items-center justify-between pt-3 mt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-                  <Button variant="ghost" size="xs" onClick={() => setEditingStep(null)}>বাতিল</Button>
-                  <Button icon={Save} size="xs" onClick={saveStepConfig}>সংরক্ষণ করুন</Button>
-                </div>
-              </Card>
-            </div>
-          );
-        })()}
+              {/* ── Bottom actions ── */}
+              <div className="flex items-center justify-between pt-3 mt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+                <Button variant="ghost" size="xs" onClick={() => setEditingStep(null)}>বাতিল</Button>
+                <Button icon={Save} size="xs" onClick={saveStepConfig}>সংরক্ষণ করুন</Button>
+              </div>
+            </>
+          )}
+        </Modal>
       </div>}
 
       {/* ── ব্রাঞ্চ ম্যানেজমেন্ট — ঠিকানা, ফোন, ম্যানেজার সহ ── */}
@@ -1316,56 +1278,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             <Button icon={Plus} size="xs" onClick={() => { setBranchForm(EMPTY_BRANCH); setEditingBranchId(null); setShowBranchForm(true); }}>নতুন ব্রাঞ্চ</Button>
           </div>
 
-          {/* ── ব্রাঞ্চ ফর্ম (create/edit) ── */}
-          {showBranchForm && (
-            <div className="mb-4 p-4 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
-              <p className="text-xs font-semibold mb-3">{editingBranchId ? "ব্রাঞ্চ সম্পাদনা" : "নতুন ব্রাঞ্চ যোগ"}</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ নাম (EN) *</label>
-                  <input value={branchForm.name} onChange={e => setBranchForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Dhaka (HQ)" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
-                  <input value={branchForm.name_bn} onChange={e => setBranchForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা (HQ)" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শহর</label>
-                  <input value={branchForm.city} onChange={e => setBranchForm(p => ({ ...p, city: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা" />
-                </div>
-                <div className="md:col-span-3">
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (EN) — Excel {{sys_branch_address}}-এ যাবে</label>
-                  <input value={branchForm.address} onChange={e => setBranchForm(p => ({ ...p, address: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="House 12, Road 4, Dhanmondi, Dhaka-1205" />
-                </div>
-                <div className="md:col-span-3">
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (বাংলা)</label>
-                  <input value={branchForm.address_bn} onChange={e => setBranchForm(p => ({ ...p, address_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="বাড়ি ১২, রোড ৪, ধানমন্ডি, ঢাকা-১২০৫" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
-                  <input value={branchForm.phone} onChange={e => setBranchForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="02-9876543" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>
-                  <input value={branchForm.email} onChange={e => setBranchForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="dhaka@agency.com" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ম্যানেজার</label>
-                  <input value={branchForm.manager} onChange={e => setBranchForm(p => ({ ...p, manager: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Branch Manager নাম" />
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={branchForm.is_hq} onChange={e => setBranchForm(p => ({ ...p, is_hq: e.target.checked }))} className="rounded" style={{ accentColor: t.cyan }} />
-                  <span className="text-xs" style={{ color: t.text }}>প্রধান কার্যালয় (HQ)</span>
-                </label>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowBranchForm(false); setEditingBranchId(null); }}>বাতিল</Button>
-                  <Button size="xs" icon={Save} onClick={saveBranch}>সংরক্ষণ</Button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* ── ব্রাঞ্চ ফর্ম — Modal-এ সরানো হয়েছে ── */}
 
           {/* ── ব্রাঞ্চ তালিকা ── */}
           {branches.length === 0 ? (
@@ -1423,6 +1336,57 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_manager}}"}</span> ব্যবহার করুন।
           </p>
         </Card>
+
+        {/* ── ব্রাঞ্চ ফর্ম Modal ── */}
+        <Modal isOpen={showBranchForm} onClose={() => { setShowBranchForm(false); setEditingBranchId(null); }}
+          title={editingBranchId ? "ব্রাঞ্চ সম্পাদনা" : "নতুন ব্রাঞ্চ যোগ"} size="md">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ নাম (EN) *</label>
+                <input value={branchForm.name} onChange={e => setBranchForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Dhaka (HQ)" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
+                <input value={branchForm.name_bn} onChange={e => setBranchForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা (HQ)" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শহর</label>
+                <input value={branchForm.city} onChange={e => setBranchForm(p => ({ ...p, city: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা" />
+              </div>
+              <div className="md:col-span-3">
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (EN) — Excel {"{{sys_branch_address}}"}-এ যাবে</label>
+                <input value={branchForm.address} onChange={e => setBranchForm(p => ({ ...p, address: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="House 12, Road 4, Dhanmondi, Dhaka-1205" />
+              </div>
+              <div className="md:col-span-3">
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (বাংলা)</label>
+                <input value={branchForm.address_bn} onChange={e => setBranchForm(p => ({ ...p, address_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="বাড়ি ১২, রোড ৪, ধানমন্ডি, ঢাকা-১২০৫" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
+                <input value={branchForm.phone} onChange={e => setBranchForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="02-9876543" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>
+                <input value={branchForm.email} onChange={e => setBranchForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="dhaka@agency.com" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ম্যানেজার</label>
+                <input value={branchForm.manager} onChange={e => setBranchForm(p => ({ ...p, manager: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Branch Manager নাম" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={branchForm.is_hq} onChange={e => setBranchForm(p => ({ ...p, is_hq: e.target.checked }))} className="rounded" style={{ accentColor: t.cyan }} />
+                <span className="text-xs" style={{ color: t.text }}>প্রধান কার্যালয় (HQ)</span>
+              </label>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowBranchForm(false); setEditingBranchId(null); }}>বাতিল</Button>
+                <Button size="xs" icon={Save} onClick={saveBranch}>সংরক্ষণ</Button>
+              </div>
+            </div>
+          </div>
+        </Modal>
       </div>}
 
       {/* ── নোটিফিকেশন ── */}
