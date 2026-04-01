@@ -272,6 +272,8 @@ export const inventory = {
   update: (id, body) => request(`/inventory/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   /** item মুছে ফেলো */
   remove: (id) => request(`/inventory/${id}`, { method: "DELETE" }),
+  /** শুধু condition/অবস্থা আপডেট */
+  updateCondition: (id, condition) => request(`/inventory/${id}/condition`, { method: "PATCH", body: JSON.stringify({ condition }) }),
 };
 
 // ═══════════════════════════════════════════════════════

@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AlertCircle, Save, Plus, Download, Settings, Search, X, ArrowLeft, Phone, Edit3, Trash2, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-// Mock data সরানো হয়েছে — API থেকে load হবে
 import Pagination from "../../components/ui/Pagination";
 import useSortable from "../../hooks/useSortable";
 import SortHeader from "../../components/ui/SortHeader";
@@ -207,16 +206,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
 
-  // ── Backend থেকে visitors load (prop empty হলে) ──
-  useEffect(() => {
-    if (visitors.length > 0) return; // ইতিমধ্যে data আছে
-    api.get("/visitors").then(res => {
-      const data = Array.isArray(res) ? res : res.data || [];
-      if (data.length > 0) setVisitors(data.map(v => ({
-        ...v, name_en: v.name_en || v.name, date: v.visit_date || v.date, lastFollowUp: v.last_follow_up || v.lastFollowUp,
-      })));
-    }).catch((err) => { console.error("[Visitors Load]", err); toast.error("ভিজিটর ডাটা লোড করতে সমস্যা হয়েছে"); });
-  }, []);
+  // ── Server-side pagination state ──
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewTab, setViewTab] = useState("active");
   const [confirmAction, setConfirmAction] = useState(null); // {type:"convert"|"delete", visitor}
@@ -232,7 +222,53 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const [filterBranch, setFilterBranch] = useState("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
+
+  // ── Search debounce — টাইপ করার সময় প্রতিটি keystroke-এ API call এড়ানো ──
+  const searchTimerRef = useRef(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => setDebouncedSearch(searchQ), 400);
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+  }, [searchQ]);
+
+  // ── Server-side pagination — API থেকে page-by-page data fetch ──
+  const fetchVisitors = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { page, limit: pageSize, exclude_status: "Enrolled" };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (filterBranch !== "All") params.branch = filterBranch;
+      // viewTab অনুযায়ী status filter — "active" = Interested,Thinking
+      if (viewTab === "active") {
+        params.status_in = "Interested,Thinking";
+      }
+      // statusFilter button — নির্দিষ্ট status সিলেক্ট করা হলে
+      if (statusFilter !== "All") {
+        params.status = statusFilter;
+        delete params.status_in; // single status সিলেক্ট হলে status_in override
+      }
+      const qs = new URLSearchParams(params).toString();
+      const res = await api.get(`/visitors?${qs}`);
+      const data = Array.isArray(res) ? res : res.data || [];
+      const total = res.total ?? data.length;
+      setVisitors(data.map(v => ({
+        ...v, name_en: v.name_en || v.name, date: v.visit_date || v.date,
+        lastFollowUp: v.last_follow_up || v.lastFollowUp,
+      })));
+      setServerTotal(total);
+    } catch (err) {
+      console.error("[Visitors Load]", err);
+      toast.error("ভিজিটর ডাটা লোড করতে সমস্যা হয়েছে");
+    }
+    setLoading(false);
+  }, [page, pageSize, debouncedSearch, filterBranch, viewTab, statusFilter]);
+
+  // ── ফিল্টার/পেজ বদলালে re-fetch হবে ──
+  useEffect(() => { fetchVisitors(); }, [fetchVisitors]);
 
   // Close dropdowns on outside click — useEffect replaces backdrop div to avoid
   // z-index stacking context issues (anim-fade on Card creates a new stacking context,
@@ -251,29 +287,22 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   // Live lookup - always fresh from visitors array
   const detailVisitor = detailId ? visitors.find(v => v.id === detailId) : null;
 
-  const nonEnrolled = visitors.filter(v => v.status !== "Enrolled");
-  const activeList = nonEnrolled.filter(v => v.status === "Interested" || v.status === "Thinking");
-  const recentList = nonEnrolled.filter(v => daysDiff(v.date) <= archiveDays);
-  const archiveList = nonEnrolled.filter(v => daysDiff(v.date) > archiveDays);
-  const enrolledCount = visitors.filter(v => v.status === "Enrolled").length;
+  // ── সার্ভার থেকে ইতিমধ্যে ফিল্টার ও পেজিনেট করা data এসেছে ──
+  // শুধু client-side sort প্রয়োগ করা হচ্ছে
+  const paginated = sortFn(visitors);
+  const allBranches = ["All", ...new Set(visitors.map(v => v.branch).filter(Boolean))];
 
-  const base = viewTab === "active" ? activeList : viewTab === "recent" ? recentList : archiveList;
-  const searched = searchQ ? base.filter(v => (v.name||"").toLowerCase().includes(searchQ.toLowerCase()) || v.phone.includes(searchQ)) : base;
-  const byStatus = statusFilter === "All" ? searched : searched.filter(v => v.status === statusFilter);
-  const filtered = filterBranch === "All" ? byStatus : byStatus.filter(v => (v.branch || "") === filterBranch);
-  const allBranches = ["All", ...new Set(nonEnrolled.map(v => v.branch).filter(Boolean))];
-  const sortedFiltered = sortFn(filtered);
-  const totalPages = Math.ceil(sortedFiltered.length / pageSize);
-  const safePage = Math.min(page, Math.max(1, totalPages));
-  const paginated = sortedFiltered.slice((safePage - 1) * pageSize, safePage * pageSize);
-
-  const todayCount = nonEnrolled.filter(v => v.date === todayStr).length;
-  const needFU = nonEnrolled.filter(v => (v.status==="Interested"||v.status==="Thinking") && daysDiff(v.lastFollowUp||v.date) > 3).length;
+  // KPI counts — current page data থেকে (approximate)
+  const todayCount = visitors.filter(v => v.date === todayStr).length;
+  const needFU = visitors.filter(v => (v.status==="Interested"||v.status==="Thinking") && daysDiff(v.lastFollowUp||v.date) > 3).length;
 
   // === ACTIONS ===
   const updateVisitor = async (id, updates) => {
-    try { await api.patch(`/visitors/${id}`, updates); } catch (err) { console.error("[Visitor Update]", err); toast.error("আপডেট সার্ভারে সেভ ব্যর্থ"); }
-    setVisitors(visitors.map(v => v.id === id ? {...v, ...updates} : v));
+    try {
+      await api.patch(`/visitors/${id}`, updates);
+      // লোকাল state আপডেট + সার্ভার re-fetch
+      setVisitors(visitors.map(v => v.id === id ? {...v, ...updates} : v));
+    } catch (err) { console.error("[Visitor Update]", err); toast.error("আপডেট সার্ভারে সেভ ব্যর্থ"); }
   };
 
   const changeStatus = (id, newStatus) => {
@@ -292,14 +321,15 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
     setConfirmAction(null);
     setDetailId(null);
     toast.success(v.name + " — ভর্তি হয়েছে! স্টুডেন্ট তালিকায় যোগ হয়েছে");
+    fetchVisitors(); // সার্ভার থেকে re-fetch
   };
 
   const doDelete = async (v) => {
     try { await api.del(`/visitors/${v.id}`); } catch (err) { console.error("[Visitor Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
-    setVisitors(visitors.filter(x => x.id !== v.id));
     setConfirmAction(null);
     setDetailId(null);
     toast.deleted("ভিজিটর");
+    fetchVisitors(); // সার্ভার থেকে re-fetch
   };
 
   const saveEdit = () => {
@@ -308,8 +338,26 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
     toast.updated("ভিজিটর");
   };
 
-  const doExport = (mode) => {
-    const data = mode === "all" ? nonEnrolled : mode === "active" ? activeList : filtered;
+  const doExport = async (mode) => {
+    // mode: "filtered" = বর্তমান পেজ, "active" = সক্রিয় সব, "all" = সব ভিজিটর
+    let data = visitors;
+    if (mode === "all" || mode === "active") {
+      try {
+        let allData = [];
+        let pg = 1, hasMore = true;
+        const baseParams = { limit: 100, exclude_status: "Enrolled" };
+        if (mode === "active") baseParams.status_in = "Interested,Thinking";
+        while (hasMore) {
+          const qs = new URLSearchParams({ ...baseParams, page: pg }).toString();
+          const res = await api.get(`/visitors?${qs}`);
+          const d = Array.isArray(res) ? res : res.data || [];
+          allData = allData.concat(d.map(v => ({ ...v, name_en: v.name_en || v.name, date: v.visit_date || v.date, lastFollowUp: v.last_follow_up })));
+          hasMore = d.length === 100;
+          pg++;
+        }
+        data = allData;
+      } catch { data = visitors; }
+    }
     const cols = [
       { key: "display_id", label: "ID" },
       { key: "name", label: "Name (EN)" },
@@ -644,13 +692,13 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             {showExport && <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[220px]" style={{background:t.cardSolid,border:"1px solid "+t.border,boxShadow:"0 8px 30px rgba(0,0,0,0.25)"}}>
               <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold" style={{color:t.muted,borderBottom:"1px solid "+t.border}}>ভিজিটর CSV এক্সপোর্ট</div>
               <button onClick={() => doExport("filtered")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.cyan}}>📋</span><div><p className="font-medium">বর্তমান ভিউ ({filtered.length})</p><p className="text-[9px]" style={{color:t.muted}}>শুধু ফিল্টার করা ভিজিটর</p></div>
+                <span style={{color:t.cyan}}>📋</span><div><p className="font-medium">বর্তমান পেজ ({visitors.length})</p><p className="text-[9px]" style={{color:t.muted}}>এই পেজের ভিজিটর</p></div>
               </button>
               <button onClick={() => doExport("active")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.emerald}}>🟢</span><div><p className="font-medium">শুধু সক্রিয় ({activeList.length})</p><p className="text-[9px]" style={{color:t.muted}}>আগ্রহী + ভাবছে</p></div>
+                <span style={{color:t.emerald}}>🟢</span><div><p className="font-medium">শুধু সক্রিয়</p><p className="text-[9px]" style={{color:t.muted}}>আগ্রহী + ভাবছে</p></div>
               </button>
               <button onClick={() => doExport("all")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span style={{color:t.purple}}>📦</span><div><p className="font-medium">সব ভিজিটর ({nonEnrolled.length})</p><p className="text-[9px]" style={{color:t.muted}}>ভর্তি ছাড়া সবাই</p></div>
+                <span style={{color:t.purple}}>📦</span><div><p className="font-medium">সব ভিজিটর ({serverTotal})</p><p className="text-[9px]" style={{color:t.muted}}>ভর্তি ছাড়া সবাই</p></div>
               </button>
             </div>}
           </div>
@@ -660,7 +708,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[{l:"সক্রিয়",v:activeList.length,c:t.cyan},{l:"আজ",v:todayCount,c:t.emerald},{l:"ফলো-আপ বাকি",v:needFU,c:needFU>0?t.rose:t.muted},{l:"ভর্তি হয়েছে",v:enrolledCount,c:t.purple},{l:"আর্কাইভ",v:archiveList.length,c:t.muted}].map((s,i)=>
+        {[{l:"মোট (ভর্তি বাদে)",v:serverTotal,c:t.cyan},{l:"আজ",v:todayCount,c:t.emerald},{l:"ফলো-আপ বাকি",v:needFU,c:needFU>0?t.rose:t.muted},{l:"বর্তমান পেজে",v:visitors.length,c:t.purple}].map((s,i)=>
           <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.inputBg}}><p className="text-lg font-bold" style={{color:s.c}}>{s.v}</p><p className="text-[10px]" style={{color:t.muted}}>{s.l}</p></div>
         )}
       </div>
@@ -671,9 +719,9 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       </div></div></Card>}
 
       <div className="flex gap-1 p-1 rounded-xl" style={{background:t.inputBg}}>
-        {[{k:"active",l:"🟢 Active",c:activeList.length},{k:"recent",l:"📅 Recent ("+archiveDays+"d)",c:recentList.length},{k:"archive",l:"📦 Archive",c:archiveList.length}].map(tab=>
+        {[{k:"active",l:"🟢 সক্রিয় (আগ্রহী + ভাবছে)"},{k:"recent",l:"📅 সব ভিজিটর"}].map(tab=>
           <button key={tab.k} onClick={()=>{setViewTab(tab.k);setStatusFilter("All");setPage(1);}} className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition"
-            style={{background:viewTab===tab.k?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#fff"):"transparent",color:viewTab===tab.k?t.text:t.muted}}>{tab.l} ({tab.c})</button>
+            style={{background:viewTab===tab.k?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#fff"):"transparent",color:viewTab===tab.k?t.text:t.muted}}>{tab.l}</button>
         )}
       </div>
 
@@ -684,8 +732,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           {searchQ && <button onClick={()=>setSearchQ("")}><X size={12} style={{color:t.muted}}/></button>}
         </div>
         {["All","Interested","Thinking","Not Interested"].map(f=>{
-          const c=searched.filter(v=>f==="All"||v.status===f).length;
-          return <button key={f} onClick={()=>{setStatusFilter(f);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs transition" style={{background:statusFilter===f?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#e2e8f0"):"transparent",color:statusFilter===f?t.text:t.muted,fontWeight:statusFilter===f?600:400}}>{f} ({c})</button>;
+          return <button key={f} onClick={()=>{setStatusFilter(f);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs transition" style={{background:statusFilter===f?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#e2e8f0"):"transparent",color:statusFilter===f?t.text:t.muted,fontWeight:statusFilter===f?600:400}}>{f==="All"?"সব":f}</button>;
         })}
         <select value={filterBranch} onChange={e=>{setFilterBranch(e.target.value);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs outline-none ml-auto" style={{background:t.inputBg,border:`1px solid ${filterBranch!=="All"?t.cyan:t.inputBorder}`,color:filterBranch!=="All"?t.cyan:t.text}}>
           {allBranches.map(b=><option key={b} value={b}>{b==="All"?"সব ব্রাঞ্চ":b}</option>)}
@@ -700,10 +747,10 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       </div></Card>}
 
       {showForm && <Card delay={0}><h3 className="text-sm font-semibold mb-4">+ নতুন ভিজিটর</h3>
-        <NewVisitorForm onSave={async (v)=>{try{const saved=await api.post("/visitors",v);setVisitors([saved,...visitors]);}catch(err){console.error("[Visitor Create]",err);toast.error("সার্ভারে সেভ ব্যর্থ, লোকালে রাখা হয়েছে");setVisitors([v,...visitors]);}setShowForm(false);toast.created("ভিজিটর");}} onCancel={()=>setShowForm(false)}/></Card>}
+        <NewVisitorForm onSave={async (v)=>{try{await api.post("/visitors",v);}catch(err){console.error("[Visitor Create]",err);toast.error("সার্ভারে সেভ ব্যর্থ");}setShowForm(false);toast.created("ভিজিটর");fetchVisitors();}} onCancel={()=>setShowForm(false)}/></Card>}
 
       <Card delay={100}>
-        <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {sortedFiltered.length} জন ভিজিটর</p>
+        <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {serverTotal} জন ভিজিটর{loading && " — লোড হচ্ছে..."}</p>
         <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr style={{borderBottom:"1px solid "+t.border}}>
           <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
           <SortHeader label="ফোন" sortKey="phone" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
@@ -766,8 +813,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             </tr>;
           })}
         </tbody></table></div>
-        {sortedFiltered.length===0&&<div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো ভিজিটর পাওয়া যায়নি</p></div>}
-        <Pagination total={sortedFiltered.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
+        {paginated.length===0&&!loading&&<div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো ভিজিটর পাওয়া যায়নি</p></div>}
+        <Pagination total={serverTotal} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
     </div>
   );

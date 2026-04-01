@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X, Search } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -39,14 +39,51 @@ export default function SchoolsPage({ students }) {
   const [subSearch, setSubSearch] = useState("");
   const [recheckSearch, setRecheckSearch] = useState("");
 
+  // ── স্কুল পেজিনেশন state ──
+  const [schoolPage, setSchoolPage] = useState(1);
+  const [schoolPageSize, setSchoolPageSize] = useState(20);
+  const [schoolTotal, setSchoolTotal] = useState(0);
+  const [schoolLoading, setSchoolLoading] = useState(false);
+
   // ── সাবমিশন টেবিল সর্টিং ও পেজিনেশন ──
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("submission_date", "desc");
   const [subPage, setSubPage] = useState(1);
   const [subPageSize, setSubPageSize] = useState(20);
 
-  // ── Backend থেকে load ──
+  // ── Search debounce — স্কুল সার্চে debounce ──
+  const schoolSearchTimerRef = useRef(null);
+  const [debouncedSchoolSearch, setDebouncedSchoolSearch] = useState("");
   useEffect(() => {
-    api.get("/schools").then(data => { if (Array.isArray(data)) setSchools(data); }).catch((err) => { console.error("[Schools Load]", err); toast.error("স্কুল ডাটা লোড করতে সমস্যা হয়েছে"); });
+    if (schoolSearchTimerRef.current) clearTimeout(schoolSearchTimerRef.current);
+    schoolSearchTimerRef.current = setTimeout(() => setDebouncedSchoolSearch(schoolSearch), 400);
+    return () => { if (schoolSearchTimerRef.current) clearTimeout(schoolSearchTimerRef.current); };
+  }, [schoolSearch]);
+
+  // ── Server-side pagination — API থেকে page-by-page স্কুল fetch ──
+  const fetchSchools = useCallback(async () => {
+    setSchoolLoading(true);
+    try {
+      const params = { page: schoolPage, limit: schoolPageSize };
+      if (debouncedSchoolSearch) params.search = debouncedSchoolSearch;
+      const qs = new URLSearchParams(params).toString();
+      const res = await api.get(`/schools?${qs}`);
+      // Backend এখন { data, total, page, limit } ফর্ম্যাটে দেয়
+      const data = Array.isArray(res) ? res : res.data || [];
+      const total = res.total ?? data.length;
+      setSchools(data);
+      setSchoolTotal(total);
+    } catch (err) {
+      console.error("[Schools Load]", err);
+      toast.error("স্কুল ডাটা লোড করতে সমস্যা হয়েছে");
+    }
+    setSchoolLoading(false);
+  }, [schoolPage, schoolPageSize, debouncedSchoolSearch]);
+
+  // ── ফিল্টার/পেজ বদলালে re-fetch হবে ──
+  useEffect(() => { fetchSchools(); }, [fetchSchools]);
+
+  // ── সাবমিশন ডাটা load (একবার) ──
+  useEffect(() => {
     api.get("/submissions").then(data => { if (Array.isArray(data)) setSubmissionsData(data); }).catch((err) => { console.error("[Submissions Load]", err); });
   }, []);
 
@@ -87,17 +124,15 @@ export default function SchoolsPage({ students }) {
     });
     try {
       if (editingId) {
-        const updated = await api.patch(`/schools/${editingId}`, payload);
-        console.log("[School Update]", updated);
-        setSchools(prev => prev.map(s => s.id === editingId ? (updated && updated.id ? updated : { ...s, ...payload }) : s));
+        await api.patch(`/schools/${editingId}`, payload);
         toast.updated(form.name_en);
       } else {
-        const saved = await api.post("/schools", payload);
-        setSchools(prev => [...prev, saved]);
+        await api.post("/schools", payload);
         toast.success(`${form.name_en} — স্কুল যোগ হয়েছে`);
       }
       setShowForm(false);
       setEditingId(null);
+      fetchSchools(); // সার্ভার থেকে re-fetch
     } catch (err) {
       toast.error(err.message || "স্কুল save ব্যর্থ");
     }
@@ -119,7 +154,7 @@ export default function SchoolsPage({ students }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট স্কুল", value: schools.length, color: t.cyan, icon: Globe },
+          { label: "মোট স্কুল", value: schoolTotal, color: t.cyan, icon: Globe },
           { label: "মোট রেফার", value: totalReferred, color: t.purple, icon: Users },
           { label: "পৌঁছেছে", value: totalArrived, color: t.emerald, icon: Plane },
           { label: "রিচেক বাকি", value: pendingRecheck, color: t.rose, icon: AlertTriangle },
@@ -159,7 +194,7 @@ export default function SchoolsPage({ students }) {
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
               style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={14} style={{ color: t.muted }} />
-              <input value={schoolSearch} onChange={e => setSchoolSearch(e.target.value)}
+              <input value={schoolSearch} onChange={e => { setSchoolSearch(e.target.value); setSchoolPage(1); }}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
                 placeholder="স্কুলের নাম দিয়ে খুঁজুন..." />
             </div>
@@ -315,12 +350,8 @@ export default function SchoolsPage({ students }) {
               </div>
             </Card>
           )}
-          {schools.filter(s => {
-            const name = (s.name_en || s.name || "").toLowerCase();
-            const nameJp = (s.name_jp || "").toLowerCase();
-            const q = schoolSearch.toLowerCase();
-            return !q || name.includes(q) || nameJp.includes(q);
-          }).map((school, i) => {
+          {/* সার্ভার থেকে ইতিমধ্যে সার্চ ও পেজিনেট করা data এসেছে */}
+          {schools.map((school, i) => {
             const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;
             const name = school.name_en || school.name;
             return (
@@ -338,7 +369,7 @@ export default function SchoolsPage({ students }) {
                       {deleteSchoolId === school.id ? (
                         <div className="flex gap-1 ml-1">
                           <button onClick={async () => {
-                            try { await api.del(`/schools/${school.id}`); setSchools(prev => prev.filter(s => s.id !== school.id)); toast.success("স্কুল মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); }
+                            try { await api.del(`/schools/${school.id}`); toast.success("স্কুল মুছে ফেলা হয়েছে"); fetchSchools(); } catch (err) { toast.error(err.message); }
                             setDeleteSchoolId(null);
                           }} className="text-[9px] px-2 py-0.5 rounded" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
                           <button onClick={() => setDeleteSchoolId(null)} className="text-[9px] px-1" style={{ color: t.muted }}>না</button>
@@ -379,6 +410,12 @@ export default function SchoolsPage({ students }) {
             );
           })}
           </div>
+          {/* ── স্কুল পেজিনেশন ── */}
+          {schools.length === 0 && !schoolLoading && (
+            <EmptyState icon={Globe} title="কোনো স্কুল পাওয়া যায়নি" subtitle="সার্চ পরিবর্তন করে আবার চেষ্টা করুন" />
+          )}
+          <Pagination total={schoolTotal} page={schoolPage} pageSize={schoolPageSize}
+            onPage={setSchoolPage} onPageSize={setSchoolPageSize} />
         </div>
       )}
 

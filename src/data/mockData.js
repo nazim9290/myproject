@@ -455,41 +455,9 @@ export const ATTENDANCE_DAY = [
   { name: "Tamanna Islam", id: "S-2026-009", status: "absent" },
 ];
 
-// Inventory module
-export const INVENTORY_CATEGORIES = ["ইলেকট্রনিক্স", "আসবাবপত্র", "বই ও উপকরণ", "স্টেশনারি", "যন্ত্রপাতি", "সফটওয়্যার", "অন্যান্য"];
-export const CONDITION_OPTIONS = [
-  { value: "new", label: "নতুন", color: "#22c55e", icon: "🟢" },
-  { value: "good", label: "ভালো", color: "#06b6d4", icon: "🔵" },
-  { value: "fair", label: "মোটামুটি", color: "#eab308", icon: "🟡" },
-  { value: "repair", label: "মেরামত দরকার", color: "#f97316", icon: "🟠" },
-  { value: "damaged", label: "ক্ষতিগ্রস্ত", color: "#ef4444", icon: "🔴" },
-  { value: "disposed", label: "বাতিল", color: "#64748b", icon: "⚫" },
-];
-
-export const INITIAL_INVENTORY = [
-  { id: "INV-001", name: "Desktop Computer", category: "Electronics", brand: "Dell", model: "OptiPlex 3090", serial: "DL-2025-001", quantity: 5, branch: "ঢাকা (HQ)", location: "কাউন্সেলিং রুম", purchaseDate: "2025-06-15", price: 45000, vendor: "Computer Source", warranty: "2027-06-15", condition: "good", assignedTo: "Office", notes: "" },
-  { id: "INV-002", name: "Laptop", category: "Electronics", brand: "HP", model: "ProBook 450", serial: "HP-2025-002", quantity: 2, branch: "ঢাকা (HQ)", location: "ম্যানেজার রুম", purchaseDate: "2025-08-10", price: 65000, vendor: "Ryans Computer", warranty: "2027-08-10", condition: "good", assignedTo: "Abrar, Karim", notes: "" },
-  { id: "INV-003", name: "Printer (Color)", category: "Electronics", brand: "Canon", model: "PIXMA G3020", serial: "CN-2025-003", quantity: 2, branch: "ঢাকা (HQ)", location: "প্রিন্ট জোন", purchaseDate: "2025-07-01", price: 18000, vendor: "Star Tech", warranty: "2026-07-01", condition: "good", assignedTo: "Shared", notes: "" },
-  { id: "INV-004", name: "প্রিন্টার (সাদাকালো)", category: "Electronics", brand: "HP", model: "LaserJet 107a", serial: "HP-2024-004", quantity: 1, branch: "চট্টগ্রাম", location: "অফিস", purchaseDate: "2024-12-01", price: 12000, vendor: "Star Tech", warranty: "2025-12-01", condition: "repair", assignedTo: "Shared", notes: "কালি জ্যাম হচ্ছে" },
-  { id: "INV-005", name: "Office Chair", category: "Furniture", brand: "Hatil", model: "Executive", serial: "", quantity: 10, branch: "ঢাকা (HQ)", location: "সব রুম", purchaseDate: "2025-05-01", price: 8500, vendor: "Hatil Showroom", warranty: "", condition: "good", assignedTo: "", notes: "" },
-  { id: "INV-006", name: "Student Chair", category: "Furniture", brand: "Local", model: "Plastic", serial: "", quantity: 30, branch: "ঢাকা (HQ)", location: "ক্লাসরুম ১ ও ২", purchaseDate: "2025-04-01", price: 1200, vendor: "New Market", warranty: "", condition: "fair", assignedTo: "", notes: "৩টি ভাঙা" },
-  { id: "INV-007", name: "Whiteboard (4x3 ft)", category: "Furniture", brand: "Generic", model: "", serial: "", quantity: 3, branch: "ঢাকা (HQ)", location: "ক্লাসরুম", purchaseDate: "2025-04-15", price: 2500, vendor: "Nilkhet", warranty: "", condition: "good", assignedTo: "", notes: "" },
-  { id: "INV-008", name: "Minna no Nihongo 1", category: "Books & Materials", brand: "", model: "3A Corporation", serial: "", quantity: 25, branch: "ঢাকা (HQ)", location: "লাইব্রেরি", purchaseDate: "2025-09-01", price: 850, vendor: "Japan Foundation", warranty: "", condition: "good", assignedTo: "Batch A26", notes: "" },
-  { id: "INV-009", name: "Minna no Nihongo 2", category: "Books & Materials", brand: "", model: "3A Corporation", serial: "", quantity: 15, branch: "ঢাকা (HQ)", location: "লাইব্রেরি", purchaseDate: "2025-09-01", price: 950, vendor: "Japan Foundation", warranty: "", condition: "good", assignedTo: "Batch A26", notes: "" },
-  { id: "INV-010", name: "Router (WiFi)", category: "Electronics", brand: "TP-Link", model: "Archer C6", serial: "TPL-2025-010", quantity: 1, branch: "ঢাকা (HQ)", location: "রিসেপশন", purchaseDate: "2025-03-01", price: 4500, vendor: "Ryans", warranty: "2027-03-01", condition: "good", assignedTo: "", notes: "" },
-  { id: "INV-011", name: "AC (1.5 Ton)", category: "Appliances", brand: "Walton", model: "WSI-INVERNA-18F", serial: "WLT-2025-011", quantity: 2, branch: "ঢাকা (HQ)", location: "ক্লাসরুম ১, ম্যানেজার রুম", purchaseDate: "2025-05-20", price: 62000, vendor: "Walton Plaza", warranty: "2028-05-20", condition: "good", assignedTo: "", notes: "" },
-  { id: "INV-012", name: "Scanner", category: "Electronics", brand: "Canon", model: "LiDE 300", serial: "CN-2025-012", quantity: 1, branch: "ঢাকা (HQ)", location: "ডক প্রসেসিং", purchaseDate: "2025-07-15", price: 7500, vendor: "Star Tech", warranty: "2026-07-15", condition: "good", assignedTo: "Jamal", notes: "" },
-  { id: "INV-013", name: "Projector", category: "Electronics", brand: "Epson", model: "EB-X51", serial: "EP-2025-013", quantity: 1, branch: "ঢাকা (HQ)", location: "ক্লাসরুম ১", purchaseDate: "2025-08-01", price: 55000, vendor: "Tech Land", warranty: "2027-08-01", condition: "good", assignedTo: "", notes: "" },
-  { id: "INV-014", name: "Office Chair", category: "Furniture", brand: "Local", model: "Standard", serial: "", quantity: 5, branch: "চট্টগ্রাম", location: "অফিস", purchaseDate: "2025-10-01", price: 5000, vendor: "Local", warranty: "", condition: "good", assignedTo: "", notes: "" },
-];
-
-export const CONSUMABLE_ITEMS = [
-  { id: "CON-001", name: "A4 Paper (Ream)", category: "Stationery", branch: "ঢাকা (HQ)", stock: 8, minStock: 5, unit: "রিম", lastDate: "2026-03-10", lastQty: 10, lastPrice: 550 },
-  { id: "CON-002", name: "Printer Ink (Canon Color)", category: "Printing", branch: "ঢাকা (HQ)", stock: 2, minStock: 2, unit: "সেট", lastDate: "2026-02-15", lastQty: 3, lastPrice: 2200 },
-  { id: "CON-003", name: "Printer Ink (HP Black)", category: "Printing", branch: "চট্টগ্রাম", stock: 0, minStock: 1, unit: "পিস", lastDate: "2025-12-01", lastQty: 2, lastPrice: 1800 },
-  { id: "CON-004", name: "File Folder", category: "Stationery", branch: "ঢাকা (HQ)", stock: 50, minStock: 20, unit: "পিস", lastDate: "2026-01-20", lastQty: 100, lastPrice: 25 },
-  { id: "CON-005", name: "Whiteboard Marker", category: "Stationery", branch: "ঢাকা (HQ)", stock: 6, minStock: 10, unit: "পিস", lastDate: "2026-02-01", lastQty: 20, lastPrice: 80 },
-];
+// Inventory module — সব ডাটা এখন backend API থেকে আসে
+// INITIAL_INVENTORY, CONSUMABLE_ITEMS, INVENTORY_CATEGORIES, CONDITION_OPTIONS সব সরানো হয়েছে
+// InventoryPage.jsx সরাসরি /api/inventory endpoint ব্যবহার করে
 
 // HR module
 export const EMPLOYEES = [

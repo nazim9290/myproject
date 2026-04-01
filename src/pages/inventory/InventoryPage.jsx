@@ -9,6 +9,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
+import { inventory as inventoryApi } from "../../lib/api";
 import { api } from "../../hooks/useAPI";
 
 const INVENTORY_CATEGORIES = ["Electronics", "Furniture", "Stationery", "Books", "Kitchen", "Cleaning", "Vehicle", "Others"];
@@ -26,18 +27,23 @@ export default function InventoryPage() {
   const toast = useToast();
   const [items, setItems] = useState([]);
 
-  // ── Backend থেকে inventory items load — DB fields → frontend fields map ──
+  // ── Backend API থেকে inventory items লোড — DB fields → frontend fields ম্যাপ ──
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    api.get("/inventory").then(data => {
+    inventoryApi.list().then(data => {
       if (Array.isArray(data)) setItems(data.map(i => ({
         ...i,
         price: i.unit_price || i.price || 0,
         quantity: i.quantity || 1,
+        condition: i.condition || i.status || "new",
         brand: i.brand || "",
         model: i.model || "",
         vendor: i.vendor || "",
       })));
-    }).catch((err) => { console.error("[Inventory Load]", err); toast.error("ইনভেন্টরি ডাটা লোড করতে সমস্যা হয়েছে"); });
+    }).catch((err) => {
+      console.error("[Inventory Load]", err);
+      toast.error("ইনভেন্টরি ডাটা লোড করতে সমস্যা হয়েছে");
+    }).finally(() => setLoading(false));
   }, []);
   const [activeTab, setActiveTab] = useState("assets");
   const [filterBranch, setFilterBranch] = useState("All");
@@ -92,8 +98,12 @@ export default function InventoryPage() {
   const assetSafePage = Math.min(page, Math.max(1, Math.ceil(sortedAssets.length / pageSize)));
   const paginatedAssets = sortedAssets.slice((assetSafePage - 1) * pageSize, assetSafePage * pageSize);
 
-  // ── Consumables — inventory items থেকে consumable category filter ──
-  const consumables = items.filter(i => (i.category || "").toLowerCase().includes("consumab") || (i.category || "").toLowerCase().includes("ব্যবহার"));
+  // ── Consumables — inventory items থেকে ব্যবহার্য ক্যাটাগরি ফিল্টার (Stationery, Cleaning, Kitchen, consumable) ──
+  const CONSUMABLE_CATS = ["stationery", "cleaning", "kitchen", "consumable", "ব্যবহার", "স্টেশনারি", "পরিষ্কার"];
+  const consumables = items.filter(i => {
+    const cat = (i.category || "").toLowerCase();
+    return CONSUMABLE_CATS.some(c => cat.includes(c));
+  });
   const filteredConsumables = consumables.filter((c) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -112,7 +122,7 @@ export default function InventoryPage() {
 
   const emptyForm = { name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "Main", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" };
 
-  // ── API-তে item যোগ / আপডেট ──
+  // ── API-তে item যোগ / আপডেট — inventoryApi ব্যবহার করে backend-এ সেভ ──
   const handleAdd = async () => {
     if (!addForm.name.trim()) { toast.error("সম্পদের নাম দিন"); return; }
     const payload = {
@@ -124,16 +134,27 @@ export default function InventoryPage() {
     };
     try {
       if (editingId) {
-        const updated = await api.patch(`/inventory/${editingId}`, payload);
-        setItems(prev => prev.map(i => i.id === editingId ? { ...i, ...updated, price: updated.unit_price || i.price, condition: updated.condition || updated.status } : i));
+        // বিদ্যমান item আপডেট — PATCH /inventory/:id
+        const updated = await inventoryApi.update(editingId, payload);
+        setItems(prev => prev.map(i => i.id === editingId ? {
+          ...i, ...updated,
+          price: updated.unit_price || i.price,
+          condition: updated.condition || updated.status || i.condition,
+        } : i));
         toast.updated("আইটেম");
       } else {
-        const created = await api.post("/inventory", payload);
-        setItems(prev => [{ ...created, price: created.unit_price || 0, condition: created.condition || created.status || "new" }, ...prev]);
-        toast.success(`"${addForm.name}" — Inventory তে যোগ হয়েছে`);
+        // নতুন item তৈরি — POST /inventory
+        const created = await inventoryApi.create(payload);
+        setItems(prev => [{
+          ...created,
+          price: created.unit_price || 0,
+          condition: created.condition || created.status || "new",
+          brand: created.brand || "", model: created.model || "", vendor: created.vendor || "",
+        }, ...prev]);
+        toast.success(`"${addForm.name}" — ইনভেন্টরিতে যোগ হয়েছে`);
       }
       setShowAddForm(false); setEditingId(null); setAddForm(emptyForm);
-    } catch (err) { toast.error(err.message || "সমস্যা"); }
+    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
   };
 
   // ── Edit open ──
@@ -142,27 +163,27 @@ export default function InventoryPage() {
     setEditingId(item.id); setShowAddForm(true);
   };
 
-  // ── Delete ──
+  // ── Delete — API থেকে item মুছে ফেলো (hard delete) ──
   const handleDelete = async (id) => {
     try {
-      await api.patch(`/inventory/${id}`, { status: "disposed" });
+      await inventoryApi.remove(id);
       setItems(prev => prev.filter(i => i.id !== id));
       toast.success("আইটেম মুছে ফেলা হয়েছে");
     } catch { toast.error("মুছতে ব্যর্থ"); }
     setDeleteConfirmId(null);
   };
 
-  // ── Condition cycle — API-তে update ──
+  // ── Condition cycle — ক্লিকে অবস্থা পরিবর্তন (API /inventory/:id/condition) ──
   const cycleCondition = async (id) => {
     const order = ["new", "good", "fair", "repair", "damaged", "disposed"];
     const item = items.find(i => i.id === id);
     if (!item) return;
-    const idx = order.indexOf(item.condition || item.status || "new");
+    const idx = order.indexOf(item.condition || "new");
     const newCond = order[(idx + 1) % order.length];
     try {
-      await api.patch(`/inventory/${id}`, { status: newCond });
+      await inventoryApi.updateCondition(id, newCond);
       setItems(prev => prev.map(i => i.id === id ? { ...i, condition: newCond, status: newCond } : i));
-    } catch (err) { console.error("[Inventory Condition]", err); toast.error("স্ট্যাটাস আপডেট ব্যর্থ"); }
+    } catch (err) { console.error("[Inventory Condition]", err); toast.error("অবস্থা আপডেট ব্যর্থ"); }
   };
 
   const inputStyle = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
@@ -405,7 +426,7 @@ export default function InventoryPage() {
         </>
       )}
 
-      {/* ══════════════════════ Consumables ট্যাব ══════════════════════ */}
+      {/* ══════════════════════ Consumables ট্যাব (ব্যবহার্য সামগ্রী — DB থেকে) ══════════════════════ */}
       {activeTab === "consumables" && (
         <Card delay={100}>
           <div className="overflow-x-auto">
@@ -415,38 +436,42 @@ export default function InventoryPage() {
                   <SortHeader label="নাম" sortKey="name" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
                   <SortHeader label="ক্যাটাগরি" sortKey="category" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
                   <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="পরিমাণ" sortKey="stock" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="ইউনিট" sortKey="unit" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="Reorder Level" sortKey="minStock" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label="পরিমাণ" sortKey="quantity" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label="একক মূল্য" sortKey="price" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label="ক্রয় তারিখ" sortKey="purchase_date" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
                   <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>স্টক অবস্থা</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedConsumables.map((item) => {
-                  const isLow = item.stock <= item.minStock;
+                  // ৫ বা তার কম হলে low stock
+                  const isLow = (item.quantity || 0) <= 5;
                   return (
                     <tr key={item.id} style={{ borderBottom: `1px solid ${t.border}` }}
                       onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <td className="py-3 px-4">
                         <p className="font-semibold">{item.name}</p>
-                        <p className="text-[10px]" style={{ color: t.muted }}>শেষ ক্রয়: {item.lastDate} | ৳{item.lastPrice}/{item.unit}</p>
+                        {item.vendor && <p className="text-[10px]" style={{ color: t.muted }}>বিক্রেতা: {item.vendor}</p>}
                       </td>
                       <td className="py-3 px-4">
                         <Badge color={isLow ? t.rose : t.emerald} size="xs">{item.category}</Badge>
                       </td>
-                      <td className="py-3 px-4" style={{ color: t.textSecondary }}>{item.branch}</td>
+                      <td className="py-3 px-4" style={{ color: t.textSecondary }}>{item.branch || "—"}</td>
                       <td className="py-3 px-4">
-                        <span className="font-bold" style={{ color: isLow ? t.rose : t.emerald }}>{item.stock}</span>
+                        <span className="font-bold" style={{ color: isLow ? t.rose : t.emerald }}>{item.quantity}</span>
+                        <span className="text-[10px] ml-1" style={{ color: t.muted }}>পিস</span>
                       </td>
-                      <td className="py-3 px-4" style={{ color: t.textSecondary }}>{item.unit}</td>
-                      <td className="py-3 px-4" style={{ color: t.muted }}>{item.minStock}</td>
+                      <td className="py-3 px-4">
+                        <span className="font-mono" style={{ color: t.purple }}>৳{(item.price || 0).toLocaleString("en-IN")}</span>
+                      </td>
+                      <td className="py-3 px-4 font-mono" style={{ color: t.muted }}>{item.purchase_date || "—"}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-16 rounded-full overflow-hidden" style={{ background: `${t.muted}20` }}>
-                            <div className="h-full rounded-full" style={{ width: `${Math.min(100, (item.stock / item.minStock) * 50)}%`, background: isLow ? t.rose : t.emerald }} />
+                            <div className="h-full rounded-full" style={{ width: `${Math.min(100, ((item.quantity || 0) / 10) * 100)}%`, background: isLow ? t.rose : t.emerald }} />
                           </div>
-                          {isLow && <Badge color={t.rose} size="xs">Low Stock!</Badge>}
+                          {isLow && <Badge color={t.rose} size="xs">কম স্টক!</Badge>}
                         </div>
                       </td>
                     </tr>

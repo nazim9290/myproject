@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X, Plus, Download, Upload, ArrowLeft, Check, AlertTriangle } from "lucide-react";
 import DropZone from "../../components/ui/DropZone";
 import { useTheme } from "../../context/ThemeContext";
@@ -20,18 +20,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const toast = useToast();
   const [selectedId, setSelectedId] = useState(null);
 
-  // ── Backend থেকে students load (prop empty হলে) ──
-  useEffect(() => {
-    if (students.length > 0) return;
-    api.get("/students").then(res => {
-      const data = Array.isArray(res) ? res : res.data || [];
-      if (data.length > 0) setStudents(data.map(s => ({
-        ...s, batch: s.batches?.name || s.batch || "", school: s.schools?.name_en || s.school || "",
-        passport: s.passport_number || "", father: s.father_name || "", mother: s.mother_name || "",
-        created: s.created_at?.slice(0, 10) || "",
-      })));
-    }).catch((err) => { console.error("[Students Load]", err); toast.error("স্টুডেন্ট ডাটা লোড করতে সমস্যা হয়েছে"); });
-  }, []);
+  // ── Server-side pagination ও search state ──
   const [searchQ, setSearchQ] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterCountry, setFilterCountry] = useState("All");
@@ -130,8 +119,50 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   };
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name_en");
+
+  // ── Search debounce — টাইপ করার সময় প্রতিটি keystroke-এ API call এড়ানো ──
+  const searchTimerRef = useRef(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => setDebouncedSearch(searchQ), 400);
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+  }, [searchQ]);
+
+  // ── Server-side pagination — API থেকে page-by-page data fetch ──
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { page, limit: pageSize };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (filterStatus !== "All") params.status = filterStatus;
+      if (filterCountry !== "All") params.country = filterCountry;
+      if (filterBranch !== "All") params.branch = filterBranch;
+      if (filterBatch !== "All") params.batch = filterBatch;
+      if (filterSchool !== "All") params.school = filterSchool;
+      const qs = new URLSearchParams(params).toString();
+      const res = await api.get(`/students?${qs}`);
+      const data = Array.isArray(res) ? res : res.data || [];
+      const total = res.total ?? data.length;
+      setStudents(data.map(s => ({
+        ...s, batch: s.batches?.name || s.batch || "", school: s.schools?.name_en || s.school || "",
+        passport: s.passport_number || "", father: s.father_name || "", mother: s.mother_name || "",
+        created: s.created_at?.slice(0, 10) || "",
+      })));
+      setServerTotal(total);
+    } catch (err) {
+      console.error("[Students Load]", err);
+      toast.error("স্টুডেন্ট ডাটা লোড করতে সমস্যা হয়েছে");
+    }
+    setLoading(false);
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCountry, filterBranch, filterBatch, filterSchool]);
+
+  // ── ফিল্টার/পেজ বদলালে re-fetch হবে ──
+  useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
   // ── Bulk Selection ──
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -143,19 +174,19 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     const ids = [...selectedIds];
     try {
       await Promise.all(ids.map(id => api.patch(`/students/${id}`, { status: bulkStatus })));
-      setStudents(prev => prev.map(s => ids.includes(s.id) ? { ...s, status: bulkStatus } : s));
       toast.success(`${ids.length} জন স্টুডেন্টের স্ট্যাটাস পরিবর্তন হয়েছে`);
       setSelectedIds(new Set());
       setBulkStatus("");
+      fetchStudents(); // সার্ভার থেকে re-fetch
     } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
   };
   const bulkDelete = async () => {
     const ids = [...selectedIds];
     try {
       await Promise.all(ids.map(id => api.del(`/students/${id}`)));
-      setStudents(prev => prev.filter(s => !ids.includes(s.id)));
       toast.success(`${ids.length} জন মুছে ফেলা হয়েছে`);
       setSelectedIds(new Set());
+      fetchStudents(); // সার্ভার থেকে re-fetch
     } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
   };
 
@@ -171,39 +202,32 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
           try { await api.patch(`/students/${updated.id}`, updated); } catch (err) { console.error("[Student Update]", err); toast.error("সার্ভারে আপডেট ব্যর্থ"); }
           setStudents(students.map((s) => s.id === updated.id ? updated : s));
           toast.updated("Student");
+          fetchStudents(); // সার্ভার থেকে re-fetch
         }}
         onDelete={async (id) => {
           try { await api.del(`/students/${id}`); } catch (err) { console.error("[Student Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
-          setStudents(students.filter((s) => s.id !== id));
           setSelectedId(null);
           toast.deleted("Student");
+          fetchStudents(); // সার্ভার থেকে re-fetch
         }}
       />
     );
   }
 
+  // ── Filter dropdown options — students array থেকে নেওয়া (current page data) ──
+  // দ্রষ্টব্য: সার্ভার-সাইড ফিল্টার — dropdown values static রাখা হচ্ছে
+  const statuses = ["All", ...PIPELINE_STATUSES.map((s) => s.code)];
   const uniqueVals = (arr, key) => [...new Set(arr.map(s => (s[key] || "").trim()).filter(v => v && v !== "—" && v !== "-"))];
   const countries = ["All", ...uniqueVals(students, "country")];
-  const statuses = ["All", ...PIPELINE_STATUSES.map((s) => s.code)];
   const branches = ["All", ...uniqueVals(students, "branch")];
   const batches = ["All", ...uniqueVals(students, "batch")];
   const schools = ["All", ...uniqueVals(students, "school")];
 
-  const filtered = students.filter((s) => {
-    const q = searchQ.toLowerCase();
-    const matchSearch = !searchQ || s.name_en.toLowerCase().includes(q) || (s.name_bn || "").includes(searchQ) || (s.phone || "").includes(searchQ) || s.id.toLowerCase().includes(q) || (s.passport_number || s.passport || "").toLowerCase().includes(q);
-    const matchStatus = filterStatus === "All" || s.status === filterStatus;
-    const matchCountry = filterCountry === "All" || s.country === filterCountry;
-    const matchBranch = filterBranch === "All" || (s.branch || "") === filterBranch;
-    const matchBatch = filterBatch === "All" || (s.batch || "") === filterBatch;
-    const matchSchool = filterSchool === "All" || (s.school || "") === filterSchool;
-    return matchSearch && matchStatus && matchCountry && matchBranch && matchBatch && matchSchool;
-  });
-  const sorted = sortFn(filtered);
-  const totalPages = Math.ceil(sorted.length / pageSize);
-  const safePage = Math.min(page, Math.max(1, totalPages));
-  const paginated = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
+  // ── সার্ভার থেকে ইতিমধ্যে ফিল্টার ও পেজিনেট করা data এসেছে ──
+  // শুধু client-side sort প্রয়োগ করা হচ্ছে (API order by created_at desc)
+  const paginated = sortFn(students);
 
+  // ── KPI counts — current page-এর data থেকে (approximate; সার্ভারে total থেকে exact) ──
   const activeCount = students.filter((s) => !["CANCELLED", "PAUSED"].includes(s.status)).length;
   const visaCount = students.filter((s) => ["VISA_GRANTED", "ARRIVED", "COMPLETED"].includes(s.status)).length;
   const ownCount = students.filter((s) => s.type === "own").length;
@@ -222,14 +246,40 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             <div className="absolute right-0 top-8 z-50 rounded-xl shadow-lg min-w-[200px] overflow-hidden"
               style={{ background: t.card, border: `1px solid ${t.border}` }}>
               {[
-                { label: `📋 Current View (${filtered.length} জন)`, data: filtered },
-                { label: `📦 All Students (${students.length} জন)`, data: students },
+                { label: `📋 বর্তমান পেজ (${students.length} জন)`, data: students, mode: "page" },
+                { label: `📦 সব স্টুডেন্ট (${serverTotal} জন)`, data: null, mode: "all" },
               ].map((opt) => (
                 <button key={opt.label} className="w-full text-left px-4 py-2.5 text-xs transition"
                   style={{ color: t.text }}
                   onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                  onClick={() => {
+                  onClick={async () => {
+                    // "সব" export হলে সার্ভার থেকে সব data আনো (limit=100 per page, loop)
+                    let exportData = opt.data || students;
+                    if (opt.mode === "all") {
+                      try {
+                        const params = { page: 1, limit: 100 };
+                        if (debouncedSearch) params.search = debouncedSearch;
+                        if (filterStatus !== "All") params.status = filterStatus;
+                        if (filterCountry !== "All") params.country = filterCountry;
+                        if (filterBranch !== "All") params.branch = filterBranch;
+                        if (filterBatch !== "All") params.batch = filterBatch;
+                        if (filterSchool !== "All") params.school = filterSchool;
+                        let allData = [];
+                        let hasMore = true;
+                        let pg = 1;
+                        while (hasMore) {
+                          params.page = pg;
+                          const qs = new URLSearchParams(params).toString();
+                          const res = await api.get(`/students?${qs}`);
+                          const d = Array.isArray(res) ? res : res.data || [];
+                          allData = allData.concat(d);
+                          hasMore = d.length === 100;
+                          pg++;
+                        }
+                        exportData = allData;
+                      } catch { exportData = students; }
+                    }
                     const cols = [
                       { h: "ID", k: "id" }, { h: "Name (EN)", k: "name_en" }, { h: "Name (BN)", k: "name_bn" },
                       { h: "Name (Katakana)", k: "name_katakana" }, { h: "Phone", k: "phone" }, { h: "WhatsApp", k: "whatsapp" },
@@ -246,14 +296,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                     ];
                     const PHONE_KEYS = ["phone", "whatsapp"];
                     const csv = cols.map(c => c.h).join(",") + "\n" +
-                      opt.data.map(s => cols.map(c => {
+                      exportData.map(s => cols.map(c => {
                         const v = String(s[c.k] ?? "").replace(/"/g, '""');
                         if (PHONE_KEYS.includes(c.k) && v && /^0\d+$/.test(v)) return `="` + v + `"`;
                         return `"${v}"`;
                       }).join(",")).join("\n");
                     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
                     Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Students_${new Date().toISOString().slice(0,10)}.csv` }).click();
-                    toast.exported(`Students (${opt.data.length} records)`);
+                    toast.exported(`Students (${exportData.length} records)`);
                     setShowExportMenu(false);
                   }}>
                   {opt.label}
@@ -269,7 +319,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { l: "মোট", v: students.length, c: t.cyan },
+          { l: "মোট", v: serverTotal, c: t.cyan },
           { l: "সক্রিয়", v: activeCount, c: t.emerald },
           { l: "ভিসা / এসেছে", v: visaCount, c: t.purple },
           { l: "নিজস্ব / পার্টনার", v: `${ownCount} / ${partnerCount}`, c: t.amber },
@@ -283,17 +333,17 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
 
       {showAddForm && (
         <AddStudentForm
-          studentsCount={students.length}
+          studentsCount={serverTotal}
           onCancel={() => setShowAddForm(false)}
           onSave={async (newStudent) => {
             try {
-              const saved = await api.post("/students", newStudent);
-              setStudents(prev => [saved, ...prev]);
+              await api.post("/students", newStudent);
             } catch {
-              setStudents(prev => [newStudent, ...prev]);
+              // fallback — লোকালে যোগ হবে
             }
             setShowAddForm(false);
             toast.success(`${newStudent.name_en} — স্টুডেন্ট যোগ হয়েছে!`);
+            fetchStudents(); // সার্ভার থেকে re-fetch
           }}
         />
       )}
@@ -444,7 +494,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   ))}
                 </div>
               )}
-              <Button className="mt-6" onClick={() => { setShowImport(false); if (reloadData) reloadData(); }}>বন্ধ করুন</Button>
+              <Button className="mt-6" onClick={() => { setShowImport(false); fetchStudents(); if (reloadData) reloadData(); }}>বন্ধ করুন</Button>
             </div>
           )}
         </Card>
@@ -488,7 +538,9 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>বাতিল</Button>
           </div>
         ) : (
-          <p className="text-xs font-medium mb-3" style={{ color: t.textSecondary }}>মোট: {filtered.length} জন স্টুডেন্ট</p>
+          <p className="text-xs font-medium mb-3" style={{ color: t.textSecondary }}>
+            মোট: {serverTotal} জন স্টুডেন্ট{loading && " — লোড হচ্ছে..."}
+          </p>
         )}
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -544,8 +596,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && <div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো স্টুডেন্ট পাওয়া যায়নি</p></div>}
-        <Pagination total={filtered.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
+        {paginated.length === 0 && !loading && <div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো স্টুডেন্ট পাওয়া যায়নি</p></div>}
+        <Pagination total={serverTotal} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
     </div>
   );
