@@ -61,12 +61,12 @@ export default function DocumentsPage({ students }) {
     }
   };
 
-  // Get completion for a doc type
+  // Get completion for a doc type — section_header বাদ দিয়ে গণনা
   const getDocCompletion = (docTypeId) => {
     const saved = studentDocData.find(d => d.doc_type_id === docTypeId);
     if (!saved) return { filled: 0, total: 0, pct: 0 };
     const dt = docTypes.find(d => d.id === docTypeId);
-    const fields = dt?.fields || [];
+    const fields = (dt?.fields || []).filter(f => f.type !== "section_header" && f.type !== "repeatable");
     const total = fields.length;
     const filled = fields.filter(f => saved.field_data?.[f.key]).length;
     return { filled, total, pct: total > 0 ? Math.round((filled / total) * 100) : 0 };
@@ -90,9 +90,41 @@ export default function DocumentsPage({ students }) {
   };
 
   // ══════════ DOC TYPE FIELD FORM ══════════
+
+  // কন্ডিশনাল ফিল্ড চেক — শর্ত পূরণ না হলে ফিল্ড দেখাবে না
+  const isFieldVisible = (field) => {
+    if (!field.condition) return true;
+    const { when, equals, not_equals } = field.condition;
+    const currentValue = fieldValues[when];
+    if (equals) return currentValue === equals;
+    if (not_equals) return currentValue !== not_equals;
+    return true;
+  };
+
+  // কন্ডিশনাল ট্রিগার ফিল্ড পরিবর্তন হলে লুকানো ফিল্ডের মান মুছে দাও
+  const handleFieldChange = (key, value) => {
+    setFieldValues(prev => {
+      const updated = { ...prev, [key]: value };
+
+      // চেক করো — এই key কোনো ফিল্ডের condition.when কিনা
+      const allFields = activeDocType?.fields || [];
+      const dependentFields = allFields.filter(f => f.condition?.when === key);
+      dependentFields.forEach(f => {
+        const { equals, not_equals } = f.condition;
+        const visible = equals ? value === equals : not_equals ? value !== not_equals : true;
+        // যদি ফিল্ড invisible হয় তাহলে তার মান মুছে দাও
+        if (!visible && updated[f.key] !== undefined) {
+          delete updated[f.key];
+        }
+      });
+
+      return updated;
+    });
+  };
+
   if (selectedStudent && activeDocType) {
     const fields = activeDocType.fields || [];
-    const normalFields = fields.filter(f => f.type !== "repeatable");
+    const normalFields = fields.filter(f => f.type !== "repeatable" && f.type !== "section_header");
     const repeatableField = fields.find(f => f.type === "repeatable");
 
     // Repeatable members from fieldValues
@@ -141,27 +173,47 @@ export default function DocumentsPage({ students }) {
           <Button icon={Save} onClick={saveWithFlatten} disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}</Button>
         </div>
 
-        {/* Normal fields */}
+        {/* Normal fields + section headers — কন্ডিশনাল ফিল্ড সাপোর্ট সহ */}
         <Card delay={50}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {normalFields.map(f => (
-              <div key={f.key}>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                  {f.label} <span className="text-[9px] font-normal" style={{ color: t.textSecondary }}>({f.label_en})</span>
-                </label>
-                {f.type === "select" ? (
-                  <select value={fieldValues[f.key] || ""} onChange={e => setFieldValues(prev => ({ ...prev, [f.key]: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="">— সিলেক্ট —</option>
-                    {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                ) : (
-                  <input type={f.type === "date" ? "date" : "text"} value={fieldValues[f.key] || ""}
-                    onChange={e => setFieldValues(prev => ({ ...prev, [f.key]: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.label_en} />
-                )}
-              </div>
-            ))}
+            {fields
+              .filter(f => f.type !== "repeatable")
+              .filter(f => isFieldVisible(f))
+              .map(f => {
+                // section_header টাইপ — বিভাগের শিরোনাম
+                if (f.type === "section_header") {
+                  return (
+                    <div key={f.key} className="col-span-2 mt-4 mb-1">
+                      <h4 className="text-sm font-semibold" style={{ color: t.cyan }}>
+                        {f.label}
+                      </h4>
+                      {f.description && (
+                        <p className="text-[10px]" style={{ color: t.muted }}>{f.description}</p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={f.key}>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
+                      {f.label} {f.label_en && <span className="text-[9px] font-normal" style={{ color: t.textSecondary }}>({f.label_en})</span>}
+                      {f.required && <span style={{ color: t.rose }}> *</span>}
+                    </label>
+                    {f.type === "select" ? (
+                      <select value={fieldValues[f.key] || ""} onChange={e => handleFieldChange(f.key, e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                        <option value="">— সিলেক্ট —</option>
+                        {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input type={f.type === "date" ? "date" : "text"} value={fieldValues[f.key] || ""}
+                        onChange={e => handleFieldChange(f.key, e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.label_en || f.label} />
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </Card>
 

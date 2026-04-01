@@ -162,6 +162,40 @@ export default function CertificatePage({ students }) {
     } catch { toast.error("Mapping save ব্যর্থ"); }
   };
 
+  // জন্ম নিবন্ধনের template_type থেকে matching .docx template suggest করো
+  const suggestBirthCertTemplate = (studentId) => {
+    // student-র saved birth cert data থেকে template_type বের করো
+    // এবং templates list-এ match করো
+    const birthCertType = docTypes.find(dt =>
+      dt.name?.toLowerCase().includes("birth") || dt.name_bn === "জন্ম নিবন্ধন"
+    );
+    if (!birthCertType) return null;
+
+    // student-র saved data async load হয় — তাই এটা prefill step-এ চলবে
+    return birthCertType;
+  };
+
+  // Birth cert template_type → matching template auto-select
+  const autoSelectTemplateByType = (templateType) => {
+    if (!templateType) return null;
+
+    // template_type থেকে keyword বের করো
+    const typeKeywords = {
+      "পৌরসভা (Paurashava)": ["paurashava", "পৌরসভা"],
+      "সিটি কর্পোরেশন (City Corporation)": ["city corporation", "সিটি কর্পোরেশন", "city_corp"],
+      "ইউনিয়ন পরিষদ (Union Parishad)": ["union parishad", "ইউনিয়ন পরিষদ", "union"],
+    };
+
+    const keywords = typeKeywords[templateType] || [];
+    if (keywords.length === 0) return null;
+
+    // templates list-এ search করো
+    return templates.find(tmpl => {
+      const name = (tmpl.name || "").toLowerCase();
+      return keywords.some(kw => name.includes(kw.toLowerCase()));
+    });
+  };
+
   // ── Generate — student profile + document-specific data উভয়ই পাঠায় ──
   const doGenerate = async (format = "docx") => {
     if (!selectedStudent) { toast.error("একজন স্টুডেন্ট সিলেক্ট করুন"); return; }
@@ -399,6 +433,35 @@ export default function CertificatePage({ students }) {
               ডকুমেন্টের তথ্য পূরণ করুন — student profile থেকে match থাকলে auto-fill হয়েছে, প্রয়োজনে পরিবর্তন করুন
             </p>
           </div>
+
+          {/* জন্ম নিবন্ধনের template_type অনুযায়ী matching template সাজেশন */}
+          {(() => {
+            const birthType = docData.template_type;
+            if (!birthType) return null;
+            const suggested = autoSelectTemplateByType(birthType);
+            if (!suggested || suggested.id === activeTemplate.id) return null;
+            return (
+              <div className="mb-4 p-3 rounded-lg flex items-center justify-between"
+                style={{ background: `${t.amber}08`, border: `1px solid ${t.amber}20` }}>
+                <div>
+                  <p className="text-xs font-medium" style={{ color: t.amber }}>
+                    সাজেশন: "{birthType}" টাইপের জন্য "{suggested.name}" টেমপ্লেট পাওয়া গেছে
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
+                    এই টেমপ্লেটে switch করলে আরও সঠিক output পাবেন
+                  </p>
+                </div>
+                <button onClick={() => {
+                  setActiveTemplate(suggested);
+                  toast.success(`"${suggested.name}" টেমপ্লেটে switch হয়েছে`);
+                }}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-medium shrink-0 ml-3"
+                style={{ background: t.amber, color: "#fff" }}>
+                  Switch করুন
+                </button>
+              </div>
+            );
+          })()}
 
           <div className="space-y-3">
             {(activeTemplate.placeholders || []).map((p, i) => (
