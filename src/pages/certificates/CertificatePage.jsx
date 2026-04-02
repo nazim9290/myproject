@@ -144,6 +144,50 @@ export default function CertificatePage({ students }) {
     }).catch((err) => { console.error("[Templates Load]", err); toast.error("টেমপ্লেট লোড করতে সমস্যা হয়েছে"); }).finally(() => setLoading(false));
   }, []);
 
+  // Frontend modifier apply — backend resolveValue()-এর mirror
+  const applyModifier = (value, modifier) => {
+    if (!value || !modifier) return value;
+    const val = String(value);
+
+    // Custom map: :map(Male=男,Female=女)
+    const mapMatch = modifier.match(/^:map\((.+)\)$/);
+    if (mapMatch) {
+      const maps = {};
+      mapMatch[1].split(",").forEach(pair => { const [f, t] = pair.split("="); if (f && t) maps[f.trim()] = t.trim(); });
+      return maps[val] || val;
+    }
+
+    // Date modifiers
+    if (val.match(/^\d{4}-\d{2}-\d{2}/)) {
+      const [y, m, d] = val.split("-");
+      const dd = (d || "").slice(0, 2);
+      if (modifier === ":jp") return `${y}年${parseInt(m)}月${parseInt(dd)}日`;
+      if (modifier === ":slash") return `${y}/${m}/${dd}`;
+      if (modifier === ":dot") return `${dd}.${m}.${y}`;
+      if (modifier === ":dmy") return `${dd}/${m}/${y}`;
+      if (modifier === ":mdy") return `${m}/${dd}/${y}`;
+      if (modifier === ":year") return y;
+      if (modifier === ":month") return m;
+      if (modifier === ":day") return dd;
+    }
+
+    // Japanese auto-translate
+    if (modifier === ":jp") {
+      const JP = { "Male": "男", "Female": "女", "Other": "その他", "Bangladeshi": "バングラデシュ",
+        "Single": "未婚", "Married": "既婚", "Divorced": "離婚",
+        "A+": "A型(Rh+)", "A-": "A型(Rh-)", "B+": "B型(Rh+)", "B-": "B型(Rh-)",
+        "AB+": "AB型(Rh+)", "AB-": "AB型(Rh-)", "O+": "O型(Rh+)", "O-": "O型(Rh-)",
+        "Individual": "個人", "Science": "理系", "Commerce": "商業" };
+      return JP[val] || val;
+    }
+
+    // Name parts
+    if (modifier === ":first") return val.trim().split(/\s+/)[0] || "";
+    if (modifier === ":last") return val.trim().split(/\s+/).slice(1).join(" ") || "";
+
+    return val;
+  };
+
   const eligibleStudents = (students || []).filter(s => !["VISITOR", "CANCELLED"].includes(s.status));
   const batchList = [...new Set(eligibleStudents.map(s => s.batch).filter(Boolean))];
   const batchFiltered = filterBatch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.batch === filterBatch);
@@ -487,19 +531,20 @@ export default function CertificatePage({ students }) {
               (activeTemplate.placeholders || []).forEach(p => {
                 const placeholderKey = p.key;           // e.g. "Register No"
                 const rawField = p.field || p.key;      // e.g. "sex:jp" or "register_no"
-                // Modifier strip — "sex:jp" → "sex", "dob:map(...)" → "dob"
-                const mappedField = rawField.includes(":") ? rawField.split(":")[0] : rawField;
+                // Modifier strip — "sex:jp" → base="sex", mod=":jp"
+                const colonIdx = rawField.indexOf(":");
+                const mappedField = colonIdx > 0 ? rawField.substring(0, colonIdx) : rawField;
+                const mod = colonIdx > 0 ? rawField.substring(colonIdx) : null;
 
                 // Priority: doc data > student profile > placeholder key match
-                if (allSavedFields[mappedField]) {
-                  prefill[placeholderKey] = allSavedFields[mappedField];
-                } else if (allSavedFields[placeholderKey]) {
-                  prefill[placeholderKey] = allSavedFields[placeholderKey];
-                } else if (stu[mappedField]) {
-                  prefill[placeholderKey] = stu[mappedField];
-                } else if (stu[placeholderKey]) {
-                  prefill[placeholderKey] = stu[placeholderKey];
-                }
+                let rawValue = null;
+                if (allSavedFields[mappedField]) rawValue = allSavedFields[mappedField];
+                else if (allSavedFields[placeholderKey]) rawValue = allSavedFields[placeholderKey];
+                else if (stu[mappedField]) rawValue = stu[mappedField];
+                else if (stu[placeholderKey]) rawValue = stu[placeholderKey];
+
+                // Modifier apply — preview-তেও transformed value দেখাবে
+                if (rawValue) prefill[placeholderKey] = mod ? applyModifier(rawValue, mod) : rawValue;
               });
 
               setDocData(prefill);
