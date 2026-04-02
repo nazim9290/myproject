@@ -365,6 +365,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
 
   const [form, setForm] = useState(buildInitialForm);
   const [saving, setSaving] = useState(false);
+  const [activeStepTab, setActiveStepTab] = useState(0);
 
   const [checklists, setChecklists] = useState(() => {
     const existing = st.checklists || {};
@@ -662,13 +663,31 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
         </div>
       </Card>
 
-      {/* Sections Grid — দেশ অনুযায়ী dynamic */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Tab bar — প্রতিটি step এক tab */}
+      <div className="flex flex-wrap gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {sections.map((sec, si) => {
-          // এই step-এর আপলোড করা ফাইল ফিল্টার
-          const stepFiles = files.filter(f => f.step === sec.stepKey);
+          const stepDone = progressSteps[si]?.done;
           return (
-          <Card key={si} delay={100 + si * 60}>
+            <button key={si} onClick={() => setActiveStepTab(si)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all"
+              style={{
+                background: activeStepTab === si ? t.cardSolid : "transparent",
+                color: activeStepTab === si ? sec.color : t.muted,
+                border: activeStepTab === si ? `1px solid ${sec.color}30` : "1px solid transparent",
+              }}>
+              <span>{sec.icon}</span> {sec.title}
+              {stepDone && <Check size={10} style={{ color: t.emerald }} />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Active Tab Content */}
+      {sections[activeStepTab] && (() => {
+        const sec = sections[activeStepTab];
+        const stepFiles = files.filter(f => f.step === sec.stepKey);
+        return (
+          <Card delay={50}>
             <h3 className="text-sm font-semibold mb-1 flex items-center gap-2">
               <span>{sec.icon}</span> {sec.title}
             </h3>
@@ -716,20 +735,36 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
                 <p className="text-[10px] font-medium flex items-center gap-1" style={{ color: t.muted }}>
                   <Paperclip size={10} /> ডকুমেন্ট ({stepFiles.length})
                 </p>
-                {/* ফাইল আপলোড বাটন */}
-                <label className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium cursor-pointer hover:opacity-80 transition"
-                  style={{ background: `${sec.color}15`, color: sec.color }}>
-                  <Upload size={10} />
-                  {uploading === sec.stepKey ? "আপলোড হচ্ছে..." : "আপলোড"}
-                  <input type="file" className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-                    disabled={uploading === sec.stepKey}
-                    onChange={e => {
-                      if (e.target.files?.[0]) handleFileUpload(sec.stepKey, e.target.files[0]);
-                      e.target.value = ""; // reset input — একই ফাইল আবার আপলোড করতে পারবে
-                    }}
-                  />
-                </label>
+                <div className="flex items-center gap-1">
+                  {/* ফাইল আপলোড বাটন */}
+                  <label className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium cursor-pointer hover:opacity-80 transition"
+                    style={{ background: `${sec.color}15`, color: sec.color }}>
+                    <Upload size={10} />
+                    {uploading === sec.stepKey ? "আপলোড হচ্ছে..." : "ফাইল"}
+                    <input type="file" className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                      disabled={uploading === sec.stepKey}
+                      onChange={e => {
+                        if (e.target.files?.[0]) handleFileUpload(sec.stepKey, e.target.files[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {/* Google Drive লিংক */}
+                  <button onClick={() => {
+                    const url = prompt("Google Drive লিংক পেস্ট করুন:");
+                    if (url && url.trim()) {
+                      const newFile = { id: Date.now().toString(), step: sec.stepKey, name: "Google Drive Link", url: url.trim(), uploaded_at: new Date().toISOString().slice(0, 10), type: "gdrive" };
+                      setFiles(prev => [...prev, newFile]);
+                      // Save to backend
+                      preDeparture.update(st.id, { ...form, checklists, deadlines, files: [...files, newFile] }).catch(() => {});
+                      toast.success("Drive লিংক যোগ হয়েছে");
+                    }
+                  }} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium hover:opacity-80 transition"
+                    style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                    🔗 Drive
+                  </button>
+                </div>
               </div>
 
               {/* আপলোড করা ফাইল তালিকা */}
@@ -782,9 +817,8 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
               {(checklists[sec.step] || []).length > 0 && (() => { const items = checklists[sec.step]; const done = items.filter(it => it.done).length; const total = items.length; const pct = Math.round((done / total) * 100); return (<div className="mt-2 flex items-center gap-2"><div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: t.border }}><div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: pct === 100 ? t.emerald : sec.color }} /></div><span className="text-[9px]" style={{ color: t.muted }}>{done}/{total}</span></div>); })()}
             </div>
           </Card>
-          );
-        })}
-      </div>
+        );
+      })()}
 
       {/* Notes + Save */}
       <Card delay={500}>
