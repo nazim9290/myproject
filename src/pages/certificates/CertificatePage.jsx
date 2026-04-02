@@ -52,7 +52,8 @@ export default function CertificatePage({ students }) {
 
   // Mapping — upload-এর পর placeholder → system field map
   const [detectedPlaceholders, setDetectedPlaceholders] = useState([]);
-  const [mappings, setMappings] = useState({}); // { "studentName": "name_en", "নাম": "name_bn" }
+  const [mappings, setMappings] = useState({}); // { "studentName": "name_en" }
+  const [modifiers, setModifiers] = useState({}); // { "Sex": ":jp", "Date of Birth": ":jp" }
 
   // Generate
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -185,10 +186,14 @@ export default function CertificatePage({ students }) {
 
   // ── Save mapping to DB ──
   const saveMapping = async () => {
-    const mapped = detectedPlaceholders.map(p => ({
-      ...p,
-      field: mappings[p.key] || p.key,
-    }));
+    const mapped = detectedPlaceholders.map(p => {
+      let field = mappings[p.key] || p.key;
+      // Modifier যোগ — :jp, :slash, :map(...) etc.
+      const mod = modifiers[p.key];
+      if (mod && mod !== "__custom__") field = field + mod;
+      else if (mod === "__custom__" && modifiers[`${p.key}_custom`]) field = field + modifiers[`${p.key}_custom`];
+      return { ...p, field };
+    });
     try {
       await fetch(`${API_URL}/docgen/templates/${activeTemplate.id}/mapping`, {
         method: "POST",
@@ -292,7 +297,7 @@ export default function CertificatePage({ students }) {
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["Placeholder", "System Field (কোন ডেটা বসবে)", ""].map(h => (
+                {["Placeholder", "System Field (কোন ডেটা বসবে)", "Modifier", ""].map(h => (
                   <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                 ))}
               </tr>
@@ -365,7 +370,39 @@ export default function CertificatePage({ students }) {
                       );
                     })()}
                   </td>
-                  <td className="py-2.5 px-3 text-center" style={{ width: 40 }}>
+                  <td className="py-2.5 px-3" style={{ width: 160 }}>
+                    {mappings[p.key] && (
+                      <select value={modifiers[p.key] || ""} onChange={e => setModifiers(prev => ({ ...prev, [p.key]: e.target.value }))}
+                        className="w-full px-2 py-1 rounded-lg text-[10px] outline-none"
+                        style={{ ...is, borderColor: modifiers[p.key] ? `${t.purple}60` : t.inputBorder, color: modifiers[p.key] ? t.purple : t.muted }}>
+                        <option value="">None</option>
+                        <optgroup label="── Japanese ──">
+                          <option value=":jp">:jp (auto translate)</option>
+                          <option value=":map(Male=男,Female=女)">:map (Male=男,Female=女)</option>
+                        </optgroup>
+                        <optgroup label="── Date ──">
+                          <option value=":jp">:jp (年月日)</option>
+                          <option value=":slash">:slash (YYYY/MM/DD)</option>
+                          <option value=":dot">:dot (DD.MM.YYYY)</option>
+                          <option value=":dmy">:dmy (DD/MM/YYYY)</option>
+                          <option value=":year">:year</option>
+                          <option value=":month">:month</option>
+                          <option value=":day">:day</option>
+                        </optgroup>
+                        <optgroup label="── Name ──">
+                          <option value=":first">:first (first word)</option>
+                          <option value=":last">:last (rest)</option>
+                        </optgroup>
+                        <option value="__custom__">✏️ Custom...</option>
+                      </select>
+                    )}
+                    {modifiers[p.key] === "__custom__" && (
+                      <input value={modifiers[`${p.key}_custom`] || ""} onChange={e => setModifiers(prev => ({ ...prev, [`${p.key}_custom`]: e.target.value, [p.key]: e.target.value || "__custom__" }))}
+                        className="w-full px-2 py-1 rounded-lg text-[10px] outline-none mt-1" style={is}
+                        placeholder=":map(A=X,B=Y)" />
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3 text-center" style={{ width: 30 }}>
                     {mappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
                   </td>
                 </tr>
@@ -644,10 +681,23 @@ export default function CertificatePage({ students }) {
               <button onClick={() => {
                   setActiveTemplate(tmpl);
                   setDetectedPlaceholders(tmpl.placeholders || []);
-                  // Restore saved mappings
+                  // Restore saved mappings + modifiers
                   const restored = {};
-                  (tmpl.placeholders || []).forEach(p => { if (p.field) restored[p.key] = p.field; });
+                  const restoredMods = {};
+                  (tmpl.placeholders || []).forEach(p => {
+                    if (p.field) {
+                      // Split field:modifier — e.g. "sex:jp" → field="sex", mod=":jp"
+                      const colonIdx = p.field.indexOf(":");
+                      if (colonIdx > 0) {
+                        restored[p.key] = p.field.substring(0, colonIdx);
+                        restoredMods[p.key] = p.field.substring(colonIdx);
+                      } else {
+                        restored[p.key] = p.field;
+                      }
+                    }
+                  });
                   setMappings(restored);
+                  setModifiers(restoredMods);
                   setView("mapping");
                 }} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.purple }}
                 onMouseEnter={e => e.currentTarget.style.background = `${t.purple}15`}
