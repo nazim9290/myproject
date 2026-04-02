@@ -342,7 +342,7 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
   );
 }
 
-function PageRenderer({ activePage, students, setStudents, visitors, setVisitors, onConvertToStudent, isDark, setIsDark, currentUser, setCurrentUser, onLogout, reloadData, stepConfigs, updateStepConfigs, dataLoaded }) {
+function PageRenderer({ activePage, students, setStudents, visitors, setVisitors, onConvertToStudent, isDark, setIsDark, currentUser, setCurrentUser, onLogout, reloadData, stepConfigs, updateStepConfigs, dataLoaded, setActivePage }) {
   // ডাটা লোড হচ্ছে এমন পেজে Skeleton দেখাও
   const DATA_PAGES = ["dashboard", "visitors", "students", "course", "attendance", "documents", "schools", "departure", "accounts", "reports", "calendar", "communication"];
   if (!dataLoaded && DATA_PAGES.includes(activePage)) {
@@ -356,7 +356,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "visitors":
       return <VisitorsPage visitors={visitors} setVisitors={setVisitors} onConvertToStudent={onConvertToStudent} reloadData={reloadData} />;
     case "students":
-      return <StudentsPage students={students} setStudents={setStudents} reloadData={reloadData} stepConfigs={stepConfigs} />;
+      return <StudentsPage students={students} setStudents={setStudents} reloadData={reloadData} stepConfigs={stepConfigs} setActivePage={setActivePage} />;
     case "course":
       return <LanguageCoursePage students={students} />;
     case "attendance":
@@ -809,6 +809,7 @@ function AppShell({ isDark, setIsDark }) {
               stepConfigs={stepConfigs}
               updateStepConfigs={updateStepConfigs}
               dataLoaded={dataLoaded}
+              setActivePage={setActivePage}
             />
           </main>
         </div>

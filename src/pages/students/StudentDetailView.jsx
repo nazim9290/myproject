@@ -13,8 +13,10 @@ import { api } from "../../hooks/useAPI";
 // ── Pipeline step configs — prop থেকে dynamic ভাবে আসবে (Admin সেটিংস থেকে) ──
 import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 
-const MAIN_STEPS = PIPELINE_STATUSES.filter(s => !["CANCELLED","PAUSED"].includes(s.code));
-
+// Student pipeline — COE_RECEIVED পর্যন্ত, এরপর Pre-Departure module-এ handle হয়
+const STUDENT_PIPELINE_CODES = ["ENROLLED","IN_COURSE","EXAM_PASSED","DOC_COLLECTION","SCHOOL_INTERVIEW","DOC_SUBMITTED","COE_RECEIVED"];
+const POST_COE_STATUSES = ["HEALTH_CHECK","TUITION_REMITTED","VFS_SCHEDULED","VISA_APPLIED","VISA_GRANTED","PRE_DEPARTURE","ARRIVED","COMPLETED"];
+const MAIN_STEPS = PIPELINE_STATUSES.filter(s => STUDENT_PIPELINE_CODES.includes(s.code));
 // ── ট্যাব কনফিগারেশন ──
 const TABS = [
   { key: "overview", label: "ওভারভিউ", icon: LayoutDashboard },
@@ -24,7 +26,7 @@ const TABS = [
   { key: "timeline", label: "টাইমলাইন", icon: Clock },
 ];
 
-export default function StudentDetailView({ student, onBack, onUpdate, onDelete, stepConfigs }) {
+export default function StudentDetailView({ student, onBack, onUpdate, onDelete, stepConfigs, onNavigate }) {
   // stepConfigs prop থেকে dynamic checklist — না পেলে default fallback
   const STEPS_META = stepConfigs || DEFAULT_STEPS_META;
   const t = useTheme();
@@ -126,8 +128,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [feeItemForm, setFeeItemForm] = useState({ category: "enrollment_fee", label: "", amount: "" });
 
   const currentStatus = student.status;
-  const currentStepIdx = MAIN_STEPS.findIndex(s => s.code === currentStatus);
-  const meta = STEPS_META[currentStatus] || STEPS_META.VISITOR;
+  // Post-COE student-দের জন্য pipeline-এ COE_RECEIVED পর্যন্ত complete দেখাবে
+  const isPastCoe = POST_COE_STATUSES.includes(currentStatus);
+  const currentStepIdx = isPastCoe
+    ? MAIN_STEPS.findIndex(s => s.code === "COE_RECEIVED")
+    : MAIN_STEPS.findIndex(s => s.code === currentStatus);
+  const meta = STEPS_META[currentStatus] || STEPS_META.ENROLLED;
   const stepColor = PIPELINE_STATUSES.find(s => s.code === currentStatus)?.color || t.cyan;
   const isTerminal = ["CANCELLED", "PAUSED"].includes(currentStatus);
 
@@ -400,7 +406,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 </div>
               </div>
               <p className="text-[10px]" style={{ color: t.muted }}>
-                ধাপ {Math.max(currentStepIdx + 1, 1)} / {MAIN_STEPS.length}
+                {isPastCoe ? "সম্পন্ন → Pre-Departure" : `ধাপ ${Math.max(currentStepIdx + 1, 1)} / ${MAIN_STEPS.length}`}
                 {isTerminal && <span className="ml-1 px-1.5 py-0.5 rounded-full font-bold" style={{ background: `${t.rose}20`, color: t.rose }}>{currentStatus}</span>}
               </p>
             </Card>
@@ -451,25 +457,26 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             </Card>
           </div>
 
-          {/* ── Pipeline Progress — horizontal stepper ── */}
+          {/* ── Pipeline Progress — horizontal stepper (COE_RECEIVED পর্যন্ত) ── */}
           <Card delay={70}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold">পাইপলাইন অগ্রগতি</h3>
               <p className="text-[11px]" style={{ color: t.muted }}>
-                ধাপ {Math.max(currentStepIdx + 1, 1)} / {MAIN_STEPS.length}
+                {isPastCoe ? `সম্পন্ন — ${PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus}` : `ধাপ ${Math.max(currentStepIdx + 1, 1)} / ${MAIN_STEPS.length}`}
               </p>
             </div>
-            {/* Step circles */}
+            {/* Step circles — ENROLLED থেকে COE_RECEIVED পর্যন্ত */}
             <div className="overflow-x-auto pb-2">
               <div className="flex items-center min-w-max">
                 {MAIN_STEPS.map((step, i) => {
-                  const done = i < currentStepIdx;
-                  const active = i === currentStepIdx;
+                  // Post-COE student-দের জন্য সব step complete দেখাবে
+                  const done = isPastCoe ? true : i < currentStepIdx;
+                  const active = isPastCoe ? false : i === currentStepIdx;
                   const color = step.color;
                   return (
                     <div key={step.code} className="flex items-center">
                       <button
-                        onClick={() => !isTerminal && changeStatus(step.code, `Status → ${step.label}`)}
+                        onClick={() => !isTerminal && !isPastCoe && changeStatus(step.code, `Status → ${step.label}`)}
                         title={step.label}
                         className="flex flex-col items-center gap-1.5 group transition-all"
                         style={{ minWidth: 52 }}
@@ -490,7 +497,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       </button>
                       {i < MAIN_STEPS.length - 1 && (
                         <div className="h-0.5 w-5 mx-0.5 shrink-0 rounded-full transition-all"
-                          style={{ background: i < currentStepIdx ? t.emerald : t.inputBorder }} />
+                          style={{ background: (isPastCoe || i < currentStepIdx) ? t.emerald : t.inputBorder }} />
                       )}
                     </div>
                   );
@@ -499,11 +506,55 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             </div>
           </Card>
 
+          {/* ── Pre-Departure ব্যানার — COE_RECEIVED বা তার পরের status হলে দেখাবে ── */}
+          {(currentStatus === "COE_RECEIVED" || isPastCoe) && (
+            <Card delay={100}>
+              <div className="flex items-center justify-between p-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">✈️</span>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: t.emerald }}>
+                      {isPastCoe ? `${PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus} — Pre-Departure process চলছে` : "COE Received — Pre-Departure process শুরু করুন"}
+                    </p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>ভিসা, VFS, ফ্লাইট ইত্যাদি Pre-Departure মডিউলে ম্যানেজ করুন</p>
+                  </div>
+                </div>
+                <button onClick={() => onNavigate && onNavigate("departure")}
+                  className="px-4 py-2 rounded-xl text-xs font-medium shrink-0"
+                  style={{ background: t.emerald, color: "#fff" }}>
+                  প্রি-ডিপার্চার →
+                </button>
+              </div>
+            </Card>
+          )}
+
           {/* ── Current Step Action Card + Quick Info (2-column) ── */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
             {/* Current Step Action Card — 3 col wide */}
             <div className="lg:col-span-3">
-              {!isTerminal ? (
+              {/* Post-COE student — Pre-Departure মডিউলে ম্যানেজ হচ্ছে */}
+              {isPastCoe ? (
+                <Card delay={80}>
+                  <div className="flex items-center gap-4 p-2">
+                    <div className="text-3xl">✈️</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold" style={{ color: t.emerald }}>
+                        {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+                        এই স্টুডেন্টের ভিসা, VFS, ফ্লাইট ইত্যাদি Pre-Departure মডিউলে ম্যানেজ হচ্ছে
+                      </p>
+                    </div>
+                    <button onClick={() => onNavigate && onNavigate("departure")}
+                      className="px-4 py-2 rounded-xl text-xs font-bold transition shrink-0"
+                      style={{ background: `${t.emerald}20`, color: t.emerald, border: `1px solid ${t.emerald}40` }}
+                      onMouseEnter={e => e.currentTarget.style.background = `${t.emerald}30`}
+                      onMouseLeave={e => { const el = e.currentTarget; el.style.background = `${t.emerald}20`; }}>
+                      প্রি-ডিপার্চার →
+                    </button>
+                  </div>
+                </Card>
+              ) : !isTerminal ? (
                 <Card delay={80}>
                   {/* Collapsible toggle header */}
                   <button
@@ -591,7 +642,19 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       </button>
                     )}
                     <div className="flex-1" />
-                    {meta.nextStatus && (
+                    {/* COE_RECEIVED হলে Pre-Departure-এ যাওয়ার বাটন দেখাবে, পরবর্তী ধাপ নয় */}
+                    {currentStatus === "COE_RECEIVED" ? (
+                      <button
+                        onClick={() => onNavigate && onNavigate("departure")}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                        style={{
+                          background: `linear-gradient(135deg, ${t.emerald}, ${t.emerald}cc)`,
+                          color: "#fff",
+                          boxShadow: `0 4px 12px ${t.emerald}40`,
+                        }}>
+                        ✈️ প্রি-ডিপার্চারে যান <ChevronRight size={13} />
+                      </button>
+                    ) : meta.nextStatus && (
                       <div className="flex items-center gap-2">
                         {!allRequiredDone && (
                           <p className="text-[10px]" style={{ color: t.rose }}>

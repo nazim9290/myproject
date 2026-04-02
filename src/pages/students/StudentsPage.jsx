@@ -16,7 +16,7 @@ import AddStudentForm from "./AddStudentForm";
 import { api } from "../../hooks/useAPI";
 import { API_URL } from "../../lib/api";
 
-export default function StudentsPage({ students, setStudents, reloadData, stepConfigs }) {
+export default function StudentsPage({ students, setStudents, reloadData, stepConfigs, setActivePage }) {
   const t = useTheme();
   const toast = useToast();
   const [selectedId, setSelectedId] = useState(null);
@@ -199,6 +199,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         student={selectedStudent}
         stepConfigs={stepConfigs}
         onBack={() => setSelectedId(null)}
+        onNavigate={setActivePage}
         onUpdate={async (updated) => {
           try { await api.patch(`/students/${updated.id}`, updated); } catch (err) { console.error("[Student Update]", err); toast.error("সার্ভারে আপডেট ব্যর্থ"); }
           setStudents(students.map((s) => s.id === updated.id ? updated : s));

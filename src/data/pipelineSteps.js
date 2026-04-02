@@ -72,15 +72,14 @@ export const DEFAULT_STEPS_META = {
       { id: "ds3", text: "স্কুল Recheck থাকলে দ্রুত সমাধান হয়েছে", req: false },
     ],
   },
+  // COE_RECEIVED — Student pipeline-এর শেষ ধাপ
+  // এরপরের ধাপ (ভিসা, VFS, ফ্লাইট) Pre-Departure মডিউলে handle হয়
   COE_RECEIVED: {
-    icon: "🎉", nextStatus: "VISA_GRANTED", nextLabel: "ভিসা পেয়েছি",
-    hint: "⚠️ COE সাধারণত ৩ মাস valid — দ্রুত ভিসা apply করুন!",
+    icon: "🎉", nextStatus: null, nextLabel: null,
+    hint: "⚠️ COE সাধারণত ৩ মাস valid — প্রি-ডিপার্চার মডিউলে ভিসা প্রসেস শুরু করুন!",
     checklist: [
       { id: "coe1", text: "COE নম্বর ও মেয়াদ রেকর্ড করা হয়েছে", req: true },
-      { id: "coe2", text: "টিউশন ফি রেমিট্যান্স সম্পন্ন (ব্যাংক রিসিট সহ)", req: true },
-      { id: "coe3", text: "Health Check — Chest X-Ray সম্পন্ন", req: true },
-      { id: "coe4", text: "VFS / Visa Center appointment নেওয়া হয়েছে", req: true },
-      { id: "coe5", text: "ভিসা আবেদন ফর্ম পূরণ ও জমা হয়েছে", req: true },
+      { id: "coe2", text: "Pre-Departure মডিউলে এন্ট্রি তৈরি হয়েছে", req: true },
     ],
   },
   VISA_GRANTED: {
