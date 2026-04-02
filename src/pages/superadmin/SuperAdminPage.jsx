@@ -30,6 +30,7 @@ export default function SuperAdminPage() {
   const [stats, setStats] = useState(null);
   const [pricing, setPricing] = useState({ per_student_fee: 3000, trial_days: 14 });
   const [loading, setLoading] = useState(true);
+  const [docTypeGroups, setDocTypeGroups] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPricingForm, setShowPricingForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -70,16 +71,28 @@ export default function SuperAdminPage() {
     const token = localStorage.getItem("agencyos_token");
     const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
     try {
-      const [agRes, stRes, prRes, tplRes] = await Promise.all([
+      const [agRes, stRes, prRes, tplRes, dtRes] = await Promise.all([
         fetch(`${API_URL}/super-admin/agencies`, { headers }),
         fetch(`${API_URL}/super-admin/stats`, { headers }),
         fetch(`${API_URL}/super-admin/pricing`, { headers }),
         fetch(`${API_URL}/super-admin/default-templates`, { headers }),
+        fetch(`${API_URL}/docdata/types`, { headers }).catch(() => ({ ok: false })),
       ]);
       if (agRes.ok) setAgencies(await agRes.json());
       if (stRes.ok) setStats(await stRes.json());
       if (prRes.ok) setPricing(await prRes.json());
       if (tplRes.ok) setTemplates(await tplRes.json());
+      // Doc type fields → mapping dropdown-এ extra groups
+      if (dtRes.ok) {
+        const docTypes = await dtRes.json();
+        const groups = (docTypes || []).map(dt => ({
+          group: `📄 ${dt.name}`,
+          color: "purple",
+          fields: (dt.fields || []).filter(f => f.type !== "section_header" && f.type !== "repeatable")
+            .map(f => ({ key: f.key, label: `${f.label_en || f.label} (${dt.name})` })),
+        })).filter(g => g.fields.length > 0);
+        setDocTypeGroups(groups);
+      }
     } catch (err) { console.error("[SuperAdmin Load]", err); toast.error("ডাটা লোড করতে সমস্যা হয়েছে"); }
     setLoading(false);
   };
@@ -547,6 +560,7 @@ export default function SuperAdminPage() {
                 modifiers={templateModifiers}
                 onMappingChange={(key, val) => setTemplateMappings(prev => ({ ...prev, [key]: val }))}
                 onModifierChange={(key, val) => setTemplateModifiers(prev => ({ ...prev, [key]: val }))}
+                extraGroups={docTypeGroups}
               />
 
               {/* ── বাটন ── */}
