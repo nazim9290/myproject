@@ -157,19 +157,18 @@ export default function CertificatePage({ students }) {
 
       setUploading(true);
       try {
-        // Default template-এর file download করে re-upload as agency template
-        const fileRes = await fetch(`${API_URL.replace("/api", "")}${dt.file_url}`);
-        const blob = await fileRes.blob();
-        const fileName = dt.file_name || "template.docx";
-        const file = new File([blob], fileName, { type: blob.type });
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("template_name", uploadName);
-        formData.append("category", uploadCategory);
-        if (uploadDesc.trim()) formData.append("description", uploadDesc.trim());
-        if (linkedDocType) formData.append("linked_doc_type", linkedDocType);
-        const res = await fetch(`${API_URL}/docgen/upload`, { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData });
+        // Backend-এ default template ID পাঠাই — backend নিজেই file copy করবে
+        const res = await fetch(`${API_URL}/docgen/create-from-default`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+          body: JSON.stringify({
+            default_template_id: dt.id,
+            template_name: uploadName,
+            category: uploadCategory,
+            description: uploadDesc.trim() || dt.description || "",
+            linked_doc_type: linkedDocType || "",
+          }),
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
