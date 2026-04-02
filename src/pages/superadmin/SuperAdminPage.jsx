@@ -628,6 +628,7 @@ export default function SuperAdminPage() {
                                 <option value=":jp">:jp (auto translate)</option>
                               </optgroup>
                               <optgroup label="── Date ──">
+                                <option value=":jp">:jp (年月日)</option>
                                 <option value=":slash">:slash (YYYY/MM/DD)</option>
                                 <option value=":dot">:dot (DD.MM.YYYY)</option>
                                 <option value=":dmy">:dmy (DD/MM/YYYY)</option>
