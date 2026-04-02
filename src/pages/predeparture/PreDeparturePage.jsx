@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { preDeparture, API_URL } from "../../lib/api";
+import { api } from "../../hooks/useAPI";
 
 /**
  * PreDeparturePage — Country-specific Pre-Departure & VFS Tracking
@@ -366,6 +367,69 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
   const [form, setForm] = useState(buildInitialForm);
   const [saving, setSaving] = useState(false);
   const [activeStepTab, setActiveStepTab] = useState(0);
+
+  // ── ডিফল্ট টেমপ্লেট — সুপার অ্যাডমিনের আপলোড করা ──
+  const [defaultTemplates, setDefaultTemplates] = useState([]);
+  useEffect(() => {
+    api.get("/default-templates").then(data => {
+      if (Array.isArray(data)) setDefaultTemplates(data);
+    }).catch(() => { /* ডিফল্ট টেমপ্লেট না পেলে চুপ থাকো */ });
+  }, []);
+
+  // দেশ অনুযায়ী ফিল্টার — matching country অথবা "All" দেশ
+  const countryTemplates = defaultTemplates.filter(tmpl => !tmpl.country || tmpl.country === "All" || tmpl.country === country);
+
+  // ── ডিফল্ট টেমপ্লেট দিয়ে ডকুমেন্ট Generate ──
+  const generateFromDefault = async (tmpl) => {
+    try {
+      toast.success("ডকুমেন্ট তৈরি হচ্ছে...");
+      const tokenVal = localStorage.getItem("agencyos_token");
+
+      // Excel টেমপ্লেট — Excel generate endpoint ব্যবহার
+      if (tmpl.category === "excel" && tmpl.file_url) {
+        const res = await fetch(`${API_URL}/excel/generate-single`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenVal}` },
+          body: JSON.stringify({
+            template_url: tmpl.file_url,
+            student_id: st.id,
+            mappings: tmpl.template_data?.mappings || [],
+          }),
+        });
+        if (!res.ok) throw new Error("Generate ব্যর্থ");
+        const blob = await res.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${tmpl.name}_${st.name_en || st.name || st.id}.xlsx`;
+        a.click();
+        toast.success(`${tmpl.name} ডাউনলোড হয়েছে`);
+      }
+      // DocGen টেমপ্লেট — docgen generate endpoint ব্যবহার
+      else if (tmpl.category === "docgen" && tmpl.file_url) {
+        const res = await fetch(`${API_URL}/docgen/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenVal}` },
+          body: JSON.stringify({
+            template_id: tmpl.id,
+            student_id: st.id,
+            format: "docx",
+            doc_data: form,
+          }),
+        });
+        if (!res.ok) throw new Error("Generate ব্যর্থ");
+        const blob = await res.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${tmpl.name}_${st.name_en || st.name || st.id}.docx`;
+        a.click();
+        toast.success(`${tmpl.name} ডাউনলোড হয়েছে`);
+      } else {
+        toast.error("এই টেমপ্লেটের ফাইল পাওয়া যায়নি");
+      }
+    } catch (err) {
+      toast.error(err.message || "Generate ব্যর্থ");
+    }
+  };
 
   const [checklists, setChecklists] = useState(() => {
     const existing = st.checklists || {};
@@ -753,6 +817,32 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
               </div>
               {(checklists[sec.step] || []).length > 0 && (() => { const items = checklists[sec.step]; const done = items.filter(it => it.done).length; const total = items.length; const pct = Math.round((done / total) * 100); return (<div className="mt-2 flex items-center gap-2"><div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: t.border }}><div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: pct === 100 ? t.emerald : sec.color }} /></div><span className="text-[9px]" style={{ color: t.muted }}>{done}/{total}</span></div>); })()}
             </div>
+
+            {/* ── ডিফল্ট ডকুমেন্ট টেমপ্লেট — Generate বাটন ── */}
+            {countryTemplates.length > 0 && (
+              <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                <p className="text-[10px] font-semibold mb-2" style={{ color: t.muted }}>📋 ডিফল্ট ডকুমেন্ট</p>
+                <div className="space-y-2">
+                  {countryTemplates.map(tmpl => (
+                    <div key={tmpl.id} className="flex items-center justify-between p-2 rounded-lg"
+                      style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}15` }}>
+                      <div>
+                        <p className="text-xs font-medium">{tmpl.name}</p>
+                        {tmpl.description && <p className="text-[10px]" style={{ color: t.muted }}>{tmpl.description}</p>}
+                        <p className="text-[9px]" style={{ color: t.muted }}>
+                          {tmpl.category === "excel" ? "Excel" : "DocGen"} • Default
+                        </p>
+                      </div>
+                      <button onClick={() => generateFromDefault(tmpl)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-medium"
+                        style={{ background: t.cyan, color: "#fff" }}>
+                        <Download size={10} /> Generate
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </Card>
         );
       })()}
