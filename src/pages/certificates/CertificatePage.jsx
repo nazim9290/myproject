@@ -5,10 +5,11 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, FileText, Upload, Download, Trash2, Search, X, ArrowLeft, File } from "lucide-react";
+import { Plus, FileText, Upload, Download, Trash2, Search, X, ArrowLeft, File, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import DropZone from "../../components/ui/DropZone";
 import Button from "../../components/ui/Button";
@@ -243,78 +244,7 @@ export default function CertificatePage({ students }) {
     setDeleteConfirmId(null);
   };
 
-  // ══════════ UPLOAD VIEW ══════════
-  if (view === "upload") return (
-    <div className="space-y-5 anim-fade">
-      <div className="flex items-center gap-4">
-        <button onClick={() => setView("list")} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
-        <div>
-          <h2 className="text-xl font-bold">Template আপলোড</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>.docx ফাইলে {"{{name_en}}"}, {"{{dob}}"} ইত্যাদি placeholder লিখুন</p>
-        </div>
-      </div>
-      <Card delay={50}>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম <span className="req-star">*</span></label>
-              <input value={uploadName} onChange={e => setUploadName(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="Birth Certificate Translation" />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
-              <select value={uploadCategory} onChange={e => setUploadCategory(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}>
-                {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ (Description)</label>
-            <input value={uploadDesc} onChange={e => setUploadDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="e.g. Paurashava format birth certificate for Japan visa" />
-          </div>
-          {/* Template কোন Doc Type-এর সাথে linked — data auto-pull হবে */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Linked Document Type</label>
-              <select value={linkedDocType} onChange={e => setLinkedDocType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}>
-                <option value="">— None —</option>
-                {docTypes.map(dt => <option key={dt.id} value={dt.name}>{dt.name_bn || dt.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <p className="text-[10px] mt-6" style={{ color: t.muted }}>
-                Link করলে generate-এর সময় ঐ doc type-এ save করা data auto-fill হবে
-              </p>
-            </div>
-          </div>
-          <div>
-            {uploadFile ? (
-              <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
-                <input ref={fileRef} type="file" accept=".docx" onChange={e => setUploadFile(e.target.files[0])} className="hidden" />
-                <FileText size={24} style={{ color: t.cyan }} />
-                <div><p className="text-xs font-semibold">{uploadFile.name}</p><p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে পরিবর্তন</p></div>
-              </div>
-            ) : (
-              <DropZone accept=".docx" onFile={(file) => setUploadFile(file)}>
-                .docx টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
-              </DropZone>
-            )}
-          </div>
-          <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}15` }}>
-            <p className="text-[11px]" style={{ color: t.textSecondary }}>
-              <strong>System placeholders:</strong>{" "}
-              <code style={{ color: t.cyan }}>{"{{name_en}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob}}"}</code>, <code style={{ color: t.cyan }}>{"{{father_name}}"}</code>, <code style={{ color: t.cyan }}>{"{{mother_name}}"}</code>, <code style={{ color: t.cyan }}>{"{{passport_number}}"}</code>, <code style={{ color: t.cyan }}>{"{{permanent_address}}"}</code>, <code style={{ color: t.cyan }}>{"{{gender}}"}</code>, <code style={{ color: t.cyan }}>{"{{today}}"}</code>
-              <br /><strong>Birth Cert:</strong>{" "}
-              <code style={{ color: t.emerald }}>{"{{birth_reg_no}}"}</code>, <code style={{ color: t.emerald }}>{"{{register_no}}"}</code>, <code style={{ color: t.emerald }}>{"{{birth_place}}"}</code>, <code style={{ color: t.emerald }}>{"{{dob_in_word}}"}</code>, <code style={{ color: t.emerald }}>{"{{father_nationality}}"}</code>, <code style={{ color: t.emerald }}>{"{{mother_nationality}}"}</code>
-            </p>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setView("list")}>বাতিল</Button>
-            <Button icon={Upload} onClick={doUpload} disabled={uploading}>{uploading ? "আপলোড হচ্ছে..." : "আপলোড"}</Button>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
+  // Upload Modal — list view-এর মধ্যে render হবে (নিচে)
 
   // ══════════ MAPPING VIEW ══════════
   if (view === "mapping" && activeTemplate) return (
@@ -566,7 +496,7 @@ export default function CertificatePage({ students }) {
   );
 
   // ══════════ LIST VIEW ══════════
-  return (
+  return (<>
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -627,21 +557,79 @@ export default function CertificatePage({ students }) {
             </div>
             <div className="flex items-center gap-2">
               <Button size="xs" icon={Download} onClick={() => { setActiveTemplate(tmpl); setSelectedStudent(""); setStudentSearch(""); setFilterBatch("all"); setView("generate"); }}>Generate</Button>
-              {deleteConfirmId === tmpl.id ? (
-                <div className="flex gap-1">
-                  <button onClick={() => deleteTemplate(tmpl)} className="text-[10px] px-2 py-1 rounded-lg" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
-                  <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1" style={{ color: t.muted }}>না</button>
-                </div>
-              ) : (
-                <button onClick={() => setDeleteConfirmId(tmpl.id)} className="p-1.5 rounded-lg" style={{ color: t.muted }}
-                  onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
-                  <Trash2 size={14} />
-                </button>
-              )}
+              <button onClick={() => setDeleteConfirmId(tmpl.id)} className="p-1.5 rounded-lg" style={{ color: t.muted }}
+                onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
+                <Trash2 size={14} />
+              </button>
             </div>
           </div>
         </Card>
       ))}
     </div>
-  );
+
+    {/* Upload Template Modal */}
+    <Modal isOpen={view === "upload"} onClose={() => setView("list")} title="Template আপলোড" subtitle=".docx ফাইলে {{name_en}}, {{dob}} ইত্যাদি placeholder লিখুন" size="lg">
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম *</label>
+            <input value={uploadName} onChange={e => setUploadName(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="Birth Certificate Translation" />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+            <select value={uploadCategory} onChange={e => setUploadCategory(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}>
+              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ (Description)</label>
+          <input value={uploadDesc} onChange={e => setUploadDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="e.g. Paurashava format birth certificate for Japan visa" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Linked Document Type</label>
+            <select value={linkedDocType} onChange={e => setLinkedDocType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}>
+              <option value="">— None —</option>
+              {docTypes.map(dt => <option key={dt.id} value={dt.name}>{dt.name_bn || dt.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <p className="text-[10px] mt-6" style={{ color: t.muted }}>Link করলে generate-এ ঐ doc type-র data auto-fill হবে</p>
+          </div>
+        </div>
+        <div>
+          {uploadFile ? (
+            <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
+              <input ref={fileRef} type="file" accept=".docx" onChange={e => setUploadFile(e.target.files[0])} className="hidden" />
+              <FileText size={24} style={{ color: t.cyan }} />
+              <div><p className="text-xs font-semibold">{uploadFile.name}</p><p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে পরিবর্তন</p></div>
+            </div>
+          ) : (
+            <DropZone accept=".docx" onFile={(file) => setUploadFile(file)}>
+              .docx টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
+            </DropZone>
+          )}
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setView("list")}>বাতিল</Button>
+          <Button icon={Upload} onClick={doUpload} disabled={uploading}>{uploading ? "আপলোড হচ্ছে..." : "আপলোড"}</Button>
+        </div>
+      </div>
+    </Modal>
+
+    {/* Delete Confirmation Modal */}
+    <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Delete Template" size="sm">
+      <div className="text-center py-4">
+        <AlertTriangle size={40} className="mx-auto mb-3" style={{ color: t.rose }} />
+        <p className="text-sm font-semibold mb-1">এই template মুছে ফেলতে চান?</p>
+        <p className="text-[10px] mb-4" style={{ color: t.muted }}>এই কাজ undo করা যাবে না</p>
+        <div className="flex justify-center gap-2">
+          <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 rounded-lg text-xs" style={{ color: t.muted }}>বাতিল</button>
+          <button onClick={() => { const tmpl = templates.find(t => t.id === deleteConfirmId); if (tmpl) deleteTemplate(tmpl); }}
+            className="px-4 py-2 rounded-lg text-xs font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ, মুছুন</button>
+        </div>
+      </div>
+    </Modal>
+  </>);
 }
