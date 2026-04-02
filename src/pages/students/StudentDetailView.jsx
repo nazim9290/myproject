@@ -35,9 +35,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   // ── ট্যাব স্টেট ──
   const [activeTab, setActiveTab] = useState("overview");
 
-  // ── Profile Edit Modal স্টেট ──
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [editForm, setEditForm] = useState({ ...student });
+  // ── প্রোফাইল সেকশন-ভিত্তিক Edit স্টেট ──
+  const [editSection, setEditSection] = useState(null); // "personal" | "passport" | "destination" | "internal" | null
+  const [sectionForm, setSectionForm] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // ── Dropdown options: batches ও schools backend থেকে load ──
@@ -223,29 +223,28 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     toast.success("নোট যোগ হয়েছে");
   };
 
-  // Edit — Profile Modal save (optimistic lock সহ)
-  const handleSave = async () => {
+  // ── সেকশন-ভিত্তিক Profile save (optimistic lock সহ) ──
+  const handleSectionSave = async () => {
     try {
-      // updated_at পাঠাও — backend-এ concurrent edit check হবে
-      const res = await api.patch(`/students/${student.id}`, { ...editForm, updated_at: student.updated_at });
+      // শুধু ঐ সেকশনের fields পাঠাও — updated_at সহ concurrent edit check
+      const res = await api.patch(`/students/${student.id}`, { ...sectionForm, updated_at: student.updated_at });
       // সফল হলে — নতুন updated_at সহ student আপডেট করো
-      const updatedStudent = { ...editForm, updated_at: res?.updated_at || new Date().toISOString() };
+      const updatedStudent = { ...student, ...sectionForm, updated_at: res?.updated_at || new Date().toISOString() };
       onUpdate(updatedStudent);
-      setShowProfileModal(false);
+      setEditSection(null);
       logActivity("তথ্য আপডেট হয়েছে", "edit");
       toast.updated("Student");
     } catch (err) {
       const msg = err.message || "সেভ ব্যর্থ";
       // Conflict error — অন্য কেউ এর মধ্যে পরিবর্তন করেছে
       if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
-        toast.error(msg);
+        toast.error("⚠️ " + msg);
       } else {
         console.error("[Student Save]", err);
         toast.error("সার্ভারে সেভ ব্যর্থ");
       }
     }
   };
-  const setField = (k, v) => setEditForm({ ...editForm, [k]: v });
 
   const logIcon = { create: "🟢", status: "🔵", action: "🟡", note: "📝", edit: "✏️", payment: "💰" };
 
@@ -381,23 +380,38 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     </div>
   );
 
-  // ── Editable field renderer (Modal-এর জন্য) ──
-  const EditableField = ({ field }) => (
-    <div>
-      <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{field.label}</label>
-      {field.type === "select" ? (
-        <select value={editForm[field.key] || ""} onChange={e => setField(field.key, e.target.value)}
-          className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-          {field.options.map(o => <option key={o} value={o}>{o || "—"}</option>)}
-        </select>
-      ) : (
-        <input type={field.type || "text"} value={editForm[field.key] || ""} onChange={e => setField(field.key, e.target.value)}
-          className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-      )}
-    </div>
-  );
+  // ── সেকশন-ভিত্তিক ফিল্ড কনফিগ (Modal-এ dynamic render হবে) ──
+  const SECTION_FIELDS = {
+    personal: personalFields,
+    passport: passportFields,
+    destination: [
+      { label: "দেশ", key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK","USA","Australia","China"] },
+      { label: "স্কুল", key: "school", type: "school_select" },
+      { label: "ব্যাচ", key: "batch", type: "batch_select" },
+      ...destinationExtraFields.filter(f => f.key !== "created"),
+    ],
+    internal: [
+      { label: "Google Drive ফোল্ডার URL", key: "gdrive_folder_url" },
+      { label: "অভ্যন্তরীণ নোট", key: "internal_notes", type: "textarea" },
+    ],
+  };
+
+  // ── সেকশন Modal-এর টাইটেল ──
+  const SECTION_TITLES = {
+    personal: "ব্যক্তিগত তথ্য সম্পাদনা",
+    passport: "পাসপোর্ট ও পরিবার সম্পাদনা",
+    destination: "গন্তব্য তথ্য সম্পাদনা",
+    internal: "অভ্যন্তরীণ তথ্য সম্পাদনা",
+  };
+
+  // ── সেকশন Edit শুরু — ফিল্ড ভ্যালু student থেকে নিয়ে form-এ সেট ──
+  const openSectionEdit = (section) => {
+    const fields = SECTION_FIELDS[section] || [];
+    const formData = {};
+    fields.forEach(f => { formData[f.key] = student[f.key] || ""; });
+    setSectionForm(formData);
+    setEditSection(section);
+  };
 
   return (
     <div className="space-y-5 anim-fade">
@@ -832,18 +846,20 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       ══════════════════════════════════════ */}
       {activeTab === "profile" && (
         <>
-          {/* Edit button — top right */}
-          <div className="flex justify-end">
-            <Button variant="ghost" icon={Edit3} size="xs" onClick={() => { setEditForm({ ...student }); setShowProfileModal(true); }}>
-              প্রোফাইল সম্পাদনা
-            </Button>
-          </div>
-
-          {/* 3-column read-only grid */}
+          {/* 3-column read-only grid — প্রতিটি কার্ডে নিজস্ব Edit বাটন */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {/* Personal */}
+            {/* ── ব্যক্তিগত তথ্য কার্ড ── */}
             <Card delay={50}>
-              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><User size={12} /> ব্যক্তিগত তথ্য</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><User size={12} /> ব্যক্তিগত তথ্য</h4>
+                <button onClick={() => openSectionEdit("personal")}
+                  className="text-[10px] px-2 py-1 rounded-lg transition"
+                  style={{ color: t.cyan }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                  ✏️ Edit
+                </button>
+              </div>
               <div className="space-y-2.5">
                 {personalFields.map(f => (
                   <ReadOnlyField key={f.key} label={f.label} value={student[f.key]} />
@@ -851,9 +867,18 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </div>
             </Card>
 
-            {/* Passport & Family */}
+            {/* ── পাসপোর্ট ও পরিবার কার্ড ── */}
             <Card delay={80}>
-              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><FileCheck size={12} /> পাসপোর্ট ও পরিবার</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><FileCheck size={12} /> পাসপোর্ট ও পরিবার</h4>
+                <button onClick={() => openSectionEdit("passport")}
+                  className="text-[10px] px-2 py-1 rounded-lg transition"
+                  style={{ color: t.cyan }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                  ✏️ Edit
+                </button>
+              </div>
               <div className="space-y-2.5">
                 {passportFields.map(f => (
                   <ReadOnlyField key={f.key} label={f.label} value={student[f.key]} />
@@ -861,9 +886,18 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </div>
             </Card>
 
-            {/* Destination */}
+            {/* ── গন্তব্য তথ্য কার্ড ── */}
             <Card delay={110}>
-              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> গন্তব্য তথ্য</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> গন্তব্য তথ্য</h4>
+                <button onClick={() => openSectionEdit("destination")}
+                  className="text-[10px] px-2 py-1 rounded-lg transition"
+                  style={{ color: t.cyan }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                  ✏️ Edit
+                </button>
+              </div>
               <div className="space-y-2.5">
                 <ReadOnlyField label="দেশ" value={student.country} />
                 <ReadOnlyField label="স্কুল" value={student.school} />
@@ -1042,9 +1076,18 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
           {/* ── অভ্যন্তরীণ তথ্য (Internal Notes + Google Drive) ── */}
           <Card delay={300}>
-            <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
-              <StickyNote size={12} /> অভ্যন্তরীণ তথ্য
-            </h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
+                <StickyNote size={12} /> অভ্যন্তরীণ তথ্য
+              </h4>
+              <button onClick={() => openSectionEdit("internal")}
+                className="text-[10px] px-2 py-1 rounded-lg transition"
+                style={{ color: t.cyan }}
+                onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                ✏️ Edit
+              </button>
+            </div>
             <div className="space-y-3 text-xs">
               {/* Google Drive */}
               <div className="flex justify-between items-center">
@@ -1489,103 +1532,60 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         </div>
       </Modal>
 
-      {/* ── Profile Edit Modal (xl size) ── */}
-      <Modal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} title="প্রোফাইল সম্পাদনা" subtitle={`${student.name_en} — ${student.id}`} size="xl">
-        <div className="space-y-5">
-          {/* Personal fields */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.cyan }}>
-              <User size={11} /> ব্যক্তিগত তথ্য
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {personalFields.map(f => <EditableField key={f.key} field={f} />)}
-            </div>
+      {/* ── সেকশন-ভিত্তিক Profile Edit Modal (md size) ── */}
+      <Modal isOpen={!!editSection} onClose={() => setEditSection(null)}
+        title={SECTION_TITLES[editSection] || "সম্পাদনা"}
+        subtitle={`${student.name_en} — ${student.id}`} size="md">
+        <div className="space-y-3">
+          {/* Dynamic fields — editSection অনুযায়ী render */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {(SECTION_FIELDS[editSection] || []).map(f => {
+              const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+              return (
+                <div key={f.key} className={f.type === "textarea" ? "md:col-span-2" : ""}>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                  {/* স্কুল — DB dropdown */}
+                  {f.type === "school_select" ? (
+                    <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                      <option value="">-- স্কুল সিলেক্ট --</option>
+                      {schoolOptions.map(s => <option key={s.id} value={s.name_en}>{s.name_en}</option>)}
+                    </select>
+                  ) : f.type === "batch_select" ? (
+                    /* ব্যাচ — DB dropdown */
+                    <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                      <option value="">-- ব্যাচ সিলেক্ট --</option>
+                      {batchOptions.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                    </select>
+                  ) : f.type === "select" ? (
+                    /* সাধারণ select dropdown */
+                    <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                      {(f.options || []).map(o => <option key={o} value={o}>{o || "—"}</option>)}
+                    </select>
+                  ) : f.type === "date" ? (
+                    /* Date input */
+                    <input type="date" value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
+                  ) : f.type === "textarea" ? (
+                    /* Textarea */
+                    <textarea value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      rows={3} className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-y" style={is}
+                      placeholder={f.key === "gdrive_folder_url" ? "https://drive.google.com/drive/folders/..." : ""} />
+                  ) : (
+                    /* Default text input */
+                    <input type="text" value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
+                  )}
+                </div>
+              );
+            })}
           </div>
-
-          {/* Passport & Family fields */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.purple }}>
-              <FileCheck size={11} /> পাসপোর্ট ও পরিবার
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {passportFields.map(f => <EditableField key={f.key} field={f} />)}
-            </div>
-          </div>
-
-          {/* Destination fields */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.emerald }}>
-              <Globe size={11} /> গন্তব্য তথ্য
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {/* দেশ — custom select */}
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>দেশ</label>
-                <select value={editForm.country || ""} onChange={e => setField("country", e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                  {["Japan","Germany","Korea","Canada","UK","USA","Australia","China"].map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              {/* স্কুল — DB dropdown */}
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>স্কুল</label>
-                <select value={editForm.school || ""} onChange={e => setField("school", e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                  <option value="">— স্কুল সিলেক্ট —</option>
-                  {schoolOptions.map(s => <option key={s.id} value={s.name_en}>{s.name_en}</option>)}
-                </select>
-              </div>
-              {/* ব্যাচ — DB dropdown */}
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ব্যাচ</label>
-                <select value={editForm.batch || ""} onChange={e => setField("batch", e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                  <option value="">— ব্যাচ সিলেক্ট —</option>
-                  {batchOptions.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-                </select>
-              </div>
-              {/* বাকি destination fields */}
-              {destinationExtraFields.filter(f => f.key !== "created").map(f => <EditableField key={f.key} field={f} />)}
-              {/* ভর্তির তারিখ — read-only */}
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ভর্তির তারিখ</label>
-                <p className="px-3 py-2 rounded-lg text-xs" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.muted }}>{student.created || "—"}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Internal fields — Google Drive ও অভ্যন্তরীণ নোট */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.amber }}>
-              <StickyNote size={11} /> অভ্যন্তরীণ তথ্য
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Google Drive URL */}
-              <div>
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>Google Drive ফোল্ডার URL</label>
-                <input value={editForm.gdrive_folder_url || ""} onChange={e => setField("gdrive_folder_url", e.target.value)}
-                  placeholder="https://drive.google.com/drive/folders/..."
-                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-              </div>
-              {/* Internal Notes */}
-              <div className="md:col-span-2">
-                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>অভ্যন্তরীণ নোট</label>
-                <textarea value={editForm.internal_notes || ""} onChange={e => setField("internal_notes", e.target.value)}
-                  rows={3} placeholder="ব্যবস্থাপনা সংক্রান্ত নোট..."
-                  className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-y"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-              </div>
-            </div>
-          </div>
-
           {/* Save / Cancel buttons */}
           <div className="flex gap-2 justify-end pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-            <Button variant="ghost" size="xs" onClick={() => setShowProfileModal(false)}>বাতিল</Button>
-            <Button icon={Save} size="xs" onClick={handleSave}>সংরক্ষণ</Button>
+            <Button variant="ghost" size="sm" onClick={() => setEditSection(null)}>বাতিল</Button>
+            <Button size="sm" icon={Save} onClick={handleSectionSave}>সংরক্ষণ</Button>
           </div>
         </div>
       </Modal>
