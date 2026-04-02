@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, LayoutDashboard, Users } from "lucide-react";
+import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, LayoutDashboard, Users, GraduationCap, BookOpen, Link as LinkIcon, StickyNote } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -47,6 +47,40 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     api.get("/batches").then(data => { if (Array.isArray(data)) setBatchOptions(data); }).catch(() => {});
     api.get("/schools").then(data => { if (Array.isArray(data)) setSchoolOptions(data); }).catch(() => {});
   }, []);
+
+  // ── Education, JP Exams, Family — Detail API থেকে load ──
+  const [education, setEducation] = useState([]);
+  const [jpExams, setJpExams] = useState([]);
+  const [familyMembers, setFamilyMembers] = useState([]);
+  useEffect(() => {
+    // GET /students/:id — detail endpoint-এ student_education, student_jp_exams, student_family আসে
+    api.get(`/students/${student.id}`).then(data => {
+      if (data) {
+        if (Array.isArray(data.student_education)) setEducation(data.student_education);
+        if (Array.isArray(data.student_jp_exams)) setJpExams(data.student_jp_exams);
+        if (Array.isArray(data.student_family)) setFamilyMembers(data.student_family);
+      }
+    }).catch(() => {});
+  }, [student.id]);
+
+  // ── JP Exam যোগ করার Modal state ──
+  const [showJpExamForm, setShowJpExamForm] = useState(false);
+  const [jpExamForm, setJpExamForm] = useState({ exam_type: "JLPT", level: "", score: "", result: "", exam_date: "" });
+
+  const addJpExam = async () => {
+    if (!jpExamForm.exam_type) { toast.error("পরীক্ষার ধরন দিন"); return; }
+    try {
+      const saved = await api.post(`/students/${student.id}/exam-result`, jpExamForm);
+      setJpExams(prev => [...prev, saved || { id: `jp-${Date.now()}`, ...jpExamForm }]);
+      logActivity(`JP পরীক্ষা যোগ — ${jpExamForm.exam_type} ${jpExamForm.level || ""}`, "edit");
+      setJpExamForm({ exam_type: "JLPT", level: "", score: "", result: "", exam_date: "" });
+      setShowJpExamForm(false);
+      toast.success("পরীক্ষার তথ্য যোগ হয়েছে");
+    } catch {
+      toast.error("সার্ভারে সেভ ব্যর্থ");
+    }
+  };
+
   const [checked, setChecked] = useState({});       // { "ENROLLED_en1": true, ... }
   const [noteText, setNoteText] = useState("");
   const [activityLog, setActivityLog] = useState([
@@ -841,6 +875,197 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </div>
             </Card>
           </div>
+
+          {/* ── শিক্ষাগত তথ্য (Education) — SSC / HSC ── */}
+          <Card delay={150}>
+            <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
+              <GraduationCap size={12} /> শিক্ষাগত তথ্য
+            </h4>
+            {education.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {education.map((edu, idx) => (
+                  <div key={edu.id || idx} className="p-3 rounded-lg" style={{ background: t.inputBg }}>
+                    <p className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: t.cyan }}>
+                      {edu.level || `পরীক্ষা ${idx + 1}`}
+                    </p>
+                    <div className="space-y-1.5 text-xs">
+                      {[
+                        { label: "প্রতিষ্ঠান", value: edu.school_name || edu.institution },
+                        { label: "পাসের সন", value: edu.passing_year || edu.year },
+                        { label: "বোর্ড", value: edu.board },
+                        { label: "জিপিএ / ফলাফল", value: edu.gpa || edu.result },
+                        { label: "গ্রুপ / বিভাগ", value: edu.group_name || edu.department },
+                      ].map(f => (
+                        <div key={f.label} className="flex justify-between">
+                          <span style={{ color: t.muted }}>{f.label}</span>
+                          <span className="font-medium text-right">{f.value || "—"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো শিক্ষাগত তথ্য নেই</p>
+            )}
+          </Card>
+
+          {/* ── জাপানি ভাষা পরীক্ষা (JP Exams) ── */}
+          <Card delay={200}>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
+                <BookOpen size={12} /> জাপানি ভাষা পরীক্ষা
+              </h4>
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => setShowJpExamForm(true)}>পরীক্ষা যোগ</Button>
+            </div>
+
+            {/* JP Exam যোগ করার ইনলাইন ফর্ম */}
+            {showJpExamForm && (
+              <div className="mb-3 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
+                  <div>
+                    <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরীক্ষার ধরন</label>
+                    <select value={jpExamForm.exam_type} onChange={e => setJpExamForm(p => ({ ...p, exam_type: e.target.value }))}
+                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      {["JLPT", "NAT", "J-TEST", "TOP-J", "Other"].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] block mb-1" style={{ color: t.muted }}>লেভেল</label>
+                    <select value={jpExamForm.level} onChange={e => setJpExamForm(p => ({ ...p, level: e.target.value }))}
+                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      <option value="">—</option>
+                      {["N5", "N4", "N3", "N2", "N1"].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] block mb-1" style={{ color: t.muted }}>স্কোর</label>
+                    <input value={jpExamForm.score} onChange={e => setJpExamForm(p => ({ ...p, score: e.target.value }))}
+                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" placeholder="যেমন: 120/180"
+                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ফলাফল</label>
+                    <select value={jpExamForm.result} onChange={e => setJpExamForm(p => ({ ...p, result: e.target.value }))}
+                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                      <option value="">—</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="Pending">Pending</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরীক্ষার তারিখ</label>
+                    <input type="date" value={jpExamForm.exam_date} onChange={e => setJpExamForm(p => ({ ...p, exam_date: e.target.value }))}
+                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="xs" onClick={() => setShowJpExamForm(false)}>বাতিল</Button>
+                  <Button size="xs" icon={Save} onClick={addJpExam}>সংরক্ষণ</Button>
+                </div>
+              </div>
+            )}
+
+            {jpExams.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      {["পরীক্ষা", "লেভেল", "স্কোর", "ফলাফল", "তারিখ"].map(h => (
+                        <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jpExams.map((e, i) => (
+                      <tr key={e.id || i} style={{ borderBottom: `1px solid ${t.border}` }}
+                        onMouseEnter={ev => ev.currentTarget.style.background = t.hoverBg}
+                        onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}>
+                        <td className="py-2 px-3 font-medium">{e.exam_type || "—"}</td>
+                        <td className="py-2 px-3">
+                          {e.level ? <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${t.cyan}20`, color: t.cyan }}>{e.level}</span> : "—"}
+                        </td>
+                        <td className="py-2 px-3">{e.score || "—"}</td>
+                        <td className="py-2 px-3">
+                          {e.result === "Pass" ? <span style={{ color: t.emerald }}>Pass</span>
+                            : e.result === "Fail" ? <span style={{ color: t.rose }}>Fail</span>
+                            : e.result || "—"}
+                        </td>
+                        <td className="py-2 px-3" style={{ color: t.muted }}>{e.exam_date || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো পরীক্ষার তথ্য নেই</p>
+            )}
+          </Card>
+
+          {/* ── পরিবারের সদস্য (Family Members) ── */}
+          {familyMembers.length > 0 && (
+            <Card delay={250}>
+              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
+                <Users size={12} /> পরিবারের সদস্য
+              </h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      {["নাম", "সম্পর্ক", "পেশা", "ফোন", "NID"].map(h => (
+                        <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {familyMembers.map((fm, i) => (
+                      <tr key={fm.id || i} style={{ borderBottom: `1px solid ${t.border}` }}
+                        onMouseEnter={ev => ev.currentTarget.style.background = t.hoverBg}
+                        onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}>
+                        <td className="py-2 px-3 font-medium">{fm.name || fm.name_en || "—"}</td>
+                        <td className="py-2 px-3">{fm.relationship || "—"}</td>
+                        <td className="py-2 px-3">{fm.occupation || "—"}</td>
+                        <td className="py-2 px-3">{fm.phone || "—"}</td>
+                        <td className="py-2 px-3" style={{ color: t.muted }}>{fm.nid || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {/* ── অভ্যন্তরীণ তথ্য (Internal Notes + Google Drive) ── */}
+          <Card delay={300}>
+            <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
+              <StickyNote size={12} /> অভ্যন্তরীণ তথ্য
+            </h4>
+            <div className="space-y-3 text-xs">
+              {/* Google Drive */}
+              <div className="flex justify-between items-center">
+                <span style={{ color: t.muted }} className="flex items-center gap-1.5"><LinkIcon size={11} /> Google Drive</span>
+                {student.gdrive_folder_url ? (
+                  <a href={student.gdrive_folder_url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 font-medium hover:underline"
+                    style={{ color: t.cyan }}>
+                    Drive ফোল্ডার খুলুন
+                  </a>
+                ) : <span style={{ color: t.muted }}>—</span>}
+              </div>
+              {/* Internal Notes */}
+              <div>
+                <span className="flex items-center gap-1.5 mb-1.5" style={{ color: t.muted }}><MessageSquare size={11} /> অভ্যন্তরীণ নোট</span>
+                <div className="p-3 rounded-lg text-[11px] leading-relaxed whitespace-pre-wrap" style={{ background: t.inputBg, color: t.text }}>
+                  {student.internal_notes || "কোনো নোট নেই"}
+                </div>
+              </div>
+            </div>
+          </Card>
         </>
       )}
 
@@ -1328,6 +1553,31 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               <div>
                 <label className="text-[10px] block mb-1" style={{ color: t.muted }}>ভর্তির তারিখ</label>
                 <p className="px-3 py-2 rounded-lg text-xs" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.muted }}>{student.created || "—"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Internal fields — Google Drive ও অভ্যন্তরীণ নোট */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3 flex items-center gap-2" style={{ color: t.amber }}>
+              <StickyNote size={11} /> অভ্যন্তরীণ তথ্য
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Google Drive URL */}
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>Google Drive ফোল্ডার URL</label>
+                <input value={editForm.gdrive_folder_url || ""} onChange={e => setField("gdrive_folder_url", e.target.value)}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              </div>
+              {/* Internal Notes */}
+              <div className="md:col-span-2">
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>অভ্যন্তরীণ নোট</label>
+                <textarea value={editForm.internal_notes || ""} onChange={e => setField("internal_notes", e.target.value)}
+                  rows={3} placeholder="ব্যবস্থাপনা সংক্রান্ত নোট..."
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-y"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
               </div>
             </div>
           </div>
