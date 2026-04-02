@@ -419,7 +419,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   };
 
   useEffect(() => {
-    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[DocTypes Load]", err); });
+    // Settings-এ সব doc types লোড (active + inactive) — Admin management-এর জন্য
+    api.get("/docdata/types/all").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[DocTypes Load]", err); });
   }, []);
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
@@ -789,7 +790,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
           {/* List */}
           <div className="space-y-2">
             {docTypes.map(dt => (
-              <div key={dt.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: t.inputBg }}>
+              <div key={dt.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: t.inputBg, opacity: dt.is_active === false ? 0.6 : 1 }}>
                 <div className="flex items-center gap-3">
                   <FileText size={14} style={{ color: dt.category === "personal" ? t.cyan : dt.category === "academic" ? t.purple : t.amber }} />
                   <div>
@@ -797,7 +798,39 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     <p className="text-[10px]" style={{ color: t.muted }}>{(dt.fields || []).length} fields • {dt.category}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  {/* Active toggle — সক্রিয়/নিষ্ক্রিয় সুইচ */}
+                  <button onClick={async () => {
+                    const newActive = !(dt.is_active !== false);
+                    try {
+                      await api.patch(`/docdata/types/${dt.id}`, { is_active: newActive });
+                      setDocTypes(prev => prev.map(d => d.id === dt.id ? { ...d, is_active: newActive } : d));
+                      toast.success(newActive ? "সক্রিয় করা হয়েছে" : "নিষ্ক্রিয় করা হয়েছে");
+                    } catch (err) { toast.error(err.message); }
+                  }}
+                    className="relative w-9 h-5 rounded-full transition-all shrink-0"
+                    style={{ background: dt.is_active !== false ? t.emerald : `${t.muted}40` }}
+                    title={dt.is_active !== false ? "সক্রিয়" : "নিষ্ক্রিয়"}>
+                    <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all"
+                      style={{ left: dt.is_active !== false ? "18px" : "2px" }} />
+                  </button>
+
+                  {/* Student fillable toggle — Student portal থেকে পূরণযোগ্য কিনা */}
+                  <button onClick={async () => {
+                    const newVal = !dt.student_fillable;
+                    try {
+                      await api.patch(`/docdata/types/${dt.id}`, { student_fillable: newVal });
+                      setDocTypes(prev => prev.map(d => d.id === dt.id ? { ...d, student_fillable: newVal } : d));
+                      toast.success(newVal ? "Student পূরণ করতে পারবে" : "Student পূরণ করতে পারবে না");
+                    } catch (err) { toast.error(err.message); }
+                  }}
+                    className="text-[9px] px-1.5 py-0.5 rounded transition shrink-0"
+                    style={{ background: dt.student_fillable ? `${t.purple}15` : `${t.muted}10`, color: dt.student_fillable ? t.purple : t.muted }}
+                    title={dt.student_fillable ? "Student পূরণ করতে পারবে" : "Staff only"}>
+                    {dt.student_fillable ? "Student" : "Staff only"}
+                  </button>
+
+                  <div className="flex items-center gap-1">
                   <button onClick={() => setVariablesDocType(variablesDocType?.id === dt.id ? null : dt)}
                     className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1"
                     style={{ color: t.cyan, background: variablesDocType?.id === dt.id ? `${t.cyan}18` : "transparent" }}>
@@ -832,6 +865,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   ) : (
                     <button onClick={() => setDeleteDocTypeId(dt.id)} style={{ color: t.muted }}><Trash2 size={13} /></button>
                   )}
+                  </div>
                 </div>
               </div>
             ))}

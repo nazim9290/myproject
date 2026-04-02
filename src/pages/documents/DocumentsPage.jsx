@@ -405,8 +405,10 @@ Upload document image or PDF — OCR will extract data and auto-fill fields. Ver
 
   // ══════════ STUDENT DETAIL — DOC TYPES LIST ══════════
   if (selectedStudent) {
-    const totalTypes = docTypes.length;
-    const completedTypes = docTypes.filter(dt => getDocCompletion(dt.id).pct === 100).length;
+    // শুধু active doc types দেখাবে — Admin Settings থেকে নিষ্ক্রিয় করা doc type বাদ
+    const activeDocTypes = docTypes.filter(dt => dt.is_active !== false);
+    const totalTypes = activeDocTypes.length;
+    const completedTypes = activeDocTypes.filter(dt => getDocCompletion(dt.id).pct === 100).length;
 
     return (
       <div className="space-y-5 anim-fade">
@@ -418,9 +420,9 @@ Upload document image or PDF — OCR will extract data and auto-fill fields. Ver
           </div>
         </div>
 
-        {/* Doc Type Cards */}
+        {/* Doc Type Cards — শুধু active doc types */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {docTypes.map((dt, i) => {
+          {activeDocTypes.map((dt, i) => {
             const comp = getDocCompletion(dt.id);
             const saved = studentDocData.find(d => d.doc_type_id === dt.id);
             const catColor = dt.category === "personal" ? t.cyan : dt.category === "academic" ? t.purple : t.amber;

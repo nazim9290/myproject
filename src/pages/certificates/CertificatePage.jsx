@@ -590,13 +590,6 @@ export default function CertificatePage({ students }) {
       )}
 
       {/* ═══ আমার টেমপ্লেট — এজেন্সির নিজস্ব (full CRUD) ═══ */}
-      {templates.length > 0 && (
-        <div className="flex items-center gap-2 mt-2">
-          <div className="h-px flex-1" style={{ background: t.border }} />
-          <p className="text-[10px] uppercase tracking-wider font-semibold px-2" style={{ color: t.cyan }}>আমার টেমপ্লেট</p>
-          <div className="h-px flex-1" style={{ background: t.border }} />
-        </div>
-      )}
       {templates.map((tmpl, i) => (
         <Card key={tmpl.id} delay={100 + i * 50}>
           <div className="flex items-center justify-between">
