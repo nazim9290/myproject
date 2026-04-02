@@ -554,7 +554,6 @@ export default function SuperAdminPage() {
                 )}
               </div>
             </div>
-          </div>
           {/* সংরক্ষণ বাটন */}
           <div className="flex justify-end gap-2 pt-2" style={{ borderTop: `1px solid ${t.border}` }}>
             <Button variant="ghost" size="sm" onClick={() => { setShowTemplateModal(false); setEditingTemplate(null); }}>বাতিল</Button>
