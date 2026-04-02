@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Building, Plus, Users, GraduationCap, TrendingUp, Edit3, Trash2, Save, X, Eye, Shield, Globe, Check, AlertTriangle, FileSpreadsheet, Upload, Power, Download } from "lucide-react";
+import { Building, Plus, Users, GraduationCap, TrendingUp, Edit3, Trash2, Save, X, Eye, Shield, Globe, Check, AlertTriangle, FileSpreadsheet, Upload, Power, Download, Settings } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -49,6 +49,47 @@ export default function SuperAdminPage() {
   const [tplForm, setTplForm] = useState({
     name: "", name_bn: "", description: "", category: "excel", sub_category: "", country: "Japan", file: null,
   });
+
+  // ── ম্যাপিং Modal state ──
+  const [mappingTemplate, setMappingTemplate] = useState(null);
+  const [templateMappings, setTemplateMappings] = useState({});
+  const [templateModifiers, setTemplateModifiers] = useState({});
+  const [mappingSaving, setMappingSaving] = useState(false);
+
+  // ── সিস্টেম ফিল্ড — placeholder → student field mapping-এর জন্য ──
+  const SYSTEM_FIELDS = [
+    { group: "ব্যক্তিগত", fields: [
+      { key: "name_en", label: "নাম (English)" }, { key: "name_bn", label: "নাম (বাংলা)" },
+      { key: "name_katakana", label: "নাম (カタカナ)" },
+      { key: "dob", label: "জন্ম তারিখ" }, { key: "gender", label: "লিঙ্গ" },
+      { key: "nationality", label: "জাতীয়তা" }, { key: "marital_status", label: "বৈবাহিক অবস্থা" },
+      { key: "blood_group", label: "রক্তের গ্রুপ" },
+      { key: "phone", label: "ফোন" }, { key: "email", label: "ইমেইল" }, { key: "nid", label: "NID" },
+    ]},
+    { group: "পাসপোর্ট", fields: [
+      { key: "passport_number", label: "পাসপোর্ট নম্বর" },
+      { key: "passport_issue", label: "পাসপোর্ট ইস্যু" }, { key: "passport_expiry", label: "পাসপোর্ট মেয়াদ" },
+    ]},
+    { group: "ঠিকানা", fields: [
+      { key: "permanent_address", label: "স্থায়ী ঠিকানা" }, { key: "current_address", label: "বর্তমান ঠিকানা" },
+    ]},
+    { group: "পরিবার", fields: [
+      { key: "father_name", label: "পিতার নাম" }, { key: "father_name_en", label: "পিতার নাম (EN)" },
+      { key: "mother_name", label: "মাতার নাম" }, { key: "mother_name_en", label: "মাতার নাম (EN)" },
+      { key: "father_dob", label: "পিতার জন্ম তারিখ" }, { key: "mother_dob", label: "মাতার জন্ম তারিখ" },
+      { key: "father_occupation", label: "পিতার পেশা" }, { key: "mother_occupation", label: "মাতার পেশা" },
+    ]},
+    { group: "স্পন্সর", fields: [
+      { key: "sponsor_name", label: "স্পন্সরের নাম" }, { key: "sponsor_phone", label: "স্পন্সর ফোন" },
+      { key: "sponsor_address", label: "স্পন্সর ঠিকানা" }, { key: "sponsor_relationship", label: "সম্পর্ক" },
+    ]},
+    { group: "গন্তব্য", fields: [
+      { key: "country", label: "দেশ" }, { key: "school", label: "স্কুল" }, { key: "batch", label: "ব্যাচ" },
+    ]},
+    { group: "সিস্টেম", fields: [
+      { key: "today", label: "আজকের তারিখ" }, { key: "today_jp", label: "আজকের তারিখ (JP)" }, { key: "age", label: "বয়স" },
+    ]},
+  ];
 
   // ── টেমপ্লেট ক্যাটেগরি ম্যাপ ──
   const TEMPLATE_CATEGORIES = [
@@ -184,6 +225,58 @@ export default function SuperAdminPage() {
       });
       if (res.ok) { toast.success(tpl.is_active ? "নিষ্ক্রিয় করা হয়েছে" : "সক্রিয় করা হয়েছে"); loadData(); }
     } catch { toast.error("সার্ভার ত্রুটি"); }
+  };
+
+  // ── ম্যাপিং modal খোলা — template_data থেকে existing mapping load ──
+  const openMappingModal = (tpl) => {
+    setMappingTemplate(tpl);
+    const existingData = typeof tpl.template_data === "string" ? JSON.parse(tpl.template_data) : tpl.template_data;
+    const placeholders = existingData?.placeholders || [];
+    // Existing mapping load — field থেকে base key + modifier আলাদা করা
+    const maps = {};
+    const mods = {};
+    placeholders.forEach(p => {
+      if (p.field) {
+        // field format: "dob:jp" → base="dob", mod=":jp"
+        const colonIdx = p.field.indexOf(":");
+        if (colonIdx > 0) {
+          maps[p.key] = p.field.slice(0, colonIdx);
+          mods[p.key] = p.field.slice(colonIdx);
+        } else {
+          maps[p.key] = p.field;
+        }
+      }
+    });
+    setTemplateMappings(maps);
+    setTemplateModifiers(mods);
+  };
+
+  // ── ম্যাপিং সংরক্ষণ — PATCH /default-templates/:id/mapping ──
+  const saveMappings = async () => {
+    if (!mappingTemplate) return;
+    setMappingSaving(true);
+    const existingData = typeof mappingTemplate.template_data === "string" ? JSON.parse(mappingTemplate.template_data) : mappingTemplate.template_data;
+    const placeholders = (existingData?.placeholders || []).map(p => {
+      const baseField = templateMappings[p.key] || "";
+      const mod = templateModifiers[p.key] || "";
+      return { ...p, field: baseField ? baseField + mod : "" };
+    });
+    try {
+      const res = await fetch(`${API_URL}/super-admin/default-templates/${mappingTemplate.id}/mapping`, {
+        method: "PATCH", headers, body: JSON.stringify({ placeholders }),
+      });
+      if (res.ok) {
+        toast.success("ম্যাপিং সংরক্ষণ হয়েছে");
+        setMappingTemplate(null);
+        setTemplateMappings({});
+        setTemplateModifiers({});
+        loadData();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || "ম্যাপিং সংরক্ষণ ব্যর্থ");
+      }
+    } catch { toast.error("সার্ভার ত্রুটি"); }
+    setMappingSaving(false);
   };
 
   // ── টেমপ্লেট সম্পাদনা modal খোলা ──
@@ -358,6 +451,16 @@ export default function SuperAdminPage() {
                             className="px-2 py-1 rounded text-[10px]" style={{ color: t.amber, background: `${t.amber}15` }}>
                             <Edit3 size={10} />
                           </button>
+                          {/* ম্যাপিং বাটন — শুধু placeholder থাকলে দেখাবে */}
+                          {(() => {
+                            const td = typeof tpl.template_data === "string" ? (() => { try { return JSON.parse(tpl.template_data); } catch { return null; } })() : tpl.template_data;
+                            return td?.placeholders?.length > 0;
+                          })() && (
+                            <button onClick={() => openMappingModal(tpl)}
+                              className="px-2 py-1 rounded text-[10px] flex items-center gap-0.5" style={{ color: t.purple, background: `${t.purple}15` }}>
+                              <Settings size={10} /> ম্যাপিং
+                            </button>
+                          )}
                           {deleteTemplateId === tpl.id ? (
                             <div className="flex gap-1 items-center">
                               <button onClick={() => deleteTemplate(tpl.id)} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: t.rose }}>মুছুন</button>
@@ -455,6 +558,106 @@ export default function SuperAdminPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* ── ম্যাপিং Modal — placeholder → system field mapping ── */}
+      <Modal isOpen={!!mappingTemplate} onClose={() => { setMappingTemplate(null); setTemplateMappings({}); setTemplateModifiers({}); }}
+        title="টেমপ্লেট ম্যাপিং"
+        subtitle={mappingTemplate ? `${mappingTemplate.name} — ${(() => { const td = typeof mappingTemplate.template_data === "string" ? JSON.parse(mappingTemplate.template_data) : mappingTemplate.template_data; return td?.placeholders?.length || 0; })()} টি placeholder` : ""}
+        size="xl">
+        {mappingTemplate && (() => {
+          const td = typeof mappingTemplate.template_data === "string" ? JSON.parse(mappingTemplate.template_data) : mappingTemplate.template_data;
+          const placeholders = td?.placeholders || [];
+          const mappedCount = placeholders.filter(p => templateMappings[p.key]).length;
+          return (
+            <div className="space-y-4">
+              {/* ── প্রগ্রেস বার ── */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: t.inputBg }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${placeholders.length > 0 ? (mappedCount / placeholders.length) * 100 : 0}%`, background: t.emerald }} />
+                </div>
+                <span className="text-[10px] font-mono" style={{ color: t.muted }}>{mappedCount}/{placeholders.length} ম্যাপড</span>
+              </div>
+
+              {/* ── ম্যাপিং টেবিল ── */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      {["Placeholder", "সিস্টেম ফিল্ড", "মডিফায়ার", ""].map(h => (
+                        <th key={h} className="text-left py-2.5 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {placeholders.map(p => (
+                      <tr key={p.key} style={{ borderBottom: `1px solid ${t.border}` }}>
+                        {/* Placeholder নাম */}
+                        <td className="py-2.5 px-3" style={{ width: 200 }}>
+                          <span className="font-mono text-[11px] px-2 py-0.5 rounded" style={{ background: `${t.cyan}10`, color: t.cyan }}>
+                            {`{{${p.key}}}`}
+                          </span>
+                        </td>
+                        {/* সিস্টেম ফিল্ড dropdown */}
+                        <td className="py-2.5 px-3">
+                          <select value={templateMappings[p.key] || ""} onChange={e => setTemplateMappings(prev => ({ ...prev, [p.key]: e.target.value }))}
+                            className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none"
+                            style={{ ...is, borderColor: templateMappings[p.key] ? `${t.emerald}60` : t.inputBorder }}>
+                            <option value="">— নির্বাচন করুন —</option>
+                            {SYSTEM_FIELDS.map(group => (
+                              <optgroup key={group.group} label={`── ${group.group} ──`}>
+                                {group.fields.map(f => (
+                                  <option key={f.key} value={f.key}>{f.label}</option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                        </td>
+                        {/* মডিফায়ার dropdown */}
+                        <td className="py-2.5 px-3" style={{ width: 180 }}>
+                          {templateMappings[p.key] && (
+                            <select value={templateModifiers[p.key] || ""} onChange={e => setTemplateModifiers(prev => ({ ...prev, [p.key]: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg text-[10px] outline-none"
+                              style={{ ...is, borderColor: templateModifiers[p.key] ? `${t.purple}60` : t.inputBorder, color: templateModifiers[p.key] ? t.purple : t.muted }}>
+                              <option value="">None</option>
+                              <optgroup label="── Japanese ──">
+                                <option value=":jp">:jp (auto translate)</option>
+                              </optgroup>
+                              <optgroup label="── Date ──">
+                                <option value=":slash">:slash (YYYY/MM/DD)</option>
+                                <option value=":dot">:dot (DD.MM.YYYY)</option>
+                                <option value=":dmy">:dmy (DD/MM/YYYY)</option>
+                                <option value=":year">:year</option>
+                                <option value=":month">:month</option>
+                                <option value=":day">:day</option>
+                              </optgroup>
+                              <optgroup label="── Name ──">
+                                <option value=":first">:first (first word)</option>
+                                <option value=":last">:last (rest)</option>
+                              </optgroup>
+                            </select>
+                          )}
+                        </td>
+                        {/* স্ট্যাটাস চেক */}
+                        <td className="py-2.5 px-3 text-center" style={{ width: 30 }}>
+                          {templateMappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ── বাটন ── */}
+              <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                <Button variant="ghost" size="sm" onClick={() => { setMappingTemplate(null); setTemplateMappings({}); setTemplateModifiers({}); }}>বাতিল</Button>
+                <Button size="sm" icon={Save} onClick={saveMappings} disabled={mappingSaving}>
+                  {mappingSaving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* ── নতুন এজেন্সি তৈরি ── */}
