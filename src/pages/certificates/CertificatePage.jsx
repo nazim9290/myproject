@@ -641,6 +641,19 @@ export default function CertificatePage({ students }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={() => {
+                  setActiveTemplate(tmpl);
+                  setDetectedPlaceholders(tmpl.placeholders || []);
+                  // Restore saved mappings
+                  const restored = {};
+                  (tmpl.placeholders || []).forEach(p => { if (p.field) restored[p.key] = p.field; });
+                  setMappings(restored);
+                  setView("mapping");
+                }} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.purple }}
+                onMouseEnter={e => e.currentTarget.style.background = `${t.purple}15`}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                Mapping
+              </button>
               <Button size="xs" icon={Download} onClick={() => { setActiveTemplate(tmpl); setSelectedStudent(""); setStudentSearch(""); setFilterBatch("all"); setView("generate"); }}>Generate</Button>
               <button onClick={() => setDeleteConfirmId(tmpl.id)} className="p-1.5 rounded-lg" style={{ color: t.muted }}
                 onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
