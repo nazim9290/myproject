@@ -871,6 +871,51 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   )
                 ))}
               </div>
+
+              {/* Syntax Guide */}
+              <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+                <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-3" style={{ color: t.purple }}>Syntax Guide — Modifiers</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px]">
+                  <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
+                    <p className="font-semibold mb-1.5" style={{ color: t.emerald }}>Date Formats</p>
+                    <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
+                      <p>{"{{dob:jp}}"} → 2000年11月13日</p>
+                      <p>{"{{dob:slash}}"} → 2000/11/13</p>
+                      <p>{"{{dob:dot}}"} → 13.11.2000</p>
+                      <p>{"{{dob:dmy}}"} → 13/11/2000</p>
+                      <p>{"{{dob:year}}"} → 2000</p>
+                      <p>{"{{dob:month}}"} → 11</p>
+                      <p>{"{{dob:day}}"} → 13</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
+                    <p className="font-semibold mb-1.5" style={{ color: t.amber }}>Japanese Translation (:jp)</p>
+                    <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
+                      <p>{"{{gender:jp}}"} → Male=男, Female=女</p>
+                      <p>{"{{nationality:jp}}"} → バングラデシュ</p>
+                      <p>{"{{marital_status:jp}}"} → 未婚/既婚</p>
+                      <p>{"{{blood_group:jp}}"} → A型(Rh+)</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
+                    <p className="font-semibold mb-1.5" style={{ color: t.rose }}>Custom Mapping</p>
+                    <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
+                      <p>{"{{field:map(A=X,B=Y)}}"}</p>
+                      <p>{"{{gender:map(Male=男,Female=女)}}"}</p>
+                      <p>{"{{country:map(Japan=日本)}}"}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
+                    <p className="font-semibold mb-1.5" style={{ color: t.cyan }}>Name Parts</p>
+                    <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
+                      <p>{"{{name_en:first}}"} → first word</p>
+                      <p>{"{{name_en:last}}"} → rest</p>
+                      <p>{"{{today}}"} → 2026-04-02</p>
+                      <p>{"{{today_jp}}"} → 2026年4月2日</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </>
           )}
         </Modal>
