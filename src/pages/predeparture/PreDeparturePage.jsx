@@ -735,36 +735,19 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
                 <p className="text-[10px] font-medium flex items-center gap-1" style={{ color: t.muted }}>
                   <Paperclip size={10} /> ডকুমেন্ট ({stepFiles.length})
                 </p>
-                <div className="flex items-center gap-1">
-                  {/* ফাইল আপলোড বাটন */}
-                  <label className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium cursor-pointer hover:opacity-80 transition"
-                    style={{ background: `${sec.color}15`, color: sec.color }}>
-                    <Upload size={10} />
-                    {uploading === sec.stepKey ? "আপলোড হচ্ছে..." : "ফাইল"}
-                    <input type="file" className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-                      disabled={uploading === sec.stepKey}
-                      onChange={e => {
-                        if (e.target.files?.[0]) handleFileUpload(sec.stepKey, e.target.files[0]);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                  {/* Google Drive লিংক */}
-                  <button onClick={() => {
-                    const url = prompt("Google Drive লিংক পেস্ট করুন:");
-                    if (url && url.trim()) {
-                      const newFile = { id: Date.now().toString(), step: sec.stepKey, name: "Google Drive Link", url: url.trim(), uploaded_at: new Date().toISOString().slice(0, 10), type: "gdrive" };
-                      setFiles(prev => [...prev, newFile]);
-                      // Save to backend
-                      preDeparture.update(st.id, { ...form, checklists, deadlines, files: [...files, newFile] }).catch(() => {});
-                      toast.success("Drive লিংক যোগ হয়েছে");
-                    }
-                  }} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium hover:opacity-80 transition"
-                    style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                    🔗 Drive
-                  </button>
-                </div>
+                {/* Google Drive লিংক */}
+                <button onClick={() => {
+                  const url = prompt("Google Drive লিংক পেস্ট করুন:");
+                  if (url && url.trim()) {
+                    const newFile = { id: Date.now().toString(), step: sec.stepKey, name: "Google Drive Link", url: url.trim(), uploaded_at: new Date().toISOString().slice(0, 10), type: "gdrive" };
+                    setFiles(prev => [...prev, newFile]);
+                    preDeparture.update(st.id, { ...form, checklists, deadlines, files: [...files, newFile] }).catch(() => {});
+                    toast.success("Drive লিংক যোগ হয়েছে");
+                  }
+                }} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium hover:opacity-80 transition"
+                  style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                  🔗 Drive Link
+                </button>
               </div>
 
               {/* আপলোড করা ফাইল তালিকা */}
