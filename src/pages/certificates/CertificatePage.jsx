@@ -43,7 +43,9 @@ export default function CertificatePage({ students }) {
   const [uploadDesc, setUploadDesc] = useState("");
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [linkedDocType, setLinkedDocType] = useState(""); // template-কে কোন doc type-এর সাথে link
+  const [linkedDocType, setLinkedDocType] = useState("");
+  const [templateSource, setTemplateSource] = useState("default"); // "default" | "custom"
+  const [selectedDefaultId, setSelectedDefaultId] = useState(""); // template-কে কোন doc type-এর সাথে link
 
   // Doc types from DB (Admin-defined document types with custom fields)
   const [docTypes, setDocTypes] = useState([]);
@@ -205,6 +207,47 @@ export default function CertificatePage({ students }) {
   // ── Upload → detect placeholders → go to mapping ──
   const doUpload = async () => {
     if (!uploadName.trim()) { toast.error("Template নাম দিন"); return; }
+
+    // ডিফল্ট টেমপ্লেট সিলেক্ট করলে — default template-এর file ব্যবহার
+    if (templateSource === "default") {
+      if (!selectedDefaultId) { toast.error("একটি ডিফল্ট টেমপ্লেট সিলেক্ট করুন"); return; }
+      const dt = defaultTemplates.find(t => t.id === selectedDefaultId);
+      if (!dt || !dt.file_url) { toast.error("সিলেক্ট করা টেমপ্লেটে ফাইল নেই"); return; }
+
+      setUploading(true);
+      try {
+        // Default template-এর file download করে re-upload as agency template
+        const fileRes = await fetch(`${API_URL.replace("/api", "")}${dt.file_url}`);
+        const blob = await fileRes.blob();
+        const fileName = dt.file_name || "template.docx";
+        const file = new File([blob], fileName, { type: blob.type });
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("template_name", uploadName);
+        formData.append("category", uploadCategory);
+        if (uploadDesc.trim()) formData.append("description", uploadDesc.trim());
+        if (linkedDocType) formData.append("linked_doc_type", linkedDocType);
+        const res = await fetch(`${API_URL}/docgen/upload`, { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const phs = data.placeholders || [];
+        setDetectedPlaceholders(phs);
+        setActiveTemplate(data.template);
+        const autoMap = {};
+        const allKeys = allSystemFields.flatMap(g => g.fields.map(f => f.key));
+        phs.forEach(p => { if (allKeys.includes(p.key)) autoMap[p.key] = p.key; });
+        setMappings(autoMap);
+        setModifiers({});
+        setView("mapping");
+        toast.success(`"${uploadName}" — ডিফল্ট টেমপ্লেট থেকে তৈরি, ${phs.length} টি placeholder`);
+      } catch (err) { toast.error(err.message); }
+      setUploading(false);
+      return;
+    }
+
+    // কাস্টম আপলোড
     if (!uploadFile) { toast.error(".docx ফাইল সিলেক্ট করুন"); return; }
     setUploading(true);
     try {
@@ -825,8 +868,9 @@ export default function CertificatePage({ students }) {
     </div>
 
     {/* Upload Template Modal */}
-    <Modal isOpen={view === "upload"} onClose={() => setView("list")} title="Template আপলোড" subtitle=".docx ফাইলে {{name_en}}, {{dob}} ইত্যাদি placeholder লিখুন" size="lg">
+    <Modal isOpen={view === "upload"} onClose={() => setView("list")} title="Template তৈরি করুন" subtitle="ডিফল্ট টেমপ্লেট ব্যবহার করুন অথবা নিজের আপলোড করুন" size="lg">
       <div className="space-y-4">
+        {/* নাম + ক্যাটাগরি */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম *</label>
@@ -839,10 +883,12 @@ export default function CertificatePage({ students }) {
             </select>
           </div>
         </div>
+
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ (Description)</label>
           <input value={uploadDesc} onChange={e => setUploadDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="e.g. Paurashava format birth certificate for Japan visa" />
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Linked Document Type</label>
@@ -855,22 +901,80 @@ export default function CertificatePage({ students }) {
             <p className="text-[10px] mt-6" style={{ color: t.muted }}>Link করলে generate-এ ঐ doc type-র data auto-fill হবে</p>
           </div>
         </div>
+
+        {/* Template Source — ডিফল্ট or কাস্টম */}
         <div>
-          {uploadFile ? (
-            <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
-              <input ref={fileRef} type="file" accept=".docx" onChange={e => setUploadFile(e.target.files[0])} className="hidden" />
-              <FileText size={24} style={{ color: t.cyan }} />
-              <div><p className="text-xs font-semibold">{uploadFile.name}</p><p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে পরিবর্তন</p></div>
+          <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}>Template Source</label>
+          <div className="flex gap-2 mb-3">
+            <button onClick={() => { setTemplateSource("default"); setUploadFile(null); }}
+              className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all"
+              style={{ background: templateSource === "default" ? `${t.purple}15` : t.inputBg, color: templateSource === "default" ? t.purple : t.muted, border: `1px solid ${templateSource === "default" ? t.purple + "40" : t.inputBorder}` }}>
+              📌 ডিফল্ট টেমপ্লেট ব্যবহার
+            </button>
+            <button onClick={() => { setTemplateSource("custom"); setSelectedDefaultId(""); }}
+              className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all"
+              style={{ background: templateSource === "custom" ? `${t.cyan}15` : t.inputBg, color: templateSource === "custom" ? t.cyan : t.muted, border: `1px solid ${templateSource === "custom" ? t.cyan + "40" : t.inputBorder}` }}>
+              📁 কাস্টম আপলোড
+            </button>
+          </div>
+
+          {/* ডিফল্ট টেমপ্লেট সিলেক্ট */}
+          {templateSource === "default" && (
+            <div className="space-y-2">
+              {defaultTemplates.length === 0 && (
+                <p className="text-[10px] text-center py-4" style={{ color: t.muted }}>কোনো ডিফল্ট টেমপ্লেট নেই — Super Admin আপলোড করেনি</p>
+              )}
+              {defaultTemplates.map(dt => (
+                <button key={dt.id} onClick={() => {
+                  setSelectedDefaultId(dt.id);
+                  if (!uploadName) setUploadName(dt.name);
+                  if (!uploadDesc) setUploadDesc(dt.description || "");
+                }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
+                  style={{
+                    background: selectedDefaultId === dt.id ? `${t.purple}12` : t.inputBg,
+                    border: `1px solid ${selectedDefaultId === dt.id ? t.purple + "40" : t.inputBorder}`,
+                  }}>
+                  <div className="w-3 h-3 rounded-full border-2 flex items-center justify-center" style={{ borderColor: selectedDefaultId === dt.id ? t.purple : t.muted }}>
+                    {selectedDefaultId === dt.id && <div className="w-1.5 h-1.5 rounded-full" style={{ background: t.purple }} />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium">{dt.name}</p>
+                    {dt.description && <p className="text-[10px]" style={{ color: t.muted }}>{dt.description}</p>}
+                  </div>
+                  {dt.file_url ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.emerald}15`, color: t.emerald }}>✓ ready</span>
+                  ) : (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.amber}15`, color: t.amber }}>no file</span>
+                  )}
+                </button>
+              ))}
             </div>
-          ) : (
-            <DropZone accept=".docx" onFile={(file) => setUploadFile(file)}>
-              .docx টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
-            </DropZone>
+          )}
+
+          {/* কাস্টম আপলোড */}
+          {templateSource === "custom" && (
+            <div>
+              {uploadFile ? (
+                <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
+                  <input ref={fileRef} type="file" accept=".docx" onChange={e => setUploadFile(e.target.files[0])} className="hidden" />
+                  <FileText size={24} style={{ color: t.cyan }} />
+                  <div><p className="text-xs font-semibold">{uploadFile.name}</p><p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে পরিবর্তন</p></div>
+                </div>
+              ) : (
+                <DropZone accept=".docx" onFile={(file) => setUploadFile(file)}>
+                  .docx টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
+                </DropZone>
+              )}
+            </div>
           )}
         </div>
+
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setView("list")}>বাতিল</Button>
-          <Button icon={Upload} onClick={doUpload} disabled={uploading}>{uploading ? "আপলোড হচ্ছে..." : "আপলোড"}</Button>
+          <Button icon={Upload} onClick={doUpload} disabled={uploading || (templateSource === "default" && !selectedDefaultId) || (templateSource === "custom" && !uploadFile)}>
+            {uploading ? "তৈরি হচ্ছে..." : "তৈরি করুন"}
+          </Button>
         </div>
       </div>
     </Modal>
