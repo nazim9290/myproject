@@ -36,6 +36,22 @@ const SYSTEM_FIELDS = [
     { key: "father_dob", label: "Father DOB" }, { key: "mother_dob", label: "Mother DOB" },
     { key: "father_occupation", label: "Father Occupation" }, { key: "mother_occupation", label: "Mother Occupation" },
   ]},
+  { group: "Education", color: "amber", fields: [
+    { key: "edu_ssc_school", label: "SSC School" },
+    { key: "edu_ssc_year", label: "SSC Year" },
+    { key: "edu_ssc_board", label: "SSC Board" },
+    { key: "edu_ssc_gpa", label: "SSC GPA" },
+    { key: "edu_hsc_school", label: "HSC School" },
+    { key: "edu_hsc_year", label: "HSC Year" },
+    { key: "edu_hsc_board", label: "HSC Board" },
+    { key: "edu_hsc_gpa", label: "HSC GPA" },
+  ]},
+  { group: "Japanese", color: "rose", fields: [
+    { key: "jp_level", label: "JLPT/NAT Level" },
+    { key: "jp_score", label: "JP Exam Score" },
+    { key: "jp_exam_type", label: "JP Exam Type" },
+    { key: "jp_exam_date", label: "JP Exam Date" },
+  ]},
   { group: "Sponsor", color: "rose", fields: [
     { key: "sponsor_name", label: "Sponsor Name" }, { key: "sponsor_phone", label: "Sponsor Phone" },
     { key: "sponsor_address", label: "Sponsor Address" }, { key: "sponsor_relationship", label: "Relationship" },

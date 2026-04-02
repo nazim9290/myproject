@@ -2,7 +2,7 @@
 /* React Portal ব্যবহার করে body-তে রেন্ডার হয় */
 /* isOpen, onClose, title, subtitle, size (sm/md/lg/xl/full) প্রপস সাপোর্ট করে */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
@@ -19,18 +19,30 @@ const SIZES = {
 export default function Modal({ isOpen, onClose, title, subtitle, size = "md", children }) {
   const t = useTheme();
   const overlayRef = useRef(null);
+  /* ─── প্রতিটি Modal ইনস্ট্যান্সের জন্য ইউনিক ID ─── */
+  const modalId = useId();
 
   /* ─── Escape কী দিয়ে বন্ধ + body scroll বন্ধ ─── */
+  /* শুধুমাত্র সবচেয়ে উপরের (topmost) modal ESC-এ বন্ধ হবে */
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    const handler = (e) => {
+      if (e.key === "Escape") {
+        const allModals = document.querySelectorAll("[data-modal]");
+        if (allModals.length > 0 && allModals[allModals.length - 1]?.getAttribute("data-modal") === modalId) {
+          onClose();
+        }
+      }
+    };
     window.addEventListener("keydown", handler);
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", handler);
-      document.body.style.overflow = "";
+      /* শুধুমাত্র শেষ modal বন্ধ হলে body scroll ফিরিয়ে দাও */
+      const remaining = document.querySelectorAll("[data-modal]");
+      if (remaining.length === 0) document.body.style.overflow = "";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, modalId]);
 
   /* ─── বন্ধ থাকলে কিছু রেন্ডার করবে না ─── */
   if (!isOpen) return null;
@@ -38,6 +50,7 @@ export default function Modal({ isOpen, onClose, title, subtitle, size = "md", c
   return createPortal(
     <div
       ref={overlayRef}
+      data-modal={modalId}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{

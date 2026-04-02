@@ -192,14 +192,16 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const logIcon = { create: "🟢", status: "🔵", action: "🟡", note: "📝", edit: "✏️", payment: "💰" };
 
   // Fee helpers
-  const taka = (n) => `৳${Number(n).toLocaleString("en-IN")}`;
-  const totalFee = feeItems.reduce((s, i) => s + (+i.amount || 0), 0);
-  const totalPaid = payments.reduce((s, p) => s + (+p.amount || +p.paid_amount || 0), 0);
+  /* safeNum — NaN, negative, undefined মান থেকে সুরক্ষা */
+  const safeNum = (v) => { const n = Number(v); return isNaN(n) || n < 0 ? 0 : n; };
+  const taka = (n) => `৳${safeNum(n).toLocaleString("en-IN")}`;
+  const totalFee = feeItems.reduce((s, i) => s + safeNum(i.amount), 0);
+  const totalPaid = payments.reduce((s, p) => s + safeNum(p.amount || p.paid_amount), 0);
   const balance = totalFee - totalPaid;
   const paidPercent = totalFee > 0 ? Math.min(100, (totalPaid / totalFee) * 100) : 0;
 
   // Per-category paid amount
-  const paidByCategory = (catId) => payments.filter(p => p.category === catId).reduce((s, p) => s + (+p.amount || +p.paid_amount || 0), 0);
+  const paidByCategory = (catId) => payments.filter(p => p.category === catId).reduce((s, p) => s + safeNum(p.amount || p.paid_amount), 0);
 
   const syncFees = (items, pays) => {
     onUpdate({ ...student, fees: { items, payments: pays } });

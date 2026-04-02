@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HelpCircle, Search, ChevronDown, ChevronRight, BookOpen, Users, GraduationCap, FileText, DollarSign, Building, ClipboardList, Briefcase, Globe, Package, TrendingUp, Settings, Phone, Plane, Calendar, CheckCircle, Award, Lock, User } from "lucide-react";
+import { HelpCircle, Search, ChevronDown, ChevronRight, BookOpen, Users, GraduationCap, FileText, DollarSign, Building, ClipboardList, Briefcase, Globe, Package, TrendingUp, Settings, Phone, Plane, Calendar, CheckCircle, Award, Lock, User, ScanLine, Code, MapPin, FilePlus, Layers } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import Card from "../../components/ui/Card";
 
@@ -759,6 +759,248 @@ Super Admin-এ নতুন এজেন্সি তৈরি করলে aut
 ২. উপরের "select all" checkbox দিয়ে পুরো পেজ সিলেক্ট করুন
 ৩. ড্রপডাউন থেকে নতুন status নির্বাচন করুন
 ৪. "পরিবর্তন করুন" চাপুন — একসাথে সবার status বদলে যাবে`,
+      },
+    ],
+  },
+  // ═══════════════════════════════════════════════
+  // নতুন ফিচার হেল্প টপিক — ২০২৬-০৪-০২
+  // ═══════════════════════════════════════════════
+  {
+    id: "ocr-scan",
+    icon: ScanLine,
+    title: "OCR Scan & Auto-fill",
+    subtitle: "ডকুমেন্ট স্ক্যান করে তথ্য স্বয়ংক্রিয় পূরণ",
+    color: "#22d3ee",
+    topics: [
+      {
+        q: "OCR Scan কী এবং কীভাবে কাজ করে?",
+        a: `OCR (Optical Character Recognition) দিয়ে আপনি ডকুমেন্টের ছবি বা PDF থেকে স্বয়ংক্রিয়ভাবে তথ্য বের করতে পারবেন।
+
+কীভাবে ব্যবহার করবেন:
+১. Documents মডিউলে যান → স্টুডেন্ট সিলেক্ট করুন
+২. "Scan & Auto-fill" বাটনে ক্লিক করুন
+৩. ডকুমেন্টের ছবি আপলোড করুন (পাসপোর্ট, সার্টিফিকেট ইত্যাদি)
+৪. সিস্টেম Google Vision OCR দিয়ে text বের করবে
+৫. বের হওয়া তথ্য field গুলোতে auto-fill হবে
+৬. প্রয়োজনে সংশোধন করে "সেভ করুন" চাপুন
+
+সমর্থিত ডকুমেন্ট: পাসপোর্ট, NID, SSC/HSC সার্টিফিকেট, জাপানি ভাষা পরীক্ষার ফলাফল।`,
+      },
+      {
+        q: "Scan-এ ভুল তথ্য এলে কী করবো?",
+        a: `OCR কখনো কখনো ভুল করতে পারে — বিশেষ করে হাতের লেখা বা ঝাপসা ছবিতে।
+
+সমাধান:
+• স্ক্যানের পর প্রতিটি field যাচাই করুন
+• ভুল থাকলে ম্যানুয়ালি সংশোধন করুন
+• পরিষ্কার ও সোজা ছবি আপলোড করলে accuracy ভালো হয়
+• মোবাইল ক্যামেরায় তোলা ছবি ভালো কাজ করে — তবে আলো যেন পর্যাপ্ত থাকে`,
+      },
+    ],
+  },
+  {
+    id: "template-modifiers",
+    icon: Code,
+    title: "Template Modifiers",
+    subtitle: ":jp, :slash, :map() — ডকুমেন্ট টেমপ্লেটে ফরম্যাট পরিবর্তন",
+    color: "#c084fc",
+    topics: [
+      {
+        q: "Template Modifier কী?",
+        a: `Template-এ placeholder-এর পরে modifier যোগ করলে output ফরম্যাট পরিবর্তন হয়।
+
+উদাহরণ: {{dob}} → 1998-05-15
+কিন্তু: {{dob:jp}} → 1998年05月15日
+
+Modifier যোগ করার নিয়ম: placeholder-এর পরে কোলন (:) দিয়ে modifier নাম লিখুন।`,
+      },
+      {
+        q: "কোন কোন Modifier আছে?",
+        a: `তারিখ Modifier:
+• :jp — জাপানি ফরম্যাট (2026年04月02日)
+• :slash — স্ল্যাশ ফরম্যাট (2026/04/02)
+• :dot — ডট ফরম্যাট (02.04.2026)
+• :dmy — Day/Month/Year (02/04/2026)
+• :year — শুধু বছর (2026)
+• :month — শুধু মাস (04)
+• :day — শুধু দিন (02)
+
+নাম Modifier:
+• :first — প্রথম নাম (First Name)
+• :last — শেষ নাম (Last Name)
+
+Map Modifier:
+• :map(M=男,F=女) — value অনুযায়ী রূপান্তর
+  উদাহরণ: {{gender:map(M=男,F=女)}} → Male হলে 男 দেখাবে`,
+      },
+      {
+        q: "Modifier কীভাবে ব্যবহার করবো?",
+        a: `১. DocGen বা Excel Template-এ placeholder লিখুন
+২. Field Mapping করার সময় ডান পাশের Modifier ড্রপডাউন থেকে সিলেক্ট করুন
+৩. অথবা সরাসরি template-এ লিখুন: {{dob:jp}}, {{name_en:first}}
+
+FieldMapper-এ প্রতিটি placeholder-এর পাশে Modifier ড্রপডাউন আছে:
+• None — কোনো পরিবর্তন নেই
+• :jp — জাপানি তারিখ
+• :slash, :dot, :dmy — অন্যান্য তারিখ ফরম্যাট
+• :first, :last — নামের অংশ
+• :map() — কাস্টম রূপান্তর (ম্যানুয়ালি লিখতে হবে)`,
+      },
+    ],
+  },
+  {
+    id: "pre-departure-country",
+    icon: MapPin,
+    title: "Pre-Departure Country Flow",
+    subtitle: "Japan, Germany, Korea — দেশভিত্তিক আলাদা ধাপ",
+    color: "#f59e0b",
+    topics: [
+      {
+        q: "দেশ অনুযায়ী Pre-Departure কেন আলাদা?",
+        a: `প্রতিটি দেশের ভিসা প্রক্রিয়া, ডকুমেন্ট ও ধাপ আলাদা। তাই Pre-Departure মডিউলে দেশভিত্তিক আলাদা flow আছে।
+
+Japan:
+• COE আবেদন → COE প্রাপ্তি → Health Check → Tuition Payment → VFS → Visa → Flight
+
+Germany:
+• Uni-Assist → Admission Letter → Blocked Account → VFS → Visa → Flight
+
+Korea:
+• D-4 Visa Application → Standard Admission → TOPIK Score → Visa → Flight
+
+প্রতিটি দেশের চেকলিস্ট ও প্রয়োজনীয় ডকুমেন্ট ভিন্ন।`,
+      },
+      {
+        q: "দেশ পরিবর্তন করলে কী হয়?",
+        a: `স্টুডেন্টের Country পরিবর্তন করলে Pre-Departure চেকলিস্ট স্বয়ংক্রিয়ভাবে আপডেট হবে।
+
+উদাহরণ:
+• Japan থেকে Germany-তে পরিবর্তন করলে COE steps সরে যাবে, Blocked Account step যোগ হবে
+• আগের দেশের সম্পন্ন steps reset হবে না — কিন্তু নতুন দেশের steps যোগ হবে
+
+দেশ পরিবর্তনের আগে সংশ্লিষ্ট কাউন্সেলরের সাথে আলোচনা করুন।`,
+      },
+      {
+        q: "VFS Appointment কীভাবে ট্র্যাক করবো?",
+        a: `VFS (Visa Facilitation Service) ট্র্যাকিং:
+
+১. Pre-Departure পেজে স্টুডেন্ট সিলেক্ট করুন
+২. VFS সেকশনে যান
+৩. Appointment তারিখ ও সময় দিন
+৪. VFS Reference Number ইনপুট দিন
+৫. Status আপডেট করুন: Scheduled → Attended → Approved/Rejected
+
+Japan-এর জন্য VFS Dhaka/Chittagong, Germany-র জন্য VFS Dhaka-তে appointment হয়।`,
+      },
+    ],
+  },
+  {
+    id: "default-templates",
+    icon: FilePlus,
+    title: "Default Templates",
+    subtitle: "Super Admin-এর default template ব্যবহার",
+    color: "#ec4899",
+    topics: [
+      {
+        q: "Default Template কী?",
+        a: `Super Admin থেকে তৈরি করা template যা সব এজেন্সির জন্য available। এগুলো common ডকুমেন্ট — যেমন:
+• পাসপোর্ট আবেদন ফর্ম
+• স্কুল ভর্তি আবেদন (入学願書)
+• আর্থিক সহায়তা পত্র (経費支弁書)
+• জীবনবৃত্তান্ত (履歴書)
+
+এই template গুলো Super Admin-এর Document Type-এ তৈরি করা হয় এবং সব agency-তে ব্যবহার করা যায়।`,
+      },
+      {
+        q: "Default Template কীভাবে ব্যবহার করবো?",
+        a: `১. Documents বা DocGen মডিউলে যান
+২. Template সিলেক্ট করার সময় "Default Templates" গ্রুপ দেখবেন
+৩. যে template দরকার সেটি সিলেক্ট করুন
+৪. Field Mapping করুন — SYSTEM_FIELDS + Doc Type fields থেকে placeholder ম্যাপ করুন
+৫. Auto-Map বাটন চাপলে সিস্টেম স্বয়ংক্রিয়ভাবে matching fields ম্যাপ করবে
+৬. প্রয়োজনে Modifier যোগ করুন (যেমন: :jp তারিখের জন্য)
+৭. Generate বাটনে ক্লিক করুন — ডকুমেন্ট তৈরি হবে`,
+      },
+      {
+        q: "নিজের template কাস্টমাইজ করতে চাইলে?",
+        a: `Default template-এর পাশাপাশি নিজের template তৈরি করতে পারবেন:
+
+১. Settings → ডকুমেন্ট টাইপ → নতুন টাইপ তৈরি করুন
+২. .docx ফাইলে {{placeholder}} সিনট্যাক্স ব্যবহার করুন
+৩. Template আপলোড করুন
+৪. Field Mapping সেট করুন
+
+Super Admin-এর default template পরিবর্তন করতে পারবেন না — শুধু ব্যবহার করতে পারবেন। কাস্টম দরকার হলে নিজের template তৈরি করুন।`,
+      },
+    ],
+  },
+  {
+    id: "student-detail-tabs",
+    icon: Layers,
+    title: "Student Detail Tabs",
+    subtitle: "Overview, Profile, Fees, Sponsor, Timeline — বিস্তারিত ট্যাব",
+    color: "#6ee7b7",
+    topics: [
+      {
+        q: "Student Detail View-তে কোন কোন ট্যাব আছে?",
+        a: `স্টুডেন্টের নামে ক্লিক করলে Detail View খুলবে। এখানে ৫টি প্রধান ট্যাব আছে:
+
+১. Overview — সামগ্রিক তথ্য, পাইপলাইন ধাপ, চেকলিস্ট, সাম্প্রতিক কার্যকলাপ
+২. Profile — ব্যক্তিগত তথ্য, পাসপোর্ট, ঠিকানা, শিক্ষা, পরিবার — সব এডিট করা যায়
+৩. Fees — ফি breakdown, পেমেন্ট হিস্ট্রি, বকেয়া, নতুন পেমেন্ট যোগ
+৪. Sponsor — স্পন্সরের তথ্য, সম্পর্ক, আর্থিক তথ্য
+৫. Timeline — স্টুডেন্টের সম্পূর্ণ কার্যক্রম ইতিহাস — কবে কী হয়েছে`,
+      },
+      {
+        q: "Overview ট্যাবে কী দেখায়?",
+        a: `Overview হলো স্টুডেন্টের সারসংক্ষেপ:
+
+• বর্তমান পাইপলাইন ধাপ ও progress bar
+• এই ধাপের চেকলিস্ট — কোনটি সম্পন্ন, কোনটি বাকি
+• দ্রুত তথ্য: নাম, ফোন, দেশ, স্কুল, ব্যাচ
+• ফি সারাংশ: মোট ফি, পরিশোধিত, বাকি
+• সাম্প্রতিক কার্যকলাপ: শেষ কয়েকটি পরিবর্তন
+
+"পরবর্তী ধাপ" বাটন Overview-তেই আছে — চেকলিস্ট সম্পন্ন হলে সক্রিয় হবে।`,
+      },
+      {
+        q: "Profile ট্যাবে কোন তথ্য এডিট করা যায়?",
+        a: `Profile ট্যাবে স্টুডেন্টের সম্পূর্ণ তথ্য এডিট করা যায়:
+
+• ব্যক্তিগত: নাম (EN/BN/কাতাকানা), জন্ম তারিখ, লিঙ্গ, রক্তের গ্রুপ, জাতীয়তা
+• যোগাযোগ: ফোন, ইমেইল, NID
+• পাসপোর্ট: নম্বর, ইস্যু তারিখ, মেয়াদ
+• ঠিকানা: স্থায়ী ও বর্তমান
+• শিক্ষা: SSC/HSC — স্কুল, বোর্ড, সন, GPA
+• জাপানি ভাষা: JLPT/NAT লেভেল, স্কোর, পরীক্ষার ধরন ও তারিখ
+• পরিবার: পিতা-মাতার নাম, জন্ম তারিখ, পেশা
+
+প্রতিটি সেকশন আলাদাভাবে সেভ করা যায়।`,
+      },
+      {
+        q: "Fees ট্যাবে কী কী করা যায়?",
+        a: `Fees ট্যাবে স্টুডেন্টের আর্থিক তথ্য দেখা ও ম্যানেজ করা যায়:
+
+• Fee Items: কোন খাতে কত ফি নির্ধারিত — enrollment, course, visa, service charge ইত্যাদি
+• Payments: কবে, কত, কোন পদ্ধতিতে পরিশোধ করা হয়েছে
+• বকেয়া: মোট ফি - মোট পরিশোধিত = বাকি কত
+
+নতুন পেমেন্ট যোগ করতে:
+১. "পেমেন্ট যোগ করুন" বাটনে ক্লিক
+২. পরিমাণ, পদ্ধতি (Cash/bKash/Bank), ক্যাটাগরি ও নোট দিন
+৩. সেভ করুন`,
+      },
+      {
+        q: "Timeline ট্যাবে কী দেখায়?",
+        a: `Timeline হলো স্টুডেন্টের সম্পূর্ণ কার্যক্রম ইতিহাস — সময়ের ক্রমানুসারে:
+
+• স্ট্যাটাস পরিবর্তন: কবে কোন ধাপ থেকে কোন ধাপে গেছে
+• পেমেন্ট: কবে কত টাকা জমা হয়েছে
+• ডকুমেন্ট আপডেট: কোন ডকুমেন্ট কবে পূরণ/আপডেট হয়েছে
+• নোট ও মন্তব্য: কাউন্সেলর বা স্টাফের যোগ করা নোট
+• চেকলিস্ট: কোন আইটেম কবে সম্পন্ন হয়েছে
+
+প্রতিটি এন্ট্রিতে তারিখ, সময় ও কে করেছে সেটি দেখায়।`,
       },
     ],
   },
