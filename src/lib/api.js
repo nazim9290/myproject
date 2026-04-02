@@ -338,6 +338,23 @@ export const preDeparture = {
   list: () => request("/pre-departure"),
   /** student-এর departure data update */
   update: (studentId, body) => request(`/pre-departure/${studentId}`, { method: "POST", body: JSON.stringify(body) }),
+
+  /** step-এ ডকুমেন্ট আপলোড (FormData — file + step) */
+  uploadFile: async (studentId, formData) => {
+    const token = getToken();
+    const res = await fetch(`${API_URL}/pre-departure/${studentId}/upload`, {
+      method: "POST",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "আপলোড ব্যর্থ");
+    return data;
+  },
+  /** student-এর সব আপলোড করা ফাইল আনো */
+  getFiles: (studentId) => request(`/pre-departure/${studentId}/files`),
+  /** ফাইল মুছে ফেলো */
+  deleteFile: (studentId, fileId) => request(`/pre-departure/${studentId}/files/${fileId}`, { method: "DELETE" }),
 };
 
 // ═══════════════════════════════════════════════════════
