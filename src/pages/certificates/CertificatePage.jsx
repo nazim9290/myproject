@@ -486,7 +486,9 @@ export default function CertificatePage({ students }) {
               // 3. Template placeholder → mapped field → value from profile or doc data
               (activeTemplate.placeholders || []).forEach(p => {
                 const placeholderKey = p.key;           // e.g. "Register No"
-                const mappedField = p.field || p.key;   // e.g. "register_no" (from mapping step)
+                const rawField = p.field || p.key;      // e.g. "sex:jp" or "register_no"
+                // Modifier strip — "sex:jp" → "sex", "dob:map(...)" → "dob"
+                const mappedField = rawField.includes(":") ? rawField.split(":")[0] : rawField;
 
                 // Priority: doc data > student profile > placeholder key match
                 if (allSavedFields[mappedField]) {
