@@ -55,6 +55,8 @@ export default function SuperAdminPage() {
   const [templateMappings, setTemplateMappings] = useState({});
   const [templateModifiers, setTemplateModifiers] = useState({});
   const [mappingSaving, setMappingSaving] = useState(false);
+  const [openMapPicker, setOpenMapPicker] = useState(null);
+  const [expandedMapGroup, setExpandedMapGroup] = useState(null);
 
   // ── সিস্টেম ফিল্ড — placeholder → student field mapping-এর জন্য ──
   const SYSTEM_FIELDS = [
@@ -583,74 +585,71 @@ export default function SuperAdminPage() {
                 <span className="text-[10px] font-mono" style={{ color: t.muted }}>{mappedCount}/{placeholders.length} ম্যাপড</span>
               </div>
 
-              {/* ── ম্যাপিং টেবিল ── */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      {["Placeholder", "সিস্টেম ফিল্ড", "মডিফায়ার", ""].map(h => (
-                        <th key={h} className="text-left py-2.5 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {placeholders.map(p => (
-                      <tr key={p.key} style={{ borderBottom: `1px solid ${t.border}` }}>
-                        {/* Placeholder নাম */}
-                        <td className="py-2.5 px-3" style={{ width: 200 }}>
-                          <span className="font-mono text-[11px] px-2 py-0.5 rounded" style={{ background: `${t.cyan}10`, color: t.cyan }}>
-                            {`{{${p.key}}}`}
-                          </span>
-                        </td>
-                        {/* সিস্টেম ফিল্ড dropdown */}
-                        <td className="py-2.5 px-3">
-                          <select value={templateMappings[p.key] || ""} onChange={e => setTemplateMappings(prev => ({ ...prev, [p.key]: e.target.value }))}
-                            className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none"
-                            style={{ ...is, borderColor: templateMappings[p.key] ? `${t.emerald}60` : t.inputBorder }}>
-                            <option value="">— নির্বাচন করুন —</option>
-                            {SYSTEM_FIELDS.map(group => (
-                              <optgroup key={group.group} label={`── ${group.group} ──`}>
-                                {group.fields.map(f => (
-                                  <option key={f.key} value={f.key}>{f.label}</option>
-                                ))}
-                              </optgroup>
-                            ))}
-                          </select>
-                        </td>
-                        {/* মডিফায়ার dropdown */}
-                        <td className="py-2.5 px-3" style={{ width: 180 }}>
-                          {templateMappings[p.key] && (
-                            <select value={templateModifiers[p.key] || ""} onChange={e => setTemplateModifiers(prev => ({ ...prev, [p.key]: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg text-[10px] outline-none"
-                              style={{ ...is, borderColor: templateModifiers[p.key] ? `${t.purple}60` : t.inputBorder, color: templateModifiers[p.key] ? t.purple : t.muted }}>
-                              <option value="">None</option>
-                              <optgroup label="── Japanese ──">
-                                <option value=":jp">:jp (auto translate)</option>
-                              </optgroup>
-                              <optgroup label="── Date ──">
-                                <option value=":jp">:jp (年月日)</option>
-                                <option value=":slash">:slash (YYYY/MM/DD)</option>
-                                <option value=":dot">:dot (DD.MM.YYYY)</option>
-                                <option value=":dmy">:dmy (DD/MM/YYYY)</option>
-                                <option value=":year">:year</option>
-                                <option value=":month">:month</option>
-                                <option value=":day">:day</option>
-                              </optgroup>
-                              <optgroup label="── Name ──">
-                                <option value=":first">:first (first word)</option>
-                                <option value=":last">:last (rest)</option>
-                              </optgroup>
-                            </select>
-                          )}
-                        </td>
-                        {/* স্ট্যাটাস চেক */}
-                        <td className="py-2.5 px-3 text-center" style={{ width: 30 }}>
-                          {templateMappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* ── ম্যাপিং লিস্ট — custom dropdown ── */}
+              <div className="space-y-2">
+                {placeholders.map(p => (
+                  <div key={p.key} className="flex items-center gap-3 p-2.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${templateMappings[p.key] ? t.emerald + "30" : t.border}` }}>
+                    {/* Placeholder */}
+                    <span className="font-mono text-[11px] px-2 py-0.5 rounded shrink-0" style={{ background: `${t.cyan}10`, color: t.cyan, minWidth: 160 }}>
+                      {`{{${p.key}}}`}
+                    </span>
+
+                    {/* System field — custom collapsible */}
+                    <div className="flex-1 relative">
+                      <button onClick={() => setOpenMapPicker(openMapPicker === p.key ? null : p.key)}
+                        className="w-full px-3 py-1.5 rounded-lg text-xs text-left flex items-center justify-between"
+                        style={{ background: t.card, border: `1px solid ${templateMappings[p.key] ? t.emerald + "60" : t.inputBorder}`, color: templateMappings[p.key] ? t.text : t.muted }}>
+                        <span>{templateMappings[p.key] ? (() => { const f = SYSTEM_FIELDS.flatMap(g => g.fields).find(f => f.key === templateMappings[p.key]); return f ? `${f.label} (${f.key})` : templateMappings[p.key]; })() : "— field সিলেক্ট —"}</span>
+                        <span style={{ fontSize: 10, color: t.muted }}>▼</span>
+                      </button>
+                      {openMapPicker === p.key && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl shadow-2xl overflow-hidden" style={{ background: t.card, border: `1px solid ${t.border}`, maxHeight: 300, overflowY: "auto" }}>
+                          <button onClick={() => { setTemplateMappings(prev => ({ ...prev, [p.key]: "" })); setOpenMapPicker(null); }}
+                            className="w-full px-3 py-2 text-left text-[10px]" style={{ color: t.muted, borderBottom: `1px solid ${t.border}` }}>✕ Clear</button>
+                          {SYSTEM_FIELDS.map(g => (
+                            <div key={g.group}>
+                              <button onClick={() => setExpandedMapGroup(expandedMapGroup === g.group ? null : g.group)}
+                                className="w-full px-3 py-2 text-left text-[10px] font-semibold flex items-center justify-between"
+                                style={{ background: `${t.cyan}06`, borderBottom: `1px solid ${t.border}` }}>
+                                <span style={{ color: t.cyan }}>{expandedMapGroup === g.group ? "▼" : "▶"} {g.group} ({g.fields.length})</span>
+                              </button>
+                              {expandedMapGroup === g.group && g.fields.map(f => (
+                                <button key={f.key} onClick={() => { setTemplateMappings(prev => ({ ...prev, [p.key]: f.key })); setOpenMapPicker(null); }}
+                                  className="w-full px-4 py-1.5 text-left text-xs flex items-center gap-2 transition"
+                                  style={{ background: templateMappings[p.key] === f.key ? `${t.emerald}12` : "transparent" }}
+                                  onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}08`}
+                                  onMouseLeave={e => e.currentTarget.style.background = templateMappings[p.key] === f.key ? `${t.emerald}12` : "transparent"}>
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: t.cyan }} />
+                                  <span>{f.label}</span>
+                                  <span className="text-[9px] ml-auto" style={{ color: t.muted }}>{f.key}</span>
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Modifier — সবসময় দেখাবে */}
+                    <select value={templateModifiers[p.key] || ""} onChange={e => setTemplateModifiers(prev => ({ ...prev, [p.key]: e.target.value }))}
+                      className="px-2 py-1.5 rounded-lg text-[10px] outline-none shrink-0"
+                      style={{ ...is, width: 140, borderColor: templateModifiers[p.key] ? `${t.purple}60` : t.inputBorder, color: templateModifiers[p.key] ? t.purple : t.muted }}>
+                      <option value="">None</option>
+                      <option value=":jp">:jp (日本語)</option>
+                      <option value=":slash">:slash (Y/M/D)</option>
+                      <option value=":dot">:dot (D.M.Y)</option>
+                      <option value=":dmy">:dmy (D/M/Y)</option>
+                      <option value=":year">:year</option>
+                      <option value=":month">:month</option>
+                      <option value=":day">:day</option>
+                      <option value=":first">:first</option>
+                      <option value=":last">:last</option>
+                    </select>
+
+                    {/* Check */}
+                    {templateMappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
+                  </div>
+                ))}
               </div>
 
               {/* ── বাটন ── */}
