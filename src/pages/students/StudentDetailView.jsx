@@ -63,9 +63,29 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     }).catch(() => {});
   }, [student.id]);
 
-  // ── JP Exam যোগ করার Modal state ──
+  // ── JP Exam যোগ করার state ──
   const [showJpExamForm, setShowJpExamForm] = useState(false);
   const [jpExamForm, setJpExamForm] = useState({ exam_type: "JLPT", level: "", score: "", result: "", exam_date: "" });
+
+  // ── Education যোগ/edit state ──
+  const [showEduForm, setShowEduForm] = useState(false);
+  const [editingEduId, setEditingEduId] = useState(null);
+  const [eduForm, setEduForm] = useState({ level: "SSC", school_name: "", year: "", board: "", gpa: "", group_name: "" });
+
+  const saveEducation = async () => {
+    try {
+      if (editingEduId) {
+        const res = await api.patch(`/students/${student.id}/education/${editingEduId}`, eduForm);
+        setEducation(prev => prev.map(e => e.id === editingEduId ? { ...e, ...eduForm } : e));
+      } else {
+        const res = await api.post(`/students/${student.id}/education`, eduForm);
+        setEducation(prev => [...prev, res]);
+      }
+      setShowEduForm(false);
+      setEditingEduId(null);
+      toast.success(editingEduId ? "আপডেট হয়েছে" : "যোগ হয়েছে");
+    } catch (err) { toast.error(err.message); }
+  };
 
   const addJpExam = async () => {
     if (!jpExamForm.exam_type) { toast.error("পরীক্ষার ধরন দিন"); return; }
@@ -912,16 +932,61 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
           {/* ── শিক্ষাগত তথ্য (Education) — SSC / HSC ── */}
           <Card delay={150}>
-            <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
-              <GraduationCap size={12} /> শিক্ষাগত তথ্য
-            </h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
+                <GraduationCap size={12} /> শিক্ষাগত তথ্য
+              </h4>
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => {
+                setShowEduForm(true);
+                setEduForm({ level: "SSC", school_name: "", year: "", board: "", gpa: "", group_name: "" });
+              }}>যোগ করুন</Button>
+            </div>
+
+            {/* Education যোগ/edit Modal */}
+            <Modal isOpen={showEduForm} onClose={() => setShowEduForm(false)} title={editingEduId ? "শিক্ষাগত তথ্য সম্পাদনা" : "শিক্ষাগত তথ্য যোগ করুন"} size="md">
+              <div className="space-y-3">
+                {[
+                  { key: "level", label: "পরীক্ষা", type: "select", options: ["SSC", "HSC", "Diploma", "Bachelor", "Masters", "Other"] },
+                  { key: "school_name", label: "প্রতিষ্ঠান", type: "text" },
+                  { key: "year", label: "পাসের সন", type: "text" },
+                  { key: "board", label: "বোর্ড", type: "text" },
+                  { key: "gpa", label: "জিপিএ / ফলাফল", type: "text" },
+                  { key: "group_name", label: "গ্রুপ / বিভাগ", type: "text" },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                    {f.type === "select" ? (
+                      <select value={eduForm[f.key] || ""} onChange={e => setEduForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                        {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input value={eduForm[f.key] || ""} onChange={e => setEduForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    )}
+                  </div>
+                ))}
+                <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                  <Button variant="ghost" size="sm" onClick={() => setShowEduForm(false)}>বাতিল</Button>
+                  <Button size="sm" icon={Save} onClick={saveEducation}>সংরক্ষণ</Button>
+                </div>
+              </div>
+            </Modal>
             {education.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {education.map((edu, idx) => (
                   <div key={edu.id || idx} className="p-3 rounded-lg" style={{ background: t.inputBg }}>
-                    <p className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: t.cyan }}>
-                      {edu.level || `পরীক্ষা ${idx + 1}`}
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.cyan }}>
+                        {edu.level || `পরীক্ষা ${idx + 1}`}
+                      </p>
+                      <div className="flex gap-1">
+                        <button onClick={() => { setEditingEduId(edu.id); setEduForm({ level: edu.level || "", school_name: edu.school_name || "", year: edu.passing_year || edu.year || "", board: edu.board || "", gpa: edu.gpa || "", group_name: edu.group_name || "" }); setShowEduForm(true); }}
+                          className="text-[9px] px-1.5 py-0.5 rounded" style={{ color: t.cyan }}>✏️</button>
+                        <button onClick={async () => { try { await api.del(`/students/${student.id}/education/${edu.id}`); setEducation(prev => prev.filter(e => e.id !== edu.id)); toast.success("মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); } }}
+                          className="text-[9px] px-1.5 py-0.5 rounded" style={{ color: t.rose }}>🗑</button>
+                      </div>
+                    </div>
                     <div className="space-y-1.5 text-xs">
                       {[
                         { label: "প্রতিষ্ঠান", value: edu.school_name || edu.institution },
@@ -1010,7 +1075,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      {["পরীক্ষা", "লেভেল", "স্কোর", "ফলাফল", "তারিখ"].map(h => (
+                      {["পরীক্ষা", "লেভেল", "স্কোর", "ফলাফল", "তারিখ", ""].map(h => (
                         <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                       ))}
                     </tr>
@@ -1031,6 +1096,10 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                             : e.result || "—"}
                         </td>
                         <td className="py-2 px-3" style={{ color: t.muted }}>{e.exam_date || "—"}</td>
+                        <td className="py-2 px-3">
+                          <button onClick={async () => { try { await api.del(`/students/${student.id}/jp-exams/${e.id}`); setJpExams(prev => prev.filter(x => x.id !== e.id)); toast.success("মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); } }}
+                            className="text-[9px] px-1 py-0.5 rounded opacity-50 hover:opacity-100" style={{ color: t.rose }}>🗑</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
