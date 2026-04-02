@@ -296,13 +296,19 @@ export default function ExcelAutoFillPage({ students }) {
     const mapped = mappings.filter(m => m.field);
     if (mapped.length === 0) { toast.error("কমপক্ষে ১টি field map করুন"); return; }
 
+    // Modifier যুক্ত করে save — field + modifier merge
+    const mappingsWithMod = mappings.map(m => ({
+      ...m,
+      field: m.field ? (m.modifier ? m.field + m.modifier : m.field) : m.field,
+    }));
+
     // Try API save
     if (activeTemplate?.id && token() && !activeTemplate.id.startsWith("tmpl-")) {
       try {
         const res = await fetch(`${API}/excel/templates/${activeTemplate.id}/mapping`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-          body: JSON.stringify({ mappings }),
+          body: JSON.stringify({ mappings: mappingsWithMod }),
         });
         if (!res.ok) throw new Error("API error");
         const data = await res.json();
@@ -500,7 +506,7 @@ export default function ExcelAutoFillPage({ students }) {
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["Sheet", "Cell", "Placeholder ({{...}})", "System Field (কোন ডেটা বসবে)", ""].map(h => (
+                  {["Sheet", "Cell", "Placeholder ({{...}})", "System Field (কোন ডেটা বসবে)", "Modifier", ""].map(h => (
                     <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                   ))}
                 </tr>
@@ -510,8 +516,8 @@ export default function ExcelAutoFillPage({ students }) {
                   <tr key={i} style={{ borderBottom: `1px solid ${t.border}` }}
                     onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <td className="py-2 px-2 text-[10px]" style={{ color: t.purple, width: 90 }}>
-                      {m.sheet ? <span className="px-1.5 py-0.5 rounded" style={{ background: `${t.purple}10` }}>{m.sheet.length > 12 ? m.sheet.substring(0, 12) + "..." : m.sheet}</span> : <span style={{ color: t.muted }}>—</span>}
+                    <td className="py-2 px-2 text-[10px]" style={{ color: t.purple, minWidth: 140 }}>
+                      {m.sheet ? <span className="px-1.5 py-0.5 rounded" style={{ background: `${t.purple}10` }}>{m.sheet}</span> : <span style={{ color: t.muted }}>—</span>}
                     </td>
                     <td className="py-2 px-3 font-mono font-bold" style={{ color: t.cyan, width: 60 }}>{m.cell}</td>
                     <td className="py-2 px-3" style={{ maxWidth: 200 }}>
@@ -531,7 +537,36 @@ export default function ExcelAutoFillPage({ students }) {
                         ))}
                       </select>
                     </td>
-                    <td className="py-2 px-3 text-center" style={{ width: 60 }}>
+                    <td className="py-2 px-3" style={{ width: 150 }}>
+                      {m.field && (
+                        <select value={m.modifier || ""} onChange={e => {
+                          const updated = [...mappings];
+                          updated[i] = { ...updated[i], modifier: e.target.value };
+                          setMappings(updated);
+                        }}
+                          className="w-full px-2 py-1 rounded-lg text-[10px] outline-none"
+                          style={{ ...is, borderColor: m.modifier ? `${t.purple}60` : t.inputBorder, color: m.modifier ? t.purple : t.muted }}>
+                          <option value="">None</option>
+                          <optgroup label="── Japanese ──">
+                            <option value=":jp">:jp (auto translate)</option>
+                          </optgroup>
+                          <optgroup label="── Date ──">
+                            <option value=":jp">:jp (年月日)</option>
+                            <option value=":slash">:slash (YYYY/MM/DD)</option>
+                            <option value=":dot">:dot (DD.MM.YYYY)</option>
+                            <option value=":dmy">:dmy (DD/MM/YYYY)</option>
+                            <option value=":year">:year</option>
+                            <option value=":month">:month</option>
+                            <option value=":day">:day</option>
+                          </optgroup>
+                          <optgroup label="── Name ──">
+                            <option value=":first">:first (first word)</option>
+                            <option value=":last">:last (rest)</option>
+                          </optgroup>
+                        </select>
+                      )}
+                    </td>
+                    <td className="py-2 px-3 text-center" style={{ width: 50 }}>
                       <div className="flex items-center gap-1">
                         {m.field && <Check size={14} style={{ color: t.emerald }} />}
                         <button onClick={() => removeMapping(i)} className="p-1 rounded opacity-50 hover:opacity-100 transition"
