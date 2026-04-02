@@ -59,10 +59,24 @@ const SYSTEM_FIELDS = [
     { key: "jp_exam_type", label: "JP Exam Type" },
     { key: "jp_exam_date", label: "JP Exam Date" },
   ]},
-  // স্পন্সর/গ্যারান্টর — নাম, ফোন, ঠিকানা, সম্পর্ক
+  // স্পন্সর/গ্যারান্টর — নাম, ফোন, ঠিকানা, সম্পর্ক + 経費支弁書 extended fields
   { group: "Sponsor", color: "rose", fields: [
     { key: "sponsor_name", label: "Sponsor Name" }, { key: "sponsor_phone", label: "Sponsor Phone" },
     { key: "sponsor_address", label: "Sponsor Address" }, { key: "sponsor_relationship", label: "Relationship" },
+    { key: "sponsor_statement", label: "Sponsor Statement" },
+    { key: "sponsor_payment_to_student", label: "Payment to Student (bool)" },
+    { key: "sponsor_payment_to_school", label: "Payment to School (bool)" },
+    { key: "sponsor_sign_date", label: "Sponsor Sign Date" },
+    { key: "sponsor_tin", label: "Sponsor TIN" },
+    { key: "sponsor_income", label: "Sponsor Annual Income" },
+    { key: "sponsor_company", label: "Sponsor Company" },
+    { key: "sponsor_nid", label: "Sponsor NID" },
+  ]},
+  // জাপান ফাইন্যান্স — টিউশন, জীবনযাত্রা খরচ, বিনিময় হার
+  { group: "Japan Finance", color: "amber", fields: [
+    { key: "tuition_jpy", label: "Tuition First Year (JPY)" },
+    { key: "monthly_living", label: "Monthly Living (JPY)" },
+    { key: "exchange_rate", label: "Exchange Rate" },
   ]},
   // গন্তব্য — দেশ, স্কুল, ব্যাচ
   { group: "Destination", color: "cyan", fields: [

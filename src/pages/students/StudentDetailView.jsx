@@ -131,7 +131,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [showStepCard, setShowStepCard] = useState(false);
 
   // ── Sponsor state ──
-  const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", address: "", nid: "", company_name: "", trade_license_no: "", work_address: "", tin: "", annual_income_y1: "", annual_income_y2: "", annual_income_y3: "", tax_y1: "", tax_y2: "", tax_y3: "", banks: [], tuition_jpy: "", living_jpy_monthly: "", payment_method: "Bank Transfer", exchange_rate: "" };
+  const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", address: "", nid: "", company_name: "", trade_license_no: "", work_address: "", tin: "", annual_income_y1: "", annual_income_y2: "", annual_income_y3: "", tax_y1: "", tax_y2: "", tax_y3: "", banks: [], tuition_jpy: "", living_jpy_monthly: "", payment_method: "Bank Transfer", exchange_rate: "", statement: "", payment_to_student: false, payment_to_school: true, sign_date: "" };
   const [sponsor, setSponsor] = useState(student.sponsor || BLANK_SPONSOR);
   const [sponsorForm, setSponsorForm] = useState(student.sponsor || BLANK_SPONSOR);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
@@ -1430,6 +1430,29 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               ))}
             </div>
           </Card>
+
+          {/* 経費支弁書 — Financial Sponsorship fields (read-only) */}
+          <Card delay={150}>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.cyan }}>📋 経費支弁書 তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>স্পনসর বিবৃতি</label>
+                <p className="text-xs font-medium py-1 whitespace-pre-wrap">{sponsor.statement || "—"}</p>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>স্বাক্ষরের তারিখ</label>
+                <p className="text-xs font-medium py-1">{sponsor.sign_date || "—"}</p>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>ছাত্রের অ্যাকাউন্টে পেমেন্ট</label>
+                <p className="text-xs font-medium py-1">{sponsor.payment_to_student ? "✅ হ্যাঁ" : "—"}</p>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>স্কুলের অ্যাকাউন্টে পেমেন্ট</label>
+                <p className="text-xs font-medium py-1">{sponsor.payment_to_school ? "✅ হ্যাঁ" : "—"}</p>
+              </div>
+            </div>
+          </Card>
         </>
       )}
 
@@ -1764,6 +1787,38 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* 経費支弁書 — Financial Sponsorship Document fields */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.cyan }}>📋 経費支弁書 তথ্য</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="md:col-span-2">
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>স্পনসর বিবৃতি</label>
+                <textarea value={sponsorForm.statement || ""} onChange={e => sf("statement", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-y"
+                  rows={3} placeholder="কেন স্পনসর করছেন, সম্পর্ক বিবরণ..."
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              </div>
+              <div>
+                <label className="text-[10px] block mb-1" style={{ color: t.muted }}>স্বাক্ষরের তারিখ</label>
+                <input type="date" value={sponsorForm.sign_date || ""} onChange={e => sf("sign_date", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              </div>
+              <div className="flex items-center gap-6 pt-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!sponsorForm.payment_to_student} onChange={e => sf("payment_to_student", e.target.checked)}
+                    className="w-4 h-4 rounded accent-cyan-500" />
+                  <span className="text-xs" style={{ color: t.text }}>ছাত্রের অ্যাকাউন্টে পেমেন্ট</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!sponsorForm.payment_to_school} onChange={e => sf("payment_to_school", e.target.checked)}
+                    className="w-4 h-4 rounded accent-cyan-500" />
+                  <span className="text-xs" style={{ color: t.text }}>স্কুলের অ্যাকাউন্টে পেমেন্ট</span>
+                </label>
+              </div>
             </div>
           </div>
 
