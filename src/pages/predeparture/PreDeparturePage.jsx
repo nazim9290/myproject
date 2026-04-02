@@ -818,26 +818,32 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
               {(checklists[sec.step] || []).length > 0 && (() => { const items = checklists[sec.step]; const done = items.filter(it => it.done).length; const total = items.length; const pct = Math.round((done / total) * 100); return (<div className="mt-2 flex items-center gap-2"><div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: t.border }}><div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: pct === 100 ? t.emerald : sec.color }} /></div><span className="text-[9px]" style={{ color: t.muted }}>{done}/{total}</span></div>); })()}
             </div>
 
-            {/* ── ডিফল্ট ডকুমেন্ট টেমপ্লেট — Generate বাটন ── */}
+            {/* ── ডিফল্ট ডকুমেন্ট টেমপ্লেট — সবসময় দেখাবে ── */}
             {countryTemplates.length > 0 && (
               <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                 <p className="text-[10px] font-semibold mb-2" style={{ color: t.muted }}>📋 ডিফল্ট ডকুমেন্ট</p>
                 <div className="space-y-2">
                   {countryTemplates.map(tmpl => (
-                    <div key={tmpl.id} className="flex items-center justify-between p-2 rounded-lg"
+                    <div key={tmpl.id} className="flex items-center justify-between p-2.5 rounded-lg"
                       style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}15` }}>
-                      <div>
-                        <p className="text-xs font-medium">{tmpl.name}</p>
-                        {tmpl.description && <p className="text-[10px]" style={{ color: t.muted }}>{tmpl.description}</p>}
-                        <p className="text-[9px]" style={{ color: t.muted }}>
-                          {tmpl.category === "excel" ? "Excel" : "DocGen"} • Default
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{tmpl.category === "excel" ? "📊" : "📄"}</span>
+                        <div>
+                          <p className="text-xs font-medium">{tmpl.name}</p>
+                          {tmpl.description && <p className="text-[10px]" style={{ color: t.muted }}>{tmpl.description}</p>}
+                        </div>
                       </div>
-                      <button onClick={() => generateFromDefault(tmpl)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-medium"
-                        style={{ background: t.cyan, color: "#fff" }}>
-                        <Download size={10} /> Generate
-                      </button>
+                      {tmpl.file_url ? (
+                        <button onClick={() => generateFromDefault(tmpl)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-medium"
+                          style={{ background: t.cyan, color: "#fff" }}>
+                          <Download size={10} /> ডাউনলোড
+                        </button>
+                      ) : (
+                        <span className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted, background: `${t.muted}10` }}>
+                          ফাইল আপলোড হয়নি
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
