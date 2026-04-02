@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, DollarSign, FileText, Plane, TrendingUp, CheckCircle, AlertTriangle, Clock } from "lucide-react";
+import { Users, DollarSign, FileText, Plane, TrendingUp, CheckCircle, AlertTriangle, Clock, UserPlus, Eye } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
@@ -91,6 +91,29 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold">Dashboard</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{dateStr}</p>
         </div>
+      </div>
+
+      {/* ── আজকের ওভারভিউ ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { icon: Eye, label: "আজকের ভিজিটর", value: data.visitors?.today || 0, sub: `এই মাসে: ${data.visitors?.thisMonth || 0}`, color: t.amber },
+          { icon: UserPlus, label: "আজকের ভর্তি", value: data.students?.todayEnrolled || 0, sub: `মোট Active: ${data.students?.active || 0}`, color: t.emerald },
+          { icon: DollarSign, label: "আজকের আয়", value: fmtShort(data.revenue?.today || 0), sub: `এই মাসে: ${fmtShort(data.revenue?.thisMonth || 0)}`, color: t.cyan },
+          { icon: Clock, label: "আজকের তারিখ", value: new Date().toLocaleDateString("bn-BD", { day: "numeric", month: "short" }), sub: new Date().toLocaleDateString("bn-BD", { weekday: "long" }), color: t.purple },
+        ].map((kpi, i) => (
+          <Card key={`today-${i}`} delay={i * 40}>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
+                <p className="mt-1 text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{kpi.sub}</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: `${kpi.color}15` }}>
+                <kpi.icon size={18} style={{ color: kpi.color }} />
+              </div>
+            </div>
+          </Card>
+        ))}
       </div>
 
       {/* ── KPI Cards ── */}
