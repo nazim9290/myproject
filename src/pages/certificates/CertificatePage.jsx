@@ -65,6 +65,35 @@ export default function CertificatePage({ students }) {
   const [docData, setDocData] = useState({}); // { "RegistrationNo": "12345", "IssueDate": "2020-01-01" }
   const [generateStep, setGenerateStep] = useState("student"); // student | fill
 
+  // Group-wise color — collapsible dropdown-এ ব্যবহার হবে
+  const GROUP_COLORS = {
+    "ব্যক্তিগত": t.cyan,
+    "পাসপোর্ট / NID": t.amber,
+    "ঠিকানা": t.emerald,
+    "পরিবার": t.purple,
+    "স্পন্সর": t.rose,
+    "অন্যান্য": t.muted,
+  };
+
+  // Custom collapsible field picker
+  const [openPicker, setOpenPicker] = useState(null); // which placeholder's picker is open
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const pickerRef = useRef(null);
+
+  // Click outside close
+  useEffect(() => {
+    const handler = (e) => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setOpenPicker(null); };
+    if (openPicker) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openPicker]);
+
+  const toggleGroup = (group) => setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
+
+  const selectField = (placeholderKey, fieldKey) => {
+    setMappings(prev => ({ ...prev, [placeholderKey]: fieldKey }));
+    setOpenPicker(null);
+  };
+
   // System fields for mapping dropdown
   const SYSTEM_FIELDS = [
     { group: "ব্যক্তিগত", fields: [
@@ -278,17 +307,55 @@ export default function CertificatePage({ students }) {
                       {p.placeholder || `{{${p.key}}}`}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3" style={{ minWidth: 250 }}>
-                    <select value={mappings[p.key] || ""} onChange={e => setMappings(prev => ({ ...prev, [p.key]: e.target.value }))}
-                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                  <td className="py-2.5 px-3 relative" style={{ minWidth: 300 }}>
+                    {/* Custom collapsible field picker */}
+                    <button onClick={() => setOpenPicker(openPicker === p.key ? null : p.key)}
+                      className="w-full px-3 py-1.5 rounded-lg text-xs text-left flex items-center justify-between"
                       style={{ ...is, borderColor: mappings[p.key] ? `${t.emerald}60` : t.inputBorder }}>
-                      <option value="">— field সিলেক্ট করুন —</option>
-                      {allSystemFields.map(g => (
-                        <optgroup key={g.group} label={`── ${g.group} ──`}>
-                          {g.fields.map(f => <option key={f.key} value={f.key}>{f.label} ({f.key})</option>)}
-                        </optgroup>
-                      ))}
-                    </select>
+                      <span style={{ color: mappings[p.key] ? t.text : t.muted }}>
+                        {mappings[p.key]
+                          ? (() => { const f = allSystemFields.flatMap(g => g.fields).find(f => f.key === mappings[p.key]); return f ? `${f.label} (${f.key})` : mappings[p.key]; })()
+                          : "— field সিলেক্ট করুন —"}
+                      </span>
+                      <span style={{ color: t.muted, fontSize: 10 }}>▼</span>
+                    </button>
+
+                    {openPicker === p.key && (
+                      <div ref={pickerRef} className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl shadow-2xl overflow-hidden"
+                        style={{ background: t.card, border: `1px solid ${t.border}`, maxHeight: 350, overflowY: "auto" }}>
+                        {/* Clear selection */}
+                        <button onClick={() => selectField(p.key, "")}
+                          className="w-full px-3 py-2 text-left text-[10px]"
+                          style={{ color: t.muted, borderBottom: `1px solid ${t.border}` }}>
+                          ✕ Clear selection
+                        </button>
+
+                        {allSystemFields.map(g => {
+                          const color = GROUP_COLORS[g.group] || t.cyan;
+                          const isExpanded = expandedGroups[g.group];
+                          return (
+                            <div key={g.group}>
+                              <button onClick={() => toggleGroup(g.group)}
+                                className="w-full px-3 py-2 text-left text-[10px] font-semibold flex items-center justify-between"
+                                style={{ background: `${color}08`, borderBottom: `1px solid ${t.border}` }}>
+                                <span style={{ color }}>{isExpanded ? "▼" : "▶"} {g.group} ({g.fields.length})</span>
+                              </button>
+                              {isExpanded && g.fields.map(f => (
+                                <button key={f.key} onClick={() => selectField(p.key, f.key)}
+                                  className="w-full px-4 py-1.5 text-left text-xs flex items-center gap-2 transition"
+                                  style={{ background: mappings[p.key] === f.key ? `${color}15` : "transparent" }}
+                                  onMouseEnter={e => e.currentTarget.style.background = `${color}10`}
+                                  onMouseLeave={e => e.currentTarget.style.background = mappings[p.key] === f.key ? `${color}15` : "transparent"}>
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                                  <span>{f.label}</span>
+                                  <span className="text-[9px] ml-auto" style={{ color: t.muted }}>{f.key}</span>
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </td>
                   <td className="py-2.5 px-3 text-center" style={{ width: 40 }}>
                     {mappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
