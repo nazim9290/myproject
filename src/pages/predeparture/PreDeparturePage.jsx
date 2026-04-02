@@ -729,62 +729,16 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
               ))}
             </div>
 
-            {/* ── ডকুমেন্ট আপলোড সেকশন ── */}
-            <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-medium flex items-center gap-1" style={{ color: t.muted }}>
-                  <Paperclip size={10} /> ডকুমেন্ট ({stepFiles.length})
-                </p>
-                {/* Google Drive লিংক */}
-                <button onClick={() => {
-                  const url = prompt("Google Drive লিংক পেস্ট করুন:");
-                  if (url && url.trim()) {
-                    const newFile = { id: Date.now().toString(), step: sec.stepKey, name: "Google Drive Link", url: url.trim(), uploaded_at: new Date().toISOString().slice(0, 10), type: "gdrive" };
-                    setFiles(prev => [...prev, newFile]);
-                    preDeparture.update(st.id, { ...form, checklists, deadlines, files: [...files, newFile] }).catch(() => {});
-                    toast.success("Drive লিংক যোগ হয়েছে");
-                  }
-                }} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium hover:opacity-80 transition"
-                  style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                  🔗 Drive Link
-                </button>
-              </div>
-
-              {/* আপলোড করা ফাইল তালিকা */}
-              {stepFiles.length > 0 && (
-                <div className="space-y-1.5">
-                  {stepFiles.map(file => (
-                    <div key={file.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[10px]"
-                      style={{ background: `${t.muted}08` }}>
-                      <FileText size={12} style={{ color: sec.color }} className="shrink-0" />
-                      <span className="flex-1 truncate" style={{ color: t.text }} title={file.name}>{file.name}</span>
-                      <span style={{ color: t.muted }} className="shrink-0">{file.uploaded_at}</span>
-                      {/* ডাউনলোড লিংক */}
-                      <a href={`${API_URL.replace("/api", "")}${file.url}`} target="_blank" rel="noopener noreferrer"
-                        className="p-1 rounded hover:opacity-70 shrink-0" title="ডাউনলোড">
-                        <Download size={11} style={{ color: t.cyan }} />
-                      </a>
-                      {/* মুছে ফেলা — confirm সহ */}
-                      {deleteConfirm === file.id ? (
-                        <span className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => handleFileDelete(file.id)}
-                            className="text-[9px] px-1.5 py-0.5 rounded font-medium"
-                            style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
-                          <button onClick={() => setDeleteConfirm(null)}
-                            className="text-[9px] px-1.5 py-0.5 rounded"
-                            style={{ color: t.muted }}>না</button>
-                        </span>
-                      ) : (
-                        <button onClick={() => setDeleteConfirm(file.id)}
-                          className="p-1 rounded hover:opacity-70 shrink-0" title="মুছুন">
-                          <Trash2 size={11} style={{ color: t.rose }} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+            {/* Google Drive Link */}
+            <div className="mt-3">
+              <label className="text-[10px] font-medium mb-1 flex items-center gap-1" style={{ color: t.muted }}>🔗 Google Drive Link</label>
+              <input type="url" value={form[`${sec.stepKey}_drive_url`] || ""}
+                onChange={e => setForm(p => ({ ...p, [`${sec.stepKey}_drive_url`]: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={inputStyle}
+                placeholder="https://drive.google.com/..." />
             </div>
+
+            {/* ── ডকুমেন্ট সেকশন সরানো — শুধু Drive link ── */}
             <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
               <p className="text-[10px] font-semibold mb-2" style={{ color: t.muted }}>চেকলিস্ট</p>
               {(checklists[sec.step] || []).map((item, idx) => (
