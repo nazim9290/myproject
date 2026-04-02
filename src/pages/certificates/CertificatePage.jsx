@@ -432,26 +432,36 @@ export default function CertificatePage({ students }) {
               // 1. Student profile data
               const stu = eligibleStudents.find(s => s.id === selectedStudent) || {};
               const prefill = {};
-              (activeTemplate.placeholders || []).forEach(p => {
-                const k = p.key;
-                if (stu[k]) prefill[k] = stu[k];
-                else if (stu[p.field]) prefill[k] = stu[p.field];
-              });
 
-              // 2. Saved document data from DB (Documents module-এ input করা data)
-              // Template-র linked doc type থেকে, অথবা সব doc type check
+              // 2. Saved document data from DB — সব doc type-এর data একসাথে merge
+              let allSavedFields = {};
               try {
                 const allDocData = await api.get(`/docdata/student/${selectedStudent}`);
                 if (Array.isArray(allDocData)) {
                   allDocData.forEach(dd => {
-                    const saved = dd.field_data || {};
-                    // Saved document fields → prefill (overrides student profile)
-                    Object.entries(saved).forEach(([key, val]) => {
-                      if (val) prefill[key] = val;
+                    Object.entries(dd.field_data || {}).forEach(([key, val]) => {
+                      if (val && key !== "_members" && !key.startsWith("_")) allSavedFields[key] = val;
                     });
                   });
                 }
               } catch { /* no saved data */ }
+
+              // 3. Template placeholder → mapped field → value from profile or doc data
+              (activeTemplate.placeholders || []).forEach(p => {
+                const placeholderKey = p.key;           // e.g. "Register No"
+                const mappedField = p.field || p.key;   // e.g. "register_no" (from mapping step)
+
+                // Priority: doc data > student profile > placeholder key match
+                if (allSavedFields[mappedField]) {
+                  prefill[placeholderKey] = allSavedFields[mappedField];
+                } else if (allSavedFields[placeholderKey]) {
+                  prefill[placeholderKey] = allSavedFields[placeholderKey];
+                } else if (stu[mappedField]) {
+                  prefill[placeholderKey] = stu[mappedField];
+                } else if (stu[placeholderKey]) {
+                  prefill[placeholderKey] = stu[placeholderKey];
+                }
+              });
 
               setDocData(prefill);
               setGenerateStep("fill");
