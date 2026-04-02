@@ -360,7 +360,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "course":
       return <LanguageCoursePage students={students} />;
     case "attendance":
-      return <AttendancePage students={students} />;
+      return <AttendancePage students={students} currentUser={currentUser} />;
     case "documents":
       return <DocumentsPage students={students} />;
     case "schools":

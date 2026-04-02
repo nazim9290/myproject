@@ -23,13 +23,15 @@ const normalizeStatus = (s) => {
 // Safe ATT_STATUS lookup — undefined crash prevent
 const getStatusConfig = (status) => ATT_STATUS[normalizeStatus(status)] || ATT_STATUS.absent;
 
-export default function AttendancePage({ students = [] }) {
+export default function AttendancePage({ students = [], currentUser }) {
   const t = useTheme();
   const toast = useToast();
   const today = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedBatch, setSelectedBatch] = useState("all");
+  const [selectedBranch, setSelectedBranch] = useState("all");
   const [searchQ, setSearchQ] = useState("");
+  const isAdmin = currentUser?.role === "owner" || currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
   // attendanceLog: { [date]: { [studentId]: status } }
   const [attendanceLog, setAttendanceLog] = useState({});
@@ -54,8 +56,11 @@ export default function AttendancePage({ students = [] }) {
 
   // Students to show: enrolled/in_course students filtered by batch
   const eligibleStudents = students.filter(s => ["ENROLLED", "IN_COURSE", "EXAM_PASSED", "DOC_COLLECTION", "SCHOOL_INTERVIEW", "DOC_SUBMITTED"].includes(s.status));
-  const batchOptions = ["all", ...new Set(eligibleStudents.map(s => s.batch).filter(Boolean))];
-  const filteredStudents = selectedBatch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.batch === selectedBatch);
+  // Branch filter — admin সব দেখে, staff নিজ branch
+  const branchOptions = ["all", ...new Set(eligibleStudents.map(s => s.branch).filter(Boolean))];
+  const branchFiltered = selectedBranch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.branch === selectedBranch);
+  const batchOptions = ["all", ...new Set(branchFiltered.map(s => s.batch).filter(Boolean))];
+  const filteredStudents = selectedBatch === "all" ? branchFiltered : branchFiltered.filter(s => s.batch === selectedBatch);
 
   // Fallback to mock data if no real students
   const baseList = filteredStudents.map(s => ({ id: s.id, name: s.name_en || s.name || s.id, batch: s.batch }));
@@ -128,6 +133,17 @@ export default function AttendancePage({ students = [] }) {
               {batchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
+          {/* Branch filter — শুধু Admin দেখবে */}
+          {isAdmin && branchOptions.length > 2 && (
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
+              <select value={selectedBranch} onChange={e => { setSelectedBranch(e.target.value); setSelectedBatch("all"); }}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                <option value="all">সব ব্রাঞ্চ</option>
+                {branchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+          )}
           {/* সার্চ বার */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
             style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
