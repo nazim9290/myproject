@@ -725,10 +725,9 @@ export default function CertificatePage({ students }) {
         <Button icon={Plus} onClick={() => setView("upload")}>Template আপলোড</Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "আমার Template", value: templates.length, color: t.cyan },
-          { label: "ডিফল্ট Template", value: defaultTemplates.length, color: t.purple },
+          { label: "মোট Template", value: templates.length, color: t.cyan },
           { label: "ট্রান্সলেশন", value: templates.filter(x => x.category === "translation").length, color: t.amber },
           { label: "সার্টিফিকেট", value: templates.filter(x => x.category === "certificate").length, color: t.emerald },
           { label: "মোট স্টুডেন্ট", value: eligibleStudents.length, color: t.rose },
@@ -740,7 +739,7 @@ export default function CertificatePage({ students }) {
         ))}
       </div>
 
-      {templates.length === 0 && defaultTemplates.length === 0 && !loading && (
+      {templates.length === 0 && !loading && (
         <Card delay={100}>
           <h3 className="text-sm font-semibold mb-3">কিভাবে কাজ করে?</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -759,54 +758,8 @@ export default function CertificatePage({ students }) {
         </Card>
       )}
 
-      {/* ═══ ডিফল্ট টেমপ্লেট — সুপার অ্যাডমিনের আপলোড করা (read-only) ═══ */}
-      {defaultTemplates.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="h-px flex-1" style={{ background: t.border }} />
-            <p className="text-[10px] uppercase tracking-wider font-semibold px-2" style={{ color: t.purple }}>ডিফল্ট টেমপ্লেট</p>
-            <div className="h-px flex-1" style={{ background: t.border }} />
-          </div>
-          {defaultTemplates.map((tmpl, i) => (
-            <Card key={`def-${tmpl.id}`} delay={100 + i * 50}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${t.purple}15` }}>
-                    <File size={18} style={{ color: t.purple }} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">{tmpl.name}</p>
-                      <Badge color="purple" size="xs">Default</Badge>
-                    </div>
-                    {tmpl.description && <p className="text-[10px]" style={{ color: t.textSecondary }}>{tmpl.description}</p>}
-                    <p className="text-[10px]" style={{ color: t.muted }}>
-                      {tmpl.file_name || "template.docx"} • সুপার অ্যাডমিন কর্তৃক
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button size="xs" icon={Download} onClick={() => {
-                    // ডিফল্ট টেমপ্লেট দিয়ে generate — activeTemplate হিসেবে সেট করো
-                    setActiveTemplate({
-                      ...tmpl,
-                      placeholders: tmpl.template_data?.placeholders || tmpl.placeholders || [],
-                      total_fields: (tmpl.template_data?.placeholders || tmpl.placeholders || []).length,
-                    });
-                    setSelectedStudent("");
-                    setStudentSearch("");
-                    setFilterBatch("all");
-                    setView("generate");
-                  }}>Generate</Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </>
-      )}
-
       {/* ═══ আমার টেমপ্লেট — এজেন্সির নিজস্ব (full CRUD) ═══ */}
-      {(templates.length > 0 || defaultTemplates.length > 0) && templates.length > 0 && (
+      {templates.length > 0 && (
         <div className="flex items-center gap-2 mt-2">
           <div className="h-px flex-1" style={{ background: t.border }} />
           <p className="text-[10px] uppercase tracking-wider font-semibold px-2" style={{ color: t.cyan }}>আমার টেমপ্লেট</p>
