@@ -600,8 +600,8 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
       ];
     }
 
-    // Fallback — Japan sections
-    return buildSections.call({ country: "Japan" });
+    // Fallback — empty sections
+    return [];
   };
 
   const sections = buildSections();
