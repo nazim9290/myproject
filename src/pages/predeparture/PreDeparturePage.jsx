@@ -262,7 +262,7 @@ export default function PreDeparturePage() {
                         {st.status === "VISA_GRANTED" ? "ভিসা পেয়েছে" : st.status === "ARRIVED" ? "পৌঁছেছে"
                           : st.status === "COMPLETED" ? "সম্পন্ন" : "COE পেয়েছে"}
                       </Badge>
-                      <DeadlineBadge deadlines={st.deadlines} countrySteps={cSteps} t={t} />
+                      <DeadlineBadge deadlines={st.deadlines} countrySteps={getStepsForStudent(st)} t={t} />
                     </div>
                     <p className="text-[10px]" style={{ color: t.muted }}>{st.school} • {st.batch}{st.coe?.number ? ` • COE: ${st.coe.number}` : ""}</p>
                     {/* দেশভিত্তিক dynamic step indicators */}
