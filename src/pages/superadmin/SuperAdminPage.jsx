@@ -7,6 +7,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import { API_URL } from "../../lib/api";
+import FieldMapperTable from "../../components/ui/FieldMapper";
 
 /**
  * SuperAdminPage — Platform-level agency management
@@ -55,43 +56,6 @@ export default function SuperAdminPage() {
   const [templateMappings, setTemplateMappings] = useState({});
   const [templateModifiers, setTemplateModifiers] = useState({});
   const [mappingSaving, setMappingSaving] = useState(false);
-  const [openMapPicker, setOpenMapPicker] = useState(null);
-  const [expandedMapGroup, setExpandedMapGroup] = useState(null);
-
-  // ── সিস্টেম ফিল্ড — placeholder → student field mapping-এর জন্য ──
-  const SYSTEM_FIELDS = [
-    { group: "ব্যক্তিগত", fields: [
-      { key: "name_en", label: "নাম (English)" }, { key: "name_bn", label: "নাম (বাংলা)" },
-      { key: "name_katakana", label: "নাম (カタカナ)" },
-      { key: "dob", label: "জন্ম তারিখ" }, { key: "gender", label: "লিঙ্গ" },
-      { key: "nationality", label: "জাতীয়তা" }, { key: "marital_status", label: "বৈবাহিক অবস্থা" },
-      { key: "blood_group", label: "রক্তের গ্রুপ" },
-      { key: "phone", label: "ফোন" }, { key: "email", label: "ইমেইল" }, { key: "nid", label: "NID" },
-    ]},
-    { group: "পাসপোর্ট", fields: [
-      { key: "passport_number", label: "পাসপোর্ট নম্বর" },
-      { key: "passport_issue", label: "পাসপোর্ট ইস্যু" }, { key: "passport_expiry", label: "পাসপোর্ট মেয়াদ" },
-    ]},
-    { group: "ঠিকানা", fields: [
-      { key: "permanent_address", label: "স্থায়ী ঠিকানা" }, { key: "current_address", label: "বর্তমান ঠিকানা" },
-    ]},
-    { group: "পরিবার", fields: [
-      { key: "father_name", label: "পিতার নাম" }, { key: "father_name_en", label: "পিতার নাম (EN)" },
-      { key: "mother_name", label: "মাতার নাম" }, { key: "mother_name_en", label: "মাতার নাম (EN)" },
-      { key: "father_dob", label: "পিতার জন্ম তারিখ" }, { key: "mother_dob", label: "মাতার জন্ম তারিখ" },
-      { key: "father_occupation", label: "পিতার পেশা" }, { key: "mother_occupation", label: "মাতার পেশা" },
-    ]},
-    { group: "স্পন্সর", fields: [
-      { key: "sponsor_name", label: "স্পন্সরের নাম" }, { key: "sponsor_phone", label: "স্পন্সর ফোন" },
-      { key: "sponsor_address", label: "স্পন্সর ঠিকানা" }, { key: "sponsor_relationship", label: "সম্পর্ক" },
-    ]},
-    { group: "গন্তব্য", fields: [
-      { key: "country", label: "দেশ" }, { key: "school", label: "স্কুল" }, { key: "batch", label: "ব্যাচ" },
-    ]},
-    { group: "সিস্টেম", fields: [
-      { key: "today", label: "আজকের তারিখ" }, { key: "today_jp", label: "আজকের তারিখ (JP)" }, { key: "age", label: "বয়স" },
-    ]},
-  ];
 
   // ── টেমপ্লেট ক্যাটেগরি ম্যাপ ──
   const TEMPLATE_CATEGORIES = [
@@ -574,83 +538,16 @@ export default function SuperAdminPage() {
         {mappingTemplate && (() => {
           const td = typeof mappingTemplate.template_data === "string" ? JSON.parse(mappingTemplate.template_data) : mappingTemplate.template_data;
           const placeholders = td?.placeholders || [];
-          const mappedCount = placeholders.filter(p => templateMappings[p.key]).length;
           return (
             <div className="space-y-4">
-              {/* ── প্রগ্রেস বার ── */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: t.inputBg }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${placeholders.length > 0 ? (mappedCount / placeholders.length) * 100 : 0}%`, background: t.emerald }} />
-                </div>
-                <span className="text-[10px] font-mono" style={{ color: t.muted }}>{mappedCount}/{placeholders.length} ম্যাপড</span>
-              </div>
-
-              {/* ── ম্যাপিং লিস্ট — custom dropdown ── */}
-              <div className="space-y-2">
-                {placeholders.map(p => (
-                  <div key={p.key} className="flex items-center gap-3 p-2.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${templateMappings[p.key] ? t.emerald + "30" : t.border}` }}>
-                    {/* Placeholder */}
-                    <span className="font-mono text-[11px] px-2 py-0.5 rounded shrink-0" style={{ background: `${t.cyan}10`, color: t.cyan, minWidth: 160 }}>
-                      {`{{${p.key}}}`}
-                    </span>
-
-                    {/* System field — custom collapsible */}
-                    <div className="flex-1 relative">
-                      <button onClick={() => setOpenMapPicker(openMapPicker === p.key ? null : p.key)}
-                        className="w-full px-3 py-1.5 rounded-lg text-xs text-left flex items-center justify-between"
-                        style={{ background: t.card, border: `1px solid ${templateMappings[p.key] ? t.emerald + "60" : t.inputBorder}`, color: templateMappings[p.key] ? t.text : t.muted }}>
-                        <span>{templateMappings[p.key] ? (() => { const f = SYSTEM_FIELDS.flatMap(g => g.fields).find(f => f.key === templateMappings[p.key]); return f ? `${f.label} (${f.key})` : templateMappings[p.key]; })() : "— field সিলেক্ট —"}</span>
-                        <span style={{ fontSize: 10, color: t.muted }}>▼</span>
-                      </button>
-                      {openMapPicker === p.key && (
-                        <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl shadow-2xl overflow-hidden" style={{ background: t.card, border: `1px solid ${t.border}`, maxHeight: 300, overflowY: "auto" }}>
-                          <button onClick={() => { setTemplateMappings(prev => ({ ...prev, [p.key]: "" })); setOpenMapPicker(null); }}
-                            className="w-full px-3 py-2 text-left text-[10px]" style={{ color: t.muted, borderBottom: `1px solid ${t.border}` }}>✕ Clear</button>
-                          {SYSTEM_FIELDS.map(g => (
-                            <div key={g.group}>
-                              <button onClick={() => setExpandedMapGroup(expandedMapGroup === g.group ? null : g.group)}
-                                className="w-full px-3 py-2 text-left text-[10px] font-semibold flex items-center justify-between"
-                                style={{ background: `${t.cyan}06`, borderBottom: `1px solid ${t.border}` }}>
-                                <span style={{ color: t.cyan }}>{expandedMapGroup === g.group ? "▼" : "▶"} {g.group} ({g.fields.length})</span>
-                              </button>
-                              {expandedMapGroup === g.group && g.fields.map(f => (
-                                <button key={f.key} onClick={() => { setTemplateMappings(prev => ({ ...prev, [p.key]: f.key })); setOpenMapPicker(null); }}
-                                  className="w-full px-4 py-1.5 text-left text-xs flex items-center gap-2 transition"
-                                  style={{ background: templateMappings[p.key] === f.key ? `${t.emerald}12` : "transparent" }}
-                                  onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}08`}
-                                  onMouseLeave={e => e.currentTarget.style.background = templateMappings[p.key] === f.key ? `${t.emerald}12` : "transparent"}>
-                                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: t.cyan }} />
-                                  <span>{f.label}</span>
-                                  <span className="text-[9px] ml-auto" style={{ color: t.muted }}>{f.key}</span>
-                                </button>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Modifier — সবসময় দেখাবে */}
-                    <select value={templateModifiers[p.key] || ""} onChange={e => setTemplateModifiers(prev => ({ ...prev, [p.key]: e.target.value }))}
-                      className="px-2 py-1.5 rounded-lg text-[10px] outline-none shrink-0"
-                      style={{ ...is, width: 140, borderColor: templateModifiers[p.key] ? `${t.purple}60` : t.inputBorder, color: templateModifiers[p.key] ? t.purple : t.muted }}>
-                      <option value="">None</option>
-                      <option value=":jp">:jp (日本語)</option>
-                      <option value=":slash">:slash (Y/M/D)</option>
-                      <option value=":dot">:dot (D.M.Y)</option>
-                      <option value=":dmy">:dmy (D/M/Y)</option>
-                      <option value=":year">:year</option>
-                      <option value=":month">:month</option>
-                      <option value=":day">:day</option>
-                      <option value=":first">:first</option>
-                      <option value=":last">:last</option>
-                    </select>
-
-                    {/* Check */}
-                    {templateMappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
-                  </div>
-                ))}
-              </div>
+              {/* ── FieldMapperTable — reusable mapping component ── */}
+              <FieldMapperTable
+                placeholders={placeholders}
+                mappings={templateMappings}
+                modifiers={templateModifiers}
+                onMappingChange={(key, val) => setTemplateMappings(prev => ({ ...prev, [key]: val }))}
+                onModifierChange={(key, val) => setTemplateModifiers(prev => ({ ...prev, [key]: val }))}
+              />
 
               {/* ── বাটন ── */}
               <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>

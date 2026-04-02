@@ -14,6 +14,7 @@ import { Badge } from "../../components/ui/Badge";
 import DropZone from "../../components/ui/DropZone";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
+import FieldMapperTable from "../../components/ui/FieldMapper";
 
 import { API_URL } from "../../lib/api";
 const token = () => localStorage.getItem("agencyos_token");
@@ -69,69 +70,9 @@ export default function CertificatePage({ students }) {
   const [docData, setDocData] = useState({}); // { "RegistrationNo": "12345", "IssueDate": "2020-01-01" }
   const [generateStep, setGenerateStep] = useState("student"); // student | fill
 
-  // Group-wise color — collapsible dropdown-এ ব্যবহার হবে
-  const GROUP_COLORS = {
-    "ব্যক্তিগত": t.cyan,
-    "পাসপোর্ট / NID": t.amber,
-    "ঠিকানা": t.emerald,
-    "পরিবার": t.purple,
-    "স্পন্সর": t.rose,
-    "অন্যান্য": t.muted,
-  };
 
-  // Custom collapsible field picker
-  const [openPicker, setOpenPicker] = useState(null); // which placeholder's picker is open
-  const [expandedGroups, setExpandedGroups] = useState({});
-  const pickerRef = useRef(null);
-
-  // Click outside close
-  useEffect(() => {
-    const handler = (e) => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setOpenPicker(null); };
-    if (openPicker) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [openPicker]);
-
-  const toggleGroup = (group) => setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
-
-  const selectField = (placeholderKey, fieldKey) => {
-    setMappings(prev => ({ ...prev, [placeholderKey]: fieldKey }));
-    setOpenPicker(null);
-  };
-
-  // System fields for mapping dropdown
-  const SYSTEM_FIELDS = [
-    { group: "ব্যক্তিগত", fields: [
-      { key: "name_en", label: "নাম (English)" }, { key: "name_en:first", label: "নাম → First Name" }, { key: "name_en:last", label: "নাম → Last Name" },
-      { key: "name_bn", label: "নাম (বাংলা)" }, { key: "name_katakana", label: "নাম (カタカナ)" },
-      { key: "dob", label: "জন্ম তারিখ (Full)" }, { key: "dob:year", label: "জন্ম → Year" }, { key: "dob:month", label: "জন্ম → Month" }, { key: "dob:day", label: "জন্ম → Day" },
-      { key: "age", label: "বয়স" }, { key: "gender", label: "লিঙ্গ" }, { key: "nationality", label: "জাতীয়তা" },
-      { key: "marital_status", label: "বৈবাহিক অবস্থা" }, { key: "blood_group", label: "রক্তের গ্রুপ" },
-      { key: "phone", label: "ফোন" }, { key: "email", label: "ইমেইল" },
-    ]},
-    { group: "পাসপোর্ট / NID", fields: [
-      { key: "passport_number", label: "পাসপোর্ট নম্বর" }, { key: "nid", label: "NID" },
-      { key: "passport_issue", label: "পাসপোর্ট ইস্যু" }, { key: "passport_expiry", label: "পাসপোর্ট মেয়াদ" },
-    ]},
-    { group: "ঠিকানা", fields: [
-      { key: "permanent_address", label: "স্থায়ী ঠিকানা" }, { key: "current_address", label: "বর্তমান ঠিকানা" },
-    ]},
-    { group: "পরিবার", fields: [
-      { key: "father_name", label: "পিতার নাম" }, { key: "father_name_en", label: "পিতার নাম (EN)" },
-      { key: "mother_name", label: "মাতার নাম" }, { key: "mother_name_en", label: "মাতার নাম (EN)" },
-      { key: "father_dob", label: "পিতার জন্ম তারিখ" }, { key: "mother_dob", label: "মাতার জন্ম তারিখ" },
-      { key: "father_occupation", label: "পিতার পেশা" }, { key: "mother_occupation", label: "মাতার পেশা" },
-    ]},
-    { group: "স্পন্সর", fields: [
-      { key: "sponsor_name", label: "স্পন্সরের নাম" }, { key: "sponsor_phone", label: "স্পন্সর ফোন" },
-      { key: "sponsor_address", label: "স্পন্সর ঠিকানা" }, { key: "sponsor_relationship", label: "সম্পর্ক" },
-    ]},
-    { group: "অন্যান্য", fields: [
-      { key: "country", label: "দেশ" }, { key: "today", label: "আজকের তারিখ" }, { key: "today_jp", label: "আজকের তারিখ (JP)" },
-    ]},
-  ];
-
-  // Doc type fields কে SYSTEM_FIELDS-এ merge — Birth Certificate etc. fields mapping-এ আসবে
-  const allSystemFields = [...SYSTEM_FIELDS];
+  // Doc type fields — Birth Certificate etc. fields mapping-এ আসবে (extraGroups হিসেবে)
+  const allSystemFields = [];
   docTypes.forEach(dt => {
     const docFields = (dt.fields || [])
       .filter(f => f.type !== "section_header" && f.type !== "repeatable")
@@ -387,125 +328,16 @@ export default function CertificatePage({ students }) {
       </div>
 
       <Card delay={50}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["Placeholder", "System Field (কোন ডেটা বসবে)", "Modifier", ""].map(h => (
-                  <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {detectedPlaceholders.map((p, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${t.border}` }}
-                  onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <td className="py-2.5 px-3">
-                    <span className="font-mono px-2 py-1 rounded text-[11px]" style={{ background: `${t.cyan}10`, color: t.cyan }}>
-                      {p.placeholder || `{{${p.key}}}`}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 relative" style={{ minWidth: 300 }}>
-                    {/* Custom collapsible field picker */}
-                    <button data-picker={p.key} onClick={() => setOpenPicker(openPicker === p.key ? null : p.key)}
-                      className="w-full px-3 py-1.5 rounded-lg text-xs text-left flex items-center justify-between"
-                      style={{ ...is, borderColor: mappings[p.key] ? `${t.emerald}60` : t.inputBorder }}>
-                      <span style={{ color: mappings[p.key] ? t.text : t.muted }}>
-                        {mappings[p.key]
-                          ? (() => { const f = allSystemFields.flatMap(g => g.fields).find(f => f.key === mappings[p.key]); return f ? `${f.label} (${f.key})` : mappings[p.key]; })()
-                          : "— field সিলেক্ট করুন —"}
-                      </span>
-                      <span style={{ color: t.muted, fontSize: 10 }}>▼</span>
-                    </button>
-
-                    {openPicker === p.key && (() => {
-                      // Dropdown position — নিচে space না থাকলে উপরে open হবে
-                      const btnEl = document.querySelector(`[data-picker="${p.key}"]`);
-                      const rect = btnEl?.getBoundingClientRect();
-                      const spaceBelow = rect ? window.innerHeight - rect.bottom : 999;
-                      const openUp = spaceBelow < 380;
-                      return (
-                      <div ref={pickerRef} className={`absolute left-0 right-0 z-50 rounded-xl shadow-2xl overflow-hidden`}
-                        style={{ background: t.card, border: `1px solid ${t.border}`, maxHeight: 350, overflowY: "auto",
-                          ...(openUp ? { bottom: "100%", marginBottom: 4 } : { top: "100%", marginTop: 4 }) }}>
-                        {/* Clear selection */}
-                        <button onClick={() => selectField(p.key, "")}
-                          className="w-full px-3 py-2 text-left text-[10px]"
-                          style={{ color: t.muted, borderBottom: `1px solid ${t.border}` }}>
-                          ✕ Clear selection
-                        </button>
-
-                        {allSystemFields.map(g => {
-                          const color = GROUP_COLORS[g.group] || t.cyan;
-                          const isExpanded = expandedGroups[g.group];
-                          return (
-                            <div key={g.group}>
-                              <button onClick={() => toggleGroup(g.group)}
-                                className="w-full px-3 py-2 text-left text-[10px] font-semibold flex items-center justify-between"
-                                style={{ background: `${color}08`, borderBottom: `1px solid ${t.border}` }}>
-                                <span style={{ color }}>{isExpanded ? "▼" : "▶"} {g.group} ({g.fields.length})</span>
-                              </button>
-                              {isExpanded && g.fields.map(f => (
-                                <button key={f.key} onClick={() => selectField(p.key, f.key)}
-                                  className="w-full px-4 py-1.5 text-left text-xs flex items-center gap-2 transition"
-                                  style={{ background: mappings[p.key] === f.key ? `${color}15` : "transparent" }}
-                                  onMouseEnter={e => e.currentTarget.style.background = `${color}10`}
-                                  onMouseLeave={e => e.currentTarget.style.background = mappings[p.key] === f.key ? `${color}15` : "transparent"}>
-                                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-                                  <span>{f.label}</span>
-                                  <span className="text-[9px] ml-auto" style={{ color: t.muted }}>{f.key}</span>
-                                </button>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="py-2.5 px-3" style={{ width: 160 }}>
-                    {mappings[p.key] && (
-                      <select value={modifiers[p.key] || ""} onChange={e => setModifiers(prev => ({ ...prev, [p.key]: e.target.value }))}
-                        className="w-full px-2 py-1 rounded-lg text-[10px] outline-none"
-                        style={{ ...is, borderColor: modifiers[p.key] ? `${t.purple}60` : t.inputBorder, color: modifiers[p.key] ? t.purple : t.muted }}>
-                        <option value="">None</option>
-                        <optgroup label="── Japanese ──">
-                          <option value=":jp">:jp (auto translate)</option>
-                          <option value=":map(Male=男,Female=女)">:map (Male=男,Female=女)</option>
-                        </optgroup>
-                        <optgroup label="── Date ──">
-                          <option value=":jp">:jp (年月日)</option>
-                          <option value=":slash">:slash (YYYY/MM/DD)</option>
-                          <option value=":dot">:dot (DD.MM.YYYY)</option>
-                          <option value=":dmy">:dmy (DD/MM/YYYY)</option>
-                          <option value=":year">:year</option>
-                          <option value=":month">:month</option>
-                          <option value=":day">:day</option>
-                        </optgroup>
-                        <optgroup label="── Name ──">
-                          <option value=":first">:first (first word)</option>
-                          <option value=":last">:last (rest)</option>
-                        </optgroup>
-                        <option value="__custom__">✏️ Custom...</option>
-                      </select>
-                    )}
-                    {modifiers[p.key] === "__custom__" && (
-                      <input value={modifiers[`${p.key}_custom`] || ""} onChange={e => setModifiers(prev => ({ ...prev, [`${p.key}_custom`]: e.target.value, [p.key]: e.target.value || "__custom__" }))}
-                        className="w-full px-2 py-1 rounded-lg text-[10px] outline-none mt-1" style={is}
-                        placeholder=":map(A=X,B=Y)" />
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 text-center" style={{ width: 30 }}>
-                    {mappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {detectedPlaceholders.length === 0 && (
+        {detectedPlaceholders.length > 0 ? (
+          <FieldMapperTable
+            placeholders={detectedPlaceholders}
+            mappings={mappings}
+            modifiers={modifiers}
+            onMappingChange={(key, val) => setMappings(prev => ({ ...prev, [key]: val }))}
+            onModifierChange={(key, val) => setModifiers(prev => ({ ...prev, [key]: val }))}
+            extraGroups={allSystemFields.filter(g => g.group.startsWith("\u{1F4C4}"))}
+          />
+        ) : (
           <div className="text-center py-8">
             <p className="text-xs" style={{ color: t.muted }}>কোনো {"{{placeholder}}"} পাওয়া যায়নি — Word ফাইলে {"{{name_en}}"} ইত্যাদি লিখুন</p>
           </div>
