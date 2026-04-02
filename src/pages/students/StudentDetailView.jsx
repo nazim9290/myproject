@@ -154,15 +154,25 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     api.post("/activity-log", { module: "students", record_id: student.id, action: type, description: text }).catch(() => {});
   };
 
-  // Status change — API-তেও save
-  const changeStatus = (newStatus, msg) => {
-    api.patch(`/students/${student.id}`, { status: newStatus }).catch((err) => { console.error("[Student Status Update]", err); toast.error("স্ট্যাটাস সার্ভারে সেভ ব্যর্থ"); });
-    const updated = { ...student, status: newStatus };
-    onUpdate(updated);
-    const stepLabel = PIPELINE_STATUSES.find(s => s.code === newStatus)?.label || newStatus;
-    logActivity(msg || `Status → ${stepLabel}`, "status");
-    toast.success(`${stepLabel} — আপডেট হয়েছে`);
-    setChecked({});
+  // Status change — API-তেও save (optimistic lock সহ)
+  const changeStatus = async (newStatus, msg) => {
+    try {
+      const res = await api.patch(`/students/${student.id}`, { status: newStatus, updated_at: student.updated_at });
+      const updated = { ...student, status: newStatus, updated_at: res?.updated_at || new Date().toISOString() };
+      onUpdate(updated);
+      const stepLabel = PIPELINE_STATUSES.find(s => s.code === newStatus)?.label || newStatus;
+      logActivity(msg || `Status → ${stepLabel}`, "status");
+      toast.success(`${stepLabel} — আপডেট হয়েছে`);
+      setChecked({});
+    } catch (err) {
+      const errMsg = err.message || "স্ট্যাটাস সেভ ব্যর্থ";
+      if (errMsg.includes("পরিবর্তন করেছে") || errMsg.includes("CONFLICT")) {
+        toast.error(errMsg);
+      } else {
+        console.error("[Student Status Update]", err);
+        toast.error("স্ট্যাটাস সার্ভারে সেভ ব্যর্থ");
+      }
+    }
   };
 
   const goNext = () => {
@@ -179,13 +189,27 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     toast.success("নোট যোগ হয়েছে");
   };
 
-  // Edit — Profile Modal save
-  const handleSave = () => {
-    api.patch(`/students/${student.id}`, editForm).catch((err) => { console.error("[Student Save]", err); toast.error("সার্ভারে সেভ ব্যর্থ"); });
-    onUpdate(editForm);
-    setShowProfileModal(false);
-    logActivity("তথ্য আপডেট হয়েছে", "edit");
-    toast.updated("Student");
+  // Edit — Profile Modal save (optimistic lock সহ)
+  const handleSave = async () => {
+    try {
+      // updated_at পাঠাও — backend-এ concurrent edit check হবে
+      const res = await api.patch(`/students/${student.id}`, { ...editForm, updated_at: student.updated_at });
+      // সফল হলে — নতুন updated_at সহ student আপডেট করো
+      const updatedStudent = { ...editForm, updated_at: res?.updated_at || new Date().toISOString() };
+      onUpdate(updatedStudent);
+      setShowProfileModal(false);
+      logActivity("তথ্য আপডেট হয়েছে", "edit");
+      toast.updated("Student");
+    } catch (err) {
+      const msg = err.message || "সেভ ব্যর্থ";
+      // Conflict error — অন্য কেউ এর মধ্যে পরিবর্তন করেছে
+      if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
+        toast.error(msg);
+      } else {
+        console.error("[Student Save]", err);
+        toast.error("সার্ভারে সেভ ব্যর্থ");
+      }
+    }
   };
   const setField = (k, v) => setEditForm({ ...editForm, [k]: v });
 

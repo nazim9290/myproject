@@ -121,20 +121,30 @@ export default function DocumentsPage({ students }) {
     return { filled, total, pct: total > 0 ? Math.round((filled / total) * 100) : 0 };
   };
 
-  // Save document data
+  // Save document data (optimistic lock সহ — concurrent edit protection)
   const saveDocData = async () => {
     if (!activeDocType || !selectedStudent) return;
     setSaving(true);
     try {
+      // বর্তমান saved record-এর updated_at পাঠাও — conflict check-এর জন্য
+      const saved = studentDocData.find(d => d.doc_type_id === activeDocType.id);
       await api.post("/docdata/save", {
         student_id: selectedStudent.id,
         doc_type_id: activeDocType.id,
         field_data: fieldValues,
+        updated_at: saved?.updated_at || null,
       });
       toast.success(`${activeDocType.name_bn || activeDocType.name} — ডাটা সংরক্ষণ হয়েছে`);
-      await loadStudentDocs(selectedStudent.id); // refresh
+      await loadStudentDocs(selectedStudent.id); // refresh — নতুন updated_at পাবে
       setActiveDocType(null); setScanResult(null);
-    } catch (err) { toast.error(err.message); }
+    } catch (err) {
+      const msg = err.message || "সেভ ব্যর্থ";
+      if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
+        toast.error(msg);
+      } else {
+        toast.error(msg);
+      }
+    }
     setSaving(false);
   };
 
@@ -219,20 +229,29 @@ export default function DocumentsPage({ students }) {
       });
     };
 
-    // Save: flatten members into MemberN_Key format for Doc Generator compatibility
+    // Save: flatten members into MemberN_Key format for Doc Generator compatibility (optimistic lock সহ)
     const saveWithFlatten = async () => {
       const flat = { ...fieldValues };
       // Flatten _members array → Member1_Name, Member2_Name, etc.
       (fieldValues._members || []).forEach((m, i) => {
         Object.entries(m).forEach(([k, v]) => { flat[`Member${i + 1}_${k}`] = v; });
       });
+      // বর্তমান saved record-এর updated_at পাঠাও — conflict check-এর জন্য
+      const saved = studentDocData.find(d => d.doc_type_id === activeDocType.id);
       setSaving(true);
       try {
-        await api.post("/docdata/save", { student_id: selectedStudent.id, doc_type_id: activeDocType.id, field_data: flat });
+        await api.post("/docdata/save", { student_id: selectedStudent.id, doc_type_id: activeDocType.id, field_data: flat, updated_at: saved?.updated_at || null });
         toast.success(`${activeDocType.name_bn || activeDocType.name} — ডাটা সংরক্ষণ হয়েছে`);
         await loadStudentDocs(selectedStudent.id);
         setActiveDocType(null); setScanResult(null);
-      } catch (err) { toast.error(err.message); }
+      } catch (err) {
+        const msg = err.message || "সেভ ব্যর্থ";
+        if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
+          toast.error(msg);
+        } else {
+          toast.error(msg);
+        }
+      }
       setSaving(false);
     };
 

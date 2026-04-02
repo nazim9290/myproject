@@ -489,13 +489,20 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
     setDeleteConfirm(null);
   };
 
+  // Save — optimistic lock সহ (concurrent edit protection)
   const handleSave = async () => {
     setSaving(true);
     try {
-      await preDeparture.update(st.id, { ...form, checklists, deadlines });
+      // pd_updated_at পাঠাও — backend-এ concurrent edit check হবে
+      await preDeparture.update(st.id, { ...form, checklists, deadlines, updated_at: st.pd_updated_at || null });
       toast.success("ডিপার্চার তথ্য সেভ হয়েছে");
     } catch (err) {
-      toast.error(err.message || "সেভ করতে সমস্যা হয়েছে");
+      const msg = err.message || "সেভ করতে সমস্যা হয়েছে";
+      if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
+        toast.error(msg);
+      } else {
+        toast.error(msg);
+      }
     }
     setSaving(false);
   };
