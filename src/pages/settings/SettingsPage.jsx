@@ -826,8 +826,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   }}
                     className="text-[9px] px-1.5 py-0.5 rounded transition shrink-0"
                     style={{ background: dt.student_fillable ? `${t.purple}15` : `${t.muted}10`, color: dt.student_fillable ? t.purple : t.muted }}
-                    title={dt.student_fillable ? "Student পূরণ করতে পারবে" : "Staff only"}>
-                    {dt.student_fillable ? "Student" : "Staff only"}
+                    title={dt.student_fillable ? "Student Portal-এ দেখাবে — Student নিজে পূরণ করতে পারবে" : "শুধু Staff দেখবে — Student Portal-এ দেখাবে না"}>
+                    {dt.student_fillable ? "👨‍🎓 Student can fill" : "🔒 Staff only"}
                   </button>
 
                   <div className="flex items-center gap-1">
