@@ -14,7 +14,7 @@ import { Badge } from "../../components/ui/Badge";
 import DropZone from "../../components/ui/DropZone";
 import Button from "../../components/ui/Button";
 import { api } from "../../hooks/useAPI";
-import FieldMapperTable from "../../components/ui/FieldMapper";
+import FieldMapperTable, { SYSTEM_FIELDS } from "../../components/ui/FieldMapper";
 
 import { API_URL } from "../../lib/api";
 const token = () => localStorage.getItem("agencyos_token");
@@ -177,7 +177,7 @@ export default function CertificatePage({ students }) {
         setDetectedPlaceholders(phs);
         setActiveTemplate(data.template);
         const autoMap = {};
-        const allKeys = allSystemFields.flatMap(g => g.fields.map(f => f.key));
+        const allKeys = [...SYSTEM_FIELDS, ...allSystemFields].flatMap(g => g.fields.map(f => f.key));
         phs.forEach(p => { if (allKeys.includes(p.key)) autoMap[p.key] = p.key; });
         setMappings(autoMap);
         setModifiers({});
@@ -209,7 +209,7 @@ export default function CertificatePage({ students }) {
 
       // Auto-map: placeholder key === system/doc-type field হলে auto-select
       const autoMap = {};
-      const allKeys = allSystemFields.flatMap(g => g.fields.map(f => f.key));
+      const allKeys = [...SYSTEM_FIELDS, ...allSystemFields].flatMap(g => g.fields.map(f => f.key));
       phs.forEach(p => { if (allKeys.includes(p.key)) autoMap[p.key] = p.key; });
       setMappings(autoMap);
 
