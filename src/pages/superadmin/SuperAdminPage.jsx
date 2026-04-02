@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Building, Plus, Users, GraduationCap, TrendingUp, Edit3, Trash2, Save, X, Eye, Shield, Globe, Check, AlertTriangle } from "lucide-react";
+import { Building, Plus, Users, GraduationCap, TrendingUp, Edit3, Trash2, Save, X, Eye, Shield, Globe, Check, AlertTriangle, FileSpreadsheet, Upload, Power, Download } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import { API_URL } from "../../lib/api";
 
 /**
@@ -40,19 +41,38 @@ export default function SuperAdminPage() {
     plan: "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: false,
   });
 
+  // ── ডিফল্ট টেমপ্লেট state ──
+  const [templates, setTemplates] = useState([]);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [deleteTemplateId, setDeleteTemplateId] = useState(null);
+  const [tplForm, setTplForm] = useState({
+    name: "", name_bn: "", description: "", category: "excel", sub_category: "", country: "Japan", file: null,
+  });
+
+  // ── টেমপ্লেট ক্যাটেগরি ম্যাপ ──
+  const TEMPLATE_CATEGORIES = [
+    { id: "excel", label: "Excel Template", color: "#22c55e" },
+    { id: "docgen", label: "Doc Generator", color: "#a855f7" },
+    { id: "doc_type", label: "Document Type", color: "#f59e0b" },
+  ];
+  const TEMPLATE_COUNTRIES = ["Japan", "Germany", "Korea", "All"];
+
   // ── ডাটা লোড ──
   const loadData = async () => {
     const token = localStorage.getItem("agencyos_token");
     const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
     try {
-      const [agRes, stRes, prRes] = await Promise.all([
+      const [agRes, stRes, prRes, tplRes] = await Promise.all([
         fetch(`${API_URL}/super-admin/agencies`, { headers }),
         fetch(`${API_URL}/super-admin/stats`, { headers }),
         fetch(`${API_URL}/super-admin/pricing`, { headers }),
+        fetch(`${API_URL}/super-admin/default-templates`, { headers }),
       ]);
       if (agRes.ok) setAgencies(await agRes.json());
       if (stRes.ok) setStats(await stRes.json());
       if (prRes.ok) setPricing(await prRes.json());
+      if (tplRes.ok) setTemplates(await tplRes.json());
     } catch (err) { console.error("[SuperAdmin Load]", err); toast.error("ডাটা লোড করতে সমস্যা হয়েছে"); }
     setLoading(false);
   };
@@ -106,6 +126,75 @@ export default function SuperAdminPage() {
     toast.success(`${agency.name} এজেন্সিতে সুইচ হচ্ছে...`);
     setSwitchConfirmId(null);
     setTimeout(() => window.location.reload(), 500);
+  };
+
+  // ── টেমপ্লেট তৈরি / আপডেট ──
+  const saveTemplate = async () => {
+    if (!tplForm.name.trim()) { toast.error("টেমপ্লেটের নাম দিন"); return; }
+
+    const formData = new FormData();
+    formData.append("name", tplForm.name);
+    formData.append("name_bn", tplForm.name_bn || "");
+    formData.append("description", tplForm.description || "");
+    formData.append("category", tplForm.category || "excel");
+    formData.append("sub_category", tplForm.sub_category || "");
+    formData.append("country", tplForm.country || "Japan");
+    if (tplForm.file) formData.append("file", tplForm.file);
+
+    try {
+      if (editingTemplate) {
+        // আপডেট — file ছাড়া PATCH (JSON)
+        const body = { name: tplForm.name, name_bn: tplForm.name_bn, description: tplForm.description, category: tplForm.category, sub_category: tplForm.sub_category, country: tplForm.country };
+        const res = await fetch(`${API_URL}/super-admin/default-templates/${editingTemplate.id}`, {
+          method: "PATCH", headers, body: JSON.stringify(body),
+        });
+        if (res.ok) { toast.success("টেমপ্লেট আপডেট হয়েছে"); }
+        else { const d = await res.json(); toast.error(d.error || "আপডেট ব্যর্থ"); return; }
+      } else {
+        // নতুন তৈরি — FormData দিয়ে (file সহ)
+        const res = await fetch(`${API_URL}/super-admin/default-templates`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (res.ok) { toast.success("নতুন টেমপ্লেট যোগ হয়েছে"); }
+        else { const d = await res.json(); toast.error(d.error || "তৈরি ব্যর্থ"); return; }
+      }
+      setShowTemplateModal(false);
+      setEditingTemplate(null);
+      setTplForm({ name: "", name_bn: "", description: "", category: "excel", sub_category: "", country: "Japan", file: null });
+      loadData();
+    } catch { toast.error("সার্ভার ত্রুটি"); }
+  };
+
+  // ── টেমপ্লেট মুছে ফেলা ──
+  const deleteTemplate = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/super-admin/default-templates/${id}`, { method: "DELETE", headers });
+      if (res.ok) { toast.success("টেমপ্লেট মুছে ফেলা হয়েছে"); loadData(); setDeleteTemplateId(null); }
+      else { const d = await res.json(); toast.error(d.error || "ব্যর্থ"); }
+    } catch { toast.error("সার্ভার ত্রুটি"); }
+  };
+
+  // ── টেমপ্লেট active/inactive toggle ──
+  const toggleTemplateActive = async (tpl) => {
+    try {
+      const res = await fetch(`${API_URL}/super-admin/default-templates/${tpl.id}`, {
+        method: "PATCH", headers, body: JSON.stringify({ is_active: !tpl.is_active }),
+      });
+      if (res.ok) { toast.success(tpl.is_active ? "নিষ্ক্রিয় করা হয়েছে" : "সক্রিয় করা হয়েছে"); loadData(); }
+    } catch { toast.error("সার্ভার ত্রুটি"); }
+  };
+
+  // ── টেমপ্লেট সম্পাদনা modal খোলা ──
+  const openEditTemplate = (tpl) => {
+    setEditingTemplate(tpl);
+    setTplForm({
+      name: tpl.name || "", name_bn: tpl.name_bn || "", description: tpl.description || "",
+      category: tpl.category || "excel", sub_category: tpl.sub_category || "",
+      country: tpl.country || "Japan", file: null,
+    });
+    setShowTemplateModal(true);
   };
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
@@ -183,6 +272,190 @@ export default function SuperAdminPage() {
           </div>
         )}
       </Card>
+
+      {/* ── ডিফল্ট টেমপ্লেট ── */}
+      <Card delay={150}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <FileSpreadsheet size={16} style={{ color: t.cyan }} /> ডিফল্ট টেমপ্লেট
+            </h3>
+            <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
+              সব এজেন্সি এই টেমপ্লেটগুলো ব্যবহার করতে পারবে — Excel, Doc Generator, Document Type
+            </p>
+          </div>
+          <Button size="xs" icon={Plus} onClick={() => {
+            setEditingTemplate(null);
+            setTplForm({ name: "", name_bn: "", description: "", category: "excel", sub_category: "", country: "Japan", file: null });
+            setShowTemplateModal(true);
+          }}>নতুন টেমপ্লেট</Button>
+        </div>
+
+        {templates.length === 0 ? (
+          <div className="text-center py-8">
+            <FileSpreadsheet size={32} style={{ color: `${t.muted}40` }} className="mx-auto mb-2" />
+            <p className="text-xs" style={{ color: t.muted }}>কোনো টেমপ্লেট নেই — "নতুন টেমপ্লেট" বাটনে ক্লিক করুন</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                  {["নাম", "ক্যাটেগরি", "দেশ", "ফাইল", "স্ট্যাটাস", "অ্যাকশন"].map(h => (
+                    <th key={h} className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {templates.map(tpl => {
+                  const catInfo = TEMPLATE_CATEGORIES.find(c => c.id === tpl.category) || TEMPLATE_CATEGORIES[0];
+                  return (
+                    <React.Fragment key={tpl.id}>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}
+                      onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-semibold">{tpl.name}</p>
+                          {tpl.name_bn && <p className="text-[10px]" style={{ color: t.muted }}>{tpl.name_bn}</p>}
+                          {tpl.description && <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{tpl.description}</p>}
+                          {tpl.sub_category && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded mt-1 inline-block" style={{ background: `${t.cyan}10`, color: t.cyan }}>
+                              {tpl.sub_category}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge color={catInfo.color} size="xs">{catInfo.label}</Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>
+                          {tpl.country || "Japan"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {tpl.file_name ? (
+                          <a href={`${API_URL.replace("/api", "")}${tpl.file_url}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[10px] hover:underline" style={{ color: t.cyan }}>
+                            <Download size={10} /> {tpl.file_name}
+                          </a>
+                        ) : (
+                          <span className="text-[10px]" style={{ color: t.muted }}>—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <button onClick={() => toggleTemplateActive(tpl)}
+                          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition-colors"
+                          style={{ background: tpl.is_active ? `${t.emerald}15` : `${t.rose}15`, color: tpl.is_active ? t.emerald : t.rose }}>
+                          <Power size={10} />
+                          {tpl.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                        </button>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex gap-1">
+                          <button onClick={() => openEditTemplate(tpl)}
+                            className="px-2 py-1 rounded text-[10px]" style={{ color: t.amber, background: `${t.amber}15` }}>
+                            <Edit3 size={10} />
+                          </button>
+                          {deleteTemplateId === tpl.id ? (
+                            <div className="flex gap-1 items-center">
+                              <button onClick={() => deleteTemplate(tpl.id)} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: t.rose }}>মুছুন</button>
+                              <button onClick={() => setDeleteTemplateId(null)} className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.muted }}>না</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setDeleteTemplateId(tpl.id)}
+                              className="px-2 py-1 rounded text-[10px]" style={{ color: t.rose, background: `${t.rose}15` }}>
+                              <Trash2 size={10} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* ── টেমপ্লেট তৈরি/সম্পাদনা Modal ── */}
+      <Modal isOpen={showTemplateModal} onClose={() => { setShowTemplateModal(false); setEditingTemplate(null); }}
+        title={editingTemplate ? "টেমপ্লেট সম্পাদনা" : "নতুন টেমপ্লেট যোগ করুন"}
+        subtitle="গ্লোবাল টেমপ্লেট — সব এজেন্সি ব্যবহার করতে পারবে" size="md">
+        <div className="space-y-4">
+          {/* নাম */}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English) *</label>
+            <input value={tplForm.name} onChange={e => setTplForm(p => ({ ...p, name: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Kobe Resume Template" />
+          </div>
+          {/* নাম বাংলা */}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
+            <input value={tplForm.name_bn} onChange={e => setTplForm(p => ({ ...p, name_bn: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কোবে রিজুইমি টেমপ্লেট" />
+          </div>
+          {/* বিবরণ */}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ</label>
+            <input value={tplForm.description} onChange={e => setTplForm(p => ({ ...p, description: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="এই টেমপ্লেটের বর্ণনা..." />
+          </div>
+          {/* ক্যাটেগরি + দেশ */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটেগরি</label>
+              <select value={tplForm.category} onChange={e => setTplForm(p => ({ ...p, category: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                {TEMPLATE_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>দেশ</label>
+              <select value={tplForm.country} onChange={e => setTplForm(p => ({ ...p, country: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                {TEMPLATE_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          {/* সাব-ক্যাটেগরি */}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সাব-ক্যাটেগরি</label>
+            <input value={tplForm.sub_category} onChange={e => setTplForm(p => ({ ...p, sub_category: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="job_permission, rirekisho, birth_cert..." />
+          </div>
+          {/* ফাইল আপলোড */}
+          {!editingTemplate && (
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফাইল (.xlsx, .docx)</label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer text-xs font-medium"
+                  style={{ background: `${t.cyan}15`, color: t.cyan, border: `1px dashed ${t.cyan}40` }}>
+                  <Upload size={14} />
+                  {tplForm.file ? tplForm.file.name : "ফাইল নির্বাচন করুন"}
+                  <input type="file" accept=".xlsx,.docx,.xls,.doc,.pdf" className="hidden"
+                    onChange={e => setTplForm(p => ({ ...p, file: e.target.files?.[0] || null }))} />
+                </label>
+                {tplForm.file && (
+                  <button onClick={() => setTplForm(p => ({ ...p, file: null }))} className="text-[10px]" style={{ color: t.rose }}>
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {/* সংরক্ষণ বাটন */}
+          <div className="flex justify-end gap-2 pt-2" style={{ borderTop: `1px solid ${t.border}` }}>
+            <Button variant="ghost" size="sm" onClick={() => { setShowTemplateModal(false); setEditingTemplate(null); }}>বাতিল</Button>
+            <Button size="sm" icon={Save} onClick={saveTemplate}>
+              {editingTemplate ? "আপডেট করুন" : "টেমপ্লেট যোগ করুন"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ── নতুন এজেন্সি তৈরি ── */}
       {showCreateForm && (
