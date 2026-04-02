@@ -309,7 +309,7 @@ export default function CertificatePage({ students }) {
                   </td>
                   <td className="py-2.5 px-3 relative" style={{ minWidth: 300 }}>
                     {/* Custom collapsible field picker */}
-                    <button onClick={() => setOpenPicker(openPicker === p.key ? null : p.key)}
+                    <button data-picker={p.key} onClick={() => setOpenPicker(openPicker === p.key ? null : p.key)}
                       className="w-full px-3 py-1.5 rounded-lg text-xs text-left flex items-center justify-between"
                       style={{ ...is, borderColor: mappings[p.key] ? `${t.emerald}60` : t.inputBorder }}>
                       <span style={{ color: mappings[p.key] ? t.text : t.muted }}>
@@ -320,9 +320,16 @@ export default function CertificatePage({ students }) {
                       <span style={{ color: t.muted, fontSize: 10 }}>▼</span>
                     </button>
 
-                    {openPicker === p.key && (
-                      <div ref={pickerRef} className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl shadow-2xl overflow-hidden"
-                        style={{ background: t.card, border: `1px solid ${t.border}`, maxHeight: 350, overflowY: "auto" }}>
+                    {openPicker === p.key && (() => {
+                      // Dropdown position — নিচে space না থাকলে উপরে open হবে
+                      const btnEl = document.querySelector(`[data-picker="${p.key}"]`);
+                      const rect = btnEl?.getBoundingClientRect();
+                      const spaceBelow = rect ? window.innerHeight - rect.bottom : 999;
+                      const openUp = spaceBelow < 380;
+                      return (
+                      <div ref={pickerRef} className={`absolute left-0 right-0 z-50 rounded-xl shadow-2xl overflow-hidden`}
+                        style={{ background: t.card, border: `1px solid ${t.border}`, maxHeight: 350, overflowY: "auto",
+                          ...(openUp ? { bottom: "100%", marginBottom: 4 } : { top: "100%", marginTop: 4 }) }}>
                         {/* Clear selection */}
                         <button onClick={() => selectField(p.key, "")}
                           className="w-full px-3 py-2 text-left text-[10px]"
@@ -355,7 +362,8 @@ export default function CertificatePage({ students }) {
                           );
                         })}
                       </div>
-                    )}
+                      );
+                    })()}
                   </td>
                   <td className="py-2.5 px-3 text-center" style={{ width: 40 }}>
                     {mappings[p.key] && <span style={{ color: t.emerald }}>✓</span>}
