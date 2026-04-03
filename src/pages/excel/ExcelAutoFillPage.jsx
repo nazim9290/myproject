@@ -6,8 +6,8 @@ import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import DropZone from "../../components/ui/DropZone";
-// FieldMapper থেকে shared SYSTEM_FIELDS import — সব mapping UI একই source ব্যবহার করে
-import { SYSTEM_FIELDS } from "../../components/ui/FieldMapper";
+// FieldMapper থেকে shared SYSTEM_FIELDS + FieldPicker import
+import { SYSTEM_FIELDS, FieldPicker } from "../../components/ui/FieldMapper";
 // Templates loaded from backend API only
 
 import { API_URL as API } from "../../lib/api";
@@ -405,7 +405,7 @@ export default function ExcelAutoFillPage({ students }) {
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["Sheet", "Cell", "Placeholder ({{...}})", "System Field (কোন ডেটা বসবে)", "Modifier", ""].map(h => (
+                  {["Sheet", "Cell", "Placeholder ({{...}})", "System Field + Modifier", ""].map(h => (
                     <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                   ))}
                 </tr>
@@ -424,53 +424,23 @@ export default function ExcelAutoFillPage({ students }) {
                         {m.placeholder || `{{${m.key || m.label}}}`}
                       </span>
                     </td>
-                    <td className="py-2 px-3" style={{ minWidth: 220 }}>
-                      <select value={m.field || ""} onChange={e => updateMapping(i, e.target.value)}
-                        className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                        style={{ ...is, borderColor: m.field ? `${t.emerald}60` : t.inputBorder }}>
-                        <option value="">— field সিলেক্ট করুন —</option>
-                        {SYSTEM_FIELDS.map(g => (
-                          <optgroup key={g.group} label={`── ${g.group} ──`}>
-                            {g.fields.map(f => <option key={f.key} value={f.key}>{f.label} ({f.key})</option>)}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-2 px-3" style={{ width: 150 }}>
-                      {m.field && (
-                        <select value={m.modifier || ""} onChange={e => {
+                    <td className="py-2 px-3" style={{ minWidth: 280 }}>
+                      <FieldPicker
+                        placeholderKey={String(i)}
+                        selectedField={m.field || ""}
+                        selectedModifier={m.modifier || ""}
+                        onFieldChange={(_, val) => updateMapping(i, val)}
+                        onModifierChange={(_, val) => {
                           const updated = [...mappings];
-                          updated[i] = { ...updated[i], modifier: e.target.value };
+                          updated[i] = { ...updated[i], modifier: val };
                           setMappings(updated);
                         }}
-                          className="w-full px-2 py-1 rounded-lg text-[10px] outline-none"
-                          style={{ ...is, borderColor: m.modifier ? `${t.purple}60` : t.inputBorder, color: m.modifier ? t.purple : t.muted }}>
-                          <option value="">None</option>
-                          <optgroup label="── Japanese ──">
-                            <option value=":jp">:jp (auto translate)</option>
-                          </optgroup>
-                          <optgroup label="── Date ──">
-                            <option value=":jp">:jp (年月日)</option>
-                            <option value=":slash">:slash (YYYY/MM/DD)</option>
-                            <option value=":dot">:dot (DD.MM.YYYY)</option>
-                            <option value=":dmy">:dmy (DD/MM/YYYY)</option>
-                            <option value=":year">:year</option>
-                            <option value=":month">:month</option>
-                            <option value=":day">:day</option>
-                          </optgroup>
-                          <optgroup label="── Name ──">
-                            <option value=":first">:first (first word)</option>
-                            <option value=":last">:last (rest)</option>
-                          </optgroup>
-                        </select>
-                      )}
+                      />
                     </td>
-                    <td className="py-2 px-3 text-center" style={{ width: 50 }}>
-                      <div className="flex items-center gap-1">
-                        {m.field && <Check size={14} style={{ color: t.emerald }} />}
-                        <button onClick={() => removeMapping(i)} className="p-1 rounded opacity-50 hover:opacity-100 transition"
-                          style={{ color: t.rose }}><X size={12} /></button>
-                      </div>
+                    {/* Modifier FieldPicker-এ built-in */}
+                    <td className="py-2 px-3 text-center" style={{ width: 30 }}>
+                      <button onClick={() => removeMapping(i)} className="p-1 rounded opacity-50 hover:opacity-100 transition"
+                        style={{ color: t.rose }}><X size={12} /></button>
                     </td>
                   </tr>
                 ))}
