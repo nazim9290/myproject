@@ -1106,17 +1106,29 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     <select value={jpExamForm.exam_type} onChange={e => setJpExamForm(p => ({ ...p, exam_type: e.target.value }))}
                       className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
                       style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                      {["JLPT", "NAT", "J-TEST", "TOP-J", "Other"].map(o => <option key={o} value={o}>{o}</option>)}
+                      {["JLPT", "NAT-TEST", "JPT", "J-TEST", "TOP-J", "EJU", "Other"].map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="text-[10px] block mb-1" style={{ color: t.muted }}>লেভেল</label>
-                    <select value={jpExamForm.level} onChange={e => setJpExamForm(p => ({ ...p, level: e.target.value }))}
-                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                      <option value="">—</option>
-                      {["N5", "N4", "N3", "N2", "N1"].map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    {(jpExamForm.exam_type === "JPT" || jpExamForm.exam_type === "EJU") ? (
+                      <input value={jpExamForm.level} onChange={e => setJpExamForm(p => ({ ...p, level: e.target.value }))}
+                        className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                        style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                        placeholder={jpExamForm.exam_type === "JPT" ? "Score (0-990)" : "Score (0-400)"} />
+                    ) : (
+                      <select value={jpExamForm.level} onChange={e => setJpExamForm(p => ({ ...p, level: e.target.value }))}
+                        className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                        style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                        <option value="">—</option>
+                        {jpExamForm.exam_type === "J-TEST"
+                          ? ["A-C (Advanced)", "D-E (Intermediate)", "F-G (Basic)"].map(o => <option key={o} value={o}>{o}</option>)
+                          : jpExamForm.exam_type === "NAT-TEST"
+                            ? ["5級", "4級", "3級", "2級", "1級"].map(o => <option key={o} value={o}>{o}</option>)
+                            : ["N5", "N4", "N3", "N2", "N1"].map(o => <option key={o} value={o}>{o}</option>)
+                        }
+                      </select>
+                    )}
                   </div>
                   <div>
                     <label className="text-[10px] block mb-1" style={{ color: t.muted }}>স্কোর</label>
