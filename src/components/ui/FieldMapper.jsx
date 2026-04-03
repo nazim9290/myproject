@@ -230,6 +230,13 @@ const SYSTEM_FIELDS = [
     { key: "sys_batch_end:day", label: "ব্যাচ শেষ → দিন" },
     { key: "sys_batch_teacher", label: "ব্যাচ শিক্ষক" },
     { key: "sys_batch_schedule", label: "ব্যাচ সময়সূচী" },
+    // ব্যাচ শিডিউল — ক্লাসের দিন, সময়, ঘণ্টা (auto-calculated)
+    { key: "sys_batch_class_days", label: "ব্যাচ ক্লাসের দিন" },
+    { key: "sys_batch_class_time", label: "ব্যাচ ক্লাস সময়" },
+    { key: "sys_batch_hours_per_day", label: "প্রতিদিন ঘণ্টা" },
+    { key: "sys_batch_weekly_hours", label: "সাপ্তাহিক ঘণ্টা" },
+    { key: "sys_batch_total_classes", label: "মোট ক্লাস" },
+    { key: "sys_batch_total_hours", label: "মোট ঘণ্টা" },
     { key: "sys_school_name", label: "স্কুল নাম (EN)" },
     { key: "sys_school_name_jp", label: "স্কুল নাম (JP)" },
     { key: "sys_school_address", label: "স্কুল ঠিকানা" },

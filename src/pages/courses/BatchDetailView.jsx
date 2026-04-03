@@ -227,11 +227,15 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             <h2 className="text-xl font-bold">{batch.name}</h2>
             <Badge color={batch.country === "Japan" ? t.rose : t.amber}>{batch.country}</Badge>
           </div>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{batch.level} • {batch.schedule} • {batch.teacher}</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+            {batch.level} • {batch.class_time || batch.schedule || "—"} • {batch.teacher}
+            {/* ক্লাসের দিন থাকলে দেখাও */}
+            {batch.class_days && batch.class_days.length > 0 && ` • ${batch.class_days.join(", ")}`}
+          </p>
         </div>
       </div>
 
-      {/* KPI */}
+      {/* KPI — স্টুডেন্ট সংখ্যা + শিডিউল ঘণ্টা */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
           { label: "স্টুডেন্ট", value: bStudents.length, color: t.cyan },
@@ -246,6 +250,44 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           </Card>
         ))}
       </div>
+
+      {/* ── ক্লাস শিডিউল সারাংশ — total_hours, weekly_hours, total_classes থাকলে দেখাও ── */}
+      {(batch.weekly_hours || batch.total_hours || batch.total_classes) && (
+        <Card delay={60}>
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+            {batch.class_days && batch.class_days.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>ক্লাসের দিন</p>
+                <p className="text-xs font-semibold mt-1">{batch.class_days.join(", ")}</p>
+              </div>
+            )}
+            {batch.class_time && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>ক্লাসের সময়</p>
+                <p className="text-xs font-semibold mt-1">{batch.class_time}</p>
+              </div>
+            )}
+            {batch.weekly_hours > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>সাপ্তাহিক ঘণ্টা</p>
+                <p className="text-lg font-bold mt-1" style={{ color: t.cyan }}>{batch.weekly_hours}</p>
+              </div>
+            )}
+            {batch.total_classes > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>মোট ক্লাস</p>
+                <p className="text-lg font-bold mt-1" style={{ color: t.emerald }}>{batch.total_classes}</p>
+              </div>
+            )}
+            {batch.total_hours > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>মোট ঘণ্টা</p>
+                <p className="text-lg font-bold mt-1" style={{ color: t.purple }}>{batch.total_hours}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>

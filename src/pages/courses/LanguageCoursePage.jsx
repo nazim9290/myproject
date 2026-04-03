@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Layers, Users, CheckCircle, Star, BookOpen, Calendar, User, ChevronRight, Save, X } from "lucide-react";
+import { Plus, Layers, Users, CheckCircle, Star, BookOpen, Calendar, User, ChevronRight, Save, X, Clock } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -8,6 +8,32 @@ import Button from "../../components/ui/Button";
 import { batches as batchesApi } from "../../lib/api";
 import BatchDetailView from "./BatchDetailView";
 
+// ═══════════════════════════════════════════════════════
+// সপ্তাহের দিনগুলোর label — checkbox-এ ব্যবহার হয়
+// ═══════════════════════════════════════════════════════
+const WEEKDAYS = [
+  { key: "Sun", label: "রবি" }, { key: "Mon", label: "সোম" }, { key: "Tue", label: "মঙ্গল" },
+  { key: "Wed", label: "বুধ" }, { key: "Thu", label: "বৃহঃ" }, { key: "Fri", label: "শুক্র" }, { key: "Sat", label: "শনি" },
+];
+
+// ═══════════════════════════════════════════════════════
+// Frontend-এ auto-calculate — ক্লাসের দিন/ঘণ্টা থেকে preview
+// start_date, end_date, class_days, class_hours_per_day → weekly, total classes, total hours
+// ═══════════════════════════════════════════════════════
+function calcSchedulePreview(startDate, endDate, classDays, hoursPerDay) {
+  if (!startDate || !endDate || !classDays.length) return { weeklyHours: 0, totalClasses: 0, totalHours: 0 };
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return { weeklyHours: 0, totalClasses: 0, totalHours: 0 };
+  const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const classDayNums = classDays.map(d => dayMap[d]).filter(n => n !== undefined);
+  let totalDays = 0;
+  const cur = new Date(start);
+  while (cur <= end) { if (classDayNums.includes(cur.getDay())) totalDays++; cur.setDate(cur.getDate() + 1); }
+  const h = parseFloat(hoursPerDay) || 2;
+  return { weeklyHours: classDays.length * h, totalClasses: totalDays, totalHours: totalDays * h };
+}
+
 function NewBatchForm({ onSave, onCancel }) {
   const t = useTheme();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
@@ -15,9 +41,16 @@ function NewBatchForm({ onSave, onCancel }) {
     name: "", country: "Japan", level: "N5", branch: "Main",
     startDate: "", endDate: "", capacity: "20",
     schedule: "", teacher: "",
+    // ── ক্লাস শিডিউল fields ──
+    class_days: [],            // সপ্তাহে কোন দিন ক্লাস
+    class_hours_per_day: 2,    // প্রতি ক্লাস কত ঘণ্টা
+    class_time: "",            // ক্লাসের সময় (text)
   });
   const [err, setErr] = useState({});
   const set = (k, v) => { setForm(prev => ({ ...prev, [k]: v })); if (err[k]) setErr(prev => ({ ...prev, [k]: null })); };
+
+  // ── Auto-calculated preview — class_days/hours/dates পরিবর্তনে আপডেট হয় ──
+  const preview = calcSchedulePreview(form.startDate, form.endDate, form.class_days, form.class_hours_per_day);
 
   const save = () => {
     const e = {};
@@ -30,6 +63,16 @@ function NewBatchForm({ onSave, onCancel }) {
       id: `B-${Date.now()}`,
       capacity: parseInt(form.capacity) || 20,
     });
+  };
+
+  // ── ক্লাসের দিন toggle helper ──
+  const toggleDay = (day) => {
+    setForm(prev => ({
+      ...prev,
+      class_days: prev.class_days.includes(day)
+        ? prev.class_days.filter(d => d !== day)
+        : [...prev.class_days, day],
+    }));
   };
 
   return (
@@ -82,9 +125,66 @@ function NewBatchForm({ onSave, onCancel }) {
             <option value="Main">Main (HQ)</option><option value="Chattogram">চট্টগ্রাম</option><option value="Sylhet">সিলেট</option>
           </select>
         </div>
-        <div className="md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সময়সূচী</label>
-          <input value={form.schedule} onChange={e => set("schedule", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Sun-Thu, 10AM-1PM" />
+
+        {/* ── ক্লাস শিডিউল সেকশন ── */}
+        <div className="md:col-span-3 mt-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Clock size={14} style={{ color: t.cyan }} />
+            <p className="text-xs font-semibold">ক্লাস শিডিউল</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* ক্লাসের দিন — multi-select checkboxes */}
+            <div className="md:col-span-2">
+              <label className="text-[10px] uppercase tracking-wider block mb-1.5" style={{ color: t.muted }}>ক্লাসের দিন</label>
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAYS.map(({ key, label }) => {
+                  const active = form.class_days.includes(key);
+                  return (
+                    <button key={key} type="button" onClick={() => toggleDay(key)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                      style={{
+                        background: active ? `${t.cyan}20` : t.inputBg,
+                        border: `1px solid ${active ? t.cyan : t.inputBorder}`,
+                        color: active ? t.cyan : t.muted,
+                      }}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* প্রতিদিন ঘণ্টা */}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>প্রতিদিন ঘণ্টা</label>
+              <input type="number" value={form.class_hours_per_day} step="0.5" min="0.5" max="12"
+                onChange={e => set("class_hours_per_day", Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+            </div>
+            {/* ক্লাসের সময় */}
+            <div className="md:col-span-2">
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্লাসের সময়</label>
+              <input value={form.class_time} onChange={e => set("class_time", e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="10:00 AM - 12:00 PM" />
+            </div>
+          </div>
+
+          {/* ── Auto-calculated preview — সাপ্তাহিক/মোট ঘণ্টা (read-only) ── */}
+          {(form.class_days.length > 0 && form.startDate && form.endDate) && (
+            <div className="grid grid-cols-3 gap-2 p-3 rounded-lg mt-3" style={{ background: t.inputBg }}>
+              <div>
+                <p className="text-[10px]" style={{ color: t.muted }}>সাপ্তাহিক ঘণ্টা</p>
+                <p className="text-sm font-bold" style={{ color: t.cyan }}>{preview.weeklyHours}</p>
+              </div>
+              <div>
+                <p className="text-[10px]" style={{ color: t.muted }}>মোট ক্লাস</p>
+                <p className="text-sm font-bold" style={{ color: t.emerald }}>{preview.totalClasses}</p>
+              </div>
+              <div>
+                <p className="text-[10px]" style={{ color: t.muted }}>মোট ঘণ্টা</p>
+                <p className="text-sm font-bold" style={{ color: t.purple }}>{preview.totalHours}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Card>
@@ -163,6 +263,10 @@ export default function LanguageCoursePage({ students }) {
                 schedule: newBatch.schedule || "",
                 teacher: newBatch.teacher || "",
                 status: "active",
+                // ── ক্লাস শিডিউল — নতুন fields ──
+                class_days: newBatch.class_days || [],
+                class_hours_per_day: newBatch.class_hours_per_day || 2,
+                class_time: newBatch.class_time || "",
               });
               setBatches(prev => [...prev, saved]);
               setShowNewBatch(false);
@@ -200,6 +304,9 @@ export default function LanguageCoursePage({ students }) {
                       { icon: BookOpen, text: batch.level },
                       { icon: Calendar, text: batch.start_date || batch.startDate || "—" },
                       { icon: User, text: batch.teacher || "—" },
+                      // ক্লাস শিডিউল — সময় ও সাপ্তাহিক ঘণ্টা (থাকলে দেখাও)
+                      ...(batch.class_time ? [{ icon: Clock, text: batch.class_time }] : []),
+                      ...(batch.weekly_hours ? [{ icon: Clock, text: `${batch.weekly_hours} ঘণ্টা/সপ্তাহ` }] : []),
                     ].map((item, j) => (
                       <div key={j} className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
                         <item.icon size={12} /> {item.text}
