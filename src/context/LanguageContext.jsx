@@ -15,10 +15,12 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import bnTranslations from "../i18n/bn.json";
 import enTranslations from "../i18n/en.json";
+import bnEnTranslations from "../i18n/bn-en.json";
 
-// সমর্থিত ভাষার তালিকা
+// সমর্থিত ভাষার তালিকা — বাংলা, English, বাংলিশ (mixed)
 const LANGUAGES = {
   bn: { code: "bn", label: "বাংলা", labelEn: "Bengali", translations: bnTranslations },
+  "bn-en": { code: "bn-en", label: "বাংলা + English", labelEn: "Banglish", translations: bnEnTranslations },
   en: { code: "en", label: "English", labelEn: "English", translations: enTranslations },
 };
 
