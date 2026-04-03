@@ -195,11 +195,12 @@ export default function AccountsPage({ students = [] }) {
   const studentCollected = studentFeeRows.reduce((s, r) => s + r.amount, 0);
   const studentDue = studentFeeSummary.reduce((s, r) => s + Math.max(0, r.balance), 0);
 
-  // income API data: paid_amount (DB) বা paidAmount (legacy)
-  const totalIncome = incomeData.reduce((s, i) => s + (i.paid_amount || i.paidAmount || i.amount || 0), 0) + studentCollected;
-  const totalExpense = expenseData.reduce((s, e) => s + (e.amount || 0), 0);
-  const totalDue = incomeData.reduce((s, i) => s + (i.amount - (i.paidAmount || i.paid_amount || 0)), 0) + studentDue;
-  const totalTax = incomeData.filter((i) => i.status === "paid" || i.status === "partial").reduce((s, i) => s + (i.tax || 0), 0);
+  // income API data — string → number safe convert
+  const num = (v) => { const n = Number(v); return isNaN(n) || n < 0 ? 0 : n; };
+  const totalIncome = incomeData.reduce((s, i) => s + num(i.paid_amount || i.paidAmount || i.amount), 0) + num(studentCollected);
+  const totalExpense = expenseData.reduce((s, e) => s + num(e.amount), 0);
+  const totalDue = incomeData.reduce((s, i) => s + Math.max(0, num(i.amount) - num(i.paidAmount || i.paid_amount)), 0) + num(studentDue);
+  const totalTax = incomeData.filter((i) => i.status === "paid" || i.status === "partial").reduce((s, i) => s + num(i.tax), 0);
   const profit = totalIncome - totalExpense;
   const fmt = (v) => v >= 100000 ? `৳${(v / 100000).toFixed(1)}L` : v >= 1000 ? `৳${(v / 1000).toFixed(0)}K` : `৳${v}`;
 
