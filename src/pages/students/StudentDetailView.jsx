@@ -1022,8 +1022,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   { key: "level", label: "পরীক্ষা", type: "select", options: ["SSC", "HSC", "Diploma", "Bachelor", "Masters", "Other"] },
                   { key: "school_type", label: "স্কুলের ধরন", type: "select", options: ["", "Elementary", "Junior High", "High School", "Technical", "Junior College", "University"] },
                   { key: "school_name", label: "প্রতিষ্ঠান", type: "text" },
-                  { key: "entrance_year", label: "ভর্তির সন", type: "text" },
-                  { key: "year", label: "পাসের সন", type: "text" },
+                  { key: "entrance_year", label: "ভর্তির তারিখ (YYYY-MM)", type: "month" },
+                  { key: "year", label: "পাসের তারিখ (YYYY-MM)", type: "month" },
                   { key: "board", label: "বোর্ড", type: "text" },
                   { key: "gpa", label: "জিপিএ / ফলাফল", type: "text" },
                   { key: "group_name", label: "গ্রুপ / বিভাগ", type: "text" },
@@ -1037,8 +1037,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                         {f.options.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                     ) : (
-                      <input value={eduForm[f.key] || ""} onChange={e => setEduForm(p => ({ ...p, [f.key]: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                      <input type={f.type === "month" ? "month" : "text"} value={eduForm[f.key] || ""} onChange={e => setEduForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                        placeholder={f.type === "month" ? "YYYY-MM" : ""} />
                     )}
                   </div>
                 ))}
