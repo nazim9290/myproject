@@ -453,6 +453,10 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     { label: tr("students.f_passportExpiry"), key: "passport_expiry", type: "date" },
     { label: tr("students.f_fatherName"), key: "father_name_en" },
     { label: tr("students.f_motherName"), key: "mother_name_en" },
+    { label: tr("students.f_permanentAddress"), key: "permanent_address" },
+    { label: tr("students.f_spouseName"), key: "spouse_name" },
+    { label: tr("students.f_emergencyContact"), key: "emergency_contact" },
+    { label: tr("students.f_emergencyPhone"), key: "emergency_phone", type: "phone" },
   ];
 
   const destinationExtraFields = [

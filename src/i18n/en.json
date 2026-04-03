@@ -179,7 +179,10 @@
     "f_internalNotes": "Internal Notes",
     "f_reasonStudy": "Reason for Studying in Japan",
     "f_futurePlan": "Future Plan",
-    "f_studySubject": "Study Subject"
+    "f_studySubject": "Study Subject",
+    "f_spouseName": "Spouse's Name",
+    "f_emergencyContact": "Emergency Contact",
+    "f_emergencyPhone": "Emergency Phone"
   },
 
   "visitors": {

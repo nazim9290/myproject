@@ -179,7 +179,10 @@
     "f_internalNotes": "অভ্যন্তরীণ নোট",
     "f_reasonStudy": "জাপানে পড়ার কারণ",
     "f_futurePlan": "ভবিষ্যৎ পরিকল্পনা",
-    "f_studySubject": "অধ্যয়নের বিষয়"
+    "f_studySubject": "অধ্যয়নের বিষয়",
+    "f_spouseName": "স্বামী/স্ত্রীর নাম",
+    "f_emergencyContact": "জরুরি যোগাযোগ ব্যক্তি",
+    "f_emergencyPhone": "জরুরি ফোন নম্বর"
   },
 
   "visitors": {
