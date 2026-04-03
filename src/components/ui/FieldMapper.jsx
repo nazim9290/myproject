@@ -14,77 +14,155 @@ import { useTheme } from "../../context/ThemeContext";
 // DocGen, SuperAdmin, ExcelAutoFill — সবাই এই list reference করে
 // ═══════════════════════════════════════════════════════
 const SYSTEM_FIELDS = [
-  // ব্যক্তিগত তথ্য — নাম, জন্ম তারিখ, লিঙ্গ, ফোন, NID ইত্যাদি
-  { group: "Personal", color: "cyan", fields: [
-    { key: "name_en", label: "Name (English)" }, { key: "name_en:first", label: "Name → First" }, { key: "name_en:last", label: "Name → Last" },
-    { key: "name_bn", label: "Name (Bengali)" }, { key: "name_katakana", label: "Name (カタカナ)" },
-    { key: "dob", label: "Date of Birth" }, { key: "age", label: "Age" },
-    { key: "gender", label: "Gender" }, { key: "nationality", label: "Nationality" },
-    { key: "marital_status", label: "Marital Status" }, { key: "blood_group", label: "Blood Group" },
-    { key: "phone", label: "Phone" }, { key: "email", label: "Email" }, { key: "nid", label: "NID" },
+  // ব্যক্তিগত তথ্য — নাম, জন্ম তারিখ, লিঙ্গ, ফোন, WhatsApp, ইমেইল ইত্যাদি
+  { group: "ব্যক্তিগত", color: "cyan", fields: [
+    { key: "name_en", label: "নাম (Full English)" },
+    { key: "name_en:first", label: "নাম → First Name" },
+    { key: "name_en:last", label: "নাম → Last Name" },
+    { key: "name_bn", label: "নাম (বাংলা)" },
+    { key: "name_katakana", label: "নাম (カタカナ)" },
+    { key: "name_katakana:first", label: "カタカナ → First" },
+    { key: "name_katakana:last", label: "カタカナ → Last" },
+    { key: "dob", label: "জন্ম তারিখ (Full)" },
+    { key: "dob:year", label: "জন্ম → শুধু Year" },
+    { key: "dob:month", label: "জন্ম → শুধু Month" },
+    { key: "dob:day", label: "জন্ম → শুধু Day" },
+    { key: "age", label: "বয়স" },
+    { key: "gender", label: "লিঙ্গ" },
+    { key: "nationality", label: "জাতীয়তা" },
+    { key: "marital_status", label: "বৈবাহিক অবস্থা" },
+    { key: "blood_group", label: "রক্তের গ্রুপ" },
+    { key: "phone", label: "ফোন" },
+    { key: "whatsapp", label: "WhatsApp" },
+    { key: "email", label: "ইমেইল" },
   ]},
-  // পাসপোর্ট তথ্য — নম্বর, ইস্যু ও মেয়াদ
-  { group: "Passport", color: "amber", fields: [
-    { key: "passport_number", label: "Passport Number" },
-    { key: "passport_issue", label: "Passport Issue Date" },
-    { key: "passport_expiry", label: "Passport Expiry" },
+  // পাসপোর্ট / NID তথ্য — নম্বর, ইস্যু ও মেয়াদ + year/month/day sub-parts
+  { group: "পাসপোর্ট / NID", color: "amber", fields: [
+    { key: "nid", label: "NID নম্বর" },
+    { key: "passport_number", label: "পাসপোর্ট নম্বর" },
+    { key: "passport_issue", label: "পাসপোর্ট ইস্যু (Full)" },
+    { key: "passport_issue:year", label: "পাসপোর্ট ইস্যু → Year" },
+    { key: "passport_issue:month", label: "পাসপোর্ট ইস্যু → Month" },
+    { key: "passport_issue:day", label: "পাসপোর্ট ইস্যু → Day" },
+    { key: "passport_expiry", label: "পাসপোর্ট মেয়াদ (Full)" },
+    { key: "passport_expiry:year", label: "পাসপোর্ট মেয়াদ → Year" },
+    { key: "passport_expiry:month", label: "পাসপোর্ট মেয়াদ → Month" },
+    { key: "passport_expiry:day", label: "পাসপোর্ট মেয়াদ → Day" },
   ]},
   // ঠিকানা — স্থায়ী ও বর্তমান
-  { group: "Address", color: "emerald", fields: [
-    { key: "permanent_address", label: "Permanent Address" },
-    { key: "current_address", label: "Current Address" },
+  { group: "ঠিকানা", color: "emerald", fields: [
+    { key: "permanent_address", label: "স্থায়ী ঠিকানা" },
+    { key: "current_address", label: "বর্তমান ঠিকানা" },
   ]},
-  // পারিবারিক তথ্য — পিতা/মাতার নাম, জন্ম তারিখ, পেশা
-  { group: "Family", color: "purple", fields: [
-    { key: "father_name", label: "Father Name" }, { key: "father_name_en", label: "Father Name (EN)" },
-    { key: "mother_name", label: "Mother Name" }, { key: "mother_name_en", label: "Mother Name (EN)" },
-    { key: "father_dob", label: "Father DOB" }, { key: "mother_dob", label: "Mother DOB" },
-    { key: "father_occupation", label: "Father Occupation" }, { key: "mother_occupation", label: "Mother Occupation" },
+  // পারিবারিক তথ্য — পিতা/মাতার নাম, জন্ম তারিখ (+ year/month/day), পেশা
+  { group: "পরিবার", color: "purple", fields: [
+    { key: "father_name", label: "পিতার নাম (বাংলা)" },
+    { key: "father_name_en", label: "পিতার নাম (EN)" },
+    { key: "mother_name", label: "মাতার নাম (বাংলা)" },
+    { key: "mother_name_en", label: "মাতার নাম (EN)" },
+    { key: "father_dob", label: "পিতার জন্ম তারিখ (Full)" },
+    { key: "father_dob:year", label: "পিতার জন্ম → Year" },
+    { key: "father_dob:month", label: "পিতার জন্ম → Month" },
+    { key: "father_dob:day", label: "পিতার জন্ম → Day" },
+    { key: "father_occupation", label: "পিতার পেশা" },
+    { key: "mother_dob", label: "মাতার জন্ম তারিখ (Full)" },
+    { key: "mother_dob:year", label: "মাতার জন্ম → Year" },
+    { key: "mother_dob:month", label: "মাতার জন্ম → Month" },
+    { key: "mother_dob:day", label: "মাতার জন্ম → Day" },
+    { key: "mother_occupation", label: "মাতার পেশা" },
   ]},
-  // শিক্ষাগত তথ্য — SSC/HSC স্কুল, সাল, বোর্ড, GPA
-  { group: "Education", color: "amber", fields: [
-    { key: "edu_ssc_school", label: "SSC School" },
-    { key: "edu_ssc_year", label: "SSC Year" },
-    { key: "edu_ssc_board", label: "SSC Board" },
+  // শিক্ষাগত তথ্য — SSC/HSC/Honours স্কুল, সাল, বোর্ড, GPA, বিভাগ/বিষয়
+  { group: "শিক্ষা", color: "amber", fields: [
+    { key: "edu_ssc_school", label: "SSC স্কুল" },
+    { key: "edu_ssc_year", label: "SSC সন" },
+    { key: "edu_ssc_board", label: "SSC বোর্ড" },
     { key: "edu_ssc_gpa", label: "SSC GPA" },
-    { key: "edu_hsc_school", label: "HSC School" },
-    { key: "edu_hsc_year", label: "HSC Year" },
-    { key: "edu_hsc_board", label: "HSC Board" },
+    { key: "edu_ssc_subject", label: "SSC বিভাগ" },
+    { key: "edu_hsc_school", label: "HSC কলেজ" },
+    { key: "edu_hsc_year", label: "HSC সন" },
+    { key: "edu_hsc_board", label: "HSC বোর্ড" },
     { key: "edu_hsc_gpa", label: "HSC GPA" },
+    { key: "edu_hsc_subject", label: "HSC বিভাগ" },
+    { key: "edu_honours_school", label: "Honours বিশ্ববিদ্যালয়" },
+    { key: "edu_honours_year", label: "Honours সন" },
+    { key: "edu_honours_gpa", label: "Honours GPA" },
+    { key: "edu_honours_subject", label: "Honours বিষয়" },
   ]},
-  // জাপানি ভাষা — JLPT/NAT লেভেল, স্কোর, পরীক্ষার তারিখ
-  { group: "Japanese", color: "rose", fields: [
-    { key: "jp_level", label: "JLPT/NAT Level" },
-    { key: "jp_score", label: "JP Exam Score" },
-    { key: "jp_exam_type", label: "JP Exam Type" },
-    { key: "jp_exam_date", label: "JP Exam Date" },
+  // জাপানি ভাষা — JLPT/NAT পরীক্ষার ধরন, লেভেল, স্কোর, ফলাফল, তারিখ
+  { group: "জাপানি ভাষা", color: "rose", fields: [
+    { key: "jp_exam_type", label: "পরীক্ষার ধরন" },
+    { key: "jp_level", label: "লেভেল" },
+    { key: "jp_score", label: "স্কোর" },
+    { key: "jp_result", label: "ফলাফল" },
+    { key: "jp_exam_date", label: "পরীক্ষার তারিখ" },
   ]},
-  // স্পন্সর/গ্যারান্টর — নাম, ফোন, ঠিকানা, সম্পর্ক + 経費支弁書 extended fields
-  { group: "Sponsor", color: "rose", fields: [
-    { key: "sponsor_name", label: "Sponsor Name" }, { key: "sponsor_phone", label: "Sponsor Phone" },
-    { key: "sponsor_address", label: "Sponsor Address" }, { key: "sponsor_relationship", label: "Relationship" },
+  // স্পন্সর/গ্যারান্টর — নাম, ফোন, ঠিকানা, সম্পর্ক, আয়/ট্যাক্স (৩ বছর) + 経費支弁書 fields
+  { group: "স্পন্সর", color: "rose", fields: [
+    { key: "sponsor_name", label: "স্পন্সরের নাম" },
+    { key: "sponsor_name_en", label: "স্পন্সর নাম (EN)" },
+    { key: "sponsor_relationship", label: "সম্পর্ক" },
+    { key: "sponsor_phone", label: "স্পন্সর ফোন" },
+    { key: "sponsor_address", label: "স্পন্সর ঠিকানা" },
+    { key: "sponsor_company", label: "কোম্পানি" },
+    { key: "sponsor_income_y1", label: "আয় (১ম বছর)" },
+    { key: "sponsor_income_y2", label: "আয় (২য় বছর)" },
+    { key: "sponsor_income_y3", label: "আয় (৩য় বছর)" },
+    { key: "sponsor_tax_y1", label: "ট্যাক্স (১ম বছর)" },
+    { key: "sponsor_tax_y2", label: "ট্যাক্স (২য় বছর)" },
+    { key: "sponsor_tax_y3", label: "ট্যাক্স (৩য় বছর)" },
     { key: "sponsor_statement", label: "Sponsor Statement" },
     { key: "sponsor_payment_to_student", label: "Payment to Student (bool)" },
     { key: "sponsor_payment_to_school", label: "Payment to School (bool)" },
     { key: "sponsor_sign_date", label: "Sponsor Sign Date" },
     { key: "sponsor_tin", label: "Sponsor TIN" },
     { key: "sponsor_income", label: "Sponsor Annual Income" },
-    { key: "sponsor_company", label: "Sponsor Company" },
     { key: "sponsor_nid", label: "Sponsor NID" },
   ]},
   // জাপান ফাইন্যান্স — টিউশন, জীবনযাত্রা খরচ, বিনিময় হার
-  { group: "Japan Finance", color: "amber", fields: [
+  { group: "জাপান ফাইন্যান্স", color: "amber", fields: [
     { key: "tuition_jpy", label: "Tuition First Year (JPY)" },
     { key: "monthly_living", label: "Monthly Living (JPY)" },
     { key: "exchange_rate", label: "Exchange Rate" },
   ]},
-  // গন্তব্য — দেশ, স্কুল, ব্যাচ
-  { group: "Destination", color: "cyan", fields: [
-    { key: "country", label: "Country" }, { key: "school", label: "School" }, { key: "batch", label: "Batch" },
+  // গন্তব্য — দেশ, ভিসা, Intake, স্টুডেন্ট টাইপ
+  { group: "গন্তব্য", color: "cyan", fields: [
+    { key: "country", label: "দেশ" },
+    { key: "school", label: "School" },
+    { key: "batch", label: "Batch" },
+    { key: "intake", label: "Intake" },
+    { key: "visa_type", label: "ভিসার ধরন" },
+    { key: "student_type", label: "স্টুডেন্ট টাইপ" },
   ]},
-  // সিস্টেম — আজকের তারিখ (বাংলা ও জাপানি ফরম্যাট)
-  { group: "System", color: "muted", fields: [
-    { key: "today", label: "Today's Date" }, { key: "today_jp", label: "Today (Japanese)" },
+  // সিস্টেম ভ্যারিয়েবল — এজেন্সি, ব্রাঞ্চ, তারিখ, স্কুল, ব্যাচ তথ্য
+  { group: "সিস্টেম ভ্যারিয়েবল", color: "muted", fields: [
+    { key: "sys_agency_name", label: "এজেন্সি নাম" },
+    { key: "sys_agency_name_bn", label: "এজেন্সি নাম (বাংলা)" },
+    { key: "sys_agency_address", label: "এজেন্সি ঠিকানা" },
+    { key: "sys_agency_phone", label: "এজেন্সি ফোন" },
+    { key: "sys_agency_email", label: "এজেন্সি ইমেইল" },
+    { key: "sys_branch_name", label: "ব্রাঞ্চ নাম" },
+    { key: "sys_branch_address", label: "ব্রাঞ্চ ঠিকানা" },
+    { key: "sys_branch_phone", label: "ব্রাঞ্চ ফোন" },
+    { key: "sys_branch_manager", label: "ব্রাঞ্চ ম্যানেজার" },
+    { key: "sys_today", label: "আজকের তারিখ" },
+    { key: "sys_today:year", label: "আজ → বছর" },
+    { key: "sys_today:month", label: "আজ → মাস" },
+    { key: "sys_today:day", label: "আজ → দিন" },
+    { key: "sys_today_jp", label: "আজকের তারিখ (日本語)" },
+    { key: "sys_batch_name", label: "ব্যাচ নাম" },
+    { key: "sys_batch_start", label: "ব্যাচ শুরু তারিখ" },
+    { key: "sys_batch_start:year", label: "ব্যাচ শুরু → বছর" },
+    { key: "sys_batch_start:month", label: "ব্যাচ শুরু → মাস" },
+    { key: "sys_batch_start:day", label: "ব্যাচ শুরু → দিন" },
+    { key: "sys_batch_end", label: "ব্যাচ শেষ তারিখ" },
+    { key: "sys_batch_end:year", label: "ব্যাচ শেষ → বছর" },
+    { key: "sys_batch_end:month", label: "ব্যাচ শেষ → মাস" },
+    { key: "sys_batch_end:day", label: "ব্যাচ শেষ → দিন" },
+    { key: "sys_batch_teacher", label: "ব্যাচ শিক্ষক" },
+    { key: "sys_batch_schedule", label: "ব্যাচ সময়সূচী" },
+    { key: "sys_school_name", label: "স্কুল নাম (EN)" },
+    { key: "sys_school_name_jp", label: "স্কুল নাম (JP)" },
+    { key: "sys_school_address", label: "স্কুল ঠিকানা" },
   ]},
 ];
 
