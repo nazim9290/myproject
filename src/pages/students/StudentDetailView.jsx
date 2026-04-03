@@ -67,8 +67,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     }).catch(() => {});
   }, [student.id]);
 
-  // ── JP Exam যোগ করার state ──
+  // ── JP Exam যোগ/edit state ──
   const [showJpExamForm, setShowJpExamForm] = useState(false);
+  const [editingJpExamId, setEditingJpExamId] = useState(null);
   const [jpExamForm, setJpExamForm] = useState({ exam_type: "JLPT", level: "", score: "", result: "", exam_date: "" });
 
   // ── Education যোগ/edit state ──
@@ -104,14 +105,22 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const addJpExam = async () => {
     if (!jpExamForm.exam_type) { toast.error("পরীক্ষার ধরন দিন"); return; }
     try {
-      const saved = await api.post(`/students/${student.id}/exam-result`, jpExamForm);
-      setJpExams(prev => [...prev, saved || { id: `jp-${Date.now()}`, ...jpExamForm }]);
-      logActivity(`JP পরীক্ষা যোগ — ${jpExamForm.exam_type} ${jpExamForm.level || ""}`, "edit");
+      if (editingJpExamId) {
+        // Update existing exam
+        await api.patch(`/students/${student.id}/jp-exams/${editingJpExamId}`, jpExamForm);
+        setJpExams(prev => prev.map(e => e.id === editingJpExamId ? { ...e, ...jpExamForm } : e));
+        toast.success(tr("success.updated"));
+      } else {
+        const saved = await api.post(`/students/${student.id}/exam-result`, jpExamForm);
+        setJpExams(prev => [...prev, saved || { id: `jp-${Date.now()}`, ...jpExamForm }]);
+        logActivity(`JP পরীক্ষা যোগ — ${jpExamForm.exam_type} ${jpExamForm.level || ""}`, "edit");
+        toast.success(tr("success.created"));
+      }
       setJpExamForm({ exam_type: "JLPT", level: "", score: "", result: "", exam_date: "" });
+      setEditingJpExamId(null);
       setShowJpExamForm(false);
-      toast.success("পরীক্ষার তথ্য যোগ হয়েছে");
     } catch {
-      toast.error("সার্ভারে সেভ ব্যর্থ");
+      toast.error(tr("errors.saveFailed"));
     }
   };
 
@@ -1167,8 +1176,15 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                         </td>
                         <td className="py-2 px-3" style={{ color: t.muted }}>{e.exam_date || "—"}</td>
                         <td className="py-2 px-3">
-                          <button onClick={async () => { try { await api.del(`/students/${student.id}/jp-exams/${e.id}`); setJpExams(prev => prev.filter(x => x.id !== e.id)); toast.success("মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); } }}
-                            className="text-[9px] px-1 py-0.5 rounded opacity-50 hover:opacity-100" style={{ color: t.rose }}>🗑</button>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => {
+                              setJpExamForm({ exam_type: e.exam_type || "JLPT", level: e.level || "", score: e.score || "", result: e.result || "", exam_date: e.exam_date?.slice(0, 10) || "" });
+                              setEditingJpExamId(e.id);
+                              setShowJpExamForm(true);
+                            }} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: t.cyan }}>✏️</button>
+                            <button onClick={async () => { try { await api.del(`/students/${student.id}/jp-exams/${e.id}`); setJpExams(prev => prev.filter(x => x.id !== e.id)); toast.success(tr("success.deleted")); } catch (err) { toast.error(err.message); } }}
+                              className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: t.rose }}>🗑</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
