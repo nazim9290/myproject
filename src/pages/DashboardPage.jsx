@@ -3,6 +3,7 @@ import { Users, DollarSign, FileText, Plane, TrendingUp, CheckCircle, AlertTrian
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 import Card from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { PIPELINE_STATUSES } from "../data/students";
@@ -15,6 +16,7 @@ import { dashboard } from "../lib/api";
 export default function DashboardPage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +28,7 @@ export default function DashboardPage() {
         setData(d);
       } catch (err) {
         console.error("Dashboard load error:", err);
-        toast.error("ড্যাশবোর্ড ডাটা লোড করতে সমস্যা হয়েছে");
+        toast.error(tr("errors.loadFailed"));
       }
       setLoading(false);
     })();
@@ -38,8 +40,8 @@ export default function DashboardPage() {
       <div className="space-y-5 anim-fade">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold">ড্যাশবোর্ড</h2>
-            <p className="text-xs mt-0.5" style={{ color: t.muted }}>লোড হচ্ছে...</p>
+            <h2 className="text-xl font-bold">{tr("nav.dashboard")}</h2>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("common.loading")}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -57,8 +59,8 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <div className="space-y-5 anim-fade">
-        <h2 className="text-xl font-bold">Dashboard</h2>
-        <Card><p className="text-xs text-center py-10" style={{ color: t.muted }}>ডাটা লোড করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।</p></Card>
+        <h2 className="text-xl font-bold">{tr("dashboard.title")}</h2>
+        <Card><p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("errors.loadFailed")}</p></Card>
       </div>
     );
   }
@@ -88,7 +90,7 @@ export default function DashboardPage() {
       {/* ── হেডার ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Dashboard</h2>
+          <h2 className="text-xl font-bold">{tr("dashboard.title")}</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{dateStr}</p>
         </div>
       </div>
@@ -96,10 +98,10 @@ export default function DashboardPage() {
       {/* ── আজকের ওভারভিউ ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: Eye, label: "আজকের ভিজিটর", value: data.visitors?.today || 0, sub: `এই মাসে: ${data.visitors?.thisMonth || 0}`, color: t.amber },
-          { icon: UserPlus, label: "আজকের ভর্তি", value: data.students?.todayEnrolled || 0, sub: `মোট Active: ${data.students?.active || 0}`, color: t.emerald },
-          { icon: DollarSign, label: "আজকের আয়", value: fmtShort(data.revenue?.today || 0), sub: `এই মাসে: ${fmtShort(data.revenue?.thisMonth || 0)}`, color: t.cyan },
-          { icon: Clock, label: "আজকের তারিখ", value: new Date().toLocaleDateString("bn-BD", { day: "numeric", month: "short" }), sub: new Date().toLocaleDateString("bn-BD", { weekday: "long" }), color: t.purple },
+          { icon: Eye, label: tr("dashboard.todayVisitors"), value: data.visitors?.today || 0, sub: `${tr("common.thisMonth")}: ${data.visitors?.thisMonth || 0}`, color: t.amber },
+          { icon: UserPlus, label: tr("dashboard.todayEnrolled"), value: data.students?.todayEnrolled || 0, sub: `${tr("common.total")} Active: ${data.students?.active || 0}`, color: t.emerald },
+          { icon: DollarSign, label: tr("dashboard.todayIncome"), value: fmtShort(data.revenue?.today || 0), sub: `${tr("common.thisMonth")}: ${fmtShort(data.revenue?.thisMonth || 0)}`, color: t.cyan },
+          { icon: Clock, label: tr("dashboard.todayDate"), value: new Date().toLocaleDateString("bn-BD", { day: "numeric", month: "short" }), sub: new Date().toLocaleDateString("bn-BD", { weekday: "long" }), color: t.purple },
         ].map((kpi, i) => (
           <Card key={`today-${i}`} delay={i * 40}>
             <div className="flex items-start justify-between">
@@ -120,19 +122,19 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            icon: Users, label: "মোট স্টুডেন্ট", value: data.students.total,
+            icon: Users, label: tr("dashboard.totalStudents"), value: data.students.total,
             sub: `Active: ${data.students.active}`, color: t.cyan,
           },
           {
-            icon: DollarSign, label: "এই মাসের আয়", value: fmtShort(data.revenue.thisMonth),
-            sub: `বকেয়া: ${fmtShort(data.dues)}`, color: t.emerald,
+            icon: DollarSign, label: tr("dashboard.monthlyIncome"), value: fmtShort(data.revenue.thisMonth),
+            sub: `${tr("dashboard.dues")}: ${fmtShort(data.dues)}`, color: t.emerald,
           },
           {
-            icon: FileText, label: "ডক প্রসেসিং", value: data.docInProgress,
+            icon: FileText, label: tr("dashboard.docProcessing"), value: data.docInProgress,
             sub: "ডকুমেন্ট পর্যায়ে আছে", color: t.amber,
           },
           {
-            icon: Plane, label: "ভিসা/পৌঁছেছে", value: data.visaGranted,
+            icon: Plane, label: tr("dashboard.visaArrived"), value: data.visaGranted,
             sub: "ভিসা পেয়েছে বা পৌঁছেছে", color: t.purple,
           },
         ].map((kpi, i) => (
@@ -154,7 +156,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-12 gap-5">
         {/* ── Monthly Revenue Chart ── */}
         <Card className="col-span-12 lg:col-span-8" delay={250}>
-          <h3 className="text-sm font-semibold mb-4">মাসিক আয়</h3>
+          <h3 className="text-sm font-semibold mb-4">{tr("dashboard.monthlyRevenue")}</h3>
           {data.revenue.monthly.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={data.revenue.monthly}>
@@ -181,7 +183,7 @@ export default function DashboardPage() {
         {/* ── Alerts ── */}
         <Card className="col-span-12 lg:col-span-4" delay={300}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">সতর্কতা</h3>
+            <h3 className="text-sm font-semibold">{tr("dashboard.alerts")}</h3>
             {data.alerts.filter(a => a.type === "critical").length > 0 && (
               <Badge color={t.rose} size="xs">{data.alerts.filter(a => a.type === "critical").length} critical</Badge>
             )}
@@ -201,14 +203,14 @@ export default function DashboardPage() {
                 </div>
               );
             }) : (
-              <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো সতর্কতা নেই</p>
+              <p className="text-xs text-center py-6" style={{ color: t.muted }}>{tr("dashboard.noAlerts")}</p>
             )}
           </div>
         </Card>
 
         {/* ── Pipeline Funnel ── */}
         <Card className="col-span-12 lg:col-span-6" delay={350}>
-          <h3 className="text-sm font-semibold mb-3">পাইপলাইন ফানেল</h3>
+          <h3 className="text-sm font-semibold mb-3">{tr("dashboard.pipelineFunnel")}</h3>
           {pipelineChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={pipelineChart} layout="vertical">
@@ -225,7 +227,7 @@ export default function DashboardPage() {
 
         {/* ── Recent Visitors ── */}
         <Card className="col-span-12 lg:col-span-6" delay={400}>
-          <h3 className="text-sm font-semibold mb-3">সাম্প্রতিক ভিজিটর</h3>
+          <h3 className="text-sm font-semibold mb-3">{tr("dashboard.recentVisitors")}</h3>
           <div className="space-y-2">
             {(data.recentVisitors || []).length > 0 ? data.recentVisitors.map((v) => (
               <div key={v.id} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: `${t.cyan}08` }}>
@@ -276,21 +278,21 @@ export default function DashboardPage() {
         {/* ── Quick Stats Row ── */}
         <Card className="col-span-12 lg:col-span-4" delay={500}>
           <div className="text-center py-3">
-            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>মোট ভিজিটর</p>
+            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("common.total")} {tr("nav.visitors")}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: t.cyan }}>{data.visitors.total}</p>
-            <p className="text-[10px]" style={{ color: t.muted }}>এই মাসে: {data.visitors.thisMonth}</p>
+            <p className="text-[10px]" style={{ color: t.muted }}>{tr("common.thisMonth")}: {data.visitors.thisMonth}</p>
           </div>
         </Card>
         <Card className="col-span-12 lg:col-span-4" delay={550}>
           <div className="text-center py-3">
-            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>এই মাসের ব্যয়</p>
+            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("common.thisMonth")} {tr("accounts.expense")}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: t.rose }}>{fmtShort(data.expenses.thisMonth)}</p>
             <p className="text-[10px]" style={{ color: t.muted }}>নিট: {fmtShort(data.revenue.thisMonth - data.expenses.thisMonth)}</p>
           </div>
         </Card>
         <Card className="col-span-12 lg:col-span-4" delay={600}>
           <div className="text-center py-3">
-            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>বকেয়া পেমেন্ট</p>
+            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("dashboard.dues")}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: t.amber }}>{fmtShort(data.dues)}</p>
             <p className="text-[10px]" style={{ color: t.muted }}>pending + partial</p>
           </div>

@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, DollarSign, Clock, FileText, Download, Plus, 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
@@ -18,6 +19,7 @@ const EXPENSE_CATS = ["salary", "rent", "marketing", "agent_fee", "utility", "of
 
 function AddEntryForm({ type, onSave, onCancel }) {
   const t = useTheme();
+  const { t: tr } = useLanguage();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
   const [form, setForm] = useState(
     type === "income"
@@ -117,8 +119,8 @@ function AddEntryForm({ type, onSave, onCancel }) {
         )}
       </div>
       <div className="flex gap-2 mt-4 justify-end">
-        <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>বাতিল</Button>
-        <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
+        <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>{tr("common.cancel")}</Button>
+        <Button icon={Save} size="xs" onClick={save}>{tr("common.save")}</Button>
       </div>
     </>
   );
@@ -127,6 +129,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
 export default function AccountsPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddForm, setShowAddForm] = useState(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -238,12 +241,12 @@ export default function AccountsPage({ students = [] }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">হিসাব ও অর্থ</h2>
+          <h2 className="text-xl font-bold">{tr("accounts.title")}</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>আয়, ব্যয়, ট্যাক্স ও লাভ-ক্ষতি</p>
         </div>
         <div className="flex gap-2">
           <div className="relative">
-            <Button variant="ghost" icon={Download} size="xs" onClick={() => setShowExportMenu(v => !v)}>এক্সপোর্ট ▾</Button>
+            <Button variant="ghost" icon={Download} size="xs" onClick={() => setShowExportMenu(v => !v)}>{tr("common.export")} ▾</Button>
             {showExportMenu && (
               <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[170px]" style={{ background: t.cardSolid, border: `1px solid ${t.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
                 {[
@@ -279,8 +282,8 @@ export default function AccountsPage({ students = [] }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "মোট আয়", value: fmt(totalIncome), color: t.emerald, icon: TrendingUp },
-          { label: "মোট ব্যয়", value: fmt(totalExpense), color: t.rose, icon: TrendingDown },
+          { label: `${tr("common.total")} ${tr("accounts.income")}`, value: fmt(totalIncome), color: t.emerald, icon: TrendingUp },
+          { label: `${tr("common.total")} ${tr("accounts.expense")}`, value: fmt(totalExpense), color: t.rose, icon: TrendingDown },
           { label: "লাভ", value: fmt(profit), color: profit > 0 ? t.emerald : t.rose, icon: DollarSign },
           { label: "বকেয়া", value: fmt(totalDue), color: t.amber, icon: Clock },
           { label: "ট্যাক্স (15%)", value: fmt(totalTax), color: t.purple, icon: FileText },
@@ -316,7 +319,7 @@ export default function AccountsPage({ students = [] }) {
       </div>
 
       {/* ── আয়/ব্যয় এন্ট্রি Modal ── */}
-      <Modal isOpen={!!showAddForm} onClose={() => setShowAddForm(null)} title={showAddForm === "income" ? "নতুন আয় এন্ট্রি" : "নতুন ব্যয় এন্ট্রি"} size="lg">
+      <Modal isOpen={!!showAddForm} onClose={() => setShowAddForm(null)} title={showAddForm === "income" ? tr("accounts.addIncome") : tr("accounts.addExpense")} size="lg">
         {showAddForm && <AddEntryForm
           type={showAddForm}
           onCancel={() => setShowAddForm(null)}

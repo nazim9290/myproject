@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FileText, CheckCircle, Clock, Calendar, ChevronRight, Check, Save, ArrowLeft, Filter, Upload, Download, Trash2, Paperclip , AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -132,6 +133,7 @@ const isStepDone = (st, stepKey) => {
 export default function PreDeparturePage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [students, setStudents] = useState([]);
   const [kpi, setKpi] = useState({ total: 0, visaGranted: 0, healthPending: 0, vfsPending: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
@@ -175,8 +177,8 @@ export default function PreDeparturePage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">প্রি-ডিপার্চার ও ভিএফএস</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>দেশভিত্তিক প্রি-ডিপার্চার ট্র্যাকিং — জাপান, জার্মানি, কোরিয়া</p>
+          <h2 className="text-xl font-bold">{tr("preDeparture.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("preDeparture.subtitle")}</p>
         </div>
         {/* দেশ ফিল্টার */}
         <div className="flex items-center gap-2">
@@ -187,7 +189,7 @@ export default function PreDeparturePage() {
             className="px-3 py-2 rounded-xl text-xs outline-none"
             style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
           >
-            <option value="">সব দেশ</option>
+            <option value="">{tr("preDeparture.allCountries")}</option>
             <option value="Japan">🇯🇵 জাপান</option>
             <option value="Germany">🇩🇪 জার্মানি</option>
             <option value="Korea">🇰🇷 কোরিয়া</option>
@@ -198,11 +200,11 @@ export default function PreDeparturePage() {
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "COE+ স্টুডেন্ট", value: kpi.total, color: t.cyan, icon: FileText },
-          { label: "ভিসা পেয়েছে", value: kpi.visaGranted, color: t.emerald, icon: CheckCircle },
-          { label: "হেলথ বাকি", value: kpi.healthPending, color: t.amber, icon: Clock },
-          { label: "ভিএফএস বাকি", value: kpi.vfsPending, color: t.rose, icon: Calendar },
-          { label: "ওভারডিউ", value: kpi.overdue || 0, color: t.rose, icon: AlertTriangle },
+          { label: tr("preDeparture.coeStudents"), value: kpi.total, color: t.cyan, icon: FileText },
+          { label: tr("preDeparture.visaGranted"), value: kpi.visaGranted, color: t.emerald, icon: CheckCircle },
+          { label: tr("preDeparture.healthPending"), value: kpi.healthPending, color: t.amber, icon: Clock },
+          { label: tr("preDeparture.vfsPending"), value: kpi.vfsPending, color: t.rose, icon: Calendar },
+          { label: tr("common.overdue"), value: kpi.overdue || 0, color: t.rose, icon: AlertTriangle },
         ].map((k, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -767,7 +769,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
             )}
             {!sec.subtitle && <div className="mb-3" />}
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px]" style={{ color: t.muted }}>ডেডলাইন:</span>
+              <span className="text-[10px]" style={{ color: t.muted }}>{tr("preDeparture.deadline")}:</span>
               <input type="date" value={deadlines[sec.step] || ""} onChange={e => setDeadlineFn(sec.step, e.target.value)} className="px-2 py-1 rounded text-[10px] outline-none" style={inputStyle} />
               {deadlines[sec.step] && isOverdue(deadlines[sec.step]) && <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>ওভারডিউ!</span>}
             </div>
@@ -802,7 +804,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
 
             {/* Google Drive Link */}
             <div className="mt-3">
-              <label className="text-[10px] font-medium mb-1 flex items-center gap-1" style={{ color: t.muted }}>🔗 Google Drive Link</label>
+              <label className="text-[10px] font-medium mb-1 flex items-center gap-1" style={{ color: t.muted }}>🔗 {tr("preDeparture.driveLink")}</label>
               <input type="url" value={form[`${sec.stepKey}_drive_url`] || ""}
                 onChange={e => setForm(p => ({ ...p, [`${sec.stepKey}_drive_url`]: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={inputStyle}
@@ -811,7 +813,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
 
             {/* ── ডকুমেন্ট সেকশন সরানো — শুধু Drive link ── */}
             <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-              <p className="text-[10px] font-semibold mb-2" style={{ color: t.muted }}>চেকলিস্ট</p>
+              <p className="text-[10px] font-semibold mb-2" style={{ color: t.muted }}>{tr("preDeparture.checklist")}</p>
               {(checklists[sec.step] || []).map((item, idx) => (
                 <div key={item.id} className="flex items-center gap-2 py-1 group/item">
                   <label className="flex items-center gap-2 flex-1 cursor-pointer"><input type="checkbox" checked={item.done} onChange={() => toggleCheckItem(sec.step, idx)} className="rounded" /><span className="text-[11px]" style={{ color: item.done ? t.muted : t.text, textDecoration: item.done ? "line-through" : "none" }}>{item.text}</span></label>
@@ -819,7 +821,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
                 </div>
               ))}
               <div className="flex items-center gap-2 mt-2">
-                <input value={newCheckItem[sec.step] || ""} onChange={e => setNewCheckItem(prev => ({ ...prev, [sec.step]: e.target.value }))} onKeyDown={e => { if (e.key === "Enter") addCheckItem(sec.step); }} className="flex-1 px-2 py-1 rounded text-[10px] outline-none" style={inputStyle} placeholder="নতুন টাস্ক যোগ করুন..." />
+                <input value={newCheckItem[sec.step] || ""} onChange={e => setNewCheckItem(prev => ({ ...prev, [sec.step]: e.target.value }))} onKeyDown={e => { if (e.key === "Enter") addCheckItem(sec.step); }} className="flex-1 px-2 py-1 rounded text-[10px] outline-none" style={inputStyle} placeholder={tr("preDeparture.addTask")} />
                 <button onClick={() => addCheckItem(sec.step)} className="text-[10px] px-2 py-1 rounded font-bold" style={{ color: t.cyan }}>+</button>
               </div>
               {(checklists[sec.step] || []).length > 0 && (() => { const items = checklists[sec.step]; const done = items.filter(it => it.done).length; const total = items.length; const pct = Math.round((done / total) * 100); return (<div className="mt-2 flex items-center gap-2"><div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: t.border }}><div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: pct === 100 ? t.emerald : sec.color }} /></div><span className="text-[9px]" style={{ color: t.muted }}>{done}/{total}</span></div>); })()}
@@ -828,7 +830,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
             {/* ── ডিফল্ট ডকুমেন্ট টেমপ্লেট — সবসময় দেখাবে ── */}
             {countryTemplates.length > 0 && (
               <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-                <p className="text-[10px] font-semibold mb-2" style={{ color: t.muted }}>📋 ডিফল্ট ডকুমেন্ট</p>
+                <p className="text-[10px] font-semibold mb-2" style={{ color: t.muted }}>📋 {tr("preDeparture.defaultDocs")}</p>
                 <div className="space-y-2">
                   {countryTemplates.map(tmpl => (
                     <div key={tmpl.id} className="flex items-center justify-between p-2.5 rounded-lg"
@@ -848,7 +850,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
                         </button>
                       ) : (
                         <span className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted, background: `${t.muted}10` }}>
-                          ফাইল আপলোড হয়নি
+                          {tr("preDeparture.fileNotUploaded")}
                         </span>
                       )}
                     </div>

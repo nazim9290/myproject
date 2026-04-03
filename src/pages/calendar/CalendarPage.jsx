@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Calendar, ClipboardList, AlertTriangle, Users, Save, X, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -12,6 +13,7 @@ import { api } from "../../hooks/useAPI";
 export default function CalendarPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [events, setEvents] = useState([]);
 
   // ── Backend থেকে calendar events load ──
@@ -90,7 +92,7 @@ export default function CalendarPage({ students = [] }) {
                 </div>
               </div>
               <div className="flex gap-2 justify-end mt-4">
-                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
+                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>{tr("common.cancel")}</Button>
                 <Button icon={Save} size="xs" onClick={async () => {
                   if (!form.title.trim() || !form.date) { toast.error("টাইটেল ও তারিখ দিন"); return; }
                   const payload = { title: form.title, date: form.date, time: form.time || null, type: form.type, description: form.notes || "", student_id: form.studentId || null };
@@ -107,7 +109,7 @@ export default function CalendarPage({ students = [] }) {
                     }
                   } catch (err) { toast.error(err.message || "সমস্যা"); }
                   setForm(emptyForm); setShowForm(false); setEditingId(null);
-                }}>সংরক্ষণ</Button>
+                }}>{tr("common.save")}</Button>
               </div>
             </>
           );
@@ -139,7 +141,7 @@ export default function CalendarPage({ students = [] }) {
         <button onClick={() => setFilterType("all")}
           className="px-3 py-1.5 rounded-lg text-xs transition"
           style={{ background: filterType === "all" ? (t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#e2e8f0") : "transparent", color: filterType === "all" ? t.text : t.muted, fontWeight: filterType === "all" ? 600 : 400 }}>
-          সব
+          {tr("common.all")}
         </button>
         {Object.entries(EVENT_TYPES).map(([key, et]) => (
           <button key={key} onClick={() => setFilterType(key)}

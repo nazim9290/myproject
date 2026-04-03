@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, ClipboardList, Clock, CheckCircle, AlertTriangle, Check, Save, X, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -18,6 +19,7 @@ const COLUMNS = [
 export default function TasksPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [tasks, setTasks] = useState([]);
 
   // ── Backend থেকে tasks load ──
@@ -143,8 +145,8 @@ export default function TasksPage({ students = [] }) {
           </div>
         </div>
         <div className="flex gap-2 justify-end mt-4">
-          <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={addTask}>সংরক্ষণ</Button>
+          <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>{tr("common.cancel")}</Button>
+          <Button icon={Save} size="xs" onClick={addTask}>{tr("common.save")}</Button>
         </div>
       </Modal>
 

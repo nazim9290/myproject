@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { AlertCircle, Save, Plus, Download, Settings, Search, X, ArrowLeft, Phone, Edit3, Trash2, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
@@ -14,6 +15,7 @@ import { api } from "../../hooks/useAPI";
 function NewVisitorForm({ onSave, onCancel }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
   // API থেকে branches ও agents load (mock data সরানো হয়েছে)
   const [branchesList, setBranchesList] = useState([]);
@@ -196,7 +198,7 @@ function NewVisitorForm({ onSave, onCancel }) {
       <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="আলোচনার বিবরণ..." /></div></>}
       <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
         <p className="text-[10px]" style={{ color: t.muted }}>* চিহ্নিত field আবশ্যক</p>
-        <div className="flex gap-2"><Button variant="ghost" onClick={onCancel}>বাতিল</Button><Button icon={Save} onClick={save}>ভিজিটর সংরক্ষণ</Button></div>
+        <div className="flex gap-2"><Button variant="ghost" onClick={onCancel}>{tr("common.cancel")}</Button><Button icon={Save} onClick={save}>{tr("common.save")}</Button></div>
       </div>
     </div>
   );
@@ -205,6 +207,7 @@ function NewVisitorForm({ onSave, onCancel }) {
 export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent, reloadData }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [showForm, setShowForm] = useState(false);
 
   // ── Server-side pagination state ──
@@ -433,8 +436,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           <div className="flex items-center gap-4">
             <button onClick={() => setEditMode(false)} className="p-2 rounded-xl hover:bg-white/5"><ArrowLeft size={18}/></button>
             <div className="flex-1"><h2 className="text-xl font-bold">সম্পাদনা: {v.name}</h2></div>
-            <Button variant="ghost" size="xs" onClick={() => setEditMode(false)}>বাতিল</Button>
-            <Button size="xs" icon={Save} onClick={saveEdit}>পরিবর্তন সংরক্ষণ</Button>
+            <Button variant="ghost" size="xs" onClick={() => setEditMode(false)}>{tr("common.cancel")}</Button>
+            <Button size="xs" icon={Save} onClick={saveEdit}>{tr("common.save")}</Button>
           </div>
           <Card delay={0}><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[{k:"name",l:"নাম (ইংরেজি)"},{k:"name_bn",l:"নাম (বাংলা)"},{k:"phone",l:"ফোন"},{k:"guardian_phone",l:"অভিভাবকের ফোন"},{k:"email",l:"ইমেইল"},{k:"dob",l:"জন্ম তারিখ",type:"date"}].map(f=>(
@@ -472,10 +475,10 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             <p className="text-xs" style={{color:t.muted}}>{v.name_bn||""} • {v.display_id || v.id} • {days}d ago</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="xs" icon={Phone} onClick={() => markFollowUp(v.id)}>ফলো-আপ</Button>
-            <Button variant="ghost" size="xs" icon={Edit3} onClick={() => { setEditData({...v}); setEditMode(true); }}>সম্পাদনা</Button>
-            <Button variant="danger" size="xs" icon={Trash2} onClick={() => setConfirmAction({type:"delete",visitor:v})}>মুছুন</Button>
-            {v.status!=="Not Interested" && <Button size="xs" icon={Check} onClick={() => setConfirmAction({type:"convert",visitor:v})}>ভর্তি</Button>}
+            <Button variant="ghost" size="xs" icon={Phone} onClick={() => markFollowUp(v.id)}>{tr("visitors.followUp")}</Button>
+            <Button variant="ghost" size="xs" icon={Edit3} onClick={() => { setEditData({...v}); setEditMode(true); }}>{tr("common.edit")}</Button>
+            <Button variant="danger" size="xs" icon={Trash2} onClick={() => setConfirmAction({type:"delete",visitor:v})}>{tr("common.delete")}</Button>
+            {v.status!=="Not Interested" && <Button size="xs" icon={Check} onClick={() => setConfirmAction({type:"convert",visitor:v})}>{tr("students.enrolled")}</Button>}
           </div>
         </div>
 
@@ -656,8 +659,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             </div>
           </div>}
           {confirmAction && <div className="flex justify-end gap-2 mt-4">
-            <Button variant="ghost" size="xs" onClick={() => setConfirmAction(null)}>বাতিল</Button>
-            <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={() => confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
+            <Button variant="ghost" size="xs" onClick={() => setConfirmAction(null)}>{tr("common.cancel")}</Button>
+            <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={() => confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>{tr("common.confirm")}</Button>
           </div>}
         </Modal>
 
@@ -690,10 +693,10 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div><h2 className="text-xl font-bold">ভিজিটর</h2><p className="text-xs mt-0.5" style={{color:t.muted}}>ভিজিটর ও ফলো-আপ ব্যবস্থাপনা</p></div>
+        <div><h2 className="text-xl font-bold">{tr("visitors.title")}</h2><p className="text-xs mt-0.5" style={{color:t.muted}}>{tr("visitors.title")} — {tr("visitors.followUp")}</p></div>
         <div className="flex gap-2">
           <div className="relative">
-            <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExport(!showExport)}>এক্সপোর্ট ▾</Button>
+            <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExport(!showExport)}>{tr("common.export")} ▾</Button>
             {showExport && <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[220px]" style={{background:t.cardSolid,border:"1px solid "+t.border,boxShadow:"0 8px 30px rgba(0,0,0,0.25)"}}>
               <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold" style={{color:t.muted,borderBottom:"1px solid "+t.border}}>ভিজিটর CSV এক্সপোর্ট</div>
               <button onClick={() => doExport("filtered")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
@@ -708,7 +711,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             </div>}
           </div>
           <Button variant="ghost" size="xs" icon={Settings} onClick={() => setShowSettings(!showSettings)}/>
-          <Button icon={Plus} onClick={() => setShowForm(!showForm)}>{showForm?"বন্ধ":"নতুন ভিজিটর"}</Button>
+          <Button icon={Plus} onClick={() => setShowForm(!showForm)}>{showForm ? tr("common.close") : tr("visitors.addNew")}</Button>
         </div>
       </div>
 
@@ -733,14 +736,14 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-1.5 rounded-lg" style={{background:t.inputBg,border:"1px solid "+t.inputBorder}}>
           <Search size={13} style={{color:t.muted}}/>
-          <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);setPage(1);}} className="flex-1 bg-transparent text-xs outline-none" style={{color:t.text}} placeholder="নাম, ফোন খুঁজুন..."/>
+          <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);setPage(1);}} className="flex-1 bg-transparent text-xs outline-none" style={{color:t.text}} placeholder={tr("visitors.searchPlaceholder")}/>
           {searchQ && <button onClick={()=>setSearchQ("")}><X size={12} style={{color:t.muted}}/></button>}
         </div>
         {["All","Interested","Thinking","Not Interested"].map(f=>{
-          return <button key={f} onClick={()=>{setStatusFilter(f);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs transition" style={{background:statusFilter===f?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#e2e8f0"):"transparent",color:statusFilter===f?t.text:t.muted,fontWeight:statusFilter===f?600:400}}>{f==="All"?"সব":f}</button>;
+          return <button key={f} onClick={()=>{setStatusFilter(f);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs transition" style={{background:statusFilter===f?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#e2e8f0"):"transparent",color:statusFilter===f?t.text:t.muted,fontWeight:statusFilter===f?600:400}}>{f==="All"?tr("common.all"):f==="Interested"?tr("visitors.interested"):f==="Not Interested"?tr("visitors.notInterested"):f}</button>;
         })}
         <select value={filterBranch} onChange={e=>{setFilterBranch(e.target.value);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs outline-none ml-auto" style={{background:t.inputBg,border:`1px solid ${filterBranch!=="All"?t.cyan:t.inputBorder}`,color:filterBranch!=="All"?t.cyan:t.text}}>
-          {allBranches.map(b=><option key={b} value={b}>{b==="All"?"সব ব্রাঞ্চ":b}</option>)}
+          {allBranches.map(b=><option key={b} value={b}>{b==="All"?tr("students.allBranches"):b}</option>)}
         </select>
       </div>
 
@@ -751,28 +754,28 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           <div className="flex-1"><p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p><p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name}</p></div>
         </div>}
         {confirmAction && <div className="flex justify-end gap-2 mt-4">
-          <Button variant="ghost" size="xs" onClick={()=>setConfirmAction(null)}>বাতিল</Button>
-          <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={()=>confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>নিশ্চিত</Button>
+          <Button variant="ghost" size="xs" onClick={()=>setConfirmAction(null)}>{tr("common.cancel")}</Button>
+          <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={()=>confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>{tr("common.confirm")}</Button>
         </div>}
       </Modal>
 
       {/* ══════════ NEW VISITOR MODAL ══════════ */}
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="নতুন ভিজিটর যোগ করুন" size="xl">
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={tr("visitors.addNew")} size="xl">
         <NewVisitorForm onSave={async (v)=>{try{await api.post("/visitors",v);}catch(err){console.error("[Visitor Create]",err);toast.error("সার্ভারে সেভ ব্যর্থ");}setShowForm(false);toast.created("ভিজিটর");fetchVisitors();}} onCancel={()=>setShowForm(false)}/>
       </Modal>
 
       <Card delay={100}>
-        <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>মোট: {serverTotal} জন ভিজিটর{loading && " — লোড হচ্ছে..."}</p>
+        <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>{tr("common.total")}: {serverTotal} {tr("visitors.title")}{loading && ` — ${tr("common.loading")}`}</p>
         <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr style={{borderBottom:"1px solid "+t.border}}>
-          <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="ফোন" sortKey="phone" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="দেশ" sortKey="interested_countries" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label={tr("common.name")} sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label={tr("common.phone")} sortKey="phone" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label={tr("students.branch")} sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label={tr("students.country")} sortKey="interested_countries" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label={tr("common.status")} sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
           <SortHeader label="সোর্স" sortKey="source" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="তারিখ" sortKey="date" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <SortHeader label="ফলো-আপ" sortKey="lastFollowUp" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{color:t.muted}}>অ্যাকশন</th>
+          <SortHeader label={tr("common.date")} sortKey="date" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <SortHeader label={tr("visitors.followUp")} sortKey="lastFollowUp" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{color:t.muted}}>{tr("common.actions")}</th>
         </tr></thead><tbody>
           {paginated.map(v=>{
             const dc=v.interested_countries?v.interested_countries[0]:v.country;
@@ -825,7 +828,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             </tr>;
           })}
         </tbody></table></div>
-        {paginated.length===0&&!loading&&<div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো ভিজিটর পাওয়া যায়নি</p></div>}
+        {paginated.length===0&&!loading&&<div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">{tr("common.noData")}</p></div>}
         <Pagination total={serverTotal} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
     </div>

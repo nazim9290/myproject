@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, LayoutDashboard, Users, GraduationCap, BookOpen, Link as LinkIcon, StickyNote } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
@@ -17,20 +18,21 @@ import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 const STUDENT_PIPELINE_CODES = ["ENROLLED","IN_COURSE","EXAM_PASSED","DOC_COLLECTION","SCHOOL_INTERVIEW","DOC_SUBMITTED","COE_RECEIVED"];
 const POST_COE_STATUSES = ["HEALTH_CHECK","TUITION_REMITTED","VFS_SCHEDULED","VISA_APPLIED","VISA_GRANTED","PRE_DEPARTURE","ARRIVED","COMPLETED"];
 const MAIN_STEPS = PIPELINE_STATUSES.filter(s => STUDENT_PIPELINE_CODES.includes(s.code));
-// ── ট্যাব কনফিগারেশন ──
-const TABS = [
-  { key: "overview", label: "ওভারভিউ", icon: LayoutDashboard },
-  { key: "profile", label: "প্রোফাইল", icon: User },
-  { key: "fees", label: "ফি ও পেমেন্ট", icon: CreditCard },
-  { key: "sponsor", label: "স্পনসর", icon: Users },
-  { key: "timeline", label: "টাইমলাইন", icon: Clock },
-];
-
 export default function StudentDetailView({ student, onBack, onUpdate, onDelete, stepConfigs, onNavigate }) {
   // stepConfigs prop থেকে dynamic checklist — না পেলে default fallback
   const STEPS_META = stepConfigs || DEFAULT_STEPS_META;
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
+
+  // ── ট্যাব কনফিগারেশন — i18n keys ব্যবহার করে ──
+  const TABS = [
+    { key: "overview", label: tr("students.overview"), icon: LayoutDashboard },
+    { key: "profile", label: tr("students.profile"), icon: User },
+    { key: "fees", label: tr("students.fees"), icon: CreditCard },
+    { key: "sponsor", label: tr("students.sponsor"), icon: Users },
+    { key: "timeline", label: tr("students.timeline"), icon: Clock },
+  ];
 
   // ── ট্যাব স্টেট ──
   const [activeTab, setActiveTab] = useState("overview");
@@ -416,12 +418,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     ],
   };
 
-  // ── সেকশন Modal-এর টাইটেল ──
+  // ── সেকশন Modal-এর টাইটেল — i18n ──
   const SECTION_TITLES = {
-    personal: "ব্যক্তিগত তথ্য সম্পাদনা",
-    passport: "পাসপোর্ট ও পরিবার সম্পাদনা",
-    destination: "গন্তব্য তথ্য সম্পাদনা",
-    internal: "অভ্যন্তরীণ তথ্য সম্পাদনা",
+    personal: `${tr("students.personalInfo")} — ${tr("common.edit")}`,
+    passport: `${tr("students.passportFamily")} — ${tr("common.edit")}`,
+    destination: `${tr("students.destinationInfo")} — ${tr("common.edit")}`,
+    internal: `${tr("students.internal")} — ${tr("common.edit")}`,
   };
 
   // ── সেকশন Edit শুরু — ফিল্ড ভ্যালু student থেকে নিয়ে form-এ সেট ──
@@ -456,7 +458,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.name_bn} • {student.id} • {student.country}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="danger" icon={Trash2} size="xs" onClick={() => setShowDeleteConfirm(true)}>মুছুন</Button>
+          <Button variant="danger" icon={Trash2} size="xs" onClick={() => setShowDeleteConfirm(true)}>{tr("common.delete")}</Button>
         </div>
       </div>
 
@@ -493,7 +495,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   {meta.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px]" style={{ color: t.muted }}>পাইপলাইন</p>
+                  <p className="text-[10px]" style={{ color: t.muted }}>{tr("students.pipeline")}</p>
                   <p className="text-sm font-bold truncate" style={{ color: stepColor }}>
                     {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus}
                   </p>
@@ -533,7 +535,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
             {/* Portal Access */}
             <Card delay={60}>
-              <p className="text-[10px] mb-1" style={{ color: t.muted }}>স্টুডেন্ট পোর্টাল</p>
+              <p className="text-[10px] mb-1" style={{ color: t.muted }}>{tr("students.portalAccess")}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg">{portalAccess ? "✅" : "❌"}</span>
                 <div>
@@ -616,7 +618,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <button onClick={() => onNavigate && onNavigate("departure")}
                   className="px-4 py-2 rounded-xl text-xs font-medium shrink-0"
                   style={{ background: t.emerald, color: "#fff" }}>
-                  প্রি-ডিপার্চার →
+                  {tr("students.goToPreDeparture")} →
                 </button>
               </div>
             </Card>
@@ -871,7 +873,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             {/* ── ব্যক্তিগত তথ্য কার্ড ── */}
             <Card delay={50}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><User size={12} /> ব্যক্তিগত তথ্য</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><User size={12} /> {tr("students.personalInfo")}</h4>
                 <button onClick={() => openSectionEdit("personal")}
                   className="text-[10px] px-2 py-1 rounded-lg transition"
                   style={{ color: t.cyan }}
@@ -890,7 +892,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             {/* ── পাসপোর্ট ও পরিবার কার্ড ── */}
             <Card delay={80}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><FileCheck size={12} /> পাসপোর্ট ও পরিবার</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><FileCheck size={12} /> {tr("students.passportFamily")}</h4>
                 <button onClick={() => openSectionEdit("passport")}
                   className="text-[10px] px-2 py-1 rounded-lg transition"
                   style={{ color: t.cyan }}
@@ -909,7 +911,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             {/* ── গন্তব্য তথ্য কার্ড ── */}
             <Card delay={110}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> গন্তব্য তথ্য</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}><Globe size={12} /> {tr("students.destinationInfo")}</h4>
                 <button onClick={() => openSectionEdit("destination")}
                   className="text-[10px] px-2 py-1 rounded-lg transition"
                   style={{ color: t.cyan }}
@@ -934,12 +936,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <Card delay={150}>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
-                <GraduationCap size={12} /> শিক্ষাগত তথ্য
+                <GraduationCap size={12} /> {tr("students.education")}
               </h4>
               <Button variant="ghost" icon={Plus} size="xs" onClick={() => {
                 setShowEduForm(true);
                 setEduForm({ level: "SSC", school_name: "", year: "", board: "", gpa: "", group_name: "" });
-              }}>যোগ করুন</Button>
+              }}>{tr("students.addEducation")}</Button>
             </div>
 
             {/* Education যোগ/edit Modal */}
@@ -967,8 +969,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   </div>
                 ))}
                 <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-                  <Button variant="ghost" size="sm" onClick={() => setShowEduForm(false)}>বাতিল</Button>
-                  <Button size="sm" icon={Save} onClick={saveEducation}>সংরক্ষণ</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setShowEduForm(false)}>{tr("common.cancel")}</Button>
+                  <Button size="sm" icon={Save} onClick={saveEducation}>{tr("common.save")}</Button>
                 </div>
               </div>
             </Modal>
@@ -1005,7 +1007,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো শিক্ষাগত তথ্য নেই</p>
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("students.noEducation")}</p>
             )}
           </Card>
 
@@ -1013,9 +1015,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <Card delay={200}>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
-                <BookOpen size={12} /> জাপানি ভাষা পরীক্ষা
+                <BookOpen size={12} /> {tr("students.jpExams")}
               </h4>
-              <Button variant="ghost" icon={Plus} size="xs" onClick={() => setShowJpExamForm(true)}>পরীক্ষা যোগ</Button>
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => setShowJpExamForm(true)}>{tr("students.addExam")}</Button>
             </div>
 
             {/* JP Exam যোগ করার ইনলাইন ফর্ম */}
@@ -1064,8 +1066,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" size="xs" onClick={() => setShowJpExamForm(false)}>বাতিল</Button>
-                  <Button size="xs" icon={Save} onClick={addJpExam}>সংরক্ষণ</Button>
+                  <Button variant="ghost" size="xs" onClick={() => setShowJpExamForm(false)}>{tr("common.cancel")}</Button>
+                  <Button size="xs" icon={Save} onClick={addJpExam}>{tr("common.save")}</Button>
                 </div>
               </div>
             )}
@@ -1106,7 +1108,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 </table>
               </div>
             ) : (
-              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো পরীক্ষার তথ্য নেই</p>
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("students.noExams")}</p>
             )}
           </Card>
 
@@ -1114,7 +1116,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           {familyMembers.length > 0 && (
             <Card delay={250}>
               <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
-                <Users size={12} /> পরিবারের সদস্য
+                <Users size={12} /> {tr("students.familyMembers")}
               </h4>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
@@ -1189,29 +1191,29 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           {/* Header with action buttons */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-sm font-bold flex items-center gap-2">
-              <CreditCard size={14} style={{ color: t.cyan }} /> ফি কাঠামো ও পেমেন্ট
+              <CreditCard size={14} style={{ color: t.cyan }} /> {tr("students.feeStructure")}
             </h3>
             <div className="flex gap-2">
-              <Button variant="ghost" icon={Plus} size="xs" onClick={() => { setShowFeeItemForm(true); }}>ফি খাত</Button>
-              <Button icon={Plus} size="xs" onClick={() => { setShowPayForm(true); }}>পেমেন্ট</Button>
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => { setShowFeeItemForm(true); }}>{tr("students.addFeeItem")}</Button>
+              <Button icon={Plus} size="xs" onClick={() => { setShowPayForm(true); }}>{tr("students.addPayment")}</Button>
             </div>
           </div>
 
           {/* Summary row — 3 stat boxes */}
           <div className="grid grid-cols-3 gap-3">
             <Card delay={30}>
-              <p className="text-[10px] mb-1" style={{ color: t.muted }}>মোট নির্ধারিত ফি</p>
+              <p className="text-[10px] mb-1" style={{ color: t.muted }}>{tr("students.totalFee")}</p>
               <p className="text-lg font-bold">{taka(totalFee)}</p>
             </Card>
             <Card delay={40}>
               <div className="p-0">
-                <p className="text-[10px] mb-1" style={{ color: t.muted }}>কালেক্ট হয়েছে</p>
+                <p className="text-[10px] mb-1" style={{ color: t.muted }}>{tr("students.collected")}</p>
                 <p className="text-lg font-bold" style={{ color: t.emerald }}>{taka(totalPaid)}</p>
               </div>
             </Card>
             <Card delay={50}>
               <div className="p-0">
-                <p className="text-[10px] mb-1" style={{ color: t.muted }}>বাকি আছে</p>
+                <p className="text-[10px] mb-1" style={{ color: t.muted }}>{tr("students.balanceDue")}</p>
                 <p className="text-lg font-bold" style={{ color: balance > 0 ? t.rose : t.emerald }}>{taka(Math.max(0, balance))}</p>
               </div>
             </Card>
@@ -1272,7 +1274,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
           {/* Payment history */}
           <Card delay={80}>
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.muted }}>পেমেন্ট ইতিহাস</p>
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-3" style={{ color: t.muted }}>{tr("students.paymentHistory")}</p>
             {payments.length === 0 ? (
               <p className="text-xs text-center py-3" style={{ color: t.muted }}>এখনো কোনো পেমেন্ট নেই</p>
             ) : (
@@ -1319,7 +1321,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="text-base">👨‍👩‍👧</span>
-              <h3 className="text-sm font-bold">স্পনসর তথ্য</h3>
+              <h3 className="text-sm font-bold">{tr("students.sponsor")}</h3>
               {sponsor.name && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${t.emerald}15`, color: t.emerald }}>{sponsor.name} ({sponsor.relationship})</span>}
             </div>
             <div className="flex gap-2">
@@ -1533,8 +1535,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           </div>
         </div>
         <div className="flex gap-2 justify-end mt-4">
-          <Button variant="ghost" size="xs" onClick={() => setShowDeleteConfirm(false)}>বাতিল</Button>
-          <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>নিশ্চিত মুছুন</Button>
+          <Button variant="ghost" size="xs" onClick={() => setShowDeleteConfirm(false)}>{tr("common.cancel")}</Button>
+          <Button variant="danger" icon={Trash2} size="xs" onClick={() => { onDelete(student.id); onBack(); }}>{tr("common.confirm")} {tr("common.delete")}</Button>
         </div>
       </Modal>
 
@@ -1676,8 +1678,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           </div>
           {/* Save / Cancel buttons */}
           <div className="flex gap-2 justify-end pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-            <Button variant="ghost" size="sm" onClick={() => setEditSection(null)}>বাতিল</Button>
-            <Button size="sm" icon={Save} onClick={handleSectionSave}>সংরক্ষণ</Button>
+            <Button variant="ghost" size="sm" onClick={() => setEditSection(null)}>{tr("common.cancel")}</Button>
+            <Button size="sm" icon={Save} onClick={handleSectionSave}>{tr("common.save")}</Button>
           </div>
         </div>
       </Modal>

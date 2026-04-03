@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Phone, Save, X, Search, Trash2, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -16,6 +17,7 @@ const BLANK = { studentId: "", type: "phone", direction: "outbound", notes: "", 
 export default function CommunicationPage({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [logs, setLogs] = useState([]);
 
   // ── Backend থেকে communication logs load ──
@@ -143,8 +145,8 @@ export default function CommunicationPage({ students = [] }) {
           </div>
         </div>
         <div className="flex gap-2 justify-end mt-4">
-          <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={save}>সংরক্ষণ</Button>
+          <Button variant="ghost" size="xs" icon={X} onClick={() => setShowForm(false)}>{tr("common.cancel")}</Button>
+          <Button icon={Save} size="xs" onClick={save}>{tr("common.save")}</Button>
         </div>
       </Modal>
 
@@ -152,13 +154,13 @@ export default function CommunicationPage({ students = [] }) {
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-1 min-w-[180px]" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
           <Search size={13} style={{ color: t.muted }} />
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder="নাম বা নোট খুঁজুন..." />
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder={tr("common.search")} />
           {search && <button onClick={() => setSearch("")}><X size={12} style={{ color: t.muted }} /></button>}
         </div>
         <button onClick={() => { setFilterType("all"); setPage(1); }}
           className="px-3 py-1.5 rounded-lg text-xs transition"
           style={{ background: filterType === "all" ? `${t.cyan}20` : "transparent", color: filterType === "all" ? t.cyan : t.muted, fontWeight: filterType === "all" ? 600 : 400 }}>
-          সব ({logs.length})
+          {tr("common.all")} ({logs.length})
         </button>
         {Object.entries(COMM_TYPES).map(([key, ct]) => (
           <button key={key} onClick={() => { setFilterType(key); setPage(1); }}

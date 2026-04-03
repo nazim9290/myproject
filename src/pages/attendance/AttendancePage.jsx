@@ -3,6 +3,7 @@ import { Save, Download, Search } from "lucide-react";
 import { api } from "../../hooks/useAPI";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -26,6 +27,7 @@ const getStatusConfig = (status) => ATT_STATUS[normalizeStatus(status)] || ATT_S
 export default function AttendancePage({ students = [], currentUser }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const today = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedBatch, setSelectedBatch] = useState("all");
@@ -108,12 +110,12 @@ export default function AttendancePage({ students = [], currentUser }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">উপস্থিতি</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>দৈনিক উপস্থিতি ব্যবস্থাপনা</p>
+          <h2 className="text-xl font-bold">{tr("attendance.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("attendance.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" icon={Download} size="xs" onClick={exportAttendance}>এক্সপোর্ট</Button>
-          <Button icon={Save} size="xs" onClick={saveAttendance}>সংরক্ষণ</Button>
+          <Button variant="ghost" icon={Download} size="xs" onClick={exportAttendance}>{tr("common.export")}</Button>
+          <Button icon={Save} size="xs" onClick={saveAttendance}>{tr("common.save")}</Button>
         </div>
       </div>
 
@@ -121,25 +123,25 @@ export default function AttendancePage({ students = [], currentUser }) {
       <Card delay={0}>
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[150px]">
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.date")}</label>
             <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
           </div>
           <div className="flex-1 min-w-[150px]">
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্যাচ</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("students.batch")}</label>
             <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-              <option value="all">সব ব্যাচ</option>
+              <option value="all">{tr("attendance.allBatches")}</option>
               {batchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
           {/* Branch filter — শুধু Admin দেখবে */}
           {isAdmin && branchOptions.length > 2 && (
             <div className="flex-1 min-w-[150px]">
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("students.branch")}</label>
               <select value={selectedBranch} onChange={e => { setSelectedBranch(e.target.value); setSelectedBatch("all"); }}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="all">সব ব্রাঞ্চ</option>
+                <option value="all">{tr("attendance.allBranches")}</option>
                 {branchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
@@ -150,19 +152,19 @@ export default function AttendancePage({ students = [], currentUser }) {
             <Search size={14} style={{ color: t.muted }} />
             <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
               className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-              placeholder="স্টুডেন্ট খুঁজুন..." />
+              placeholder={tr("common.search")} />
           </div>
           <div className="text-xs pb-2" style={{ color: t.muted }}>
-            মোট: <span className="font-bold" style={{ color: t.text }}>{displayList.length}</span> জন
+            {tr("common.total")}: <span className="font-bold" style={{ color: t.text }}>{displayList.length}</span> জন
           </div>
         </div>
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "উপস্থিত", value: present, color: t.emerald, icon: "✅" },
-          { label: "অনুপস্থিত", value: absent, color: t.rose, icon: "❌" },
-          { label: "দেরিতে", value: late, color: t.amber, icon: "⏰" },
+          { label: tr("attendance.present"), value: present, color: t.emerald, icon: "✅" },
+          { label: tr("attendance.absent"), value: absent, color: t.rose, icon: "❌" },
+          { label: tr("attendance.late"), value: late, color: t.amber, icon: "⏰" },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 40}>
             <div className="flex items-center justify-between">
@@ -178,8 +180,8 @@ export default function AttendancePage({ students = [], currentUser }) {
 
       <Card delay={150}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold">উপস্থিতি — {selectedDate}</h3>
-          <p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে স্ট্যাটাস পরিবর্তন করুন</p>
+          <h3 className="text-sm font-semibold">{tr("attendance.title")} — {selectedDate}</h3>
+          <p className="text-[10px]" style={{ color: t.muted }}>{tr("attendance.markAll")}</p>
         </div>
         {displayList.length === 0 ? (
           <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই — ব্যাচ বা সার্চ পরিবর্তন করুন</p>
@@ -219,7 +221,7 @@ export default function AttendancePage({ students = [], currentUser }) {
           </div>
         )}
         <div className="flex justify-end mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-          <Button icon={Save} size="xs" onClick={saveAttendance}>সংরক্ষণ করুন</Button>
+          <Button icon={Save} size="xs" onClick={saveAttendance}>{tr("common.save")}</Button>
         </div>
       </Card>
 

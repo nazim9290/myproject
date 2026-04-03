@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw, List } from "lucide-react";
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
@@ -11,21 +12,22 @@ import { API_URL } from "../../lib/api";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 
-// ── Administration ট্যাব কনফিগ ──
+// ── Administration ট্যাব কনফিগ — i18nKey দিয়ে translation ──
 const ADMIN_TABS = [
-  { key: "agency", label: "এজেন্সি তথ্য", icon: Building },
-  { key: "appearance", label: "ডিজাইন ও থিম", icon: Palette },
-  { key: "doc_types", label: "ডকুমেন্ট টাইপ", icon: FileText },
-  { key: "pipeline", label: "পাইপলাইন সেটিংস", icon: GitBranch },
-  { key: "branches", label: "ব্রাঞ্চ ম্যানেজমেন্ট", icon: Globe },
-  { key: "notifications", label: "নোটিফিকেশন", icon: Bell },
-  { key: "custom_fields", label: "কাস্টম ফিল্ড", icon: Layers },
-  { key: "backup", label: "ডাটা ব্যাকআপ", icon: Database },
+  { key: "agency", i18nKey: "settings.agencyInfo", label: "এজেন্সি তথ্য", icon: Building },
+  { key: "appearance", i18nKey: "settings.appearance", label: "ডিজাইন ও থিম", icon: Palette },
+  { key: "doc_types", i18nKey: "settings.docTypes", label: "ডকুমেন্ট টাইপ", icon: FileText },
+  { key: "pipeline", i18nKey: "settings.pipeline", label: "পাইপলাইন সেটিংস", icon: GitBranch },
+  { key: "branches", i18nKey: "settings.branches", label: "ব্রাঞ্চ ম্যানেজমেন্ট", icon: Globe },
+  { key: "notifications", i18nKey: "settings.notifications", label: "নোটিফিকেশন", icon: Bell },
+  { key: "custom_fields", i18nKey: "settings.customFields", label: "কাস্টম ফিল্ড", icon: Layers },
+  { key: "backup", i18nKey: "settings.dataBackup", label: "ডাটা ব্যাকআপ", icon: Database },
 ];
 
 export default function SettingsPage({ isDark, setIsDark, students, visitors, stepConfigs, updateStepConfigs, currentUser }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr, lang, setLang, languages } = useLanguage();
   const { labelSettings, updateLabelSettings } = useLabelSettings();
   const isSuperAdmin = currentUser?.role === "owner" || currentUser?.role === "super_admin";
   const visibleTabs = ADMIN_TABS.filter(tab => tab.key !== "backup" || isSuperAdmin);
@@ -430,8 +432,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       {/* ── Header ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2"><SettingsIcon size={20} /> Administration</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>এজেন্সি সেটিংস, ডিজাইন, ব্রাঞ্চ ও কনফিগারেশন — সব এখান থেকে পরিবর্তন করুন</p>
+          <h2 className="text-xl font-bold flex items-center gap-2"><SettingsIcon size={20} /> {tr("settings.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("settings.subtitle")}</p>
         </div>
       </div>
 
@@ -446,7 +448,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               boxShadow: activeTab === tab.key ? `0 1px 3px rgba(0,0,0,0.2)` : "none",
             }}>
             <tab.icon size={13} />
-            {tab.label}
+            {tab.i18nKey ? tr(tab.i18nKey) : tab.label}
           </button>
         ))}
       </div>
@@ -528,7 +530,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
               <div>
-                <p className="text-sm font-medium">ডার্ক মোড</p>
+                <p className="text-sm font-medium">{tr("settings.darkMode")}</p>
                 <p className="text-[10px]" style={{ color: t.muted }}>UI থিম পরিবর্তন করুন</p>
               </div>
               <button onClick={() => setIsDark(!isDark)}
@@ -540,13 +542,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
               <div>
-                <p className="text-sm font-medium">ভাষা</p>
+                <p className="text-sm font-medium">{tr("settings.language")}</p>
                 <p className="text-[10px]" style={{ color: t.muted }}>ইন্টারফেস ভাষা</p>
               </div>
-              <select className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#e2e8f0", color: t.text }}>
-                <option>বাংলা + English</option>
-                <option>English Only</option>
-                <option>বাংলা Only</option>
+              <select value={lang} onChange={e => setLang(e.target.value)}
+                className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#e2e8f0", color: t.text }}>
+                {languages.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
               </select>
             </div>
           </div>

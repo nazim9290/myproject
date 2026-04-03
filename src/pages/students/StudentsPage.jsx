@@ -3,6 +3,7 @@ import { Search, X, Plus, Download, Upload, ArrowLeft, Check, AlertTriangle } fr
 import DropZone from "../../components/ui/DropZone";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
@@ -19,6 +20,7 @@ import { API_URL } from "../../lib/api";
 export default function StudentsPage({ students, setStudents, reloadData, stepConfigs, setActivePage }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [selectedId, setSelectedId] = useState(null);
 
   // ── Server-side pagination ও search state ──
@@ -239,11 +241,11 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">স্টুডেন্ট</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>স্টুডেন্ট পাইপলাইন ব্যবস্থাপনা</p>
+          <h2 className="text-xl font-bold">{tr("students.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("students.pipeline")}</p>
         </div>
         <div className="flex gap-2 relative">
-          <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExportMenu(p => !p)}>এক্সপোর্ট</Button>
+          <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExportMenu(p => !p)}>{tr("common.export")}</Button>
           {showExportMenu && (
             <div className="absolute right-0 top-8 z-50 rounded-xl shadow-lg min-w-[200px] overflow-hidden"
               style={{ background: t.card, border: `1px solid ${t.border}` }}>
@@ -314,15 +316,15 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             </div>
           )}
 
-          <Button variant="ghost" icon={Upload} onClick={() => { setShowImport(true); setImportStep("upload"); setImportFile(null); setImportResult(null); }}>এক্সেল ইমপোর্ট</Button>
-          <Button icon={Plus} onClick={() => setShowAddForm(true)}>নতুন স্টুডেন্ট</Button>
+          <Button variant="ghost" icon={Upload} onClick={() => { setShowImport(true); setImportStep("upload"); setImportFile(null); setImportResult(null); }}>{tr("students.importExcel")}</Button>
+          <Button icon={Plus} onClick={() => setShowAddForm(true)}>{tr("students.addNew")}</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { l: "মোট", v: serverTotal, c: t.cyan },
-          { l: "সক্রিয়", v: activeCount, c: t.emerald },
+          { l: tr("common.total"), v: serverTotal, c: t.cyan },
+          { l: tr("common.active"), v: activeCount, c: t.emerald },
           { l: "ভিসা / এসেছে", v: visaCount, c: t.purple },
           { l: "নিজস্ব / পার্টনার", v: `${ownCount} / ${partnerCount}`, c: t.amber },
         ].map((s, i) => (
@@ -334,7 +336,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       </div>
 
       {/* ══════════ ADD STUDENT MODAL ══════════ */}
-      <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} title="নতুন স্টুডেন্ট যোগ করুন" size="xl">
+      <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} title={tr("students.addNew")} size="xl">
         <AddStudentForm
           studentsCount={serverTotal}
           onCancel={() => setShowAddForm(false)}
@@ -352,7 +354,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       </Modal>
 
       {/* ══════════ EXCEL IMPORT MODAL ══════════ */}
-      <Modal isOpen={showImport} onClose={() => setShowImport(false)} title="Excel থেকে Student Import" subtitle={
+      <Modal isOpen={showImport} onClose={() => setShowImport(false)} title={tr("students.importExcel")} subtitle={
         importStep === "upload" ? "Step 1: Excel ফাইল আপলোড করুন" :
         importStep === "mapping" ? `Step 2: Column Mapping — ${importTotal} জন student পাওয়া গেছে` :
         "Import সম্পন্ন"
@@ -495,23 +497,23 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
           <Search size={13} style={{ color: t.muted }} />
-          <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setPage(1); }} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder="নাম, ফোন, ID দিয়ে খুঁজুন..." />
+          <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setPage(1); }} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder={tr("students.searchPlaceholder")} />
           {searchQ && <button onClick={() => setSearchQ("")}><X size={12} style={{ color: t.muted }} /></button>}
         </div>
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-          {statuses.map(s => <option key={s} value={s}>{s === "All" ? "সব স্ট্যাটাস" : PIPELINE_STATUSES.find(p => p.code === s)?.label || s}</option>)}
+          {statuses.map(s => <option key={s} value={s}>{s === "All" ? tr("students.allStatuses") : PIPELINE_STATUSES.find(p => p.code === s)?.label || s}</option>)}
         </select>
         <select value={filterCountry} onChange={e => { setFilterCountry(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-          {countries.map(c => <option key={c} value={c}>{c === "All" ? "সব দেশ" : c}</option>)}
+          {countries.map(c => <option key={c} value={c}>{c === "All" ? tr("students.allCountries") : c}</option>)}
         </select>
         <select value={filterBranch} onChange={e => { setFilterBranch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: filterBranch !== "All" ? t.cyan : t.text }}>
-          {branches.map(b => <option key={b} value={b}>{b === "All" ? "সব ব্রাঞ্চ" : b}</option>)}
+          {branches.map(b => <option key={b} value={b}>{b === "All" ? tr("students.allBranches") : b}</option>)}
         </select>
         <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: filterBatch !== "All" ? t.amber : t.text }}>
-          {batches.map(b => <option key={b} value={b}>{b === "All" ? "সব ব্যাচ" : b}</option>)}
+          {batches.map(b => <option key={b} value={b}>{b === "All" ? tr("students.allBatches") : b}</option>)}
         </select>
         <select value={filterSchool} onChange={e => { setFilterSchool(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${filterSchool !== "All" ? t.emerald : t.inputBorder}`, color: filterSchool !== "All" ? t.emerald : t.text }}>
-          {schools.map(s => <option key={s} value={s}>{s === "All" ? "সব স্কুল" : s}</option>)}
+          {schools.map(s => <option key={s} value={s}>{s === "All" ? `${tr("common.all")} ${tr("students.school")}` : s}</option>)}
         </select>
       </div>
 
@@ -526,12 +528,12 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               {PIPELINE_STATUSES.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
             </select>
             {bulkStatus && <Button size="xs" onClick={bulkChangeStatus}>পরিবর্তন করুন</Button>}
-            <Button variant="ghost" size="xs" onClick={bulkDelete} style={{ color: t.rose }}>মুছুন</Button>
-            <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>বাতিল</Button>
+            <Button variant="ghost" size="xs" onClick={bulkDelete} style={{ color: t.rose }}>{tr("common.delete")}</Button>
+            <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>{tr("common.cancel")}</Button>
           </div>
         ) : (
           <p className="text-xs font-medium mb-3" style={{ color: t.textSecondary }}>
-            মোট: {serverTotal} জন স্টুডেন্ট{loading && " — লোড হচ্ছে..."}
+            {tr("common.total")}: {serverTotal} {tr("students.title")}{loading && ` — ${tr("common.loading")}`}
           </p>
         )}
         <div className="overflow-x-auto">
@@ -543,13 +545,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                     onChange={selectAll} className="rounded" style={{ accentColor: t.cyan }} />
                 </th>
                 {[
-                  { label: "আইডি", key: "id" }, { label: "নাম", key: "name_en" }, { label: "ফোন", key: "phone" },
-                  { label: "ব্রাঞ্চ", key: "branch" }, { label: "দেশ", key: "country" }, { label: "স্কুল", key: "school" },
-                  { label: "ব্যাচ", key: "batch" }, { label: "স্ট্যাটাস", key: "status" }, { label: "ধরন", key: "type" },
+                  { label: "ID", key: "id" }, { label: tr("common.name"), key: "name_en" }, { label: tr("common.phone"), key: "phone" },
+                  { label: tr("students.branch"), key: "branch" }, { label: tr("students.country"), key: "country" }, { label: tr("students.school"), key: "school" },
+                  { label: tr("students.batch"), key: "batch" }, { label: tr("common.status"), key: "status" }, { label: tr("common.type"), key: "type" },
                 ].map(col => (
                   <SortHeader key={col.key} label={col.label} sortKey={col.key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                 ))}
-                <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+                <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -588,7 +590,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             </tbody>
           </table>
         </div>
-        {paginated.length === 0 && !loading && <div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">কোনো স্টুডেন্ট পাওয়া যায়নি</p></div>}
+        {paginated.length === 0 && !loading && <div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">{tr("common.noData")}</p></div>}
         <Pagination total={serverTotal} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
     </div>

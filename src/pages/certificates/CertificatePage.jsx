@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, FileText, Upload, Download, Trash2, Search, X, ArrowLeft, File, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
@@ -29,6 +30,7 @@ const CATEGORIES = [
 export default function CertificatePage({ students }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const fileRef = useRef(null);
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
@@ -320,7 +322,7 @@ export default function CertificatePage({ students }) {
       <div className="flex items-center gap-4">
         <button onClick={() => setView("upload")} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
         <div className="flex-1">
-          <h2 className="text-xl font-bold">Field Mapping — {activeTemplate.name}</h2>
+          <h2 className="text-xl font-bold">{tr("certificates.fieldMapping")} — {activeTemplate.name}</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>প্রতিটি placeholder-কে সিস্টেম field-এ ম্যাপ করুন • Mapped: {Object.values(mappings).filter(Boolean).length}/{detectedPlaceholders.length}</p>
         </div>
         <Button icon={Download} onClick={saveMapping}>সংরক্ষণ ({Object.values(mappings).filter(Boolean).length})</Button>
@@ -354,7 +356,7 @@ export default function CertificatePage({ students }) {
           else { setView("list"); setSelectedStudent(""); setDocData({}); setGenerateStep("student"); }
         }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
         <div>
-          <h2 className="text-xl font-bold">Generate — {activeTemplate.name}</h2>
+          <h2 className="text-xl font-bold">{tr("certificates.generate")} — {activeTemplate.name}</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>
             {generateStep === "student" ? "Step 1: স্টুডেন্ট সিলেক্ট করুন" : "Step 2: ডকুমেন্টের তথ্য পূরণ করুন"}
           </p>
@@ -550,10 +552,10 @@ export default function CertificatePage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">Document Generator</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>ট্রান্সলেশন ও ডকুমেন্ট টেম্পলেট — Word/PDF ডাউনলোড</p>
+          <h2 className="text-xl font-bold">{tr("certificates.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("certificates.subtitle")}</p>
         </div>
-        <Button icon={Plus} onClick={() => setView("upload")}>Template আপলোড</Button>
+        <Button icon={Plus} onClick={() => setView("upload")}>{tr("certificates.uploadTemplate")}</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -645,7 +647,7 @@ export default function CertificatePage({ students }) {
     </div>
 
     {/* Upload Template Modal */}
-    <Modal isOpen={view === "upload"} onClose={() => setView("list")} title="Template তৈরি করুন" subtitle="ডিফল্ট টেমপ্লেট ব্যবহার করুন অথবা নিজের আপলোড করুন" size="lg">
+    <Modal isOpen={view === "upload"} onClose={() => setView("list")} title={tr("certificates.createTemplate")} subtitle={tr("certificates.subtitle")} size="lg">
       <div className="space-y-4">
         {/* নাম + ক্যাটাগরি */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -686,12 +688,12 @@ export default function CertificatePage({ students }) {
             <button onClick={() => { setTemplateSource("default"); setUploadFile(null); }}
               className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all"
               style={{ background: templateSource === "default" ? `${t.purple}15` : t.inputBg, color: templateSource === "default" ? t.purple : t.muted, border: `1px solid ${templateSource === "default" ? t.purple + "40" : t.inputBorder}` }}>
-              📌 ডিফল্ট টেমপ্লেট ব্যবহার
+              📌 {tr("certificates.defaultTemplate")}
             </button>
             <button onClick={() => { setTemplateSource("custom"); setSelectedDefaultId(""); }}
               className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all"
               style={{ background: templateSource === "custom" ? `${t.cyan}15` : t.inputBg, color: templateSource === "custom" ? t.cyan : t.muted, border: `1px solid ${templateSource === "custom" ? t.cyan + "40" : t.inputBorder}` }}>
-              📁 কাস্টম আপলোড
+              📁 {tr("certificates.customUpload")}
             </button>
           </div>
 

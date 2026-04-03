@@ -10,7 +10,7 @@ import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle, useLabelSettings } 
 import { ToastProvider, useToast } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { PermissionProvider, usePermissions } from "./context/PermissionContext";
-import { LanguageProvider } from "./context/LanguageContext";
+import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import { NAV_ITEMS } from "./data/mockData";
 import { DEFAULT_STEPS_META } from "./data/pipelineSteps";
 import { students as studentsApi, visitors as visitorsApi } from "./lib/api";
@@ -49,6 +49,34 @@ const HelpPage = lazy(() => import("./pages/help/HelpPage"));
 import PageSkeleton from "./components/ui/PageSkeleton";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 
+// ── NAV_ITEMS key → i18n translation key mapping ──
+const NAV_I18N = {
+  dashboard: "nav.dashboard",
+  visitors: "nav.visitors",
+  students: "nav.students",
+  course: "nav.languageCourse",
+  attendance: "nav.attendance",
+  documents: "nav.documents",
+  schools: "nav.schools",
+  excel: "nav.excelAutoFill",
+  certificates: "nav.certificates",
+  departure: "nav.preDeparture",
+  tasks: "nav.tasks",
+  communication: "nav.communication",
+  agents: "nav.agents",
+  partners: "nav.partners",
+  accounts: "nav.accounts",
+  inventory: "nav.inventory",
+  hr: "nav.hr",
+  reports: "nav.reports",
+  calendar: "nav.calendar",
+  users: "nav.usersRoles",
+  portal: "nav.studentPortal",
+  settings: "nav.settings",
+  help: "nav.help",
+  "super-admin": "nav.superAdmin",
+};
+
 const NAV_ICONS = {
   dashboard: Home,
   visitors: Users,
@@ -77,6 +105,7 @@ const NAV_ICONS = {
 };
 
 function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts, canAccessPage }) {
+  const { t: tr } = useLanguage();
   const w = collapsed ? 64 : 220;
   const visible = isMobile ? mobileOpen : true;
 
@@ -116,8 +145,8 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: "#fff" }}>AgencyBook</p>
-              <p className="text-[9px] truncate" style={{ color: t.muted }}>স্টুডেন্ট ও এজেন্সি ম্যানেজমেন্ট</p>
+              <p className="text-sm font-bold truncate" style={{ color: "#fff" }}>{tr("app.name")}</p>
+              <p className="text-[9px] truncate" style={{ color: t.muted }}>{tr("app.subtitle")}</p>
             </div>
           )}
           {isMobile && (
@@ -136,7 +165,7 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
             return (
               <button
                 key={item.key}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? (NAV_I18N[item.key] ? tr(NAV_I18N[item.key]) : item.label) : undefined}
                 onClick={() => { setActivePage(item.key); if (isMobile) setMobileOpen(false); }}
                 className="w-full flex items-center rounded-lg mb-0.5 text-left transition-all"
                 style={{
@@ -153,7 +182,7 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
                 <Icon size={15} className="shrink-0" />
                 {!collapsed && (
                   <>
-                    <span className="text-xs flex-1 truncate">{item.label}</span>
+                    <span className="text-xs flex-1 truncate">{NAV_I18N[item.key] ? tr(NAV_I18N[item.key]) : item.label}</span>
                     {badge ? (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: `${t.cyan}20`, color: t.cyan }}>
                         {badge}
@@ -192,9 +221,15 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
 }
 
 function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, alertItems, onDismiss, onDismissAll, setActivePage, currentUser }) {
+  const { t: tr } = useLanguage();
   const navItem = NAV_ITEMS.find((n) => n.key === activePage);
-  const EXTRA_LABELS = { profile: "প্রোফাইল", "super-admin": "সুপার অ্যাডমিন", help: "সাহায্য" };
-  const pageLabel = navItem?.label || EXTRA_LABELS[activePage] || "ড্যাশবোর্ড";
+  // ── i18n: nav item label বা extra label translation দিয়ে resolve ──
+  const pageLabel = (navItem && NAV_I18N[navItem.key] ? tr(NAV_I18N[navItem.key]) : null)
+    || navItem?.label
+    || (activePage === "profile" ? tr("students.profile") : null)
+    || (activePage === "super-admin" ? tr("nav.superAdmin") : null)
+    || (activePage === "help" ? tr("nav.help") : null)
+    || tr("nav.dashboard");
   const [showAlerts, setShowAlerts] = useState(false);
 
   useEffect(() => {
@@ -240,7 +275,7 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
           <Search size={13} style={{ color: t.muted }} />
           <input
             type="search"
-            placeholder="স্টুডেন্ট, ভিজিটর, স্কুল খুঁজুন..."
+            placeholder={tr("common.search")}
             className="bg-transparent outline-none text-xs flex-1"
             style={{ color: t.text }}
             autoComplete="new-password"
@@ -285,13 +320,13 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
                     onMouseEnter={(e) => e.currentTarget.style.color = t.text}
                     onMouseLeave={(e) => e.currentTarget.style.color = t.muted}
                   >
-                    সব মুছুন
+                    {tr("common.all")} {tr("common.delete")}
                   </button>
                 )}
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {alertItems.length === 0 ? (
-                  <p className="p-5 text-xs text-center" style={{ color: t.muted }}>কোনো নতুন নোটিফিকেশন নেই ✓</p>
+                  <p className="p-5 text-xs text-center" style={{ color: t.muted }}>{tr("common.noData")} ✓</p>
                 ) : (
                   alertItems.map((alert) => (
                     <div
@@ -328,7 +363,7 @@ function Header({ t, activePage, isDark, setIsDark, isMobile, setMobileOpen, ale
         <button
           className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ml-1 transition hover:scale-110 overflow-hidden"
           style={{ background: currentUser?.avatar_url ? "transparent" : `linear-gradient(135deg, ${t.cyan}, ${t.purple})`, color: "#fff" }}
-          title={currentUser?.name || "প্রোফাইল"}
+          title={currentUser?.name || tr("students.profile")}
           onClick={() => setActivePage("profile")}
         >
           {currentUser?.avatar_url ? (

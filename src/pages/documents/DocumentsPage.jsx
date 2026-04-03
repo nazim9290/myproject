@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from "react";
 import { Users, CheckCircle, Clock, FileText, ChevronRight, Search, ArrowLeft, Save, Plus, X, Camera } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -21,6 +22,7 @@ import { api } from "../../hooks/useAPI";
 export default function DocumentsPage({ students }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   // States
@@ -79,9 +81,9 @@ export default function DocumentsPage({ students }) {
       });
 
       setFieldValues(newValues);
-      toast.success(`Scan complete — ${filledCount} fields auto-filled`);
+      toast.success(tr("documents.scanComplete", { count: filledCount }));
     } catch (err) {
-      toast.error("Scan failed: " + err.message);
+      toast.error(tr("documents.scanFailed") + ": " + err.message);
     }
 
     setScanning(false);
@@ -261,9 +263,9 @@ export default function DocumentsPage({ students }) {
           <button onClick={() => { setActiveDocType(null); setScanResult(null); }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
           <div className="flex-1">
             <h2 className="text-xl font-bold">{activeDocType.name}</h2>
-            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.name_en} ({selectedStudent.id}) — Fill document data</p>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.name_en} ({selectedStudent.id}) — {tr("documents.fillDocData")}</p>
           </div>
-          <Button icon={Save} onClick={saveWithFlatten} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          <Button icon={Save} onClick={saveWithFlatten} disabled={saving}>{saving ? tr("common.saving") : tr("common.save")}</Button>
         </div>
 
         {/* OCR Scan — document image upload করলে auto-fill হবে */}
@@ -271,9 +273,9 @@ export default function DocumentsPage({ students }) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Camera size={16} style={{ color: t.purple }} />
-              <span className="text-xs font-semibold" style={{ color: t.text }}>Scan & Auto-fill</span>
+              <span className="text-xs font-semibold" style={{ color: t.text }}>{tr("documents.scanAutoFill")}</span>
             </div>
-            {scanning && <span className="text-[10px]" style={{ color: t.muted }}>Scanning...</span>}
+            {scanning && <span className="text-[10px]" style={{ color: t.muted }}>{tr("documents.scanning")}</span>}
           </div>
 
           <div className="flex items-center gap-3">
@@ -298,7 +300,7 @@ export default function DocumentsPage({ students }) {
           </div>
 
           <p className="text-[9px] mt-2" style={{ color: t.muted }}>
-Upload document image or PDF — OCR will extract data and auto-fill fields. Verify all fields before saving.
+            {tr("documents.scanHelp")}
           </p>
         </div>
 
@@ -435,7 +437,7 @@ Upload document image or PDF — OCR will extract data and auto-fill fields. Ver
           <button onClick={() => { setSelectedStudent(null); setStudentDocData([]); }} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
           <div>
             <h2 className="text-xl font-bold">{selectedStudent.name_en}</h2>
-            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.id} • {selectedStudent.batch || "—"} • {completedTypes}/{totalTypes} documents completed</p>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.id} • {selectedStudent.batch || "—"} • {completedTypes}/{totalTypes} {tr("documents.documentsCompleted")}</p>
           </div>
         </div>
 
@@ -502,7 +504,7 @@ Upload document image or PDF — OCR will extract data and auto-fill fields. Ver
                       </div>
                     </div>
                     <Badge color={comp.pct === 100 ? "emerald" : comp.pct > 0 ? "amber" : "gray"} size="xs">
-                      {comp.pct === 100 ? "Complete" : comp.pct > 0 ? `${comp.pct}%` : "Not started"}
+                      {comp.pct === 100 ? tr("documents.complete") : comp.pct > 0 ? `${comp.pct}%` : tr("documents.notStarted")}
                     </Badge>
                   </div>
 
@@ -513,8 +515,8 @@ Upload document image or PDF — OCR will extract data and auto-fill fields. Ver
                   </div>
 
                   <p className="text-[10px]" style={{ color: t.muted }}>
-                    {comp.filled}/{comp.total} fields filled
-                    {saved && <span> • Last saved: {saved.updated_at?.slice(0, 10)}</span>}
+                    {comp.filled}/{comp.total} {tr("documents.fieldsFilled")}
+                    {saved && <span> • {tr("documents.lastSaved")}: {saved.updated_at?.slice(0, 10)}</span>}
                   </p>
                 </div>
               </Card>
@@ -530,18 +532,18 @@ Upload document image or PDF — OCR will extract data and auto-fill fields. Ver
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Documents</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>Document data input — used for translation & Doc Generator</p>
+          <h2 className="text-xl font-bold">{tr("documents.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("documents.subtitle")}</p>
         </div>
       </div>
 
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total Students", value: allStudents.length, color: t.cyan },
-          { label: "Doc Types", value: docTypes.length, color: t.purple },
-          { label: "Batches", value: allBatches.length - 1, color: t.amber },
-          { label: "Total Fields", value: docTypes.reduce((s, dt) => s + (dt.fields || []).length, 0), color: t.emerald },
+          { label: tr("documents.totalStudents"), value: allStudents.length, color: t.cyan },
+          { label: tr("documents.docTypes"), value: docTypes.length, color: t.purple },
+          { label: tr("documents.batches"), value: allBatches.length - 1, color: t.amber },
+          { label: tr("documents.totalFields"), value: docTypes.reduce((s, dt) => s + (dt.fields || []).length, 0), color: t.emerald },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
@@ -553,17 +555,17 @@ Upload document image or PDF — OCR will extract data and auto-fill fields. Ver
       {/* Filter + Search */}
       <Card delay={200}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">Student Documents</h3>
+          <h3 className="text-sm font-semibold">{tr("documents.studentDocuments")}</h3>
           <div className="flex items-center gap-2">
             <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setPage(1); }}
               className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
-              {allBatches.map(b => <option key={b} value={b}>{b === "All" ? "All Batches" : b}</option>)}
+              {allBatches.map(b => <option key={b} value={b}>{b === "All" ? tr("documents.allBatches") : b}</option>)}
             </select>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={12} style={{ color: t.muted }} />
               <input value={searchDoc} onChange={e => { setSearchDoc(e.target.value); setPage(1); }}
                 className="bg-transparent text-xs outline-none w-32" style={{ color: t.text }}
-                placeholder="Search student..." />
+                placeholder={tr("documents.searchStudent")} />
             </div>
           </div>
         </div>

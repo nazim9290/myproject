@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { DollarSign, Users, CheckCircle, Building, Plus, Save, X, Search, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
@@ -14,6 +15,7 @@ import { api } from "../../hooks/useAPI";
 export default function HRPage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [employees, setEmployees] = useState([]);
   const [activeTab, setActiveTab] = useState("employees");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -109,10 +111,10 @@ export default function HRPage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">এইচআর ও বেতন</h2>
+          <h2 className="text-xl font-bold">{tr("hr.title")}</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>কর্মী ব্যবস্থাপনা ও বেতন</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>কর্মী যোগ করুন</Button>
+        <Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>{tr("hr.addEmployee")}</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -137,7 +139,7 @@ export default function HRPage() {
       </div>
 
       {/* ── কর্মী যোগ/সম্পাদনা Modal ── */}
-      <Modal isOpen={!!showAddForm} onClose={() => { setShowAddForm(false); setEditingId(null); }} title={editingId ? "কর্মী সম্পাদনা" : "নতুন কর্মী যোগ করুন"} size="xl">
+      <Modal isOpen={!!showAddForm} onClose={() => { setShowAddForm(false); setEditingId(null); }} title={editingId ? tr("hr.editEmployee") : tr("hr.addEmployee")} size="xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[
               { key: "name", label: "নাম *", placeholder: "কর্মচারীর পুরো নাম" },
@@ -222,8 +224,8 @@ export default function HRPage() {
           )}
 
           <div className="flex gap-2 mt-3">
-            <Button size="sm" onClick={handleAdd}>{editingId ? "আপডেট করুন" : "যোগ করুন"}</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(false); setEditingId(null); }}>বাতিল</Button>
+            <Button size="sm" onClick={handleAdd}>{editingId ? tr("common.save") : tr("common.add")}</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(false); setEditingId(null); }}>{tr("common.cancel")}</Button>
           </div>
       </Modal>
 
@@ -250,7 +252,7 @@ export default function HRPage() {
         <Search size={14} style={{ color: t.muted }} />
         <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
           className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-          placeholder="কর্মী খুঁজুন..." />
+          placeholder={tr("common.search")} />
       </div>
 
       {activeTab === "employees" && (
@@ -290,7 +292,7 @@ export default function HRPage() {
                     <td className="py-3 px-4" style={{ color: t.muted }}>{emp.joinDate || "—"}</td>
                     <td className="py-3 px-4 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
                     <td className="py-3 px-4">
-                      <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
+                      <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? tr("common.active") : tr("common.inactive")}</Badge>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1 justify-end">
@@ -348,7 +350,7 @@ export default function HRPage() {
                       <td className="py-2.5 px-3" style={{ color: t.muted }}>{emp.branch}</td>
                       <td className="py-2.5 px-3 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
                       <td className="py-2.5 px-3">
-                        <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
+                        <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? tr("common.active") : tr("common.inactive")}</Badge>
                       </td>
                       <td className="py-2.5 px-3">
                         {emp.status === "active" && (
@@ -411,7 +413,7 @@ export default function HRPage() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-3">
-                  <Button variant="ghost" size="xs" onClick={() => setPayingEmpId(null)}>বাতিল</Button>
+                  <Button variant="ghost" size="xs" onClick={() => setPayingEmpId(null)}>{tr("common.cancel")}</Button>
                   <Button icon={Save} size="xs" onClick={async () => {
                     const amt = parseInt(payForm.amount);
                     if (!payForm.month) { toast.error("মাস নির্বাচন করুন"); return; }
@@ -422,7 +424,7 @@ export default function HRPage() {
                     setSalaryHistory((prev) => [record, ...prev]);
                     setPayingEmpId(null);
                     toast.success(`${emp.name} — ৳${amt.toLocaleString()} বেতন পরিশোধ হয়েছে`);
-                  }}>সংরক্ষণ</Button>
+                  }}>{tr("common.save")}</Button>
                 </div>
               </Card>
             );
@@ -459,11 +461,11 @@ export default function HRPage() {
           <Card delay={100}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">🏖️ ছুটি ব্যবস্থাপনা</h3>
-              <Button size="xs" icon={Plus} onClick={() => setShowLeaveForm(!showLeaveForm)}>ছুটি আবেদন</Button>
+              <Button size="xs" icon={Plus} onClick={() => setShowLeaveForm(!showLeaveForm)}>{tr("hr.leaveApplication")}</Button>
             </div>
 
             {/* ── ছুটি আবেদন Modal ── */}
-            <Modal isOpen={!!showLeaveForm} onClose={() => setShowLeaveForm(false)} title="নতুন ছুটি আবেদন" size="md">
+            <Modal isOpen={!!showLeaveForm} onClose={() => setShowLeaveForm(false)} title={tr("hr.leaveApplication")} size="md">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>কর্মচারী *</label>
@@ -507,8 +509,8 @@ export default function HRPage() {
                       setLeaveForm({ employee_id: "", type: "casual", start_date: "", end_date: "", reason: "" });
                       setShowLeaveForm(false);
                     } catch (err) { toast.error(err.message || "সমস্যা"); }
-                  }}>আবেদন করুন</Button>
-                  <Button size="xs" variant="ghost" onClick={() => setShowLeaveForm(false)}>বাতিল</Button>
+                  }}>{tr("common.save")}</Button>
+                  <Button size="xs" variant="ghost" onClick={() => setShowLeaveForm(false)}>{tr("common.cancel")}</Button>
                 </div>
             </Modal>
 

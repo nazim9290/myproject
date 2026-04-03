@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, Save, X, Search, ChevronDown, ChevronRight, Edit3, Trash2, AlertTriangle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -14,6 +15,7 @@ import Pagination from "../../components/ui/Pagination";
 export default function AgentsPage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [agents, setAgents] = useState([]);
 
   // ── Backend থেকে agents load ──
@@ -96,7 +98,7 @@ export default function AgentsPage() {
           ))}
         </div>
         <div className="flex gap-2 justify-end mt-4">
-          <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
+          <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>{tr("common.cancel")}</Button>
           <Button icon={Save} size="xs" onClick={async () => {
             if (!form.name.trim() || !form.phone.trim()) { toast.error("নাম ও ফোন দিন"); return; }
             const payload = { name: form.name, phone: form.phone, area: form.area, nid: form.nid, bank_name: form.bank, commission_per_student: parseInt(form.commissionPerStudent) || 10000, status: "active" };
@@ -113,7 +115,7 @@ export default function AgentsPage() {
             } catch (err) { toast.error(err.message || "সেভ ব্যর্থ"); }
             setForm({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
             setShowForm(false); setEditingId(null);
-          }}>সংরক্ষণ</Button>
+          }}>{tr("common.save")}</Button>
         </div>
       </Modal>
 
@@ -125,7 +127,7 @@ export default function AgentsPage() {
             <Search size={14} style={{ color: t.muted }} />
             <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setPage(1); }}
               className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-              placeholder="এজেন্ট খুঁজুন..." />
+              placeholder={tr("common.search")} />
           </div>
         </div>
       </Card>
@@ -209,7 +211,7 @@ export default function AgentsPage() {
                       {/* স্ট্যাটাস */}
                       <td className="py-3 px-4">
                         <Badge color={agent.status === "active" ? t.emerald : t.muted} size="xs">
-                          {agent.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                          {agent.status === "active" ? tr("common.active") : tr("common.inactive")}
                         </Badge>
                       </td>
 
@@ -301,14 +303,14 @@ export default function AgentsPage() {
                               <input value={payForm.note} onChange={e => setPayForm(p => ({ ...p, note: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমিশন পেমেন্ট..." />
                             </div>
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="xs" onClick={() => setPayingAgentId(null)}>বাতিল</Button>
+                              <Button variant="ghost" size="xs" onClick={() => setPayingAgentId(null)}>{tr("common.cancel")}</Button>
                               <Button icon={Save} size="xs" onClick={() => {
                                 const amt = parseInt(payForm.amount);
                                 if (!amt || amt <= 0) { toast.error("পরিমাণ দিন"); return; }
                                 setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, commissionPaid: (a.commissionPaid || 0) + amt } : a));
                                 setPayingAgentId(null);
                                 toast.success(`৳${amt.toLocaleString()} — কমিশন পরিশোধ হয়েছে`);
-                              }}>সংরক্ষণ</Button>
+                              }}>{tr("common.save")}</Button>
                             </div>
                           </div>
                         </td>
