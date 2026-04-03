@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -211,12 +212,22 @@ export function FieldPicker({ placeholderKey, selectedField, selectedModifier, o
   const allFields = allGroups.flatMap(g => g.fields);
   const selectedLabel = selectedField ? (allFields.find(f => f.key === selectedField)?.label || selectedField) : null;
 
-  // Dropdown position — নিচে space না থাকলে উপরে
-  const getPosition = () => {
+  // Dropdown position — Portal দিয়ে body-তে render, button-এর নিচে/উপরে position
+  const getPortalStyle = () => {
     const el = ref.current;
     if (!el) return {};
     const rect = el.getBoundingClientRect();
-    return (window.innerHeight - rect.bottom) < 350 ? { bottom: "100%", marginBottom: 4 } : { top: "100%", marginTop: 4 };
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < 350;
+    return {
+      position: "fixed",
+      left: rect.left,
+      width: rect.width,
+      maxHeight: 320,
+      overflowY: "auto",
+      zIndex: 9999,
+      ...(openUp ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
+    };
   };
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
@@ -232,9 +243,9 @@ export function FieldPicker({ placeholderKey, selectedField, selectedModifier, o
           <span style={{ fontSize: 10, color: t.muted }}>▼</span>
         </button>
 
-        {open && (
-          <div className="absolute left-0 right-0 z-50 rounded-xl shadow-2xl overflow-hidden"
-            style={{ background: t.card, border: `1px solid ${t.border}`, maxHeight: 320, overflowY: "auto", ...getPosition() }}>
+        {open && createPortal(
+          <div className="rounded-xl shadow-2xl overflow-hidden"
+            style={{ background: t.card, border: `1px solid ${t.border}`, ...getPortalStyle() }}>
             <button onClick={() => { onFieldChange(placeholderKey, ""); setOpen(false); }}
               className="w-full px-3 py-2 text-left text-[10px]" style={{ color: t.muted, borderBottom: `1px solid ${t.border}` }}>
               ✕ Clear
@@ -262,7 +273,8 @@ export function FieldPicker({ placeholderKey, selectedField, selectedModifier, o
                 </div>
               );
             })}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
