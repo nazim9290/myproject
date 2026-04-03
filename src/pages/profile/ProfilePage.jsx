@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import PhoneInput from "../../components/ui/PhoneInput";
 import { API_URL } from "../../lib/api";
 
 export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isDark, setIsDark }) {
@@ -200,13 +201,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
                 <Phone size={9} className="inline mr-1" />ফোন নম্বর
               </label>
-              <input
-                value={info.phone}
-                onChange={(e) => setInfo((p) => ({ ...p, phone: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={is}
-                placeholder="01XXXXXXXXX"
-              />
+              <PhoneInput value={info.phone} onChange={v => setInfo(p => ({ ...p, phone: v }))} size="md" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>

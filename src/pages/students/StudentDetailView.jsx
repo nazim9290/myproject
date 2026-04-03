@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { FEE_CATEGORIES, CATEGORY_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
@@ -42,12 +43,20 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [sectionForm, setSectionForm] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ── Dropdown options: batches ও schools backend থেকে load ──
+  // ── Dropdown options: batches, schools, branches, agents, users backend থেকে load ──
   const [batchOptions, setBatchOptions] = useState([]);
   const [schoolOptions, setSchoolOptions] = useState([]);
+  const [branchOptions, setBranchOptions] = useState([]);
+  const [agentOptions, setAgentOptions] = useState([]);
+  const [staffOptions, setStaffOptions] = useState([]);
   useEffect(() => {
-    api.get("/batches").then(data => { if (Array.isArray(data)) setBatchOptions(data); }).catch(() => {});
-    api.get("/schools").then(data => { if (Array.isArray(data)) setSchoolOptions(data); }).catch(() => {});
+    // API response normalize — কিছু endpoint { data: [...] } ফরম্যাটে দেয়
+    const toArr = (res) => Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+    api.get("/batches").then(r => setBatchOptions(toArr(r))).catch(() => {});
+    api.get("/schools?limit=100").then(r => setSchoolOptions(toArr(r))).catch(() => {});
+    api.get("/branches").then(r => setBranchOptions(toArr(r))).catch(() => {});
+    api.get("/agents").then(r => setAgentOptions(toArr(r))).catch(() => {});
+    api.get("/users").then(r => setStaffOptions(toArr(r))).catch(() => {});
   }, []);
 
   // ── Education, JP Exams, Family — Detail API থেকে load ──
@@ -419,44 +428,42 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     return [...activityLog, ...feeEvents].sort((a, b) => b.time.localeCompare(a.time));
   };
 
-  // ── Personal fields config (Profile ট্যাব ও Modal-এ ব্যবহার হবে) ──
+  // ── Personal fields config — label i18n key দিয়ে (ভাষা সেটিং অনুযায়ী পরিবর্তন হবে) ──
   const personalFields = [
-    { label: "নাম (EN)", key: "name_en" },
-    { label: "নাম (বাংলা)", key: "name_bn" },
-    { label: "নাম (カタカナ)", key: "name_katakana" },
-    { label: "জন্ম তারিখ", key: "dob", type: "date" },
-    { label: "লিঙ্গ", key: "gender", type: "select", options: ["Male","Female","Other"] },
-    { label: "বৈবাহিক অবস্থা", key: "marital_status", type: "select", options: ["Single","Married","Divorced","Widowed"] },
-    { label: "জাতীয়তা", key: "nationality" },
-    { label: "রক্তের গ্রুপ", key: "blood_group", type: "select", options: ["","A+","A-","B+","B-","AB+","AB-","O+","O-"] },
-    { label: "ফোন", key: "phone" },
-    { label: "WhatsApp", key: "whatsapp" },
-    { label: "ইমেইল", key: "email" },
-    { label: "NID নম্বর", key: "nid" },
-    { label: "বর্তমান ঠিকানা", key: "current_address" },
-    { label: "স্থায়ী ঠিকানা", key: "permanent_address" },
-    { label: "জন্মস্থান", key: "birth_place" },
-    { label: "পেশা", key: "occupation" },
+    { label: tr("students.f_fullName"), key: "name_en" },
+    { label: tr("students.f_nameKatakana"), key: "name_katakana" },
+    { label: tr("students.f_dob"), key: "dob", type: "date" },
+    { label: tr("students.f_gender"), key: "gender", type: "select", options: ["Male","Female","Other"] },
+    { label: tr("students.f_maritalStatus"), key: "marital_status", type: "select", options: ["Single","Married","Divorced","Widowed"] },
+    { label: tr("students.f_nationality"), key: "nationality" },
+    { label: tr("students.f_bloodGroup"), key: "blood_group", type: "select", options: ["","A+","A-","B+","B-","AB+","AB-","O+","O-"] },
+    { label: tr("students.f_phone"), key: "phone", type: "phone" },
+    { label: tr("students.f_whatsapp"), key: "whatsapp", type: "phone" },
+    { label: tr("students.f_email"), key: "email" },
+    { label: tr("students.f_nid"), key: "nid" },
+    { label: tr("students.f_currentAddress"), key: "current_address" },
+    { label: tr("students.f_permanentAddress"), key: "permanent_address" },
+    { label: tr("students.f_birthPlace"), key: "birth_place" },
+    { label: tr("students.f_occupation"), key: "occupation" },
   ];
 
   const passportFields = [
-    { label: "পাসপোর্ট নম্বর", key: "passport" },
-    { label: "পাসপোর্ট ইস্যু", key: "passport_issue", type: "date" },
-    { label: "পাসপোর্ট মেয়াদ", key: "passport_expiry", type: "date" },
-    { label: "পিতার নাম (বাংলা)", key: "father" },
-    { label: "পিতার নাম (EN)", key: "father_name_en" },
-    { label: "মাতার নাম (বাংলা)", key: "mother" },
-    { label: "মাতার নাম (EN)", key: "mother_name_en" },
+    { label: tr("students.f_passport"), key: "passport" },
+    { label: tr("students.f_passportIssue"), key: "passport_issue", type: "date" },
+    { label: tr("students.f_passportExpiry"), key: "passport_expiry", type: "date" },
+    { label: tr("students.f_fatherName"), key: "father_name_en" },
+    { label: tr("students.f_motherName"), key: "mother_name_en" },
   ];
 
   const destinationExtraFields = [
-    { label: "Intake", key: "intake" },
-    { label: "ভিসার ধরন", key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
-    { label: "Branch", key: "branch" },
-    { label: "সোর্স", key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral","Website","YouTube"] },
-    { label: "টাইপ", key: "student_type", type: "select", options: ["own","agent","partner"] },
-    { label: "কাউন্সেলর", key: "counselor" },
-    { label: "ভর্তির তারিখ", key: "created" },
+    { label: tr("students.f_intake"), key: "intake" },
+    { label: tr("students.f_visaType"), key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
+    { label: tr("students.f_branch"), key: "branch", type: "branch_select" },
+    { label: tr("students.f_source"), key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral","Website","YouTube","Friend"] },
+    { label: tr("students.f_agent"), key: "agent_id", type: "agent_select" },
+    { label: tr("students.f_type"), key: "student_type", type: "select", options: ["own","agent","partner"] },
+    { label: tr("students.f_counselor"), key: "counselor", type: "counselor_select" },
+    { label: tr("students.f_enrollDate"), key: "created" },
   ];
 
   // ── Read-only field renderer ──
@@ -472,19 +479,19 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     personal: personalFields,
     passport: passportFields,
     destination: [
-      { label: "দেশ", key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK","USA","Australia","China"] },
-      { label: "স্কুল", key: "school", type: "school_select" },
-      { label: "ব্যাচ", key: "batch", type: "batch_select" },
+      { label: tr("students.f_country"), key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK","USA","Australia","China","Malaysia"] },
+      { label: tr("students.f_school"), key: "school", type: "school_select" },
+      { label: tr("students.f_batch"), key: "batch", type: "batch_select" },
       ...destinationExtraFields.filter(f => f.key !== "created"),
     ],
     internal: [
-      { label: "Google Drive ফোল্ডার URL", key: "gdrive_folder_url" },
-      { label: "অভ্যন্তরীণ নোট", key: "internal_notes", type: "textarea" },
+      { label: tr("students.f_driveUrl"), key: "gdrive_folder_url" },
+      { label: tr("students.f_internalNotes"), key: "internal_notes", type: "textarea" },
     ],
     study_plan: [
-      { label: "জাপানে পড়ার কারণ", key: "reason_for_study", type: "textarea" },
-      { label: "ভবিষ্যৎ পরিকল্পনা", key: "future_plan", type: "textarea" },
-      { label: "অধ্যয়নের বিষয়", key: "study_subject", type: "text" },
+      { label: tr("students.f_reasonStudy"), key: "reason_for_study", type: "textarea" },
+      { label: tr("students.f_futurePlan"), key: "future_plan", type: "textarea" },
+      { label: tr("students.f_studySubject"), key: "study_subject", type: "text" },
     ],
   };
 
@@ -887,18 +894,18 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="lg:col-span-2">
               <Card delay={90}>
                 <h4 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: t.muted }}>
-                  <User size={12} /> দ্রুত তথ্য
+                  <User size={12} /> {tr("students.f_quickInfo")}
                 </h4>
                 <div className="space-y-2.5">
-                  <ReadOnlyField label="ফোন" value={student.phone} />
-                  <ReadOnlyField label="ইমেইল" value={student.email} />
-                  <ReadOnlyField label="দেশ" value={student.country} />
-                  <ReadOnlyField label="স্কুল" value={student.school} />
-                  <ReadOnlyField label="ব্যাচ" value={student.batch} />
-                  <ReadOnlyField label="কাউন্সেলর" value={student.counselor} />
-                  <ReadOnlyField label="সোর্স" value={student.source} />
-                  <ReadOnlyField label="ভর্তির তারিখ" value={student.created} />
-                  <ReadOnlyField label="টাইপ" value={student.student_type === "own" ? "Own" : student.student_type === "agent" ? "Agent" : "Partner"} />
+                  <ReadOnlyField label={tr("students.f_phone")} value={formatPhoneDisplay(student.phone)} />
+                  <ReadOnlyField label={tr("students.f_email")} value={student.email} />
+                  <ReadOnlyField label={tr("students.f_country")} value={student.country} />
+                  <ReadOnlyField label={tr("students.f_school")} value={student.school} />
+                  <ReadOnlyField label={tr("students.f_batch")} value={student.batch} />
+                  <ReadOnlyField label={tr("students.f_counselor")} value={student.counselor} />
+                  <ReadOnlyField label={tr("students.f_source")} value={student.source} />
+                  <ReadOnlyField label={tr("students.f_enrollDate")} value={student.created} />
+                  <ReadOnlyField label={tr("students.f_type")} value={student.student_type === "own" ? "Own" : student.student_type === "agent" ? "Agent" : "Partner"} />
                 </div>
               </Card>
             </div>
@@ -992,13 +999,15 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 </button>
               </div>
               <div className="space-y-2.5">
-                <ReadOnlyField label="দেশ" value={student.country} />
-                <ReadOnlyField label="স্কুল" value={student.school} />
-                <ReadOnlyField label="ব্যাচ" value={student.batch} />
-                {destinationExtraFields.map(f => (
-                  <ReadOnlyField key={f.key} label={f.label}
-                    value={f.key === "student_type" ? (student[f.key] === "own" ? "Own" : student[f.key] === "agent" ? "Agent" : "Partner") : student[f.key]} />
-                ))}
+                <ReadOnlyField label={tr("students.f_country")} value={student.country} />
+                <ReadOnlyField label={tr("students.f_school")} value={student.school} />
+                <ReadOnlyField label={tr("students.f_batch")} value={student.batch} />
+                {destinationExtraFields.map(f => {
+                  let val = student[f.key];
+                  if (f.key === "student_type") val = val === "own" ? "Own" : val === "agent" ? "Agent" : "Partner";
+                  if (f.key === "agent_id" && val) { const ag = agentOptions.find(a => a.id === val); val = ag ? ag.name : val; }
+                  return <ReadOnlyField key={f.key} label={f.label} value={val} />;
+                })}
               </div>
             </Card>
           </div>
@@ -1606,13 +1615,13 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 { label: "নাম", key: "name" },
                 { label: "সম্পর্ক", key: "relationship" },
                 { label: "জন্ম তারিখ", key: "dob" },
-                { label: "ফোন", key: "phone" },
+                { label: "ফোন", key: "phone", isPhone: true },
                 { label: "NID", key: "nid" },
                 { label: "ঠিকানা", key: "address" },
               ].map(f => (
                 <div key={f.key}>
                   <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{f.label}</label>
-                  <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>
+                  <p className="text-xs font-medium py-1">{f.isPhone ? formatPhoneDisplay(sponsor[f.key]) : (sponsor[f.key] || "—")}</p>
                 </div>
               ))}
             </div>
@@ -1624,14 +1633,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
               {[
                 { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
-                { label: "প্রতিষ্ঠানের ফোন", key: "company_phone" },
+                { label: "প্রতিষ্ঠানের ফোন", key: "company_phone", isPhone: true },
                 { label: "প্রতিষ্ঠানের ঠিকানা", key: "company_address" },
                 { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
                 { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
               ].map(f => (
                 <div key={f.key}>
                   <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{f.label}</label>
-                  <p className="text-xs font-medium py-1">{sponsor[f.key] || "—"}</p>
+                  <p className="text-xs font-medium py-1">{f.isPhone ? formatPhoneDisplay(sponsor[f.key]) : (sponsor[f.key] || "—")}</p>
                 </div>
               ))}
             </div>
@@ -1905,37 +1914,51 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               return (
                 <div key={f.key} className={f.type === "textarea" ? "md:col-span-2" : ""}>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                  {/* স্কুল — DB dropdown */}
-                  {f.type === "school_select" ? (
+                  {f.type === "branch_select" ? (
                     <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
-                      <option value="">-- স্কুল সিলেক্ট --</option>
-                      {schoolOptions.map(s => <option key={s.id} value={s.name_en}>{s.name_en}</option>)}
+                      <option value="">-- Select Branch --</option>
+                      {branchOptions.map(b => <option key={b.id} value={b.name}>{b.name}{b.city ? ` (${b.city})` : ""}</option>)}
+                    </select>
+                  ) : f.type === "school_select" ? (
+                    <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                      <option value="">-- Select School --</option>
+                      {schoolOptions.map(s => <option key={s.id} value={s.name_en}>{s.name_en}{s.city ? ` (${s.city})` : ""}</option>)}
                     </select>
                   ) : f.type === "batch_select" ? (
-                    /* ব্যাচ — DB dropdown */
                     <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
-                      <option value="">-- ব্যাচ সিলেক্ট --</option>
-                      {batchOptions.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                      <option value="">-- Select Batch --</option>
+                      {batchOptions.map(b => <option key={b.id} value={b.name}>{b.name}{b.class_time ? ` (${b.class_time})` : ""}</option>)}
+                    </select>
+                  ) : f.type === "agent_select" ? (
+                    <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                      <option value="">-- Select Agent --</option>
+                      {agentOptions.map(a => <option key={a.id} value={a.id}>{a.name}{a.area ? ` (${a.area})` : ""}</option>)}
+                    </select>
+                  ) : f.type === "counselor_select" ? (
+                    <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                      <option value="">-- Select Counselor --</option>
+                      {staffOptions.map(u => <option key={u.id} value={u.name}>{u.name}{u.role ? ` (${u.role})` : ""}</option>)}
                     </select>
                   ) : f.type === "select" ? (
-                    /* সাধারণ select dropdown */
                     <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
                       {(f.options || []).map(o => <option key={o} value={o}>{o || "—"}</option>)}
                     </select>
                   ) : f.type === "date" ? (
-                    /* Date input */
                     <input type="date" value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
                   ) : f.type === "textarea" ? (
-                    /* Textarea */
                     <textarea value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
                       rows={3} className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-y" style={is}
                       placeholder={f.key === "gdrive_folder_url" ? "https://drive.google.com/drive/folders/..." : ""} />
+                  ) : f.type === "phone" ? (
+                    <PhoneInput value={sectionForm[f.key] || ""} onChange={v => setSectionForm(p => ({ ...p, [f.key]: v }))} size="sm" />
                   ) : (
-                    /* Default text input */
                     <input type="text" value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
                   )}
@@ -1962,7 +1985,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 { label: "নাম", key: "name" },
                 { label: "সম্পর্ক", key: "relationship", type: "select", opts: ["Father","Mother","Brother","Sister","Uncle","Aunt","Other"] },
                 { label: "জন্ম তারিখ", key: "dob", type: "date" },
-                { label: "ফোন", key: "phone" },
+                { label: "ফোন", key: "phone", type: "phone" },
                 { label: "NID", key: "nid" },
                 { label: "ঠিকানা", key: "address" },
               ].map(f => (
@@ -1978,6 +2001,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     <input type="date" value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                       style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  ) : f.type === "phone" ? (
+                    <PhoneInput value={sponsorForm[f.key] || ""} onChange={v => sf(f.key, v)} size="sm" />
                   ) : (
                     <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none"
@@ -1994,16 +2019,20 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
                 { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
-                { label: "প্রতিষ্ঠানের ফোন", key: "company_phone" },
+                { label: "প্রতিষ্ঠানের ফোন", key: "company_phone", type: "phone" },
                 { label: "প্রতিষ্ঠানের ঠিকানা", key: "company_address" },
                 { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
                 { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
               ].map(f => (
                 <div key={f.key}>
                   <label className="text-[10px] block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                  <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  {f.type === "phone" ? (
+                    <PhoneInput value={sponsorForm[f.key] || ""} onChange={v => sf(f.key, v)} size="sm" />
+                  ) : (
+                    <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  )}
                 </div>
               ))}
             </div>

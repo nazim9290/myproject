@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import { api } from "../../hooks/useAPI";
 import { API_URL } from "../../lib/api";
 import { PIPELINE_STATUSES } from "../../data/students";
@@ -1435,7 +1436,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-[10px]" style={{ color: t.textSecondary }}>
                     {b.address && <p>📍 {b.address}</p>}
                     {b.address_bn && <p>📍 {b.address_bn}</p>}
-                    {b.phone && <p>📞 {b.phone}</p>}
+                    {b.phone && <p>📞 {formatPhoneDisplay(b.phone)}</p>}
                     {b.email && <p>✉️ {b.email}</p>}
                     {b.manager && <p>👤 {b.manager}</p>}
                   </div>
@@ -1483,7 +1484,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
-                <input value={branchForm.phone} onChange={e => setBranchForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="02-9876543" />
+                <PhoneInput value={branchForm.phone} onChange={v => setBranchForm(p => ({ ...p, phone: v }))} size="sm" />
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>

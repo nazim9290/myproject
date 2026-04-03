@@ -8,6 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
+import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import { SUB_STATUS } from "../../data/mockData";
@@ -245,7 +246,7 @@ export default function SchoolsPage({ students }) {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
-                  <input value={form.contact_phone || ""} onChange={e => sf("contact_phone", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="+81-3-XXXX-XXXX" />
+                  <PhoneInput value={form.contact_phone || ""} onChange={v => sf("contact_phone", v)} size="md" />
                 </div>
               </div>
 

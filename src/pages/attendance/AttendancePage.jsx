@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Save, Download, Search } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Save, Download, Search, ChevronLeft, ChevronRight, AlertTriangle, Calendar } from "lucide-react";
 import { api } from "../../hooks/useAPI";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -9,9 +9,10 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
-import { ATT_STATUS, ATTENDANCE_DAY, BATCHES } from "../../data/mockData";
+import { ATT_STATUS } from "../../data/mockData";
 
 const ATT_CYCLE = ["present", "absent", "late"];
+
 // P/A/L → present/absent/late normalize
 const normalizeStatus = (s) => {
   if (!s) return "absent";
@@ -24,17 +25,96 @@ const normalizeStatus = (s) => {
 // Safe ATT_STATUS lookup — undefined crash prevent
 const getStatusConfig = (status) => ATT_STATUS[normalizeStatus(status)] || ATT_STATUS.absent;
 
+// ── সপ্তাহের দিন mapping ──
+const DAY_MAP = { "Sun": 0, "Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4, "Fri": 5, "Sat": 6 };
+const DAY_LABELS = { "Sun": "রবি", "Mon": "সোম", "Tue": "মঙ্গল", "Wed": "বুধ", "Thu": "বৃহ", "Fri": "শুক্র", "Sat": "শনি" };
+const JS_TO_DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// ── তারিখ helper — date string থেকে JS day number ──
+const getDayNum = (dateStr) => new Date(dateStr + "T00:00:00").getDay();
+
+// ── পরবর্তী/পূর্ববর্তী ক্লাসের দিন খুঁজে বের করা ──
+function findNextClassDay(dateStr, classDayNums, direction = 1) {
+  if (classDayNums.length === 0) return dateStr;
+  const d = new Date(dateStr + "T00:00:00");
+  // সর্বোচ্চ ৭ দিন সামনে/পেছনে — এক সপ্তাহের মধ্যে অবশ্যই পাবে
+  for (let i = 1; i <= 7; i++) {
+    d.setDate(d.getDate() + direction);
+    if (classDayNums.includes(d.getDay())) {
+      return d.toISOString().slice(0, 10);
+    }
+  }
+  return dateStr;
+}
+
+// ── তারিখটি ব্যাচের date range-এর মধ্যে কিনা ──
+function isInBatchRange(dateStr, batch) {
+  if (!batch || !batch.start_date || !batch.end_date) return true;
+  return dateStr >= batch.start_date && dateStr <= batch.end_date;
+}
+
 export default function AttendancePage({ students = [], currentUser }) {
   const t = useTheme();
   const toast = useToast();
   const { t: tr } = useLanguage();
   const today = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(today);
-  const [selectedBatch, setSelectedBatch] = useState("all");
+  const [selectedBatchId, setSelectedBatchId] = useState("all");
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [searchQ, setSearchQ] = useState("");
   const isAdmin = currentUser?.role === "owner" || currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
+
+  // ── ব্যাচ ডাটা API থেকে load — class_days, start_date, end_date সহ ──
+  const [batches, setBatches] = useState([]);
+  useEffect(() => {
+    api.get("/batches").then(data => {
+      if (Array.isArray(data)) setBatches(data);
+    }).catch(() => {});
+  }, []);
+
+  // ── নির্বাচিত ব্যাচ object ──
+  const selectedBatch = useMemo(() => {
+    if (selectedBatchId === "all") return null;
+    return batches.find(b => b.id === selectedBatchId || b.name === selectedBatchId) || null;
+  }, [selectedBatchId, batches]);
+
+  // ── ব্যাচের ক্লাসের দিন (JS day numbers) ──
+  const classDayNums = useMemo(() => {
+    if (!selectedBatch || !selectedBatch.class_days) return [];
+    return (selectedBatch.class_days || []).map(d => DAY_MAP[d]).filter(n => n !== undefined);
+  }, [selectedBatch]);
+
+  // ── আজকের দিন কি ক্লাসের দিন? ──
+  const isClassDay = useMemo(() => {
+    if (classDayNums.length === 0) return true; // ব্যাচ সিলেক্ট না করলে সব দিন valid
+    return classDayNums.includes(getDayNum(selectedDate));
+  }, [selectedDate, classDayNums]);
+
+  // ── ব্যাচ পরিবর্তন হলে নিকটতম ক্লাসের দিনে যাও ──
+  const snapToClassDay = useCallback((dateStr, dayNums) => {
+    if (dayNums.length === 0) return dateStr;
+    if (dayNums.includes(getDayNum(dateStr))) return dateStr;
+    // নিকটতম ক্লাসের দিন — সামনে ও পেছনে খুঁজে কাছেরটা নাও
+    const fwd = findNextClassDay(dateStr, dayNums, 1);
+    const bwd = findNextClassDay(dateStr, dayNums, -1);
+    const fwdDiff = Math.abs(new Date(fwd) - new Date(dateStr));
+    const bwdDiff = Math.abs(new Date(bwd) - new Date(dateStr));
+    return fwdDiff <= bwdDiff ? fwd : bwd;
+  }, []);
+
+  // ── ব্যাচ পরিবর্তনে auto-snap ──
+  useEffect(() => {
+    if (classDayNums.length > 0 && !classDayNums.includes(getDayNum(selectedDate))) {
+      const snapped = snapToClassDay(selectedDate, classDayNums);
+      setSelectedDate(snapped);
+    }
+  }, [selectedBatchId]); // শুধু batch পরিবর্তনে, date পরিবর্তনে না
+
+  // ── পরবর্তী / পূর্ববর্তী ক্লাস দিন — navigation ──
+  const goPrev = () => setSelectedDate(findNextClassDay(selectedDate, classDayNums.length > 0 ? classDayNums : [0,1,2,3,4,5,6], -1));
+  const goNext = () => setSelectedDate(findNextClassDay(selectedDate, classDayNums.length > 0 ? classDayNums : [0,1,2,3,4,5,6], 1));
+
   // attendanceLog: { [date]: { [studentId]: status } }
   const [attendanceLog, setAttendanceLog] = useState({});
 
@@ -43,8 +123,8 @@ export default function AttendancePage({ students = [], currentUser }) {
     if (!selectedDate) return;
     (async () => {
       try {
-        const data = await api.get(`/attendance?date=${selectedDate}${selectedBatch !== "all" ? `&batch=${selectedBatch}` : ""}`);
-        console.log("[Attendance Read]", selectedDate, "records:", Array.isArray(data) ? data.length : 0);
+        const batchParam = selectedBatchId !== "all" ? `&batch=${selectedBatchId}` : "";
+        const data = await api.get(`/attendance?date=${selectedDate}${batchParam}`);
         if (Array.isArray(data) && data.length > 0) {
           const map = {};
           data.forEach(r => { map[r.student_id] = r.status || "absent"; });
@@ -54,20 +134,32 @@ export default function AttendancePage({ students = [], currentUser }) {
         console.error("[Attendance Read Error]", err);
       }
     })();
-  }, [selectedDate, selectedBatch]);
+  }, [selectedDate, selectedBatchId]);
 
-  // Students to show: enrolled/in_course students filtered by batch
-  const eligibleStudents = students.filter(s => ["ENROLLED", "IN_COURSE", "EXAM_PASSED", "DOC_COLLECTION", "SCHOOL_INTERVIEW", "DOC_SUBMITTED"].includes(s.status));
-  // Branch filter — admin সব দেখে, staff নিজ branch
+  // ── Students filtering — batch name match ──
+  const eligibleStudents = students.filter(s =>
+    ["ENROLLED", "IN_COURSE", "EXAM_PASSED", "DOC_COLLECTION", "SCHOOL_INTERVIEW", "DOC_SUBMITTED"].includes(s.status)
+  );
+  // Branch filter
   const branchOptions = ["all", ...new Set(eligibleStudents.map(s => s.branch).filter(Boolean))];
   const branchFiltered = selectedBranch === "all" ? eligibleStudents : eligibleStudents.filter(s => s.branch === selectedBranch);
-  const batchOptions = ["all", ...new Set(branchFiltered.map(s => s.batch).filter(Boolean))];
-  const filteredStudents = selectedBatch === "all" ? branchFiltered : branchFiltered.filter(s => s.batch === selectedBatch);
 
-  // Fallback to mock data if no real students
+  // ── Batch options — API থেকে আসা batches দেখাও ──
+  const activeBatches = useMemo(() => {
+    const studentBatchNames = new Set(branchFiltered.map(s => s.batch).filter(Boolean));
+    // API batches যেগুলোতে student আছে
+    return batches.filter(b => studentBatchNames.has(b.name) || b.status === "active");
+  }, [batches, branchFiltered]);
+
+  // ── নির্বাচিত batch-এ enrolled students ──
+  const filteredStudents = useMemo(() => {
+    if (selectedBatchId === "all") return branchFiltered;
+    const batchName = selectedBatch?.name;
+    if (!batchName) return branchFiltered;
+    return branchFiltered.filter(s => s.batch === batchName);
+  }, [selectedBatchId, selectedBatch, branchFiltered]);
+
   const baseList = filteredStudents.map(s => ({ id: s.id, name: s.name_en || s.name || s.id, batch: s.batch }));
-
-  // সার্চ ও সর্ট প্রয়োগ
   const displayList = sortFn(
     searchQ.trim()
       ? baseList.filter(s => s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.id.toLowerCase().includes(searchQ.toLowerCase()))
@@ -86,16 +178,22 @@ export default function AttendancePage({ students = [], currentUser }) {
   const absent = displayList.filter(s => getStatus(s.id) === "absent").length;
   const late = displayList.filter(s => getStatus(s.id) === "late").length;
 
+  // ── Save — batch_id সহ ──
   const saveAttendance = async () => {
     const records = displayList.map(s => ({ student_id: s.id, status: getStatus(s.id) }));
     try {
-      await api.post("/attendance/save", { date: selectedDate, records });
+      await api.post("/attendance/save", {
+        date: selectedDate,
+        records,
+        batch_id: selectedBatchId !== "all" ? (selectedBatch?.id || null) : null,
+      });
       toast.success(`${selectedDate} — ${displayList.length} জনের উপস্থিতি সংরক্ষণ হয়েছে`);
     } catch {
       toast.error("সংরক্ষণ ব্যর্থ");
     }
   };
 
+  // ── Export CSV ──
   const exportAttendance = () => {
     const rows = displayList.map(s => `"${s.id}","${s.name}","${s.batch || ""}","${getStatus(s.id)}"`);
     const csv = "ID,নাম,ব্যাচ,স্ট্যাটাস\n" + rows.join("\n");
@@ -103,6 +201,10 @@ export default function AttendancePage({ students = [], currentUser }) {
     Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Attendance_${selectedDate}.csv` }).click();
     toast.exported(`Attendance (${selectedDate})`);
   };
+
+  // ── তারিখের দিনের নাম (বাংলায়) ──
+  const selectedDayName = JS_TO_DAY[getDayNum(selectedDate)];
+  const selectedDayLabel = DAY_LABELS[selectedDayName] || "";
 
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
@@ -119,34 +221,59 @@ export default function AttendancePage({ students = [], currentUser }) {
         </div>
       </div>
 
-      {/* Date + Batch filter */}
+      {/* ── ব্যাচ সিলেক্ট + তারিখ নেভিগেশন ── */}
       <Card delay={0}>
         <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[150px]">
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.date")}</label>
-            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
-          </div>
-          <div className="flex-1 min-w-[150px]">
+          {/* ব্যাচ dropdown — API থেকে */}
+          <div className="flex-1 min-w-[180px]">
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("students.batch")}</label>
-            <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}
+            <select value={selectedBatchId} onChange={e => { setSelectedBatchId(e.target.value); }}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
               <option value="all">{tr("attendance.allBatches")}</option>
-              {batchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
+              {activeBatches.map(b => (
+                <option key={b.id} value={b.id}>
+                  {b.name}{b.class_time ? ` (${b.class_time})` : ""}
+                </option>
+              ))}
             </select>
           </div>
-          {/* Branch filter — শুধু Admin দেখবে */}
+
+          {/* তারিখ নেভিগেশন — আগের/পরের ক্লাস দিন */}
+          <div className="flex-1 min-w-[250px]">
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.date")}</label>
+            <div className="flex items-center gap-1">
+              <button onClick={goPrev} className="p-2 rounded-lg transition shrink-0"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}
+                onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = t.inputBg}
+                title="আগের ক্লাসের দিন">
+                <ChevronLeft size={14} style={{ color: t.text }} />
+              </button>
+              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+              <button onClick={goNext} className="p-2 rounded-lg transition shrink-0"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}
+                onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = t.inputBg}
+                title="পরের ক্লাসের দিন">
+                <ChevronRight size={14} style={{ color: t.text }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Branch filter — শুধু Admin */}
           {isAdmin && branchOptions.length > 2 && (
             <div className="flex-1 min-w-[150px]">
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("students.branch")}</label>
-              <select value={selectedBranch} onChange={e => { setSelectedBranch(e.target.value); setSelectedBatch("all"); }}
+              <select value={selectedBranch} onChange={e => { setSelectedBranch(e.target.value); setSelectedBatchId("all"); }}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                 <option value="all">{tr("attendance.allBranches")}</option>
                 {branchOptions.filter(b => b !== "all").map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
           )}
-          {/* সার্চ বার */}
+
+          {/* সার্চ */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
             style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
             <Search size={14} style={{ color: t.muted }} />
@@ -154,12 +281,46 @@ export default function AttendancePage({ students = [], currentUser }) {
               className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
               placeholder={tr("common.search")} />
           </div>
-          <div className="text-xs pb-2" style={{ color: t.muted }}>
-            {tr("common.total")}: <span className="font-bold" style={{ color: t.text }}>{displayList.length}</span> জন
-          </div>
         </div>
+
+        {/* ── ব্যাচের ক্লাসের দিন দেখাও — pills ── */}
+        {selectedBatch && selectedBatch.class_days && selectedBatch.class_days.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <Calendar size={12} style={{ color: t.muted }} />
+            <span className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>ক্লাসের দিন:</span>
+            {["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"].map(day => {
+              const isActive = selectedBatch.class_days.includes(day);
+              const isCurrent = selectedDayName === day;
+              return (
+                <span key={day} className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                  style={{
+                    background: isActive ? (isCurrent ? `${t.cyan}30` : `${t.cyan}15`) : `${t.muted}10`,
+                    color: isActive ? t.cyan : `${t.muted}50`,
+                    border: isCurrent && isActive ? `1px solid ${t.cyan}` : "1px solid transparent",
+                  }}>
+                  {DAY_LABELS[day]}
+                </span>
+              );
+            })}
+            {selectedBatch.class_time && (
+              <span className="text-[10px] ml-2" style={{ color: t.muted }}>⏰ {selectedBatch.class_time}</span>
+            )}
+          </div>
+        )}
+
+        {/* ── ক্লাসের দিন না হলে সতর্কতা ── */}
+        {selectedBatch && !isClassDay && (
+          <div className="flex items-center gap-2 mt-3 p-2.5 rounded-xl" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
+            <AlertTriangle size={14} style={{ color: t.amber }} />
+            <p className="text-xs" style={{ color: t.amber }}>
+              <strong>{selectedDayLabel}বার</strong> এই ব্যাচের ক্লাসের দিন নয়।
+              ক্লাসের দিন: {(selectedBatch.class_days || []).map(d => DAY_LABELS[d]).join(", ")}
+            </p>
+          </div>
+        )}
       </Card>
 
+      {/* ── KPI — উপস্থিত/অনুপস্থিত/দেরি ── */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: tr("attendance.present"), value: present, color: t.emerald, icon: "✅" },
@@ -178,9 +339,15 @@ export default function AttendancePage({ students = [], currentUser }) {
         ))}
       </div>
 
+      {/* ── হাজিরা টেবিল ── */}
       <Card delay={150}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold">{tr("attendance.title")} — {selectedDate}</h3>
+          <h3 className="text-sm font-semibold">
+            {tr("attendance.title")} — {selectedDate}
+            <span className="text-[10px] font-normal ml-2" style={{ color: t.muted }}>
+              ({selectedDayLabel}বার) • {displayList.length} জন
+            </span>
+          </h3>
           <p className="text-[10px]" style={{ color: t.muted }}>{tr("attendance.markAll")}</p>
         </div>
         {displayList.length === 0 ? (
@@ -225,19 +392,49 @@ export default function AttendancePage({ students = [], currentUser }) {
         </div>
       </Card>
 
+      {/* ── সাপ্তাহিক সারাংশ — ব্যাচের ক্লাসের দিন অনুযায়ী ── */}
       <Card delay={250}>
         <h3 className="text-sm font-semibold mb-3">সাপ্তাহিক সারাংশ</h3>
         <div className="flex gap-2">
-          {["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ"].map((day, i) => {
-            const pct = [88, 92, 75, 85, 83][i];
+          {(selectedBatch && selectedBatch.class_days && selectedBatch.class_days.length > 0
+            ? selectedBatch.class_days
+            : ["Sun", "Mon", "Tue", "Wed", "Thu"]
+          ).map((day) => {
+            // এই সপ্তাহের ঐ দিনের তারিখ বের করা
+            const todayDate = new Date(selectedDate + "T00:00:00");
+            const todayDay = todayDate.getDay();
+            const targetDay = DAY_MAP[day];
+            const diff = targetDay - todayDay;
+            const targetDate = new Date(todayDate);
+            targetDate.setDate(targetDate.getDate() + diff);
+            const dateStr = targetDate.toISOString().slice(0, 10);
+            const dayAtt = attendanceLog[dateStr] || {};
+            // ঐ দিনের attendance যত data আছে তার থেকে percentage
+            const total = Object.keys(dayAtt).length;
+            const presentCount = Object.values(dayAtt).filter(s => normalizeStatus(s) === "present" || normalizeStatus(s) === "late").length;
+            const pct = total > 0 ? Math.round((presentCount / total) * 100) : null;
+            const isCurrent = dateStr === selectedDate;
+
             return (
-              <div key={day} className="flex-1 text-center p-2 rounded-lg" style={{ background: t.inputBg }}>
-                <p className="text-[9px] font-medium" style={{ color: t.muted }}>{day}</p>
-                <p className="text-sm font-bold mt-1" style={{ color: pct >= 85 ? t.emerald : pct >= 70 ? t.amber : t.rose }}>{pct}%</p>
-                <div className="h-1 rounded-full mt-1 overflow-hidden" style={{ background: `${t.muted}20` }}>
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 85 ? t.emerald : pct >= 70 ? t.amber : t.rose }} />
-                </div>
-              </div>
+              <button key={day} onClick={() => setSelectedDate(dateStr)}
+                className="flex-1 text-center p-2 rounded-lg transition cursor-pointer"
+                style={{
+                  background: isCurrent ? `${t.cyan}15` : t.inputBg,
+                  border: isCurrent ? `1px solid ${t.cyan}40` : "1px solid transparent",
+                }}>
+                <p className="text-[9px] font-bold" style={{ color: isCurrent ? t.cyan : t.muted }}>{DAY_LABELS[day]}</p>
+                <p className="text-[8px] mt-0.5" style={{ color: t.muted }}>{dateStr.slice(5)}</p>
+                {pct !== null ? (
+                  <>
+                    <p className="text-sm font-bold mt-1" style={{ color: pct >= 85 ? t.emerald : pct >= 70 ? t.amber : t.rose }}>{pct}%</p>
+                    <div className="h-1 rounded-full mt-1 overflow-hidden" style={{ background: `${t.muted}20` }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 85 ? t.emerald : pct >= 70 ? t.amber : t.rose }} />
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[10px] mt-1.5" style={{ color: `${t.muted}60` }}>—</p>
+                )}
+              </button>
             );
           })}
         </div>

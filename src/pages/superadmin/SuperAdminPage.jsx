@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
+import PhoneInput from "../../components/ui/PhoneInput";
 import { API_URL } from "../../lib/api";
 import FieldMapperTable from "../../components/ui/FieldMapper";
 
@@ -611,7 +612,7 @@ export default function SuperAdminPage() {
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
-              <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="01XXXXXXXXX" />
+              <PhoneInput value={form.phone} onChange={v => setForm(p => ({ ...p, phone: v }))} size="md" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>

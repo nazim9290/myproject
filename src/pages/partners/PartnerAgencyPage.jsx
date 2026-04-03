@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
+import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import { partners as partnersApi } from "../../lib/api";
 
 /**
@@ -157,7 +158,6 @@ export default function PartnerAgencyPage() {
             {[
               { key: "name", label: "এজেন্সির নাম *", ph: "নাম লিখুন" },
               { key: "contact_person", label: "যোগাযোগ ব্যক্তি", ph: "নাম" },
-              { key: "phone", label: "ফোন", ph: "01XXXXXXXXX" },
               { key: "email", label: "ইমেইল", ph: "email@example.com" },
               { key: "address", label: "ঠিকানা", ph: "ঠিকানা" },
               { key: "commission_rate", label: "কমিশন %", ph: "10" },
@@ -170,6 +170,10 @@ export default function PartnerAgencyPage() {
                   placeholder={f.ph} />
               </div>
             ))}
+            <div>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>ফোন</label>
+              <PhoneInput value={form.phone} onChange={v => setForm(p => ({ ...p, phone: v }))} size="sm" />
+            </div>
             <div className="md:col-span-2">
               <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>নোট</label>
               <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
@@ -227,7 +231,7 @@ export default function PartnerAgencyPage() {
                       <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{p.address || "—"}</p>
                     </td>
                     <td className="py-3 px-4" style={{ color: t.text }}>{p.contact_person || "—"}</td>
-                    <td className="py-3 px-4" style={{ color: t.muted }}>{p.phone || "—"}</td>
+                    <td className="py-3 px-4" style={{ color: t.muted }}>{formatPhoneDisplay(p.phone)}</td>
                     <td className="py-3 px-4 text-center font-bold" style={{ color: t.cyan }}>{p.studentCount || 0}</td>
                     <td className="py-3 px-4 font-mono font-semibold" style={{ color: t.emerald }}>{fmt(p.revenue)}</td>
                     <td className="py-3 px-4 font-mono font-semibold" style={{ color: (p.due || 0) > 0 ? t.rose : t.emerald }}>

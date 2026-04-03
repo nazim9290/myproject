@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import { users as usersApi, auth } from "../../lib/api";
@@ -236,7 +237,6 @@ export default function UserRolePage() {
                 {[
                   { key: "name", label: "নাম *", ph: "পুরো নাম", icon: User },
                   { key: "email", label: "ইমেইল *", ph: "user@agency.com", icon: Mail },
-                  { key: "phone", label: "ফোন", ph: "01XXXXXXXXX", icon: Phone },
                   { key: "password", label: "পাসওয়ার্ড *", ph: "কমপক্ষে ৬ অক্ষর", type: "password" },
                 ].map(f => (
                   <div key={f.key}>
@@ -246,6 +246,10 @@ export default function UserRolePage() {
                       className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.ph} />
                   </div>
                 ))}
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
+                  <PhoneInput value={userForm.phone} onChange={v => setUserForm(p => ({ ...p, phone: v }))} size="md" />
+                </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch</label>
                   <select value={userForm.branch} onChange={e => setUserForm(p => ({ ...p, branch: e.target.value }))}

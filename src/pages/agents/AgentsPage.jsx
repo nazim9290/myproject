@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
+import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import { api } from "../../hooks/useAPI";
 import useSortable from "../../hooks/useSortable";
 import SortHeader from "../../components/ui/SortHeader";
@@ -85,7 +86,6 @@ export default function AgentsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { label: "নাম *", key: "name", ph: "Agent name..." },
-            { label: "ফোন *", key: "phone", ph: "01XXXXXXXXX" },
             { label: "এলাকা", key: "area", ph: "ঢাকা, সিলেট..." },
             { label: "NID", key: "nid", ph: "NID নম্বর" },
             { label: "ব্যাংক অ্যাকাউন্ট", key: "bank", ph: "ব্যাংক ও A/C নম্বর" },
@@ -96,6 +96,10 @@ export default function AgentsPage() {
               <input type={f.type || "text"} value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder={f.ph} />
             </div>
           ))}
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন *</label>
+            <PhoneInput value={form.phone} onChange={v => setForm(p => ({ ...p, phone: v }))} size="md" />
+          </div>
         </div>
         <div className="flex gap-2 justify-end mt-4">
           <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>{tr("common.cancel")}</Button>
@@ -195,7 +199,7 @@ export default function AgentsPage() {
 
                       {/* ফোন */}
                       <td className="py-3 px-4" style={{ color: t.textSecondary }}>
-                        <span className="flex items-center gap-1"><Phone size={10} /> {agent.phone}</span>
+                        <span className="flex items-center gap-1"><Phone size={10} /> {formatPhoneDisplay(agent.phone)}</span>
                       </td>
 
                       {/* রেফার করেছেন */}

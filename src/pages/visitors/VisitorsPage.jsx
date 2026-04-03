@@ -8,6 +8,7 @@ import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
+import PhoneInput, { isValidPhone, formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import useSortable from "../../hooks/useSortable";
 import SortHeader from "../../components/ui/SortHeader";
 import { api } from "../../hooks/useAPI";
@@ -45,7 +46,7 @@ function NewVisitorForm({ onSave, onCancel }) {
   const addEdu = () => setForm(prev => ({ ...prev, education: [...prev.education, { level: "", year: "", board: "", gpa: "", subject: "" }] }));
   const removeEdu = (i) => { setForm(prev => { if (prev.education.length <= 1) return prev; const e = [...prev.education]; e.splice(i, 1); return { ...prev, education: e }; }); };
   const toggleCountry = (c) => { const curr = form.interested_countries; if (curr.includes(c)) { if (curr.length === 1) return; set("interested_countries", curr.filter(x => x !== c)); } else { set("interested_countries", [...curr, c]); } };
-  const validate = () => { const e = {}; if (!form.name.trim()) e.name = "নাম আবশ্যক"; if (!form.phone.trim()) e.phone = "ফোন আবশ্যক"; if (form.phone && !/^01\d{9}$/.test(form.phone.replace(/[- ]/g, ""))) e.phone = "সঠিক ফোন নম্বর দিন"; setErrors(e); return Object.keys(e).length === 0; };
+  const validate = () => { const e = {}; if (!form.name.trim()) e.name = "নাম আবশ্যক"; if (!form.phone.trim()) e.phone = "ফোন আবশ্যক"; else if (!isValidPhone(form.phone)) e.phone = "সঠিক ফোন নম্বর দিন"; setErrors(e); return Object.keys(e).length === 0; };
   const save = () => { if (!validate()) { toast.error("ফর্মে ত্রুটি আছে — লাল চিহ্নিত field দেখুন"); return; } onSave({ ...form, id: `V-${Date.now()}`, status: "Interested", date: new Date().toISOString().slice(0, 10), lastFollowUp: null }); };
 
   const SectionHeader = ({ icon, title, sKey }) => (
@@ -69,9 +70,9 @@ function NewVisitorForm({ onSave, onCancel }) {
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>জন্ম তারিখ</label>
         <input type="date" value={form.dob} onChange={e => set("dob", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন <span className="req-star">*</span></label>
-        <input value={form.phone} onChange={e => set("phone", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: errors.phone ? t.rose : t.inputBorder }} placeholder="01XXXXXXXXX" /><FieldError error={errors.phone} /></div>
+        <PhoneInput value={form.phone} onChange={v => set("phone", v)} error={errors.phone} size="md" /><FieldError error={errors.phone} /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অভিভাবকের ফোন</label>
-        <input value={form.guardian_phone} onChange={e => set("guardian_phone", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="01XXXXXXXXX" /></div>
+        <PhoneInput value={form.guardian_phone} onChange={v => set("guardian_phone", v)} size="md" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>
         <input value={form.email} onChange={e => set("email", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="email@example.com" /></div>
         <div className="md:col-span-2"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা</label>
@@ -440,10 +441,14 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             <Button size="xs" icon={Save} onClick={saveEdit}>{tr("common.save")}</Button>
           </div>
           <Card delay={0}><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {[{k:"name",l:"নাম (ইংরেজি)"},{k:"name_bn",l:"নাম (বাংলা)"},{k:"phone",l:"ফোন"},{k:"guardian_phone",l:"অভিভাবকের ফোন"},{k:"email",l:"ইমেইল"},{k:"dob",l:"জন্ম তারিখ",type:"date"}].map(f=>(
+            {[{k:"name",l:"নাম (ইংরেজি)"},{k:"name_bn",l:"নাম (বাংলা)"},{k:"email",l:"ইমেইল"},{k:"dob",l:"জন্ম তারিখ",type:"date"}].map(f=>(
               <div key={f.k}><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>{f.l}</label>
               <input type={f.type||"text"} value={ed[f.k]||""} onChange={e=>se(f.k,e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
             ))}
+            <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>ফোন</label>
+            <PhoneInput value={ed.phone||""} onChange={v=>se("phone",v)} size="md" /></div>
+            <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>অভিভাবকের ফোন</label>
+            <PhoneInput value={ed.guardian_phone||""} onChange={v=>se("guardian_phone",v)} size="md" /></div>
             <div className="md:col-span-2"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>ঠিকানা</label>
             <input value={ed.address||""} onChange={e=>se("address",e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
             {[{k:"visa_type",l:"ভিসার ধরন",opts:["Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Other"]},
@@ -666,7 +671,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>ব্যক্তিগত তথ্য</h4>
-            <div className="space-y-2">{[{l:"নাম",val:v.name},{l:"বাংলা",val:v.name_bn},{l:"ফোন",val:v.phone},{l:"অভিভাবক",val:v.guardian_phone},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob},{l:"লিঙ্গ",val:v.gender}].map(f=>
+            <div className="space-y-2">{[{l:"নাম",val:v.name},{l:"বাংলা",val:v.name_bn},{l:"ফোন",val:formatPhoneDisplay(v.phone)},{l:"অভিভাবক",val:formatPhoneDisplay(v.guardian_phone)},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob},{l:"লিঙ্গ",val:v.gender}].map(f=>
               <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium">{f.val||"—"}</span></div>
             )}</div>
           </Card>
@@ -793,7 +798,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
                 <div><span className="font-medium block">{v.name}</span>{v.name_bn&&<span className="text-[9px] block" style={{color:t.muted}}>{v.name_bn}</span>}</div>
               </div></td>
               {/* ফোন */}
-              <td className="py-3 px-3 font-mono text-[11px]" style={{color:t.textSecondary}}>{v.phone}</td>
+              <td className="py-3 px-3 font-mono text-[11px]" style={{color:t.textSecondary}}>{formatPhoneDisplay(v.phone)}</td>
               {/* Branch */}
               <td className="py-3 px-3"><Badge color={t.purple} size="xs">{v.branch || "—"}</Badge></td>
               {/* দেশ */}

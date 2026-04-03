@@ -12,6 +12,7 @@ import { PIPELINE_STATUSES } from "../../data/students";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
+import { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import StudentDetailView from "./StudentDetailView";
 import AddStudentForm from "./AddStudentForm";
 import { api } from "../../hooks/useAPI";
@@ -575,7 +576,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{s.phone}</td>
+                  <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatPhoneDisplay(s.phone)}</td>
                   <td className="py-3 px-3"><Badge color={t.purple} size="xs">{s.branch || "—"}</Badge></td>
                   <td className="py-3 px-3"><Badge color={s.country === "Japan" ? t.rose : s.country === "Germany" ? t.amber : t.emerald} size="xs">{s.country}</Badge></td>
                   <td className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.school}</td>

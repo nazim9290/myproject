@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import { ALL_ROLES } from "../../data/mockData";
@@ -143,7 +144,6 @@ export default function HRPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[
               { key: "name", label: "নাম *", placeholder: "কর্মচারীর পুরো নাম" },
-              { key: "phone", label: "ফোন", placeholder: "01XXXXXXXXX" },
               { key: "email", label: "ইমেইল", placeholder: "user@agency.com" },
               { key: "salary", label: "মাসিক বেতন (৳)", placeholder: "25000", type: "number" },
             ].map((field) => (
@@ -159,6 +159,10 @@ export default function HRPage() {
                 />
               </div>
             ))}
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: t.muted }}>ফোন</label>
+              <PhoneInput value={newEmp.phone} onChange={v => setNewEmp({ ...newEmp, phone: v })} size="sm" className="mt-1" />
+            </div>
             <div>
               <label className="text-[10px] font-medium uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পদবি <span className="req-star">*</span></label>
               <select value={newEmp.role} onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}
