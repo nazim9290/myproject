@@ -242,6 +242,7 @@
     "notifications": "Notification",
     "customFields": "Custom Field",
     "dataBackup": "Data Backup",
+    "holidays": "Holiday Calendar",
     "darkMode": "Dark Mode",
     "language": "Language"
   },

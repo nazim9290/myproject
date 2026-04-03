@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw, List } from "lucide-react";
+import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw, List, Calendar, RefreshCw } from "lucide-react";
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -21,6 +21,7 @@ const ADMIN_TABS = [
   { key: "branches", i18nKey: "settings.branches", label: "ব্রাঞ্চ ম্যানেজমেন্ট", icon: Globe },
   { key: "notifications", i18nKey: "settings.notifications", label: "নোটিফিকেশন", icon: Bell },
   { key: "custom_fields", i18nKey: "settings.customFields", label: "কাস্টম ফিল্ড", icon: Layers },
+  { key: "holidays", i18nKey: "settings.holidays", label: "ছুটির তালিকা", icon: Calendar },
   { key: "backup", i18nKey: "settings.dataBackup", label: "ডাটা ব্যাকআপ", icon: Database },
 ];
 
@@ -206,6 +207,41 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       setBranches(prev => prev.filter(b => b.id !== id));
       toast.success("ব্রাঞ্চ মুছে ফেলা হয়েছে");
     } catch (err) { toast.error(err.message); }
+  };
+
+  // ── Holiday management — সরকারি ছুটি (API connected) ──
+  const [holidays, setHolidays] = useState([]);
+  const [showHolidayForm, setShowHolidayForm] = useState(false);
+  const [holidayForm, setHolidayForm] = useState({ date: "", name: "", name_bn: "", recurring: false });
+  const EMPTY_HOLIDAY = { date: "", name: "", name_bn: "", recurring: false };
+  const [deletingHolidayId, setDeletingHolidayId] = useState(null);
+
+  // API থেকে holiday লোড
+  useEffect(() => {
+    api.get("/holidays").then(data => { if (Array.isArray(data)) setHolidays(data); }).catch(() => {});
+  }, []);
+
+  // Holiday save (create)
+  const saveHoliday = async () => {
+    if (!holidayForm.date) { toast.error("তারিখ দিন"); return; }
+    if (!holidayForm.name.trim()) { toast.error("ছুটির নাম দিন (English)"); return; }
+    try {
+      const created = await api.post("/holidays", holidayForm);
+      setHolidays(prev => [...prev, created].sort((a, b) => a.date.localeCompare(b.date)));
+      toast.success("ছুটি যোগ হয়েছে");
+      setHolidayForm(EMPTY_HOLIDAY);
+      setShowHolidayForm(false);
+    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+  };
+
+  // Holiday delete
+  const deleteHoliday = async (id) => {
+    try {
+      await api.del(`/holidays/${id}`);
+      setHolidays(prev => prev.filter(h => h.id !== id));
+      setDeletingHolidayId(null);
+      toast.success("ছুটি মুছে ফেলা হয়েছে");
+    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
   };
 
   // ── Notification settings ──
@@ -1572,6 +1608,111 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             {customFields.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো custom field নেই — উপরে "নতুন Field" বাটন চাপুন</p>}
           </div>
         </Card>
+      </div>}
+
+      {/* ── ছুটির তালিকা — সরকারি ছুটি ম্যানেজমেন্ট ── */}
+      {activeTab === "holidays" && <div className="space-y-5">
+        <Card delay={50}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Calendar size={14} /> ছুটির তালিকা</h3>
+              <p className="text-[10px] mt-1" style={{ color: t.muted }}>বাংলাদেশের সরকারি ছুটি যোগ করুন — ঈদ, স্বাধীনতা দিবস, ভাষা দিবস ইত্যাদি। ব্যাচের ঘণ্টা হিসাবে এই দিনগুলো স্বয়ংক্রিয়ভাবে বাদ যাবে।</p>
+            </div>
+            <Button icon={Plus} size="xs" onClick={() => { setHolidayForm(EMPTY_HOLIDAY); setShowHolidayForm(true); }}>নতুন ছুটি</Button>
+          </div>
+
+          {/* ── ছুটি তালিকা ── */}
+          {holidays.length === 0 && (
+            <p className="text-xs text-center py-8" style={{ color: t.muted }}>কোনো ছুটি যোগ করা হয়নি — উপরে "নতুন ছুটি" বাটন চাপুন</p>
+          )}
+          <div className="space-y-2">
+            {holidays.map(h => (
+              <div key={h.id}>
+                <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold" style={{ background: `${t.cyan}15`, color: t.cyan }}>
+                      {new Date(h.date + "T00:00:00").getDate()}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold" style={{ color: t.text }}>{h.name_bn || h.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[10px]" style={{ color: t.muted }}>{h.date}</p>
+                        {h.name_bn && h.name && <p className="text-[10px]" style={{ color: t.muted }}>({h.name})</p>}
+                        {h.recurring && (
+                          <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>
+                            <RefreshCw size={8} /> প্রতিবছর
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => setDeletingHolidayId(deletingHolidayId === h.id ? null : h.id)}
+                    className="p-1.5 rounded-lg transition"
+                    style={{ color: t.rose }}
+                    onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                {/* ── Inline delete confirmation ── */}
+                {deletingHolidayId === h.id && (
+                  <div className="flex items-center gap-3 p-3 mt-1 rounded-xl" style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold" style={{ color: t.rose }}>মুছে ফেলবেন?</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>এই কাজ undo করা যাবে না</p>
+                    </div>
+                    <button onClick={() => setDeletingHolidayId(null)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+                    <button onClick={() => deleteHoliday(h.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                      style={{ background: t.rose, color: "#fff" }}>হ্যাঁ, মুছুন</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* ── নতুন ছুটি ফর্ম — Modal ── */}
+        <Modal isOpen={showHolidayForm} onClose={() => setShowHolidayForm(false)} title="নতুন ছুটি যোগ করুন" size="sm">
+          <div className="space-y-4">
+            {/* তারিখ */}
+            <div>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>তারিখ *</label>
+              <input type="date" value={holidayForm.date}
+                onChange={e => setHolidayForm(prev => ({ ...prev, date: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${!holidayForm.date ? t.rose : t.inputBorder}`, color: t.text }} />
+            </div>
+            {/* নাম (English) */}
+            <div>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>ছুটির নাম (English) *</label>
+              <input type="text" value={holidayForm.name} placeholder="e.g. Independence Day"
+                onChange={e => setHolidayForm(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${!holidayForm.name ? t.rose : t.inputBorder}`, color: t.text }} />
+            </div>
+            {/* নাম (বাংলা) */}
+            <div>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>ছুটির নাম (বাংলা)</label>
+              <input type="text" value={holidayForm.name_bn} placeholder="যেমন: স্বাধীনতা দিবস"
+                onChange={e => setHolidayForm(prev => ({ ...prev, name_bn: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl text-xs outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            </div>
+            {/* প্রতিবছর পুনরাবৃত্তি */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={holidayForm.recurring}
+                onChange={e => setHolidayForm(prev => ({ ...prev, recurring: e.target.checked }))}
+                className="rounded" />
+              <span className="text-xs" style={{ color: t.text }}>প্রতিবছর পুনরাবৃত্তি হবে</span>
+              <span className="text-[10px]" style={{ color: t.muted }}>(যেমন: ভাষা দিবস প্রতি ২১ ফেব্রুয়ারি)</span>
+            </label>
+            {/* Save বাটন */}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" size="xs" onClick={() => setShowHolidayForm(false)}>বাতিল</Button>
+              <Button icon={Save} size="xs" onClick={saveHoliday}>যোগ করুন</Button>
+            </div>
+          </div>
+        </Modal>
       </div>}
 
       {/* ── ডাটা ব্যাকআপ ── */}
