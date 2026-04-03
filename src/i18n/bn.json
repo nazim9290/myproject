@@ -182,7 +182,8 @@
     "f_studySubject": "অধ্যয়নের বিষয়",
     "f_spouseName": "স্বামী/স্ত্রীর নাম",
     "f_emergencyContact": "জরুরি যোগাযোগ ব্যক্তি",
-    "f_emergencyPhone": "জরুরি ফোন নম্বর"
+    "f_emergencyPhone": "জরুরি ফোন নম্বর",
+    "f_partner": "পার্টনার এজেন্সি"
   },
 
   "visitors": {

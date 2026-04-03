@@ -49,6 +49,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [branchOptions, setBranchOptions] = useState([]);
   const [agentOptions, setAgentOptions] = useState([]);
   const [staffOptions, setStaffOptions] = useState([]);
+  const [partnerOptions, setPartnerOptions] = useState([]);
   useEffect(() => {
     // API response normalize — কিছু endpoint { data: [...] } ফরম্যাটে দেয়
     const toArr = (res) => Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
@@ -57,6 +58,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     api.get("/branches").then(r => setBranchOptions(toArr(r))).catch(() => {});
     api.get("/agents").then(r => setAgentOptions(toArr(r))).catch(() => {});
     api.get("/users").then(r => setStaffOptions(toArr(r))).catch(() => {});
+    api.get("/partners").then(r => setPartnerOptions(toArr(r))).catch(() => {});
   }, []);
 
   // ── Education, JP Exams, Family — Detail API থেকে load ──
@@ -464,11 +466,37 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     { label: tr("students.f_visaType"), key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
     { label: tr("students.f_branch"), key: "branch", type: "branch_select" },
     { label: tr("students.f_source"), key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral","Website","YouTube","Friend"] },
-    { label: tr("students.f_agent"), key: "agent_id", type: "agent_select" },
     { label: tr("students.f_type"), key: "student_type", type: "select", options: ["own","agent","partner"] },
     { label: tr("students.f_counselor"), key: "counselor", type: "counselor_select" },
     { label: tr("students.f_enrollDate"), key: "created" },
   ];
+
+  // ── Conditional fields — Source/Type অনুযায়ী dynamic field ──
+  // Source = Agent/Referral → Agent dropdown দেখাও
+  // Type = partner → Partner Agency dropdown দেখাও
+  const getConditionalDestFields = (formData) => {
+    const base = [
+      { label: tr("students.f_country"), key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK","USA","Australia","China","Malaysia"] },
+      { label: tr("students.f_school"), key: "school", type: "school_select" },
+      { label: tr("students.f_batch"), key: "batch", type: "batch_select" },
+      { label: tr("students.f_intake"), key: "intake" },
+      { label: tr("students.f_visaType"), key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
+      { label: tr("students.f_branch"), key: "branch", type: "branch_select" },
+      { label: tr("students.f_source"), key: "source", type: "select", options: ["Walk-in","Facebook","Agent","Referral","Website","YouTube","Friend"] },
+    ];
+    // Source = Agent বা Referral → Agent dropdown
+    const src = (formData?.source || "").toLowerCase();
+    if (src === "agent" || src === "referral") {
+      base.push({ label: tr("students.f_agent"), key: "agent_id", type: "agent_select" });
+    }
+    base.push({ label: tr("students.f_type"), key: "student_type", type: "select", options: ["own","agent","partner"] });
+    // Type = partner → Partner Agency dropdown
+    if (formData?.student_type === "partner") {
+      base.push({ label: tr("students.f_partner"), key: "partner_id", type: "partner_select" });
+    }
+    base.push({ label: tr("students.f_counselor"), key: "counselor", type: "counselor_select" });
+    return base;
+  };
 
   // ── Read-only field renderer ──
   const ReadOnlyField = ({ label, value }) => (
@@ -479,15 +507,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   );
 
   // ── সেকশন-ভিত্তিক ফিল্ড কনফিগ (Modal-এ dynamic render হবে) ──
-  const SECTION_FIELDS = {
+  // destination fields dynamic — sectionForm state থেকে conditional fields বের হয়
+  const getFields = (section) => {
+    if (section === "destination") return getConditionalDestFields(sectionForm);
+    return SECTION_FIELDS_STATIC[section] || [];
+  };
+  const SECTION_FIELDS_STATIC = {
     personal: personalFields,
     passport: passportFields,
-    destination: [
-      { label: tr("students.f_country"), key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK","USA","Australia","China","Malaysia"] },
-      { label: tr("students.f_school"), key: "school", type: "school_select" },
-      { label: tr("students.f_batch"), key: "batch", type: "batch_select" },
-      ...destinationExtraFields.filter(f => f.key !== "created"),
-    ],
     internal: [
       { label: tr("students.f_driveUrl"), key: "gdrive_folder_url" },
       { label: tr("students.f_internalNotes"), key: "internal_notes", type: "textarea" },
@@ -510,7 +537,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
 
   // ── সেকশন Edit শুরু — ফিল্ড ভ্যালু student থেকে নিয়ে form-এ সেট ──
   const openSectionEdit = (section) => {
-    const fields = SECTION_FIELDS[section] || [];
+    const fields = getFields(section);
     const formData = {};
     fields.forEach(f => { formData[f.key] = student[f.key] || ""; });
     setSectionForm(formData);
@@ -1009,9 +1036,18 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 {destinationExtraFields.map(f => {
                   let val = student[f.key];
                   if (f.key === "student_type") val = val === "own" ? "Own" : val === "agent" ? "Agent" : "Partner";
-                  if (f.key === "agent_id" && val) { const ag = agentOptions.find(a => a.id === val); val = ag ? ag.name : val; }
                   return <ReadOnlyField key={f.key} label={f.label} value={val} />;
                 })}
+                {/* Conditional: Source=Agent/Referral → Agent দেখাও */}
+                {(student.source === "Agent" || student.source === "Referral") && (
+                  <ReadOnlyField label={tr("students.f_agent")}
+                    value={student.agent_id ? (agentOptions.find(a => a.id === student.agent_id)?.name || student.agent_id) : "—"} />
+                )}
+                {/* Conditional: Type=partner → Partner Agency দেখাও */}
+                {student.student_type === "partner" && (
+                  <ReadOnlyField label={tr("students.f_partner")}
+                    value={student.partner_id ? (partnerOptions.find(p => p.id === student.partner_id)?.name || student.partner_id) : "—"} />
+                )}
               </div>
             </Card>
           </div>
@@ -1913,7 +1949,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         <div className="space-y-3">
           {/* Dynamic fields — editSection অনুযায়ী render */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {(SECTION_FIELDS[editSection] || []).map(f => {
+            {getFields(editSection).map(f => {
               const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
               return (
                 <div key={f.key} className={f.type === "textarea" ? "md:col-span-2" : ""}>
@@ -1947,6 +1983,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
                       <option value="">-- Select Counselor --</option>
                       {staffOptions.map(u => <option key={u.id} value={u.name}>{u.name}{u.role ? ` (${u.role})` : ""}</option>)}
+                    </select>
+                  ) : f.type === "partner_select" ? (
+                    <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                      <option value="">-- Select Partner Agency --</option>
+                      {partnerOptions.map(p => <option key={p.id} value={p.id}>{p.name}{p.contact_person ? ` (${p.contact_person})` : ""}</option>)}
                     </select>
                   ) : f.type === "select" ? (
                     <select value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
