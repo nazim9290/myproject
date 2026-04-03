@@ -10,6 +10,7 @@ import { THEMES, ThemeContext, getGlobalStyles, ThemeToggle, useLabelSettings } 
 import { ToastProvider, useToast } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { PermissionProvider, usePermissions } from "./context/PermissionContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import { NAV_ITEMS } from "./data/mockData";
 import { DEFAULT_STEPS_META } from "./data/pipelineSteps";
 import { students as studentsApi, visitors as visitorsApi } from "./lib/api";
@@ -835,10 +836,12 @@ export default function App() {
   useEffect(() => { localStorage.setItem("agencybook_theme", isDark ? "dark" : "light"); }, [isDark]);
 
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AppShell isDark={isDark} setIsDark={setIsDark} />
-      </ToastProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <AppShell isDark={isDark} setIsDark={setIsDark} />
+        </ToastProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
