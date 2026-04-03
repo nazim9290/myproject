@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, LayoutDashboard, Users, GraduationCap, BookOpen, Link as LinkIcon, StickyNote } from "lucide-react";
+import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, LayoutDashboard, Users, GraduationCap, BookOpen, Link as LinkIcon, StickyNote, Briefcase } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -55,12 +55,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [jpExams, setJpExams] = useState([]);
   const [familyMembers, setFamilyMembers] = useState([]);
   useEffect(() => {
-    // GET /students/:id — detail endpoint-এ student_education, student_jp_exams, student_family আসে
+    // GET /students/:id — detail endpoint-এ student_education, student_jp_exams, student_family, work_experience, jp_study আসে
     api.get(`/students/${student.id}`).then(data => {
       if (data) {
         if (Array.isArray(data.student_education)) setEducation(data.student_education);
         if (Array.isArray(data.student_jp_exams)) setJpExams(data.student_jp_exams);
         if (Array.isArray(data.student_family)) setFamilyMembers(data.student_family);
+        if (Array.isArray(data.work_experience)) setWorkExperience(data.work_experience);
+        if (Array.isArray(data.jp_study)) setJpStudy(data.jp_study);
       }
     }).catch(() => {});
   }, [student.id]);
@@ -72,7 +74,17 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   // ── Education যোগ/edit state ──
   const [showEduForm, setShowEduForm] = useState(false);
   const [editingEduId, setEditingEduId] = useState(null);
-  const [eduForm, setEduForm] = useState({ level: "SSC", school_name: "", year: "", board: "", gpa: "", group_name: "" });
+  const [eduForm, setEduForm] = useState({ level: "SSC", school_name: "", year: "", board: "", gpa: "", group_name: "", school_type: "", entrance_year: "", address: "" });
+
+  // ── Work Experience state ──
+  const [workExperience, setWorkExperience] = useState([]);
+  const [showWorkForm, setShowWorkForm] = useState(false);
+  const [workForm, setWorkForm] = useState({ company_name: "", address: "", start_date: "", end_date: "", position: "" });
+
+  // ── JP Study History state ──
+  const [jpStudy, setJpStudy] = useState([]);
+  const [showJpStudyForm, setShowJpStudyForm] = useState(false);
+  const [jpStudyForm, setJpStudyForm] = useState({ institution: "", period: "", hours: "", level: "", description: "" });
 
   const saveEducation = async () => {
     try {
@@ -101,6 +113,48 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     } catch {
       toast.error("সার্ভারে সেভ ব্যর্থ");
     }
+  };
+
+  // ── Work Experience যোগ/মুছা — API call ──
+  const saveWorkExperience = async () => {
+    if (!workForm.company_name.trim()) { toast.error("প্রতিষ্ঠানের নাম দিন"); return; }
+    try {
+      const saved = await api.post(`/students/${student.id}/work-experience`, workForm);
+      setWorkExperience(prev => [...prev, saved || { id: `we-${Date.now()}`, ...workForm }]);
+      setShowWorkForm(false);
+      setWorkForm({ company_name: "", address: "", start_date: "", end_date: "", position: "" });
+      logActivity(`কর্ম অভিজ্ঞতা যোগ — ${workForm.company_name}`, "edit");
+      toast.success("কর্ম অভিজ্ঞতা যোগ হয়েছে");
+    } catch (err) { toast.error(err.message || "সার্ভারে সেভ ব্যর্থ"); }
+  };
+
+  const deleteWorkExperience = async (weId) => {
+    try {
+      await api.del(`/students/${student.id}/work-experience/${weId}`);
+      setWorkExperience(prev => prev.filter(w => w.id !== weId));
+      toast.success("মুছে ফেলা হয়েছে");
+    } catch (err) { toast.error(err.message || "সার্ভারে মুছতে ব্যর্থ"); }
+  };
+
+  // ── JP Study History যোগ/মুছা — API call ──
+  const saveJpStudy = async () => {
+    if (!jpStudyForm.institution.trim()) { toast.error("প্রতিষ্ঠানের নাম দিন"); return; }
+    try {
+      const saved = await api.post(`/students/${student.id}/jp-study`, jpStudyForm);
+      setJpStudy(prev => [...prev, saved || { id: `js-${Date.now()}`, ...jpStudyForm }]);
+      setShowJpStudyForm(false);
+      setJpStudyForm({ institution: "", period: "", hours: "", level: "", description: "" });
+      logActivity(`জাপানি ভাষা শিক্ষা ইতিহাস যোগ — ${jpStudyForm.institution}`, "edit");
+      toast.success("জাপানি ভাষা শিক্ষা ইতিহাস যোগ হয়েছে");
+    } catch (err) { toast.error(err.message || "সার্ভারে সেভ ব্যর্থ"); }
+  };
+
+  const deleteJpStudy = async (jsId) => {
+    try {
+      await api.del(`/students/${student.id}/jp-study/${jsId}`);
+      setJpStudy(prev => prev.filter(j => j.id !== jsId));
+      toast.success("মুছে ফেলা হয়েছে");
+    } catch (err) { toast.error(err.message || "সার্ভারে মুছতে ব্যর্থ"); }
   };
 
   const [checked, setChecked] = useState({});       // { "ENROLLED_en1": true, ... }
@@ -133,7 +187,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [showStepCard, setShowStepCard] = useState(false);
 
   // ── Sponsor state ──
-  const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", address: "", nid: "", company_name: "", trade_license_no: "", work_address: "", tin: "", annual_income_y1: "", annual_income_y2: "", annual_income_y3: "", tax_y1: "", tax_y2: "", tax_y3: "", banks: [], tuition_jpy: "", living_jpy_monthly: "", payment_method: "Bank Transfer", exchange_rate: "", statement: "", payment_to_student: false, payment_to_school: true, sign_date: "" };
+  const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", address: "", nid: "", dob: "", company_name: "", company_phone: "", company_address: "", trade_license_no: "", work_address: "", tin: "", annual_income_y1: "", annual_income_y2: "", annual_income_y3: "", tax_y1: "", tax_y2: "", tax_y3: "", banks: [], tuition_jpy: "", living_jpy_monthly: "", payment_method: "Bank Transfer", exchange_rate: "", statement: "", payment_to_student: false, payment_to_school: true, sign_date: "" };
   const [sponsor, setSponsor] = useState(student.sponsor || BLANK_SPONSOR);
   const [sponsorForm, setSponsorForm] = useState(student.sponsor || BLANK_SPONSOR);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
@@ -372,6 +426,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     { label: "NID নম্বর", key: "nid" },
     { label: "বর্তমান ঠিকানা", key: "current_address" },
     { label: "স্থায়ী ঠিকানা", key: "permanent_address" },
+    { label: "জন্মস্থান", key: "birth_place" },
+    { label: "পেশা", key: "occupation" },
   ];
 
   const passportFields = [
@@ -416,6 +472,11 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       { label: "Google Drive ফোল্ডার URL", key: "gdrive_folder_url" },
       { label: "অভ্যন্তরীণ নোট", key: "internal_notes", type: "textarea" },
     ],
+    study_plan: [
+      { label: "জাপানে পড়ার কারণ", key: "reason_for_study", type: "textarea" },
+      { label: "ভবিষ্যৎ পরিকল্পনা", key: "future_plan", type: "textarea" },
+      { label: "অধ্যয়নের বিষয়", key: "study_subject", type: "text" },
+    ],
   };
 
   // ── সেকশন Modal-এর টাইটেল — i18n ──
@@ -424,6 +485,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     passport: `${tr("students.passportFamily")} — ${tr("common.edit")}`,
     destination: `${tr("students.destinationInfo")} — ${tr("common.edit")}`,
     internal: `${tr("students.internal")} — ${tr("common.edit")}`,
+    study_plan: `Study Plan — ${tr("common.edit")}`,
   };
 
   // ── সেকশন Edit শুরু — ফিল্ড ভ্যালু student থেকে নিয়ে form-এ সেট ──
@@ -940,7 +1002,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </h4>
               <Button variant="ghost" icon={Plus} size="xs" onClick={() => {
                 setShowEduForm(true);
-                setEduForm({ level: "SSC", school_name: "", year: "", board: "", gpa: "", group_name: "" });
+                setEduForm({ level: "SSC", school_name: "", year: "", board: "", gpa: "", group_name: "", school_type: "", entrance_year: "", address: "" });
               }}>{tr("students.addEducation")}</Button>
             </div>
 
@@ -949,11 +1011,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               <div className="space-y-3">
                 {[
                   { key: "level", label: "পরীক্ষা", type: "select", options: ["SSC", "HSC", "Diploma", "Bachelor", "Masters", "Other"] },
+                  { key: "school_type", label: "স্কুলের ধরন", type: "select", options: ["", "Elementary", "Junior High", "High School", "Technical", "Junior College", "University"] },
                   { key: "school_name", label: "প্রতিষ্ঠান", type: "text" },
+                  { key: "entrance_year", label: "ভর্তির সন", type: "text" },
                   { key: "year", label: "পাসের সন", type: "text" },
                   { key: "board", label: "বোর্ড", type: "text" },
                   { key: "gpa", label: "জিপিএ / ফলাফল", type: "text" },
                   { key: "group_name", label: "গ্রুপ / বিভাগ", type: "text" },
+                  { key: "address", label: "প্রতিষ্ঠানের ঠিকানা", type: "text" },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
@@ -983,7 +1048,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                         {edu.level || `পরীক্ষা ${idx + 1}`}
                       </p>
                       <div className="flex gap-1">
-                        <button onClick={() => { setEditingEduId(edu.id); setEduForm({ level: edu.level || "", school_name: edu.school_name || "", year: edu.passing_year || edu.year || "", board: edu.board || "", gpa: edu.gpa || "", group_name: edu.group_name || "" }); setShowEduForm(true); }}
+                        <button onClick={() => { setEditingEduId(edu.id); setEduForm({ level: edu.level || "", school_name: edu.school_name || "", year: edu.passing_year || edu.year || "", board: edu.board || "", gpa: edu.gpa || "", group_name: edu.group_name || "", school_type: edu.school_type || "", entrance_year: edu.entrance_year || "", address: edu.address || "" }); setShowEduForm(true); }}
                           className="text-[9px] px-1.5 py-0.5 rounded" style={{ color: t.cyan }}>✏️</button>
                         <button onClick={async () => { try { await api.del(`/students/${student.id}/education/${edu.id}`); setEducation(prev => prev.filter(e => e.id !== edu.id)); toast.success("মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); } }}
                           className="text-[9px] px-1.5 py-0.5 rounded" style={{ color: t.rose }}>🗑</button>
@@ -991,11 +1056,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     </div>
                     <div className="space-y-1.5 text-xs">
                       {[
+                        { label: "স্কুলের ধরন", value: edu.school_type },
                         { label: "প্রতিষ্ঠান", value: edu.school_name || edu.institution },
+                        { label: "ভর্তির সন", value: edu.entrance_year },
                         { label: "পাসের সন", value: edu.passing_year || edu.year },
                         { label: "বোর্ড", value: edu.board },
                         { label: "জিপিএ / ফলাফল", value: edu.gpa || edu.result },
                         { label: "গ্রুপ / বিভাগ", value: edu.group_name || edu.department },
+                        { label: "ঠিকানা", value: edu.address },
                       ].map(f => (
                         <div key={f.label} className="flex justify-between">
                           <span style={{ color: t.muted }}>{f.label}</span>
@@ -1110,6 +1178,173 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             ) : (
               <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("students.noExams")}</p>
             )}
+          </Card>
+
+          {/* ── কর্ম অভিজ্ঞতা (Work Experience) ── */}
+          <Card delay={250}>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
+                <Briefcase size={12} /> কর্ম অভিজ্ঞতা
+              </h4>
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => {
+                setShowWorkForm(true);
+                setWorkForm({ company_name: "", address: "", start_date: "", end_date: "", position: "" });
+              }}>যোগ করুন</Button>
+            </div>
+
+            {/* Work Experience যোগ করার Modal */}
+            <Modal isOpen={showWorkForm} onClose={() => setShowWorkForm(false)} title="কর্ম অভিজ্ঞতা যোগ করুন" size="md">
+              <div className="space-y-3">
+                {[
+                  { key: "company_name", label: "প্রতিষ্ঠানের নাম", type: "text" },
+                  { key: "position", label: "পদবী", type: "text" },
+                  { key: "address", label: "প্রতিষ্ঠানের ঠিকানা", type: "text" },
+                  { key: "start_date", label: "শুরুর তারিখ", type: "date" },
+                  { key: "end_date", label: "শেষের তারিখ", type: "date" },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                    <input type={f.type === "date" ? "date" : "text"} value={workForm[f.key] || ""} onChange={e => setWorkForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                ))}
+                <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                  <Button variant="ghost" size="sm" onClick={() => setShowWorkForm(false)}>{tr("common.cancel")}</Button>
+                  <Button size="sm" icon={Save} onClick={saveWorkExperience}>{tr("common.save")}</Button>
+                </div>
+              </div>
+            </Modal>
+
+            {workExperience.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {workExperience.map((we, idx) => (
+                  <div key={we.id || idx} className="p-3 rounded-lg" style={{ background: t.inputBg }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.purple }}>
+                        {we.company_name || `প্রতিষ্ঠান ${idx + 1}`}
+                      </p>
+                      <button onClick={() => deleteWorkExperience(we.id)}
+                        className="text-[9px] px-1.5 py-0.5 rounded" style={{ color: t.rose }}>🗑</button>
+                    </div>
+                    <div className="space-y-1.5 text-xs">
+                      {[
+                        { label: "পদবী", value: we.position },
+                        { label: "ঠিকানা", value: we.address },
+                        { label: "শুরু", value: we.start_date },
+                        { label: "শেষ", value: we.end_date || "চলমান" },
+                      ].map(f => (
+                        <div key={f.label} className="flex justify-between">
+                          <span style={{ color: t.muted }}>{f.label}</span>
+                          <span className="font-medium text-right">{f.value || "—"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো কর্ম অভিজ্ঞতা নেই</p>
+            )}
+          </Card>
+
+          {/* ── জাপানি ভাষা শিক্ষা ইতিহাস (JP Study History) ── */}
+          <Card delay={300}>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
+                <BookOpen size={12} /> জাপানি ভাষা শিক্ষা ইতিহাস
+              </h4>
+              <Button variant="ghost" icon={Plus} size="xs" onClick={() => {
+                setShowJpStudyForm(true);
+                setJpStudyForm({ institution: "", period: "", hours: "", level: "", description: "" });
+              }}>যোগ করুন</Button>
+            </div>
+
+            {/* JP Study History যোগ করার Modal */}
+            <Modal isOpen={showJpStudyForm} onClose={() => setShowJpStudyForm(false)} title="জাপানি ভাষা শিক্ষা ইতিহাস যোগ করুন" size="md">
+              <div className="space-y-3">
+                {[
+                  { key: "institution", label: "প্রতিষ্ঠান", type: "text" },
+                  { key: "period", label: "সময়কাল (যেমন: 2024-01 ~ 2024-06)", type: "text" },
+                  { key: "hours", label: "মোট ঘণ্টা", type: "text" },
+                  { key: "level", label: "লেভেল", type: "text" },
+                  { key: "description", label: "বিবরণ", type: "text" },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                    <input type="text" value={jpStudyForm[f.key] || ""} onChange={e => setJpStudyForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                  </div>
+                ))}
+                <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                  <Button variant="ghost" size="sm" onClick={() => setShowJpStudyForm(false)}>{tr("common.cancel")}</Button>
+                  <Button size="sm" icon={Save} onClick={saveJpStudy}>{tr("common.save")}</Button>
+                </div>
+              </div>
+            </Modal>
+
+            {jpStudy.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      {["প্রতিষ্ঠান", "সময়কাল", "ঘণ্টা", "লেভেল", "বিবরণ", ""].map(h => (
+                        <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jpStudy.map((js, i) => (
+                      <tr key={js.id || i} style={{ borderBottom: `1px solid ${t.border}` }}
+                        onMouseEnter={ev => ev.currentTarget.style.background = t.hoverBg}
+                        onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}>
+                        <td className="py-2 px-3 font-medium">{js.institution || "—"}</td>
+                        <td className="py-2 px-3">{js.period || "—"}</td>
+                        <td className="py-2 px-3">{js.hours || "—"}</td>
+                        <td className="py-2 px-3">{js.level || "—"}</td>
+                        <td className="py-2 px-3" style={{ color: t.muted }}>{js.description || "—"}</td>
+                        <td className="py-2 px-3">
+                          <button onClick={() => deleteJpStudy(js.id)}
+                            className="text-[9px] px-1 py-0.5 rounded opacity-50 hover:opacity-100" style={{ color: t.rose }}>🗑</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো জাপানি ভাষা শিক্ষা ইতিহাস নেই</p>
+            )}
+          </Card>
+
+          {/* ── Study Plan (অধ্যয়ন পরিকল্পনা) ── */}
+          <Card delay={350}>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
+                <BookOpen size={12} /> অধ্যয়ন পরিকল্পনা
+              </h4>
+              <button onClick={() => openSectionEdit("study_plan")}
+                className="text-[10px] px-2 py-1 rounded-lg transition"
+                style={{ color: t.cyan }}
+                onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                ✏️ Edit
+              </button>
+            </div>
+            <div className="space-y-2.5">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>জাপানে পড়ার কারণ</label>
+                <div className="p-3 rounded-lg text-[11px] leading-relaxed whitespace-pre-wrap" style={{ background: t.inputBg, color: t.text }}>
+                  {student.reason_for_study || "—"}
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ভবিষ্যৎ পরিকল্পনা</label>
+                <div className="p-3 rounded-lg text-[11px] leading-relaxed whitespace-pre-wrap" style={{ background: t.inputBg, color: t.text }}>
+                  {student.future_plan || "—"}
+                </div>
+              </div>
+              <ReadOnlyField label="অধ্যয়নের বিষয়" value={student.study_subject} />
+            </div>
           </Card>
 
           {/* ── পরিবারের সদস্য (Family Members) ── */}
@@ -1341,6 +1576,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               {[
                 { label: "নাম", key: "name" },
                 { label: "সম্পর্ক", key: "relationship" },
+                { label: "জন্ম তারিখ", key: "dob" },
                 { label: "ফোন", key: "phone" },
                 { label: "NID", key: "nid" },
                 { label: "ঠিকানা", key: "address" },
@@ -1359,6 +1595,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
               {[
                 { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
+                { label: "প্রতিষ্ঠানের ফোন", key: "company_phone" },
+                { label: "প্রতিষ্ঠানের ঠিকানা", key: "company_address" },
                 { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
                 { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
               ].map(f => (
@@ -1694,6 +1932,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               {[
                 { label: "নাম", key: "name" },
                 { label: "সম্পর্ক", key: "relationship", type: "select", opts: ["Father","Mother","Brother","Sister","Uncle","Aunt","Other"] },
+                { label: "জন্ম তারিখ", key: "dob", type: "date" },
                 { label: "ফোন", key: "phone" },
                 { label: "NID", key: "nid" },
                 { label: "ঠিকানা", key: "address" },
@@ -1706,6 +1945,10 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
                       {f.opts.map(o => <option key={o}>{o}</option>)}
                     </select>
+                  ) : f.type === "date" ? (
+                    <input type="date" value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
                   ) : (
                     <input value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none"
@@ -1722,6 +1965,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
                 { label: "প্রতিষ্ঠানের নাম", key: "company_name" },
+                { label: "প্রতিষ্ঠানের ফোন", key: "company_phone" },
+                { label: "প্রতিষ্ঠানের ঠিকানা", key: "company_address" },
                 { label: "ট্রেড লাইসেন্স নম্বর", key: "trade_license_no" },
                 { label: "ব্যবসায়িক ঠিকানা", key: "work_address" },
               ].map(f => (

@@ -15,7 +15,7 @@ import { useTheme } from "../../context/ThemeContext";
 // DocGen, SuperAdmin, ExcelAutoFill — সবাই এই list reference করে
 // ═══════════════════════════════════════════════════════
 const SYSTEM_FIELDS = [
-  // ব্যক্তিগত তথ্য — নাম, জন্ম তারিখ, লিঙ্গ, ফোন, WhatsApp, ইমেইল ইত্যাদি
+  // ব্যক্তিগত তথ্য — নাম, জন্ম তারিখ, লিঙ্গ, ফোন, WhatsApp, ইমেইল, জন্মস্থান, পেশা
   { group: "ব্যক্তিগত", color: "cyan", fields: [
     { key: "name_en", label: "নাম (Full English)" },
     { key: "name_en:first", label: "নাম → First Name" },
@@ -36,6 +36,9 @@ const SYSTEM_FIELDS = [
     { key: "phone", label: "ফোন" },
     { key: "whatsapp", label: "WhatsApp" },
     { key: "email", label: "ইমেইল" },
+    // Resume fields — 入学願書
+    { key: "birth_place", label: "জন্মস্থান" },
+    { key: "occupation", label: "পেশা" },
   ]},
   // পাসপোর্ট / NID তথ্য — নম্বর, ইস্যু ও মেয়াদ + year/month/day sub-parts
   { group: "পাসপোর্ট / NID", color: "amber", fields: [
@@ -72,8 +75,9 @@ const SYSTEM_FIELDS = [
     { key: "mother_dob:day", label: "মাতার জন্ম → Day" },
     { key: "mother_occupation", label: "মাতার পেশা" },
   ]},
-  // শিক্ষাগত তথ্য — SSC/HSC/Honours স্কুল, সাল, বোর্ড, GPA, বিভাগ/বিষয়
+  // শিক্ষাগত তথ্য — SSC/HSC/Honours + Elementary/Junior/High (入学願書 format)
   { group: "শিক্ষা", color: "amber", fields: [
+    // SSC / HSC / Honours — existing
     { key: "edu_ssc_school", label: "SSC স্কুল" },
     { key: "edu_ssc_year", label: "SSC সন" },
     { key: "edu_ssc_board", label: "SSC বোর্ড" },
@@ -88,6 +92,21 @@ const SYSTEM_FIELDS = [
     { key: "edu_honours_year", label: "Honours সন" },
     { key: "edu_honours_gpa", label: "Honours GPA" },
     { key: "edu_honours_subject", label: "Honours বিষয়" },
+    // Elementary — 小学校 (入学/卒業 + 所在地)
+    { key: "edu_elementary_school", label: "প্রাথমিক বিদ্যালয়" },
+    { key: "edu_elementary_address", label: "প্রাথমিক → ঠিকানা" },
+    { key: "edu_elementary_entrance", label: "প্রাথমিক → ভর্তি সন" },
+    { key: "edu_elementary_graduation", label: "প্রাথমিক → পাশ সন" },
+    // Junior High — 中学校
+    { key: "edu_junior_school", label: "জুনিয়র হাই স্কুল" },
+    { key: "edu_junior_address", label: "জুনিয়র → ঠিকানা" },
+    { key: "edu_junior_entrance", label: "জুনিয়র → ভর্তি সন" },
+    { key: "edu_junior_graduation", label: "জুনিয়র → পাশ সন" },
+    // High School — 高等学校
+    { key: "edu_high_school", label: "উচ্চ বিদ্যালয়" },
+    { key: "edu_high_address", label: "উচ্চ বিদ্যালয় → ঠিকানা" },
+    { key: "edu_high_entrance", label: "উচ্চ বিদ্যালয় → ভর্তি সন" },
+    { key: "edu_high_graduation", label: "উচ্চ বিদ্যালয় → পাশ সন" },
   ]},
   // জাপানি ভাষা — JLPT/NAT পরীক্ষার ধরন, লেভেল, স্কোর, ফলাফল, তারিখ
   { group: "জাপানি ভাষা", color: "rose", fields: [
@@ -96,6 +115,28 @@ const SYSTEM_FIELDS = [
     { key: "jp_score", label: "স্কোর" },
     { key: "jp_result", label: "ফলাফল" },
     { key: "jp_exam_date", label: "পরীক্ষার তারিখ" },
+  ]},
+  // কর্ম অভিজ্ঞতা — 職歴 (Vocational experience for 入学願書)
+  { group: "কর্ম অভিজ্ঞতা", color: "emerald", fields: [
+    { key: "work_company", label: "কোম্পানি নাম" },
+    { key: "work_address", label: "কোম্পানি ঠিকানা" },
+    { key: "work_start", label: "শুরু তারিখ" },
+    { key: "work_end", label: "শেষ তারিখ" },
+    { key: "work_position", label: "পদবি" },
+    // ২য় কর্ম অভিজ্ঞতা (indexed)
+    { key: "work2_company", label: "২য় কোম্পানি নাম" },
+    { key: "work2_address", label: "২য় কোম্পানি ঠিকানা" },
+    { key: "work2_start", label: "২য় শুরু তারিখ" },
+    { key: "work2_end", label: "২য় শেষ তারিখ" },
+    { key: "work2_position", label: "২য় পদবি" },
+  ]},
+  // জাপানি ভাষা শিক্ষা ইতিহাস — 日本語学習歴 (入学願書)
+  { group: "জাপানি শিক্ষা ইতিহাস", color: "purple", fields: [
+    { key: "jp_study_institution", label: "প্রতিষ্ঠান" },
+    { key: "jp_study_address", label: "প্রতিষ্ঠান ঠিকানা" },
+    { key: "jp_study_from", label: "শুরু তারিখ" },
+    { key: "jp_study_to", label: "শেষ তারিখ" },
+    { key: "jp_study_hours", label: "মোট ঘণ্টা" },
   ]},
   // স্পন্সর/গ্যারান্টর — নাম, ফোন, ঠিকানা, সম্পর্ক, আয়/ট্যাক্স (৩ বছর) + 経費支弁書 fields
   { group: "স্পন্সর", color: "rose", fields: [
@@ -118,6 +159,10 @@ const SYSTEM_FIELDS = [
     { key: "sponsor_tin", label: "Sponsor TIN" },
     { key: "sponsor_income", label: "Sponsor Annual Income" },
     { key: "sponsor_nid", label: "Sponsor NID" },
+    // Resume fields — 入学願書
+    { key: "sponsor_dob", label: "স্পন্সর জন্ম তারিখ" },
+    { key: "sponsor_company_phone", label: "কোম্পানি ফোন" },
+    { key: "sponsor_company_address", label: "কোম্পানি ঠিকানা" },
   ]},
   // জাপান ফাইন্যান্স — টিউশন, জীবনযাত্রা খরচ, বিনিময় হার
   { group: "জাপান ফাইন্যান্স", color: "amber", fields: [
@@ -133,6 +178,30 @@ const SYSTEM_FIELDS = [
     { key: "intake", label: "Intake" },
     { key: "visa_type", label: "ভিসার ধরন" },
     { key: "student_type", label: "স্টুডেন্ট টাইপ" },
+  ]},
+  // পরিবার (বিস্তারিত) — 入学願書 format: নাম, সম্পর্ক, জন্ম তারিখ, পেশা, ঠিকানা
+  { group: "পরিবার (বিস্তারিত)", color: "purple", fields: [
+    { key: "family1_name", label: "সদস্য ১ নাম" },
+    { key: "family1_relation", label: "সদস্য ১ সম্পর্ক" },
+    { key: "family1_dob", label: "সদস্য ১ জন্ম তারিখ" },
+    { key: "family1_occupation", label: "সদস্য ১ পেশা" },
+    { key: "family1_address", label: "সদস্য ১ ঠিকানা" },
+    { key: "family2_name", label: "সদস্য ২ নাম" },
+    { key: "family2_relation", label: "সদস্য ২ সম্পর্ক" },
+    { key: "family2_dob", label: "সদস্য ২ জন্ম তারিখ" },
+    { key: "family2_occupation", label: "সদস্য ২ পেশা" },
+    { key: "family2_address", label: "সদস্য ২ ঠিকানা" },
+    { key: "family3_name", label: "সদস্য ৩ নাম" },
+    { key: "family3_relation", label: "সদস্য ৩ সম্পর্ক" },
+    { key: "family3_dob", label: "সদস্য ৩ জন্ম তারিখ" },
+    { key: "family3_occupation", label: "সদস্য ৩ পেশা" },
+    { key: "family3_address", label: "সদস্য ৩ ঠিকানা" },
+  ]},
+  // পড়াশোনার পরিকল্পনা — 入学願書: কেন পড়তে চাও, ভবিষ্যৎ পরিকল্পনা, বিষয়
+  { group: "পড়াশোনার পরিকল্পনা", color: "cyan", fields: [
+    { key: "reason_for_study", label: "পড়ার কারণ" },
+    { key: "future_plan", label: "ভবিষ্যৎ পরিকল্পনা" },
+    { key: "study_subject", label: "পড়ার বিষয়" },
   ]},
   // সিস্টেম ভ্যারিয়েবল — এজেন্সি, ব্রাঞ্চ, তারিখ, স্কুল, ব্যাচ তথ্য
   { group: "সিস্টেম ভ্যারিয়েবল", color: "muted", fields: [
