@@ -262,5 +262,32 @@
     "updated": "Updated successfully",
     "created": "Created successfully",
     "exported": "Exported successfully"
+  },
+
+  "onboarding": {
+    "welcome": "Welcome to AgencyBook!",
+    "welcomeDesc": "Follow a few steps to set up your agency. This guide will help you get started quickly.",
+    "agencySetup": "Agency Setup",
+    "agencySetupDesc": "Go to Settings → Agency Info and add your agency name, address, phone, and logo.",
+    "agencySetupTip": "This info will be used as {{sys_agency_name}} in document templates.",
+    "addStudents": "Add Students",
+    "addStudentsDesc": "Go to Students module and add new students. You can also bulk import from Excel.",
+    "addStudentsTip": "Complete student info makes document auto-fill work best.",
+    "documents": "Document Data",
+    "documentsDesc": "In Documents module, input student's Birth Certificate, Passport, SSC/HSC etc. Use OCR Scan to auto-fill from photos.",
+    "documentsTip": "Use Scan & Auto-fill button to upload a photo and OCR will extract data automatically.",
+    "docGenerator": "Document Generator",
+    "docGeneratorDesc": "In Certificates module, upload .docx template, map {{placeholders}}, then select student to generate document.",
+    "docGeneratorTip": "Use {{name_en}}, {{dob:jp}}, {{gender:jp}} etc. placeholders in templates.",
+    "preDeparture": "Pre-Departure",
+    "preDepartureDesc": "After COE received, track Health, VFS, Visa, Flight in Pre-Departure module. Country-specific steps shown.",
+    "preDepartureTip": "Add checklist, deadline, and Google Drive link for each step.",
+    "ready": "All Ready!",
+    "readyDesc": "You can now start using AgencyBook. Visit the Help page for any issues.",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next →",
+    "getStarted": "Get Started",
+    "restartButton": "Restart Onboarding"
   }
 }

@@ -48,6 +48,7 @@ const ProfilePage = lazy(() => import("./pages/profile/ProfilePage"));
 const HelpPage = lazy(() => import("./pages/help/HelpPage"));
 import PageSkeleton from "./components/ui/PageSkeleton";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
+import OnboardingWizard from "./components/ui/OnboardingWizard";
 
 // ── NAV_ITEMS key → i18n translation key mapping ──
 const NAV_I18N = {
@@ -850,6 +851,8 @@ function AppShell({ isDark, setIsDark }) {
           </main>
         </div>
       </div>
+        {/* ── Onboarding Wizard — প্রথম login-এ step-by-step নির্দেশনা দেখায় ── */}
+        <OnboardingWizard />
       </PermissionProvider>
       </ErrorBoundary>
     </ThemeContext.Provider>

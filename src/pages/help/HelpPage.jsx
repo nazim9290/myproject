@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { HelpCircle, Search, ChevronDown, ChevronRight, BookOpen, Users, GraduationCap, FileText, DollarSign, Building, ClipboardList, Briefcase, Globe, Package, TrendingUp, Settings, Phone, Plane, Calendar, CheckCircle, Award, Lock, User, ScanLine, Code, MapPin, FilePlus, Layers } from "lucide-react";
+import { HelpCircle, Search, ChevronDown, ChevronRight, BookOpen, Users, GraduationCap, FileText, DollarSign, Building, ClipboardList, Briefcase, Globe, Package, TrendingUp, Settings, Phone, Plane, Calendar, CheckCircle, Award, Lock, User, ScanLine, Code, MapPin, FilePlus, Layers, RefreshCw } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
+import { resetOnboarding } from "../../components/ui/OnboardingWizard";
 
 // ═══════════════════════════════════════════════
 // হেল্প গাইড ডাটা — প্রতিটি মডিউলের ধাপে ধাপে ব্যবহার নির্দেশিকা
@@ -1008,6 +1010,7 @@ Super Admin-এর default template পরিবর্তন করতে পা
 
 export default function HelpPage() {
   const t = useTheme();
+  const { t: tr } = useLanguage();
   const [searchQ, setSearchQ] = useState("");
   const [expandedSection, setExpandedSection] = useState("getting-started");
   const [expandedTopics, setExpandedTopics] = useState({});
@@ -1046,6 +1049,17 @@ export default function HelpPage() {
             AgencyBook-এর সম্পূর্ণ গাইডলাইন — নন-টেকনিক্যাল ব্যবহারকারীদের জন্য
           </p>
         </div>
+        {/* ── Onboarding আবার দেখার বাটন ── */}
+        <button
+          onClick={() => { resetOnboarding(); window.location.reload(); }}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
+          style={{ background: `${t.cyan}15`, color: t.cyan }}
+          onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}25`}
+          onMouseLeave={e => e.currentTarget.style.background = `${t.cyan}15`}
+        >
+          <RefreshCw size={12} />
+          {tr("onboarding.restartButton")}
+        </button>
       </div>
 
       {/* ── সার্চ বার ── */}

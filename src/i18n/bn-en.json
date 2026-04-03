@@ -262,5 +262,32 @@
     "updated": "Update হয়েছে",
     "created": "Create হয়েছে",
     "exported": "Export হয়েছে"
+  },
+
+  "onboarding": {
+    "welcome": "AgencyBook-এ Welcome!",
+    "welcomeDesc": "আপনার Agency Setup করতে কয়েকটি Step Follow করুন। এই Guide আপনাকে দ্রুত Start করতে Help করবে।",
+    "agencySetup": "Agency Setup",
+    "agencySetupDesc": "Settings → Agency Info-তে যান এবং আপনার Agency-র Name, Address, Phone, Logo Add করুন।",
+    "agencySetupTip": "এই Info Document Template-এ {{sys_agency_name}} হিসেবে Use হবে।",
+    "addStudents": "Student Add করুন",
+    "addStudentsDesc": "Student Module-এ গিয়ে নতুন Student Add করুন। Excel থেকে Bulk Import-ও করতে পারেন।",
+    "addStudentsTip": "প্রতিটি Student-এর Complete তথ্য দিলে Document Auto-fill সবচেয়ে ভালো Work করে।",
+    "documents": "Document Data",
+    "documentsDesc": "Document Module-এ Student-এর Birth Certificate, Passport, SSC/HSC etc. তথ্য Input করুন। OCR Scan দিয়ে Photo থেকে Auto-fill করতে পারেন।",
+    "documentsTip": "Scan & Auto-fill Button দিয়ে Photo Upload করলে OCR Automatic Data Extract করবে।",
+    "docGenerator": "Document Generator",
+    "docGeneratorDesc": "Certificate Module-এ .docx Template Upload করুন, {{placeholder}} Map করুন, তারপর Student Select করে Document Generate করুন।",
+    "docGeneratorTip": "Template-এ {{name_en}}, {{dob:jp}}, {{gender:jp}} etc. Placeholder Use করুন।",
+    "preDeparture": "Pre-Departure",
+    "preDepartureDesc": "COE পাওয়ার পর Pre-Departure Module-এ Health, VFS, Visa, Flight Track করুন। Country অনুযায়ী আলাদা Steps দেখাবে।",
+    "preDepartureTip": "প্রতিটি Step-এ Checklist, Deadline, এবং Google Drive Link Add করতে পারেন।",
+    "ready": "সব Ready!",
+    "readyDesc": "আপনি এখন AgencyBook Use শুরু করতে পারেন। যেকোনো Problem-এ Help Page-এ যান।",
+    "skip": "Skip করুন",
+    "back": "Back",
+    "next": "Next →",
+    "getStarted": "Start করুন",
+    "restartButton": "Onboarding আবার দেখুন"
   }
 }

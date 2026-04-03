@@ -262,5 +262,32 @@
     "updated": "আপডেট হয়েছে",
     "created": "তৈরি হয়েছে",
     "exported": "এক্সপোর্ট হয়েছে"
+  },
+
+  "onboarding": {
+    "welcome": "AgencyBook-এ স্বাগতম!",
+    "welcomeDesc": "আপনার agency সেটআপ করতে কয়েকটি ধাপ অনুসরণ করুন। এই নির্দেশনা আপনাকে দ্রুত শুরু করতে সাহায্য করবে।",
+    "agencySetup": "এজেন্সি সেটআপ",
+    "agencySetupDesc": "Settings → এজেন্সি তথ্য-তে যান এবং আপনার এজেন্সির নাম, ঠিকানা, ফোন, লোগো যোগ করুন।",
+    "agencySetupTip": "এই তথ্য document template-এ {{sys_agency_name}} হিসেবে ব্যবহার হবে।",
+    "addStudents": "স্টুডেন্ট যোগ করুন",
+    "addStudentsDesc": "স্টুডেন্ট মডিউলে গিয়ে নতুন স্টুডেন্ট যোগ করুন। Excel থেকে bulk import-ও করতে পারেন।",
+    "addStudentsTip": "প্রতিটি স্টুডেন্টের সম্পূর্ণ তথ্য দিলে document auto-fill সবচেয়ে ভালো কাজ করে।",
+    "documents": "ডকুমেন্ট ডাটা",
+    "documentsDesc": "ডকুমেন্ট মডিউলে স্টুডেন্টের Birth Certificate, Passport, SSC/HSC ইত্যাদি তথ্য input করুন। OCR Scan দিয়ে ছবি থেকে auto-fill করতে পারেন।",
+    "documentsTip": "Scan & Auto-fill বাটন দিয়ে ছবি আপলোড করলে OCR automatic ডাটা extract করবে।",
+    "docGenerator": "Document Generator",
+    "docGeneratorDesc": "সার্টিফিকেট মডিউলে .docx template আপলোড করুন, {{placeholder}} map করুন, তারপর স্টুডেন্ট সিলেক্ট করে document generate করুন।",
+    "docGeneratorTip": "Template-এ {{name_en}}, {{dob:jp}}, {{gender:jp}} ইত্যাদি placeholder ব্যবহার করুন।",
+    "preDeparture": "প্রি-ডিপার্চার",
+    "preDepartureDesc": "COE পাওয়ার পর প্রি-ডিপার্চার মডিউলে Health, VFS, Visa, Flight ট্র্যাক করুন। দেশ অনুযায়ী আলাদা steps দেখাবে।",
+    "preDepartureTip": "প্রতিটি step-এ checklist, deadline, এবং Google Drive link যোগ করতে পারেন।",
+    "ready": "সব প্রস্তুত!",
+    "readyDesc": "আপনি এখন AgencyBook ব্যবহার শুরু করতে পারেন। যেকোনো সমস্যায় সাহায্য পেজে যান।",
+    "skip": "Skip করুন",
+    "back": "আগে",
+    "next": "পরবর্তী →",
+    "getStarted": "শুরু করুন",
+    "restartButton": "Onboarding আবার দেখুন"
   }
 }
