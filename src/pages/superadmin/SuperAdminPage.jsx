@@ -34,6 +34,8 @@ export default function SuperAdminPage() {
   const [docTypeGroups, setDocTypeGroups] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPricingForm, setShowPricingForm] = useState(false);
+  // ── ট্যাব navigation ──
+  const [activeTab, setActiveTab] = useState("agencies");
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [detailAgency, setDetailAgency] = useState(null);
@@ -298,6 +300,29 @@ export default function SuperAdminPage() {
         <Button icon={Plus} onClick={() => setShowCreateForm(!showCreateForm)}>নতুন এজেন্সি</Button>
       </div>
 
+      {/* ── Tab Navigation ── */}
+      <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
+        {[
+          { key: "agencies", label: "এজেন্সি", icon: "🏢" },
+          { key: "credits", label: "OCR Credits", icon: "🔍" },
+          { key: "templates", label: "টেমপ্লেট", icon: "📄" },
+          { key: "settings", label: "সেটিংস", icon: "⚙️" },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+            style={{
+              background: activeTab === tab.key ? t.card : "transparent",
+              color: activeTab === tab.key ? t.cyan : t.muted,
+              boxShadow: activeTab === tab.key ? "0 1px 3px rgba(0,0,0,0.2)" : "none",
+            }}>
+            <span>{tab.icon}</span> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ══ TAB: AGENCIES ══ */}
+      {activeTab === "agencies" && <>
+
       {/* ── Stats ── */}
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -319,6 +344,11 @@ export default function SuperAdminPage() {
           ))}
         </div>
       )}
+
+      </>}
+
+      {/* ══ TAB: SETTINGS ══ */}
+      {activeTab === "settings" && <>
 
       {/* ── Pricing Config ── */}
       <Card delay={100}>
@@ -363,82 +393,119 @@ export default function SuperAdminPage() {
         )}
       </Card>
 
+      </>}
+
+      {/* ══ TAB: CREDITS ══ */}
+      {activeTab === "credits" && <>
+
       {/* ── OCR Credits ── */}
-      <Card delay={120}>
+      <Card delay={50}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-semibold flex items-center gap-2">🔍 OCR Credits</h3>
-            <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>৳1 = 1 credit • প্রতি scan = 5 credit (৳5) • Haiku AI + Google Vision</p>
+            <h3 className="text-sm font-semibold flex items-center gap-2">🔍 OCR Credit Management</h3>
+            <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>প্রতি scan = 5 credit • AI Document Scanner (Haiku + Google Vision)</p>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["এজেন্সি", "ক্রেডিট", "মূল্য (৳5/scan)", "অ্যাকশন"].map(h => (
-                  <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                {["এজেন্সি", "Balance", "Scans Left", "অ্যাকশন"].map(h => (
+                  <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {(agencies || []).filter(a => a.status !== "deleted").map(agency => (
+              {(agencies || []).filter(a => a.status !== "deleted").map(agency => {
+                const bal = agency.ocr_credits || 0;
+                const scansLeft = Math.floor(bal / 5);
+                return (
                 <tr key={agency.id} style={{ borderBottom: `1px solid ${t.border}` }}
                   onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <td className="py-2 px-3 font-medium">{agency.name} <span className="text-[9px] font-mono" style={{ color: t.muted }}>{agency.subdomain}</span></td>
-                  <td className="py-2 px-3">
-                    <span className="font-bold text-sm" style={{ color: (agency.ocr_credits || 0) > 0 ? t.emerald : t.rose }}>
-                      {agency.ocr_credits || 0}
-                    </span>
-                    <span className="text-[9px] ml-1" style={{ color: t.muted }}>scan</span>
+                  <td className="py-3 px-3">
+                    <span className="font-medium">{agency.name}</span>
+                    <span className="text-[9px] font-mono ml-1.5" style={{ color: t.muted }}>{agency.subdomain}</span>
                   </td>
-                  <td className="py-2 px-3">
-                    <span className="font-medium" style={{ color: t.text }}>
-                      ৳{((agency.ocr_credits || 0) * (pricing.ocr_credit_price || 5)).toLocaleString("en-IN")}
-                    </span>
+                  <td className="py-3 px-3">
+                    <span className="font-bold text-base" style={{ color: bal > 0 ? t.emerald : t.rose }}>{bal}</span>
+                    <span className="text-[9px] ml-1" style={{ color: t.muted }}>credits</span>
                   </td>
-                  <td className="py-2 px-3">
+                  <td className="py-3 px-3">
+                    <span className="text-xs" style={{ color: scansLeft > 0 ? t.text : t.muted }}>{scansLeft > 0 ? `${scansLeft} scans` : "—"}</span>
+                  </td>
+                  <td className="py-3 px-3">
                     {creditAgencyId === agency.id ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <input type="number" value={creditAmount} onChange={e => setCreditAmount(e.target.value)}
-                          placeholder="পরিমাণ" min="1"
-                          className="w-20 px-2 py-1 rounded text-xs outline-none"
+                          placeholder="Credit" min="1"
+                          className="w-24 px-2 py-1.5 rounded-lg text-xs outline-none"
                           style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
                         <input value={creditNote} onChange={e => setCreditNote(e.target.value)}
-                          placeholder="নোট (optional)"
-                          className="w-32 px-2 py-1 rounded text-xs outline-none"
+                          placeholder="Note"
+                          className="w-36 px-2 py-1.5 rounded-lg text-xs outline-none"
                           style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                        {/* যোগ বাটন */}
                         <button onClick={async () => {
                           if (!creditAmount || +creditAmount <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
                           try {
                             const res = await fetch(`${API_URL}/super-admin/agencies/${agency.id}/credits`, {
-                              method: "POST", headers, body: JSON.stringify({ amount: +creditAmount, description: creditNote }),
+                              method: "POST", headers, body: JSON.stringify({ amount: +creditAmount, description: creditNote || `Credit topup: ${creditAmount}` }),
                             });
                             if (res.ok) {
                               const d = await res.json();
                               setAgencies(prev => prev.map(a => a.id === agency.id ? { ...a, ocr_credits: d.credits } : a));
-                              toast.success(`${agency.name} — ${creditAmount} credit যোগ হয়েছে (Balance: ${d.credits})`);
+                              toast.success(`${agency.name} — ${creditAmount} credit যোগ হয়েছে`);
                               setCreditAgencyId(null); setCreditAmount(""); setCreditNote("");
                             }
                           } catch { toast.error("ব্যর্থ"); }
-                        }} className="px-2 py-1 rounded text-[10px] font-medium"
-                          style={{ background: t.emerald, color: "#fff" }}>যোগ</button>
-                        <button onClick={() => setCreditAgencyId(null)} className="text-[10px]" style={{ color: t.muted }}>✕</button>
+                        }} className="px-3 py-1.5 rounded-lg text-[10px] font-medium"
+                          style={{ background: t.emerald, color: "#fff" }}>+ যোগ</button>
+                        {/* সেট বাটন — exact balance set করতে */}
+                        <button onClick={async () => {
+                          const setVal = +creditAmount;
+                          if (isNaN(setVal) || setVal < 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
+                          try {
+                            await fetch(`${API_URL}/super-admin/agencies/${agency.id}/credits`, {
+                              method: "POST", headers, body: JSON.stringify({ amount: setVal - bal, description: creditNote || `Credit set to: ${setVal}` }),
+                            });
+                            setAgencies(prev => prev.map(a => a.id === agency.id ? { ...a, ocr_credits: setVal } : a));
+                            toast.success(`${agency.name} — Balance: ${setVal} credits`);
+                            setCreditAgencyId(null); setCreditAmount(""); setCreditNote("");
+                          } catch { toast.error("ব্যর্থ"); }
+                        }} className="px-3 py-1.5 rounded-lg text-[10px] font-medium"
+                          style={{ background: `${t.amber}20`, color: t.amber }}>= সেট</button>
+                        <button onClick={() => setCreditAgencyId(null)} className="text-xs px-1" style={{ color: t.muted }}>✕</button>
                       </div>
                     ) : (
-                      <button onClick={() => { setCreditAgencyId(agency.id); setCreditAmount(""); setCreditNote(""); }}
-                        className="text-[10px] px-2 py-1 rounded transition"
-                        style={{ background: `${t.cyan}15`, color: t.cyan }}>
-                        + Credit যোগ
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { setCreditAgencyId(agency.id); setCreditAmount(""); setCreditNote(""); }}
+                          className="text-[10px] px-2.5 py-1 rounded-lg transition font-medium"
+                          style={{ background: `${t.cyan}15`, color: t.cyan }}>
+                          + Credit
+                        </button>
+                        {bal > 0 && (
+                          <button onClick={() => { setCreditAgencyId(agency.id); setCreditAmount("0"); setCreditNote(""); }}
+                            className="text-[10px] px-2 py-1 rounded-lg transition"
+                            style={{ background: `${t.rose}10`, color: t.rose }}>
+                            Reset
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
       </Card>
+
+      </>}
+
+      {/* ══ TAB: TEMPLATES ══ */}
+      {activeTab === "templates" && <>
 
       {/* ── ডিফল্ট টেমপ্লেট ── */}
       <Card delay={150}>
@@ -664,6 +731,10 @@ export default function SuperAdminPage() {
         })()}
       </Modal>
 
+      </>}
+
+      {/* ── নতুন এজেন্সি তৈরি (agencies tab) ── */}
+      {activeTab === "agencies" && <>
       {/* ── নতুন এজেন্সি তৈরি ── */}
       {showCreateForm && (
         <Card delay={0}>
@@ -904,6 +975,7 @@ export default function SuperAdminPage() {
           </table>
         </div>
       </Card>
+      </>}
     </div>
   );
 }
