@@ -243,7 +243,12 @@ export default function SuperAdminPage() {
   const saveMappings = async () => {
     if (!mappingTemplate) return;
     setMappingSaving(true);
-    const existingData = typeof mappingTemplate.template_data === "string" ? JSON.parse(mappingTemplate.template_data) : mappingTemplate.template_data;
+    let existingData = null;
+    try {
+      existingData = typeof mappingTemplate.template_data === "string" && mappingTemplate.template_data
+        ? JSON.parse(mappingTemplate.template_data)
+        : mappingTemplate.template_data;
+    } catch { existingData = null; }
     const placeholders = (existingData?.placeholders || []).map(p => {
       const baseField = templateMappings[p.key] || "";
       const mod = templateModifiers[p.key] || "";
