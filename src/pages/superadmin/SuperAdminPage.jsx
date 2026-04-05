@@ -44,6 +44,11 @@ export default function SuperAdminPage() {
     plan: "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: false,
   });
 
+  // ── OCR Credit management state ──
+  const [creditAgencyId, setCreditAgencyId] = useState(null);
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditNote, setCreditNote] = useState("");
+
   // ── ডিফল্ট টেমপ্লেট state ──
   const [templates, setTemplates] = useState([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -350,6 +355,77 @@ export default function SuperAdminPage() {
             }}>সংরক্ষণ</Button>
           </div>
         )}
+      </Card>
+
+      {/* ── OCR Credits ── */}
+      <Card delay={120}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2">🔍 OCR Credits</h3>
+            <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>এজেন্সিতে OCR scan credit যোগ করুন — Haiku AI + Google Vision</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                {["এজেন্সি", "ক্রেডিট", "অ্যাকশন"].map(h => (
+                  <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(agencies || []).filter(a => a.status !== "deleted").map(agency => (
+                <tr key={agency.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                  onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <td className="py-2 px-3 font-medium">{agency.name} <span className="text-[9px] font-mono" style={{ color: t.muted }}>{agency.subdomain}</span></td>
+                  <td className="py-2 px-3">
+                    <span className="font-bold text-sm" style={{ color: (agency.ocr_credits || 0) > 0 ? t.emerald : t.rose }}>
+                      {agency.ocr_credits || 0}
+                    </span>
+                  </td>
+                  <td className="py-2 px-3">
+                    {creditAgencyId === agency.id ? (
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={creditAmount} onChange={e => setCreditAmount(e.target.value)}
+                          placeholder="পরিমাণ" min="1"
+                          className="w-20 px-2 py-1 rounded text-xs outline-none"
+                          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                        <input value={creditNote} onChange={e => setCreditNote(e.target.value)}
+                          placeholder="নোট (optional)"
+                          className="w-32 px-2 py-1 rounded text-xs outline-none"
+                          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                        <button onClick={async () => {
+                          if (!creditAmount || +creditAmount <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
+                          try {
+                            const res = await fetch(`${API_URL}/super-admin/agencies/${agency.id}/credits`, {
+                              method: "POST", headers, body: JSON.stringify({ amount: +creditAmount, description: creditNote }),
+                            });
+                            if (res.ok) {
+                              const d = await res.json();
+                              setAgencies(prev => prev.map(a => a.id === agency.id ? { ...a, ocr_credits: d.credits } : a));
+                              toast.success(`${agency.name} — ${creditAmount} credit যোগ হয়েছে (Balance: ${d.credits})`);
+                              setCreditAgencyId(null); setCreditAmount(""); setCreditNote("");
+                            }
+                          } catch { toast.error("ব্যর্থ"); }
+                        }} className="px-2 py-1 rounded text-[10px] font-medium"
+                          style={{ background: t.emerald, color: "#fff" }}>যোগ</button>
+                        <button onClick={() => setCreditAgencyId(null)} className="text-[10px]" style={{ color: t.muted }}>✕</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => { setCreditAgencyId(agency.id); setCreditAmount(""); setCreditNote(""); }}
+                        className="text-[10px] px-2 py-1 rounded transition"
+                        style={{ background: `${t.cyan}15`, color: t.cyan }}>
+                        + Credit যোগ
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {/* ── ডিফল্ট টেমপ্লেট ── */}

@@ -40,18 +40,29 @@ export default function DocumentsPage({ students }) {
   const [fieldValues, setFieldValues] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // OCR Scan — ডকুমেন্ট ইমেজ থেকে auto-fill
+  // OCR Scan — ডকুমেন্ট ইমেজ থেকে auto-fill (credit system সহ)
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
+  const [ocrCredits, setOcrCredits] = useState(null); // null = loading, 0+ = loaded
   const scanInputRef = useRef(null);
 
+  // OCR credit balance load
+  useEffect(() => {
+    api.get("/ocr/credits").then(d => setOcrCredits(d?.credits ?? 0)).catch(() => setOcrCredits(0));
+  }, []);
+
   /**
-   * handleScanUpload — ডকুমেন্ট ইমেজ আপলোড করলে OCR API call করে
-   * extracted fields দিয়ে form auto-fill করে
+   * handleScanUpload — credit check → OCR API call → auto-fill
    */
   const handleScanUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Credit check — scan করার আগেই check
+    if (ocrCredits !== null && ocrCredits <= 0) {
+      toast.error("OCR credit শেষ — অ্যাডমিনের সাথে যোগাযোগ করুন");
+      return;
+    }
 
     setScanning(true);
     setScanResult(null);
@@ -60,10 +71,12 @@ export default function DocumentsPage({ students }) {
       const formData = new FormData();
       formData.append("file", file);
 
-      // OCR API call — FormData পাঠাচ্ছে, api.upload ব্যবহার
+      // OCR API call — credit deduct হবে backend-এ
       const data = await api.upload("/ocr/scan", formData);
 
       setScanResult(data);
+      // Credit balance আপডেট (response-এ remaining আসে)
+      if (data.credits_remaining !== undefined) setOcrCredits(data.credits_remaining);
 
       // Auto-fill — extracted fields দিয়ে form পূরণ
       const extracted = data.extracted_fields || {};
@@ -72,7 +85,6 @@ export default function DocumentsPage({ students }) {
 
       Object.entries(extracted).forEach(([key, value]) => {
         if (key === "_confidence") return;
-        // শুধুমাত্র doc type-এ থাকা ফিল্ড এবং ফাঁকা ফিল্ডই fill হবে
         const fieldExists = (activeDocType?.fields || []).some(f => f.key === key);
         if (fieldExists && !newValues[key]) {
           newValues[key] = value;
@@ -81,9 +93,16 @@ export default function DocumentsPage({ students }) {
       });
 
       setFieldValues(newValues);
-      toast.success(tr("documents.scanComplete", { count: filledCount }));
+      const engineLabel = data.engine === "haiku" ? "AI" : "OCR";
+      toast.success(`${engineLabel} — ${filledCount} fields auto-filled (${data.credits_remaining ?? "?"} credits left)`);
     } catch (err) {
-      toast.error(tr("documents.scanFailed") + ": " + err.message);
+      // NO_CREDITS error handle
+      if (err.message?.includes("credit")) {
+        toast.error("OCR credit শেষ — অ্যাডমিনের সাথে যোগাযোগ করুন");
+        setOcrCredits(0);
+      } else {
+        toast.error(tr("documents.scanFailed") + ": " + err.message);
+      }
     }
 
     setScanning(false);
@@ -274,6 +293,16 @@ export default function DocumentsPage({ students }) {
             <div className="flex items-center gap-2">
               <Camera size={16} style={{ color: t.purple }} />
               <span className="text-xs font-semibold" style={{ color: t.text }}>{tr("documents.scanAutoFill")}</span>
+              {/* OCR Credit balance badge */}
+              {ocrCredits !== null && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                  style={{
+                    background: ocrCredits > 0 ? `${t.emerald}15` : `${t.rose}15`,
+                    color: ocrCredits > 0 ? t.emerald : t.rose,
+                  }}>
+                  {ocrCredits > 0 ? `${ocrCredits} credits` : "No credits"}
+                </span>
+              )}
             </div>
             {scanning && <span className="text-[10px]" style={{ color: t.muted }}>{tr("documents.scanning")}</span>}
           </div>
