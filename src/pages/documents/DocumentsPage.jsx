@@ -14,6 +14,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
@@ -43,7 +44,8 @@ export default function DocumentsPage({ students }) {
   // OCR Scan — ডকুমেন্ট ইমেজ থেকে auto-fill (credit system সহ)
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
-  const [ocrCredits, setOcrCredits] = useState(null); // null = loading, 0+ = loaded
+  const [ocrCredits, setOcrCredits] = useState(null);
+  const [showCreditPopup, setShowCreditPopup] = useState(false);
   const scanInputRef = useRef(null);
 
   // OCR credit balance load
@@ -60,7 +62,8 @@ export default function DocumentsPage({ students }) {
 
     // Credit check — প্রতি scan-এ 5 credit লাগে
     if (ocrCredits !== null && ocrCredits < 5) {
-      toast.error(`OCR credit অপর্যাপ্ত (${ocrCredits}/5) — অ্যাডমিনের সাথে যোগাযোগ করুন`);
+      setShowCreditPopup(true);
+      e.target.value = ""; // file input reset
       return;
     }
 
@@ -96,10 +99,10 @@ export default function DocumentsPage({ students }) {
       const engineLabel = data.engine === "haiku" ? "AI" : "OCR";
       toast.success(`${engineLabel} — ${filledCount} fields auto-filled (${data.credits_remaining ?? "?"} credits left)`);
     } catch (err) {
-      // NO_CREDITS error handle
+      // NO_CREDITS error handle — popup দেখাও
       if (err.message?.includes("credit")) {
-        toast.error("OCR credit শেষ — অ্যাডমিনের সাথে যোগাযোগ করুন");
         setOcrCredits(0);
+        setShowCreditPopup(true);
       } else {
         toast.error(tr("documents.scanFailed") + ": " + err.message);
       }
@@ -294,13 +297,10 @@ export default function DocumentsPage({ students }) {
               <Camera size={16} style={{ color: t.purple }} />
               <span className="text-xs font-semibold" style={{ color: t.text }}>{tr("documents.scanAutoFill")}</span>
               {/* OCR Credit balance badge */}
-              {ocrCredits !== null && (
+              {ocrCredits !== null && ocrCredits >= 5 && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                  style={{
-                    background: ocrCredits >= 5 ? `${t.emerald}15` : `${t.rose}15`,
-                    color: ocrCredits >= 5 ? t.emerald : t.rose,
-                  }}>
-                  {ocrCredits >= 5 ? `${ocrCredits} credits (5/scan)` : `${ocrCredits} credits — insufficient`}
+                  style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                  {ocrCredits} credits
                 </span>
               )}
             </div>
@@ -332,6 +332,36 @@ export default function DocumentsPage({ students }) {
             {tr("documents.scanHelp")}
           </p>
         </div>
+
+        {/* ── OCR Credit Popup — credit না থাকলে professional modal ── */}
+        <Modal isOpen={showCreditPopup} onClose={() => setShowCreditPopup(false)} title="AI Document Scanner" size="sm">
+          <div className="text-center space-y-4 py-2">
+            <div className="text-4xl">🔍</div>
+            <div>
+              <h4 className="text-sm font-bold" style={{ color: t.text }}>Scan Credit Required</h4>
+              <p className="text-xs mt-1" style={{ color: t.muted }}>
+                AI-powered document scanning automatically extracts data from your documents and fills in all fields — saving hours of manual work.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl" style={{ background: t.inputBg }}>
+              <div className="flex justify-between text-xs mb-1">
+                <span style={{ color: t.muted }}>Your balance</span>
+                <span className="font-bold" style={{ color: t.rose }}>{ocrCredits || 0} credits</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: t.muted }}>Per scan cost</span>
+                <span className="font-medium" style={{ color: t.text }}>5 credits</span>
+              </div>
+            </div>
+            <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}20` }}>
+              <p className="text-[10px] font-medium" style={{ color: t.cyan }}>How to get credits?</p>
+              <p className="text-[10px] mt-1" style={{ color: t.muted }}>
+                Contact your agency administrator or AgencyBook support to purchase scan credits. Credits never expire.
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setShowCreditPopup(false)}>Got it</Button>
+          </div>
+        </Modal>
 
         {/* Normal fields + section headers — কন্ডিশনাল ফিল্ড সাপোর্ট সহ */}
         <Card delay={50}>
