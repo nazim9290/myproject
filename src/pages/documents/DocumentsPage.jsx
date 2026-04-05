@@ -73,6 +73,13 @@ export default function DocumentsPage({ students }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      // Active doc type-এর field info পাঠাও — Haiku এই fields খুঁজবে
+      if (activeDocType) {
+        formData.append("doc_type_name", activeDocType.name || "");
+        formData.append("expected_fields", JSON.stringify(
+          (activeDocType.fields || []).map(f => ({ key: f.key, label: f.label || f.key, type: f.type || "text" }))
+        ));
+      }
 
       // OCR API call — credit deduct হবে backend-এ
       const data = await api.upload("/ocr/scan", formData);
