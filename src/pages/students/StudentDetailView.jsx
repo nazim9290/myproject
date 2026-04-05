@@ -1404,9 +1404,17 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <BookOpen size={12} /> Purpose of Study
               </h4>
               <div className="flex items-center gap-2">
-                {/* AI Generate বাটন */}
+                {/* AI Generate বাটন — frontend-এই validation, API call আগে check */}
                 <button onClick={async () => {
                   if (student.reason_for_study && !aiGenerateConfirm) { setAiGenerateConfirm(true); return; }
+                  // ── Frontend validation — API call ছাড়াই check ──
+                  const miss = [];
+                  if (!student.name_en) miss.push("Full Name (Profile → Personal Info)");
+                  if (!student.dob) miss.push("Date of Birth (Profile → Personal Info)");
+                  if (!(education || []).length) miss.push("Education — SSC/HSC (Profile → Education → Add)");
+                  if (!student.school && !student.school_id) miss.push("Japanese School (Profile → Destination Info → School)");
+                  if (miss.length > 0) { setAiMissingFields(miss); return; }
+
                   setAiGenerateConfirm(false);
                   setAiGenerating(true);
                   try {
@@ -1416,14 +1424,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       toast.success(`Purpose of Study generated — ${result.word_count} words`);
                     }
                   } catch (err) {
-                    // Missing fields error → modal দিয়ে clear list দেখাও
-                    if (err.data?.missing_fields?.length > 0) {
-                      setAiMissingFields(err.data.missing_fields);
-                    } else if (err.message?.includes("credit")) {
-                      toast.error("AI credit অপর্যাপ্ত — অ্যাডমিনের সাথে যোগাযোগ করুন");
-                    } else {
-                      toast.error(err.message || "AI generation ব্যর্থ");
-                    }
+                    toast.error(err.message || "AI generation ব্যর্থ");
                   }
                   setAiGenerating(false);
                 }}
