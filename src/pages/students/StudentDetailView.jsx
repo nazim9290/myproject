@@ -44,6 +44,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [aiGenerateConfirm, setAiGenerateConfirm] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiMissingFields, setAiMissingFields] = useState(null); // missing fields modal
 
   // ── Dropdown options: batches, schools, branches, agents, users backend থেকে load ──
   const [batchOptions, setBatchOptions] = useState([]);
@@ -1405,21 +1406,25 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               <div className="flex items-center gap-2">
                 {/* AI Generate বাটন */}
                 <button onClick={async () => {
-                  // Re-generate confirmation — inline UI, confirm() না
-                  if (student.reason_for_study && !aiGenerateConfirm) {
-                    setAiGenerateConfirm(true);
-                    return;
-                  }
+                  if (student.reason_for_study && !aiGenerateConfirm) { setAiGenerateConfirm(true); return; }
                   setAiGenerateConfirm(false);
                   setAiGenerating(true);
                   try {
                     const result = await api.post(`/students/${student.id}/generate-study-purpose`);
                     if (result.reason_for_study) {
                       onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
-                      toast.success(`Purpose of Study generated (${result.word_count} words) — ${result.credits_remaining} credits left`);
+                      toast.success(`Purpose of Study generated — ${result.word_count} words`);
                     }
                   } catch (err) {
-                    toast.error(err.message || "AI generation ব্যর্থ");
+                    // Missing fields error → modal দিয়ে দেখাও
+                    const msg = err.message || "";
+                    if (msg.includes("পূরণ করুন")) {
+                      // Error message থেকে field list parse
+                      const fields = msg.replace(/.*পূরণ করুন\s*/, "").split(",").map(f => f.trim()).filter(Boolean);
+                      setAiMissingFields(fields.length > 0 ? fields : [msg]);
+                    } else {
+                      toast.error(msg || "AI generation ব্যর্থ");
+                    }
                   }
                   setAiGenerating(false);
                 }}
@@ -1428,7 +1433,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   style={{ background: `${t.purple}15`, color: t.purple, opacity: aiGenerating ? 0.5 : 1 }}
                   onMouseEnter={e => { if (!aiGenerating) e.currentTarget.style.background = `${t.purple}25`; }}
                   onMouseLeave={e => e.currentTarget.style.background = `${t.purple}15`}>
-                  {aiGenerating ? "⏳ Generating..." : `🤖 ${student.reason_for_study ? "Re-generate (5 credits)" : "AI Generate (5 credits)"}`}
+                  {aiGenerating ? "⏳ Generating..." : `🤖 ${student.reason_for_study ? "Re-generate" : "AI Generate"}`}
                 </button>
                 <button onClick={() => openSectionEdit("study_plan")}
                   className="text-[10px] px-2 py-1 rounded-lg transition"
@@ -2083,6 +2088,44 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <Button size="sm" icon={Save} onClick={handleSectionSave}>{tr("common.save")}</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* ── AI Missing Fields Modal — কোন data পূরণ করতে হবে ── */}
+      <Modal isOpen={!!aiMissingFields} onClose={() => setAiMissingFields(null)} title="🤖 Purpose of Study" subtitle="কিছু তথ্য পূরণ করলে আরো ভালো ফলাফল পাবেন" size="sm">
+        {aiMissingFields && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
+              <p className="text-xs font-medium mb-2" style={{ color: t.amber }}>নিচের তথ্যগুলো এখনো পূরণ হয়নি:</p>
+              <ul className="space-y-1.5">
+                {aiMissingFields.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-xs">
+                    <span style={{ color: t.rose }}>✗</span>
+                    <span style={{ color: t.text }}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setAiMissingFields(null)}
+                className="text-xs px-3 py-1.5 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+              <button onClick={async () => {
+                setAiMissingFields(null);
+                setAiGenerating(true);
+                try {
+                  const result = await api.post(`/students/${student.id}/generate-study-purpose`, { force: true });
+                  if (result.reason_for_study) {
+                    onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
+                    toast.success(`Purpose of Study generated — ${result.word_count} words`);
+                  }
+                } catch (err) { toast.error(err.message || "AI generation ব্যর্থ"); }
+                setAiGenerating(false);
+              }}
+                className="text-xs px-4 py-1.5 rounded-lg font-medium" style={{ background: t.purple, color: "#fff" }}>
+                🤖 যা আছে তা দিয়েই Generate করুন
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* ── Sponsor Edit Modal (xl size) ── */}
