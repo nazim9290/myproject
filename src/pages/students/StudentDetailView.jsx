@@ -42,6 +42,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [editSection, setEditSection] = useState(null); // "personal" | "passport" | "destination" | "internal" | null
   const [sectionForm, setSectionForm] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [aiGenerateConfirm, setAiGenerateConfirm] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   // ── Dropdown options: batches, schools, branches, agents, users backend থেকে load ──
   const [batchOptions, setBatchOptions] = useState([]);
@@ -1394,18 +1396,23 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             )}
           </Card>
 
-          {/* ── Study Plan (অধ্যয়ন পরিকল্পনা) ── */}
+          {/* ── Purpose of Study — AI generate ── */}
           <Card delay={350}>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
                 <BookOpen size={12} /> Purpose of Study
               </h4>
               <div className="flex items-center gap-2">
-                {/* AI Generate বাটন — প্রথমবার generate, save হলে আর AI call হবে না */}
+                {/* AI Generate বাটন */}
                 <button onClick={async () => {
-                  if (student.reason_for_study) { if (!confirm("আগের Purpose of Study replace হবে — নতুন করে generate করবেন?")) return; }
+                  // Re-generate confirmation — inline UI, confirm() না
+                  if (student.reason_for_study && !aiGenerateConfirm) {
+                    setAiGenerateConfirm(true);
+                    return;
+                  }
+                  setAiGenerateConfirm(false);
+                  setAiGenerating(true);
                   try {
-                    toast.success("AI generating... (5 credits)");
                     const result = await api.post(`/students/${student.id}/generate-study-purpose`);
                     if (result.reason_for_study) {
                       onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
@@ -1414,12 +1421,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   } catch (err) {
                     toast.error(err.message || "AI generation ব্যর্থ");
                   }
+                  setAiGenerating(false);
                 }}
+                  disabled={aiGenerating}
                   className="text-[10px] px-2.5 py-1 rounded-lg transition font-medium"
-                  style={{ background: `${t.purple}15`, color: t.purple }}
-                  onMouseEnter={e => e.currentTarget.style.background = `${t.purple}25`}
+                  style={{ background: `${t.purple}15`, color: t.purple, opacity: aiGenerating ? 0.5 : 1 }}
+                  onMouseEnter={e => { if (!aiGenerating) e.currentTarget.style.background = `${t.purple}25`; }}
                   onMouseLeave={e => e.currentTarget.style.background = `${t.purple}15`}>
-                  🤖 {student.reason_for_study ? "Re-generate (5 credits)" : "AI Generate (5 credits)"}
+                  {aiGenerating ? "⏳ Generating..." : `🤖 ${student.reason_for_study ? "Re-generate (5 credits)" : "AI Generate (5 credits)"}`}
                 </button>
                 <button onClick={() => openSectionEdit("study_plan")}
                   className="text-[10px] px-2 py-1 rounded-lg transition"
@@ -1430,6 +1439,33 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 </button>
               </div>
             </div>
+
+            {/* Re-generate confirmation — inline, confirm() ব্যবহার না করে */}
+            {aiGenerateConfirm && (
+              <div className="flex items-center gap-3 mb-3 p-3 rounded-xl" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
+                <AlertTriangle size={16} style={{ color: t.amber }} />
+                <div className="flex-1">
+                  <p className="text-xs font-medium" style={{ color: t.amber }}>আগের Purpose of Study replace হবে</p>
+                  <p className="text-[10px]" style={{ color: t.muted }}>নতুন করে generate করলে 5 credits খরচ হবে</p>
+                </div>
+                <button onClick={() => setAiGenerateConfirm(false)} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.muted }}>বাতিল</button>
+                <button onClick={async () => {
+                  setAiGenerateConfirm(false);
+                  setAiGenerating(true);
+                  try {
+                    const result = await api.post(`/students/${student.id}/generate-study-purpose`);
+                    if (result.reason_for_study) {
+                      onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
+                      toast.success(`Purpose of Study generated (${result.word_count} words)`);
+                    }
+                  } catch (err) { toast.error(err.message || "AI generation ব্যর্থ"); }
+                  setAiGenerating(false);
+                }} className="text-[10px] px-3 py-1 rounded-lg font-medium" style={{ background: t.purple, color: "#fff" }}>
+                  🤖 হ্যাঁ, Generate করুন
+                </button>
+              </div>
+            )}
+
             <div className="space-y-2.5">
               <div>
                 <div className="flex items-center justify-between mb-1">
