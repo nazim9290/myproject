@@ -52,19 +52,46 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
 
   return (
     <div className="flex h-screen w-full items-center justify-center" style={{ background: t.bg, transition: "background 0.4s" }}>
-      <style>{getGlobalStyles(t)}</style>
+      <style>{getGlobalStyles(t)}{`
+        /* Browser autofill সাদা background fix — dark theme-এ মানানসই */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+          -webkit-box-shadow: 0 0 0 100px ${t.card} inset !important;
+          -webkit-text-fill-color: ${t.text} !important;
+          caret-color: ${t.text} !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `}</style>
       <div className="relative w-full max-w-sm mx-4">
         {/* Glow */}
         <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: `radial-gradient(circle, ${t.cyan}, transparent)` }} />
 
         <div className="relative anim-fade rounded-2xl border p-8" style={{ background: t.card, borderColor: t.border }}>
-          {/* Logo */}
+          {/* Logo — Agency Operating System */}
           <div className="flex flex-col items-center mb-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-3" style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
-              <GraduationCap size={28} className="text-white" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-3 relative overflow-hidden"
+              style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})`, boxShadow: `0 8px 32px ${t.cyan}30` }}>
+              {/* Custom logo — globe + graduation cap + connection lines */}
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Globe circle */}
+                <circle cx="18" cy="18" r="14" stroke="white" strokeWidth="1.5" opacity="0.4"/>
+                <ellipse cx="18" cy="18" rx="8" ry="14" stroke="white" strokeWidth="1" opacity="0.3"/>
+                <line x1="4" y1="18" x2="32" y2="18" stroke="white" strokeWidth="1" opacity="0.3"/>
+                <line x1="4" y1="12" x2="32" y2="12" stroke="white" strokeWidth="0.7" opacity="0.2"/>
+                <line x1="4" y1="24" x2="32" y2="24" stroke="white" strokeWidth="0.7" opacity="0.2"/>
+                {/* Paper/Document icon center */}
+                <rect x="12" y="8" width="12" height="16" rx="2" fill="white" opacity="0.9"/>
+                <line x1="15" y1="13" x2="21" y2="13" stroke={t.cyan} strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="15" y1="16.5" x2="21" y2="16.5" stroke={t.purple} strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="15" y1="20" x2="19" y2="20" stroke={t.cyan} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+                {/* Graduation cap on top */}
+                <path d="M18 6L12 9L18 12L24 9L18 6Z" fill="white"/>
+                <line x1="22" y1="9" x2="22" y2="13" stroke="white" strokeWidth="1"/>
+              </svg>
             </div>
             <h1 className="text-xl font-bold tracking-tight">AgencyBook</h1>
-            <p className="text-xs opacity-40 mt-1">বিদেশে অধ্যয়ন ব্যবস্থাপনা সিস্টেম</p>
+            <p className="text-[10px] uppercase tracking-widest mt-1.5 font-medium" style={{ color: t.muted }}>Agency Operating System</p>
           </div>
 
           {/* Form */}
