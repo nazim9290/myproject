@@ -248,11 +248,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         stepConfigs={stepConfigs}
         onBack={() => setSelectedId(null)}
         onNavigate={setActivePage}
-        onUpdate={async (updated) => {
-          try { await api.patch(`/students/${updated.id}`, updated); } catch (err) { console.error("[Student Update]", err); toast.error("সার্ভারে আপডেট ব্যর্থ"); }
-          setStudents(students.map((s) => s.id === updated.id ? updated : s));
-          toast.updated("Student");
-          fetchStudents(); // সার্ভার থেকে re-fetch
+        onUpdate={async (updated, skipPatch) => {
+          // skipPatch = true হলে শুধু local state update (backend-এ already saved)
+          if (!skipPatch) {
+            try { await api.patch(`/students/${updated.id}`, updated); } catch (err) { console.error("[Student Update]", err); toast.error("সার্ভারে আপডেট ব্যর্থ"); }
+          }
+          setStudents(students.map((s) => s.id === updated.id ? { ...s, ...updated } : s));
+          if (!skipPatch) toast.updated("Student");
+          fetchStudents();
         }}
         onDelete={async (id) => {
           try { await api.del(`/students/${id}`); } catch (err) { console.error("[Student Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }

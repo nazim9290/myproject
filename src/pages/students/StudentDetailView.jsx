@@ -1418,9 +1418,10 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   setAiGenerateConfirm(false);
                   setAiGenerating(true);
                   try {
-                    const result = await api.post(`/students/${student.id}/generate-study-purpose`);
+                    const result = await api.post(`/students/${student.id}/generate-study-purpose`, { force: true });
                     if (result.reason_for_study) {
-                      onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
+                      // Backend-এ already save — skipPatch=true দিয়ে শুধু local update
+                      onUpdate({ ...student, reason_for_study: result.reason_for_study }, true);
                       toast.success(`Purpose of Study generated — ${result.word_count} words`);
                     }
                   } catch (err) {
@@ -2114,7 +2115,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 try {
                   const result = await api.post(`/students/${student.id}/generate-study-purpose`, { force: true });
                   if (result.reason_for_study) {
-                    onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
+                    onUpdate({ ...student, reason_for_study: result.reason_for_study }, true);
                     toast.success(`Purpose of Study generated — ${result.word_count} words`);
                   }
                 } catch (err) { toast.error(err.message || "AI generation ব্যর্থ"); }
