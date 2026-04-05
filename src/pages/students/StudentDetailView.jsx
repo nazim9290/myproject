@@ -1416,14 +1416,13 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       toast.success(`Purpose of Study generated — ${result.word_count} words`);
                     }
                   } catch (err) {
-                    // Missing fields error → modal দিয়ে দেখাও
-                    const msg = err.message || "";
-                    if (msg.includes("পূরণ করুন")) {
-                      // Error message থেকে field list parse
-                      const fields = msg.replace(/.*পূরণ করুন\s*/, "").split(",").map(f => f.trim()).filter(Boolean);
-                      setAiMissingFields(fields.length > 0 ? fields : [msg]);
+                    // Missing fields error → modal দিয়ে clear list দেখাও
+                    if (err.data?.missing_fields?.length > 0) {
+                      setAiMissingFields(err.data.missing_fields);
+                    } else if (err.message?.includes("credit")) {
+                      toast.error("AI credit অপর্যাপ্ত — অ্যাডমিনের সাথে যোগাযোগ করুন");
                     } else {
-                      toast.error(msg || "AI generation ব্যর্থ");
+                      toast.error(err.message || "AI generation ব্যর্থ");
                     }
                   }
                   setAiGenerating(false);
