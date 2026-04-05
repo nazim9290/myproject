@@ -592,16 +592,11 @@ export default function SuperAdminPage() {
                             className="px-2 py-1 rounded text-[10px]" style={{ color: t.amber, background: `${t.amber}15` }}>
                             <Edit3 size={10} />
                           </button>
-                          {/* ম্যাপিং বাটন — শুধু placeholder থাকলে দেখাবে */}
-                          {(() => {
-                            const td = typeof tpl.template_data === "string" ? (() => { try { return JSON.parse(tpl.template_data); } catch { return null; } })() : tpl.template_data;
-                            return td?.placeholders?.length > 0;
-                          })() && (
-                            <button onClick={() => openMappingModal(tpl)}
-                              className="px-2 py-1 rounded text-[10px] flex items-center gap-0.5" style={{ color: t.purple, background: `${t.purple}15` }}>
-                              <Settings size={10} /> ম্যাপিং
-                            </button>
-                          )}
+                          {/* ম্যাপিং বাটন — সব template-এ দেখাবে */}
+                          <button onClick={() => openMappingModal(tpl)}
+                            className="px-2 py-1 rounded text-[10px] flex items-center gap-0.5" style={{ color: t.purple, background: `${t.purple}15` }}>
+                            <Settings size={10} /> ম্যাপিং
+                          </button>
                           {deleteTemplateId === tpl.id ? (
                             <div className="flex gap-1 items-center">
                               <button onClick={() => deleteTemplate(tpl.id)} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: t.rose }}>মুছুন</button>
