@@ -14,7 +14,19 @@ import useSortable from "../../hooks/useSortable";
 import SortHeader from "../../components/ui/SortHeader";
 import ExportModal from "../../components/ui/ExportModal";
 import { getRowStyle } from "../../lib/conditionalFormat";
+import TableInsights from "../../components/ui/TableInsights";
 import { api } from "../../hooks/useAPI";
+
+// ── টেবিল ইনসাইটস — গ্রুপিং ও শর্তভিত্তিক ফর্ম্যাটিং ফিল্ডসমূহ ──
+const VISITOR_INSIGHT_FIELDS = [
+  { key: "status", label: "Status" },
+  { key: "source", label: "Source" },
+  { key: "branch", label: "Branch" },
+  { key: "counselor", label: "Counselor" },
+  { key: "interested_countries", label: "Countries" },
+  { key: "interested_intake", label: "Intake" },
+  { key: "gender", label: "Gender" },
+];
 
 // ── এক্সপোর্ট মডালে দেখানো কলামগুলো — সব visitor ফিল্ড ──
 const VISITOR_EXPORT_COLUMNS = [
@@ -830,6 +842,13 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={tr("visitors.addNew")} size="xl">
         <NewVisitorForm onSave={async (v)=>{try{await api.post("/visitors",v);}catch(err){console.error("[Visitor Create]",err);toast.error("সার্ভারে সেভ ব্যর্থ");}setShowForm(false);toast.created("ভিজিটর");fetchVisitors();}} onCancel={()=>setShowForm(false)}/>
       </Modal>
+
+      {/* ── টেবিল ইনসাইটস — কুইক স্ট্যাটস ও গ্রুপ বাই ── */}
+      <TableInsights
+        module="visitors"
+        data={paginated}
+        fields={VISITOR_INSIGHT_FIELDS}
+      />
 
       <Card delay={100}>
         <p className="text-xs font-medium mb-3" style={{color:t.textSecondary}}>{tr("common.total")}: {serverTotal} {tr("visitors.title")}{loading && ` — ${tr("common.loading")}`}</p>

@@ -18,8 +18,23 @@ import AddStudentForm from "./AddStudentForm";
 import ExportModal from "../../components/ui/ExportModal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import { getRowStyle } from "../../lib/conditionalFormat";
+import TableInsights from "../../components/ui/TableInsights";
 import { api } from "../../hooks/useAPI";
 import { API_URL } from "../../lib/api";
+
+// ── TableInsights-এ ব্যবহৃত গ্রুপিং ও রুলের ফিল্ডসমূহ ──
+const INSIGHT_FIELDS = [
+  { key: "status", label: "Status" },
+  { key: "country", label: "Country" },
+  { key: "school", label: "School" },
+  { key: "batch", label: "Batch" },
+  { key: "branch", label: "Branch" },
+  { key: "source", label: "Source" },
+  { key: "counselor", label: "Counselor" },
+  { key: "student_type", label: "Type" },
+  { key: "visa_type", label: "Visa Type" },
+  { key: "gender", label: "Gender" },
+];
 
 // ── এক্সপোর্ট মডালে দেখানো কলামগুলো — সব student ফিল্ড ──
 const EXPORT_COLUMNS = [
@@ -526,6 +541,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
           {schools.map(s => <option key={s} value={s}>{s === "All" ? `${tr("common.all")} ${tr("students.school")}` : s}</option>)}
         </select>
       </div>
+
+      {/* ── টেবিল বিশ্লেষণ — কুইক স্ট্যাটস, গ্রুপ বাই, শর্তভিত্তিক ফর্ম্যাটিং ── */}
+      <TableInsights
+        module="students"
+        data={paginated}
+        fields={INSIGHT_FIELDS}
+      />
 
       <Card delay={100}>
         {/* ── Bulk Action Bar ── */}
