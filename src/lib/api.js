@@ -18,12 +18,20 @@
 // API Base URL — environment অনুযায়ী auto-detect
 // ═══════════════════════════════════════════════════════
 // Centralized API URL — সব ফাইলে এখান থেকে import করতে হবে
-// সব subdomain (demo, xyz, abc) → একই API: api.agencybook.net
-export const API_URL = import.meta.env.VITE_API_URL || (
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000/api"
-    : "https://api.agencybook.net/api"
-);
+// subdomain.agencybook.net → subdomain-api.agencybook.net/api
+// localhost → localhost:5000/api
+export const API_URL = import.meta.env.VITE_API_URL || (() => {
+  const h = window.location.hostname;
+  if (h === "localhost" || h === "127.0.0.1") return "http://localhost:5000/api";
+  // agencybook.net domain → subdomain-api pattern
+  // demo.agencybook.net → demo-api.agencybook.net
+  // xyz.agencybook.net → xyz-api.agencybook.net
+  const parts = h.split(".");
+  if (parts.length >= 3 && h.endsWith("agencybook.net")) {
+    return `https://${parts[0]}-api.agencybook.net/api`;
+  }
+  return `https://demo-api.agencybook.net/api`;
+})();
 
 /** localStorage থেকে JWT token পড়ে */
 function getToken() {
