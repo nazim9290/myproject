@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GraduationCap, Mail, Lock, AlertTriangle } from "lucide-react";
+import { GraduationCap, Mail, Lock, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { useTheme, getGlobalStyles } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -15,6 +15,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
   })();
   const [email, setEmail] = useState(remembered?.e || "");
   const [password, setPassword] = useState(remembered?.p || "");
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(!!remembered);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +86,10 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">পাসওয়ার্ড</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 focus-within:border-cyan-500/30 transition">
                 <Lock size={14} className="opacity-30" />
-                <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="opacity-30 hover:opacity-70 transition">
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
               </div>
             </div>
             {/* Remember Me চেকবক্স */}
