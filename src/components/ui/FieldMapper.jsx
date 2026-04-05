@@ -274,11 +274,16 @@ export function FieldPicker({ placeholderKey, selectedField, selectedModifier, o
   const [open, setOpen] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState(null);
   const ref = useRef(null);
+  const dropdownRef = useRef(null);
 
-  // বাইরে ক্লিক করলে dropdown বন্ধ
+  // বাইরে ক্লিক করলে dropdown বন্ধ — trigger button ও dropdown content দুটোই exclude
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => {
+      if (ref.current && ref.current.contains(e.target)) return;
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) return;
+      setOpen(false);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
@@ -320,7 +325,7 @@ export function FieldPicker({ placeholderKey, selectedField, selectedModifier, o
         </button>
 
         {open && createPortal(
-          <div className="rounded-xl shadow-2xl overflow-hidden"
+          <div ref={dropdownRef} className="rounded-xl shadow-2xl overflow-hidden"
             style={{ background: t.card, border: `1px solid ${t.border}`, ...getPortalStyle() }}>
             <button onClick={() => { onFieldChange(placeholderKey, ""); setOpen(false); }}
               className="w-full px-3 py-2 text-left text-[10px]" style={{ color: t.muted, borderBottom: `1px solid ${t.border}` }}>
