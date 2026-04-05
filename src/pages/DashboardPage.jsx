@@ -16,7 +16,7 @@ import { dashboard } from "../lib/api";
 export default function DashboardPage() {
   const t = useTheme();
   const toast = useToast();
-  const { t: tr } = useLanguage();
+  const { t: tr, lang } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,10 +65,12 @@ export default function DashboardPage() {
     );
   }
 
-  // ── আজকের তারিখ বাংলায় ──
+  // ── আজকের তারিখ — ভাষা সেটিং অনুযায়ী ──
   const today = new Date();
-  const bnMonths = ["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"];
-  const dateStr = `আজ ${today.getDate()} ${bnMonths[today.getMonth()]}, ${today.getFullYear()}`;
+  const locale = lang === "en" ? "en-US" : "bn-BD";
+  const dateStr = lang === "en"
+    ? `Today ${today.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" })}`
+    : `আজ ${today.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}`;
 
   // ── Pipeline chart data — PIPELINE_STATUSES থেকে label নিয়ে ──
   const pipelineChart = (data.pipeline || []).map(p => {
@@ -101,7 +103,7 @@ export default function DashboardPage() {
           { icon: Eye, label: tr("dashboard.todayVisitors"), value: data.visitors?.today || 0, sub: `${tr("common.thisMonth")}: ${data.visitors?.thisMonth || 0}`, color: t.amber },
           { icon: UserPlus, label: tr("dashboard.todayEnrolled"), value: data.students?.todayEnrolled || 0, sub: `${tr("common.total")} Active: ${data.students?.active || 0}`, color: t.emerald },
           { icon: DollarSign, label: tr("dashboard.todayIncome"), value: fmtShort(data.revenue?.today || 0), sub: `${tr("common.thisMonth")}: ${fmtShort(data.revenue?.thisMonth || 0)}`, color: t.cyan },
-          { icon: Clock, label: tr("dashboard.todayDate"), value: new Date().toLocaleDateString("bn-BD", { day: "numeric", month: "short" }), sub: new Date().toLocaleDateString("bn-BD", { weekday: "long" }), color: t.purple },
+          { icon: Clock, label: tr("dashboard.todayDate"), value: today.toLocaleDateString(locale, { day: "numeric", month: "long" }), sub: today.toLocaleDateString(locale, { weekday: "long" }), color: t.purple },
         ].map((kpi, i) => (
           <Card key={`today-${i}`} delay={i * 40}>
             <div className="flex items-start justify-between">
