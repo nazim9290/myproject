@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw, List, Calendar, RefreshCw } from "lucide-react";
+import { Building, DollarSign, Eye, Globe, Download, Plus, CheckCircle, Layers, Save, X, Trash2, Type, Palette, Shield, Bell, Database, Settings as SettingsIcon, Users, GitBranch, FileText, Edit3, RotateCcw, List, Calendar, RefreshCw, Paintbrush } from "lucide-react";
 import { useTheme, useLabelSettings } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -12,6 +12,7 @@ import { api } from "../../hooks/useAPI";
 import { API_URL } from "../../lib/api";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
+import ConditionalFormatRules from "../../components/ui/ConditionalFormatRules";
 
 // ── Administration ট্যাব কনফিগ — i18nKey দিয়ে translation ──
 const ADMIN_TABS = [
@@ -23,7 +24,39 @@ const ADMIN_TABS = [
   { key: "notifications", i18nKey: "settings.notifications", label: "নোটিফিকেশন", icon: Bell },
   { key: "custom_fields", i18nKey: "settings.customFields", label: "কাস্টম ফিল্ড", icon: Layers },
   { key: "holidays", i18nKey: "settings.holidays", label: "ছুটির তালিকা", icon: Calendar },
+  { key: "conditional_format", i18nKey: "settings.conditionalFormat", label: "কন্ডিশনাল ফরম্যাটিং", icon: Paintbrush },
   { key: "backup", i18nKey: "settings.dataBackup", label: "ডাটা ব্যাকআপ", icon: Database },
+];
+
+// ── স্টুডেন্ট ফিল্ড — কন্ডিশনাল ফরম্যাটিংয়ে ব্যবহৃত ──
+const STUDENT_FIELDS = [
+  { key: "status", label: "Status" },
+  { key: "name_en", label: "Name" },
+  { key: "country", label: "Country" },
+  { key: "school", label: "School" },
+  { key: "batch", label: "Batch" },
+  { key: "branch", label: "Branch" },
+  { key: "source", label: "Source" },
+  { key: "counselor", label: "Counselor" },
+  { key: "student_type", label: "Type" },
+  { key: "visa_type", label: "Visa Type" },
+  { key: "gender", label: "Gender" },
+  { key: "created", label: "Enrollment Date" },
+  { key: "next_follow_up", label: "Next Follow-up" },
+];
+
+// ── ভিজিটর ফিল্ড — কন্ডিশনাল ফরম্যাটিংয়ে ব্যবহৃত ──
+const VISITOR_FIELDS = [
+  { key: "status", label: "Status" },
+  { key: "name", label: "Name" },
+  { key: "source", label: "Source" },
+  { key: "branch", label: "Branch" },
+  { key: "counselor", label: "Counselor" },
+  { key: "interested_countries", label: "Countries" },
+  { key: "interested_intake", label: "Intake" },
+  { key: "budget_concern", label: "Budget Concern" },
+  { key: "next_follow_up", label: "Next Follow-up" },
+  { key: "date", label: "Visit Date" },
 ];
 
 export default function SettingsPage({ isDark, setIsDark, students, visitors, stepConfigs, updateStepConfigs, currentUser }) {
@@ -1714,6 +1747,37 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             </div>
           </div>
         </Modal>
+      </div>}
+
+      {/* ── কন্ডিশনাল ফরম্যাটিং — স্টুডেন্ট ও ভিজিটর তালিকায় শর্তসাপেক্ষ সারি রং ── */}
+      {activeTab === "conditional_format" && <div className="space-y-5">
+        <Card delay={50}>
+          <div className="flex items-center gap-2 mb-1">
+            <Paintbrush size={15} style={{ color: t.cyan }} />
+            <h3 className="text-sm font-semibold" style={{ color: t.text }}>কন্ডিশনাল ফরম্যাটিং</h3>
+          </div>
+          <p className="text-[10px] mb-5" style={{ color: t.muted }}>
+            স্টুডেন্ট ও ভিজিটর তালিকায় নির্দিষ্ট শর্ত অনুযায়ী সারির ব্যাকগ্রাউন্ড রং পরিবর্তন করুন
+          </p>
+
+          <div className="space-y-6">
+            {/* ── স্টুডেন্ট কন্ডিশনাল ফরম্যাটিং ── */}
+            <div>
+              <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: t.text }}>
+                <Users size={13} style={{ color: t.purple }} /> স্টুডেন্ট তালিকা
+              </h4>
+              <ConditionalFormatRules module="students" fields={STUDENT_FIELDS} />
+            </div>
+
+            {/* ── ভিজিটর কন্ডিশনাল ফরম্যাটিং ── */}
+            <div>
+              <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: t.text }}>
+                <Eye size={13} style={{ color: t.amber }} /> ভিজিটর তালিকা
+              </h4>
+              <ConditionalFormatRules module="visitors" fields={VISITOR_FIELDS} />
+            </div>
+          </div>
+        </Card>
       </div>}
 
       {/* ── ডাটা ব্যাকআপ ── */}

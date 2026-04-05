@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, Save, X, Search, ChevronDown, ChevronRight, Edit3, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Briefcase, Users, CheckCircle, Clock, Phone, MapPin, Save, X, Search, ChevronDown, ChevronRight, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import { api } from "../../hooks/useAPI";
 import useSortable from "../../hooks/useSortable";
@@ -27,7 +28,7 @@ export default function AgentsPage() {
   }, []);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [form, setForm] = useState({ name: "", phone: "", area: "", nid: "", bank: "", commissionPerStudent: "10000" });
   const [payingAgentId, setPayingAgentId] = useState(null);
   const [payForm, setPayForm] = useState({ amount: "", method: "Bank Transfer", note: "" });
@@ -245,24 +246,13 @@ export default function AgentsPage() {
                             title="সম্পাদনা">
                             <Edit3 size={14} />
                           </button>
-                          {deleteConfirmId === agent.id ? (
-                            <div className="flex items-center gap-1">
-                              <button onClick={async () => {
-                                try { await api.patch(`/agents/${agent.id}`, { status: "inactive" }); setAgents(prev => prev.filter(a => a.id !== agent.id)); toast.success("এজেন্ট মুছে ফেলা হয়েছে"); }
-                                catch { toast.error("মুছতে ব্যর্থ"); }
-                                setDeleteConfirmId(null);
-                              }} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
-                              <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setDeleteConfirmId(agent.id)}
-                              className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
-                              onMouseEnter={e => e.currentTarget.style.color = t.rose}
-                              onMouseLeave={e => e.currentTarget.style.color = t.muted}
-                              title="মুছুন">
-                              <Trash2 size={14} />
-                            </button>
-                          )}
+                          <button onClick={() => setDeleteTarget(agent)}
+                            className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                            onMouseEnter={e => e.currentTarget.style.color = t.rose}
+                            onMouseLeave={e => e.currentTarget.style.color = t.muted}
+                            title="মুছুন">
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -331,6 +321,18 @@ export default function AgentsPage() {
         <Pagination total={sorted.length} page={safePage} pageSize={pageSize}
           onPage={setPage} onPageSize={setPageSize} />
       </Card>
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          try { await api.patch(`/agents/${deleteTarget.id}`, { status: "inactive" }); setAgents(prev => prev.filter(a => a.id !== deleteTarget.id)); toast.success("এজেন্ট মুছে ফেলা হয়েছে"); }
+          catch { toast.error("মুছতে ব্যর্থ"); }
+          setDeleteTarget(null);
+        }}
+        itemName={deleteTarget?.name || ""}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
@@ -32,7 +33,7 @@ export default function PartnerAgencyPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [form, setForm] = useState({ name: "", contact_person: "", phone: "", email: "", address: "", services: [], commission_rate: "", notes: "" });
 
   // ── Search, pagination, sort ──
@@ -100,7 +101,7 @@ export default function PartnerAgencyPage() {
     try {
       await partnersApi.remove(id);
       toast.success("পার্টনার মুছে ফেলা হয়েছে");
-      setDeleteConfirmId(null);
+      setDeleteTarget(null);
       loadData();
     } catch (err) { toast.error(err.message || "মুছতে ব্যর্থ"); }
   };
@@ -249,18 +250,11 @@ export default function PartnerAgencyPage() {
                           onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
                           <Edit3 size={14} />
                         </button>
-                        {deleteConfirmId === p.id ? (
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => handleDelete(p.id)} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
-                            <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setDeleteConfirmId(p.id)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
-                            onMouseEnter={e => e.currentTarget.style.color = t.rose}
-                            onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                        <button onClick={() => setDeleteTarget(p)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                          onMouseEnter={e => e.currentTarget.style.color = t.rose}
+                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -272,6 +266,14 @@ export default function PartnerAgencyPage() {
 
         <Pagination total={sorted.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => handleDelete(deleteTarget.id)}
+        itemName={deleteTarget?.name || ""}
+      />
     </div>
   );
 }

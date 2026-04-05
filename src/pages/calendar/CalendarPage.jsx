@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import { EVENT_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -25,6 +26,7 @@ export default function CalendarPage({ students = [] }) {
   const [filterType, setFilterType] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const emptyForm = { title: "", type: "interview", date: new Date().toISOString().slice(0, 10), time: "10:00", staff: "", studentId: "", notes: "" };
   const [form, setForm] = useState(emptyForm);
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
@@ -245,10 +247,7 @@ export default function CalendarPage({ students = [] }) {
                           onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
                           ✏️
                         </button>
-                        <button onClick={async () => {
-                          try { await api.patch(`/calendar/${ev.id}`, { status: "deleted" }); setEvents(prev => prev.filter(e => e.id !== ev.id)); toast.success("ইভেন্ট মুছে ফেলা হয়েছে"); }
-                          catch { toast.error("মুছতে ব্যর্থ"); }
-                        }} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                        <button onClick={() => setDeleteTarget(ev)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
                           onMouseEnter={e => e.currentTarget.style.color = t.rose}
                           onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
                           <Trash2 size={14} />
@@ -262,6 +261,18 @@ export default function CalendarPage({ students = [] }) {
           );
         })}
       </div>
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          try { await api.patch(`/calendar/${deleteTarget.id}`, { status: "deleted" }); setEvents(prev => prev.filter(e => e.id !== deleteTarget.id)); toast.success("ইভেন্ট মুছে ফেলা হয়েছে"); }
+          catch { toast.error("মুছতে ব্যর্থ"); }
+          setDeleteTarget(null);
+        }}
+        itemName={deleteTarget?.title || ""}
+      />
     </div>
   );
 }

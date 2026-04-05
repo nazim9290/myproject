@@ -7,11 +7,32 @@ import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import Pagination from "../../components/ui/Pagination";
 import PhoneInput, { isValidPhone, formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import useSortable from "../../hooks/useSortable";
 import SortHeader from "../../components/ui/SortHeader";
+import ExportModal from "../../components/ui/ExportModal";
+import { getRowStyle } from "../../lib/conditionalFormat";
 import { api } from "../../hooks/useAPI";
+
+// ── এক্সপোর্ট মডালে দেখানো কলামগুলো — সব visitor ফিল্ড ──
+const VISITOR_EXPORT_COLUMNS = [
+  { key: "display_id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "name_en", label: "Name (EN)" },
+  { key: "phone", label: "Phone" },
+  { key: "guardian_phone", label: "Guardian Phone" },
+  { key: "email", label: "Email" },
+  { key: "status", label: "Status" },
+  { key: "source", label: "Source" },
+  { key: "counselor", label: "Counselor" },
+  { key: "branch", label: "Branch" },
+  { key: "interested_countries", label: "Countries" },
+  { key: "interested_intake", label: "Intake" },
+  { key: "date", label: "Visit Date" },
+  { key: "notes", label: "Notes" },
+];
 
 function NewVisitorForm({ onSave, onCancel }) {
   const t = useTheme();
@@ -214,7 +235,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   // ── Server-side pagination state ──
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewTab, setViewTab] = useState("active");
-  const [confirmAction, setConfirmAction] = useState(null); // {type:"convert"|"delete", visitor}
+  const [confirmAction, setConfirmAction] = useState(null); // {type:"convert", visitor}
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [archiveDays, setArchiveDays] = useState(30);
   const [showSettings, setShowSettings] = useState(false);
@@ -224,6 +246,9 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const [editData, setEditData] = useState({});
   const [searchQ, setSearchQ] = useState("");
   const [showExport, setShowExport] = useState(false);
+  // ── ExportModal দেখানোর state — কলাম সিলেক্ট করে CSV ডাউনলোড ──
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportModalData, setExportModalData] = useState([]);
   const [filterBranch, setFilterBranch] = useState("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -331,7 +356,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
   const doDelete = async (v) => {
     try { await api.del(`/visitors/${v.id}`); } catch (err) { console.error("[Visitor Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
-    setConfirmAction(null);
+    setDeleteTarget(null);
     setDetailId(null);
     toast.deleted("ভিজিটর");
     fetchVisitors(); // সার্ভার থেকে re-fetch
@@ -343,6 +368,26 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
     toast.updated("ভিজিটর");
   };
 
+  // ── সার্ভার থেকে সব ভিজিটর আনার হেল্পার — ExportModal-এর জন্য ──
+  const fetchAllVisitors = async (mode) => {
+    try {
+      let allData = [];
+      let pg = 1, hasMore = true;
+      const baseParams = { limit: 100, exclude_status: "Enrolled" };
+      if (mode === "active") baseParams.status_in = "Interested,Thinking";
+      while (hasMore) {
+        const qs = new URLSearchParams({ ...baseParams, page: pg }).toString();
+        const res = await api.get(`/visitors?${qs}`);
+        const d = Array.isArray(res) ? res : res.data || [];
+        allData = allData.concat(d.map(v => ({ ...v, name_en: v.name_en || v.name, date: v.visit_date || v.date, lastFollowUp: v.last_follow_up })));
+        hasMore = d.length === 100;
+        pg++;
+      }
+      return allData;
+    } catch { return visitors; }
+  };
+
+  // ── পুরাতন inline CSV export — fallback হিসেবে রাখা হয়েছে ──
   const doExport = async (mode) => {
     // mode: "filtered" = বর্তমান পেজ, "active" = সক্রিয় সব, "all" = সব ভিজিটর
     let data = visitors;
@@ -482,7 +527,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           <div className="flex gap-2">
             <Button variant="ghost" size="xs" icon={Phone} onClick={() => markFollowUp(v.id)}>{tr("visitors.followUp")}</Button>
             <Button variant="ghost" size="xs" icon={Edit3} onClick={() => { setEditData({...v}); setEditMode(true); }}>{tr("common.edit")}</Button>
-            <Button variant="danger" size="xs" icon={Trash2} onClick={() => setConfirmAction({type:"delete",visitor:v})}>{tr("common.delete")}</Button>
+            <Button variant="danger" size="xs" icon={Trash2} onClick={() => setDeleteTarget(v)}>{tr("common.delete")}</Button>
             {v.status!=="Not Interested" && <Button size="xs" icon={Check} onClick={() => setConfirmAction({type:"convert",visitor:v})}>{tr("students.enrolled")}</Button>}
           </div>
         </div>
@@ -654,20 +699,28 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           ))}
         </div>
 
-        {/* ══════════ CONFIRM ACTION MODAL (DETAIL VIEW) ══════════ */}
-        <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.type==="delete"?"ভিজিটর মুছে ফেলুন":"ভর্তি নিশ্চিত করুন"} size="sm">
+        {/* ══════════ CONFIRM CONVERT MODAL (DETAIL VIEW) ══════════ */}
+        <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title="ভর্তি নিশ্চিত করুন" size="sm">
           {confirmAction && <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:t.emerald+"15"}}>🎓</div>
             <div className="flex-1">
-              <p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p>
-              <p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name} — {confirmAction.type==="delete"?"সব ডাটা মুছে যাবে":"স্টুডেন্ট তালিকায় যোগ হবে"}</p>
+              <p className="text-sm font-bold" style={{color:t.emerald}}>স্টুডেন্ট হিসেবে ভর্তি?</p>
+              <p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name} — স্টুডেন্ট তালিকায় যোগ হবে</p>
             </div>
           </div>}
           {confirmAction && <div className="flex justify-end gap-2 mt-4">
             <Button variant="ghost" size="xs" onClick={() => setConfirmAction(null)}>{tr("common.cancel")}</Button>
-            <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={() => confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>{tr("common.confirm")}</Button>
+            <Button variant="primary" size="xs" onClick={() => doConvert(confirmAction.visitor)}>{tr("common.confirm")}</Button>
           </div>}
         </Modal>
+
+        {/* ── ডিলিট কনফার্ম মোডাল (DETAIL VIEW) ── */}
+        <DeleteConfirmModal
+          isOpen={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => doDelete(deleteTarget)}
+          itemName={deleteTarget?.name || ""}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>ব্যক্তিগত তথ্য</h4>
@@ -701,16 +754,17 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         <div><h2 className="text-xl font-bold">{tr("visitors.title")}</h2><p className="text-xs mt-0.5" style={{color:t.muted}}>{tr("visitors.title")} — {tr("visitors.followUp")}</p></div>
         <div className="flex gap-2">
           <div className="relative">
+            {/* ── এক্সপোর্ট মেনু — বর্তমান পেজ / সক্রিয় / সব ভিজিটর ExportModal দিয়ে ── */}
             <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExport(!showExport)}>{tr("common.export")} ▾</Button>
             {showExport && <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[220px]" style={{background:t.cardSolid,border:"1px solid "+t.border,boxShadow:"0 8px 30px rgba(0,0,0,0.25)"}}>
               <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold" style={{color:t.muted,borderBottom:"1px solid "+t.border}}>ভিজিটর CSV এক্সপোর্ট</div>
-              <button onClick={() => doExport("filtered")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <button onClick={async () => { setExportModalData(visitors); setShowExportModal(true); setShowExport(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <span style={{color:t.cyan}}>📋</span><div><p className="font-medium">বর্তমান পেজ ({visitors.length})</p><p className="text-[9px]" style={{color:t.muted}}>এই পেজের ভিজিটর</p></div>
               </button>
-              <button onClick={() => doExport("active")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <button onClick={async () => { const data = await fetchAllVisitors("active"); setExportModalData(data); setShowExportModal(true); setShowExport(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <span style={{color:t.emerald}}>🟢</span><div><p className="font-medium">শুধু সক্রিয়</p><p className="text-[9px]" style={{color:t.muted}}>আগ্রহী + ভাবছে</p></div>
               </button>
-              <button onClick={() => doExport("all")} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <button onClick={async () => { const data = await fetchAllVisitors("all"); setExportModalData(data); setShowExportModal(true); setShowExport(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs text-left transition" onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <span style={{color:t.purple}}>📦</span><div><p className="font-medium">সব ভিজিটর ({serverTotal})</p><p className="text-[9px]" style={{color:t.muted}}>ভর্তি ছাড়া সবাই</p></div>
               </button>
             </div>}
@@ -752,17 +806,25 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         </select>
       </div>
 
-      {/* ══════════ CONFIRM ACTION MODAL (LIST VIEW) ══════════ */}
-      <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.type==="delete"?"ভিজিটর মুছে ফেলুন":"ভর্তি নিশ্চিত করুন"} size="sm">
+      {/* ══════════ CONFIRM CONVERT MODAL (LIST VIEW) ══════════ */}
+      <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title="ভর্তি নিশ্চিত করুন" size="sm">
         {confirmAction && <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:(confirmAction.type==="delete"?t.rose:t.emerald)+"15"}}>{confirmAction.type==="delete"?"🗑️":"🎓"}</div>
-          <div className="flex-1"><p className="text-sm font-bold" style={{color:confirmAction.type==="delete"?t.rose:t.emerald}}>{confirmAction.type==="delete"?"এই ভিজিটর মুছবেন?":"স্টুডেন্ট হিসেবে ভর্তি?"}</p><p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name}</p></div>
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg" style={{background:t.emerald+"15"}}>🎓</div>
+          <div className="flex-1"><p className="text-sm font-bold" style={{color:t.emerald}}>স্টুডেন্ট হিসেবে ভর্তি?</p><p className="text-xs" style={{color:t.muted}}>{confirmAction.visitor.name}</p></div>
         </div>}
         {confirmAction && <div className="flex justify-end gap-2 mt-4">
           <Button variant="ghost" size="xs" onClick={()=>setConfirmAction(null)}>{tr("common.cancel")}</Button>
-          <Button variant={confirmAction.type==="delete"?"danger":"primary"} size="xs" onClick={()=>confirmAction.type==="delete"?doDelete(confirmAction.visitor):doConvert(confirmAction.visitor)}>{tr("common.confirm")}</Button>
+          <Button variant="primary" size="xs" onClick={()=>doConvert(confirmAction.visitor)}>{tr("common.confirm")}</Button>
         </div>}
       </Modal>
+
+      {/* ── ডিলিট কনফার্ম মোডাল (LIST VIEW) ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => doDelete(deleteTarget)}
+        itemName={deleteTarget?.name || ""}
+      />
 
       {/* ══════════ NEW VISITOR MODAL ══════════ */}
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={tr("visitors.addNew")} size="xl">
@@ -789,8 +851,11 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             const fuD=daysDiff(v.lastFollowUp);
             const fuBad=(v.status==="Interested"||v.status==="Thinking")&&fuD>3;
             const isMenu=openMenuId===v.id;
-            return <tr key={v.id} className="cursor-pointer" style={{borderBottom:"1px solid "+t.border}}
-              onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+            // ── শর্তভিত্তিক সারি রং — conditionalFormat রুল অনুযায়ী ──
+            const condStyle = getRowStyle("visitors", v);
+            const defaultBg = condStyle?.background || "transparent";
+            return <tr key={v.id} className="cursor-pointer" style={{borderBottom:"1px solid "+t.border, background: defaultBg}}
+              onMouseEnter={e=>e.currentTarget.style.background=t.hoverBg} onMouseLeave={e=>e.currentTarget.style.background=defaultBg}
               onClick={()=>setDetailId(v.id)}>
               {/* নাম */}
               <td className="py-3 px-3"><div className="flex items-center gap-2">
@@ -836,6 +901,16 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         {paginated.length===0&&!loading&&<div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">{tr("common.noData")}</p></div>}
         <Pagination total={serverTotal} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
+
+      {/* ── ExportModal — কলাম নির্বাচন করে CSV এক্সপোর্ট ── */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        columns={VISITOR_EXPORT_COLUMNS}
+        data={exportModalData}
+        fileName="Visitors"
+        onExport={(count) => toast.exported(`Visitors (${count} records)`)}
+      />
     </div>
   );
 }

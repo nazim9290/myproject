@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
@@ -37,6 +38,7 @@ export default function UserRolePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("users");
   const [editingUserId, setEditingUserId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // ── Search, sort ──
   const [searchQ, setSearchQ] = useState("");
@@ -349,7 +351,7 @@ export default function UserRolePage() {
                               title={user.is_active !== false ? "নিষ্ক্রিয় করুন" : "সক্রিয় করুন"}>
                               {user.is_active !== false ? "✅" : "⏸️"}
                             </button>
-                            <button onClick={() => deleteUser(user.id)} className="p-1.5 rounded-lg transition"
+                            <button onClick={() => setDeleteTarget(user)} className="p-1.5 rounded-lg transition"
                               style={{ color: t.muted }} onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
                               onMouseLeave={e => e.currentTarget.style.color = t.muted}>
                               <Trash2 size={13} />
@@ -530,6 +532,14 @@ export default function UserRolePage() {
           </div>
         </Card>
       )}
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => { await deleteUser(deleteTarget.id); setDeleteTarget(null); }}
+        itemName={deleteTarget?.name || ""}
+      />
     </div>
   );
 }

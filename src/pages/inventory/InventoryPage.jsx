@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
@@ -51,7 +52,7 @@ export default function InventoryPage() {
   const [filterCategory, setFilterCategory] = useState("All");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [addForm, setAddForm] = useState({ name: "", category: "Electronics", brand: "", model: "", quantity: 1, branch: "Main", location: "", purchaseDate: "", price: "", vendor: "", warranty: "", condition: "new", assignedTo: "", notes: "" });
 
   // ── সার্চ, পেজিনেশন ও সর্টিং স্টেট ──
@@ -171,7 +172,7 @@ export default function InventoryPage() {
       setItems(prev => prev.filter(i => i.id !== id));
       toast.success("আইটেম মুছে ফেলা হয়েছে");
     } catch { toast.error("মুছতে ব্যর্থ"); }
-    setDeleteConfirmId(null);
+    setDeleteTarget(null);
   };
 
   // ── Condition cycle — ক্লিকে অবস্থা পরিবর্তন (API /inventory/:id/condition) ──
@@ -374,17 +375,10 @@ export default function InventoryPage() {
                               onMouseEnter={e => e.currentTarget.style.color = t.cyan} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
                               <Edit3 size={14} />
                             </button>
-                            {deleteConfirmId === item.id ? (
-                              <div className="flex items-center gap-1">
-                                <button onClick={() => handleDelete(item.id)} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
-                                <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
-                              </div>
-                            ) : (
-                              <button onClick={() => setDeleteConfirmId(item.id)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
-                                onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
-                                <Trash2 size={14} />
-                              </button>
-                            )}
+                            <button onClick={() => setDeleteTarget(item)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                              onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -532,6 +526,14 @@ export default function InventoryPage() {
           )}
         </Card>
       )}
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => handleDelete(deleteTarget.id)}
+        itemName={deleteTarget?.name || ""}
+      />
     </div>
   );
 }

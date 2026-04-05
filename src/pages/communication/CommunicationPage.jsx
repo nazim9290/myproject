@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Phone, Save, X, Search, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Phone, Save, X, Search, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import { COMM_TYPES } from "../../data/mockData";
@@ -33,7 +34,7 @@ export default function CommunicationPage({ students = [] }) {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK);
-  const [deleteId, setDeleteId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -66,7 +67,7 @@ export default function CommunicationPage({ students = [] }) {
   const deleteLog = async (id) => {
     try { await api.del(`/communications/${id}`); } catch (err) { console.error("[Communication Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
     setLogs(prev => prev.filter(l => l.id !== id));
-    setDeleteId(null);
+    setDeleteTarget(null);
     toast.success("মুছে ফেলা হয়েছে");
   };
 
@@ -181,15 +182,6 @@ export default function CommunicationPage({ students = [] }) {
             return (
               <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl group"
                 style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
-                {deleteId === log.id ? (
-                  <div className="flex-1 flex items-center gap-2 p-2 rounded-lg" style={{ background: `${t.rose}10` }}>
-                    <AlertTriangle size={13} style={{ color: t.rose }} />
-                    <span className="text-xs flex-1" style={{ color: t.rose }}>মুছে ফেলবেন?</span>
-                    <button onClick={() => setDeleteId(null)} className="text-[10px] px-2 py-0.5 rounded" style={{ color: t.muted }}>না</button>
-                    <button onClick={() => deleteLog(log.id)} className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
-                  </div>
-                ) : (
-                  <>
                     <div className="h-9 w-9 rounded-xl flex items-center justify-center text-base shrink-0" style={{ background: `${ct.color}15` }}>{ct.icon}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -205,17 +197,23 @@ export default function CommunicationPage({ students = [] }) {
                       <p className="text-xs mt-1" style={{ color: t.textSecondary }}>{log.summary}</p>
                       <p className="text-[10px] mt-1" style={{ color: t.muted }}>👤 {log.user} • {log.date} {log.time}</p>
                     </div>
-                    <button onClick={() => setDeleteId(log.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded transition shrink-0" style={{ color: t.rose }}>
+                    <button onClick={() => setDeleteTarget(log)} className="opacity-0 group-hover:opacity-100 p-1 rounded transition shrink-0" style={{ color: t.rose }}>
                       <Trash2 size={13} />
                     </button>
-                  </>
-                )}
               </div>
             );
           })}
         </div>
         <Pagination total={filtered.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteLog(deleteTarget.id)}
+        itemName={deleteTarget?.studentName || ""}
+      />
     </div>
   );
 }

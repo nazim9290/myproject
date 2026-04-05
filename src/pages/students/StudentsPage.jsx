@@ -15,8 +15,32 @@ import useSortable from "../../hooks/useSortable";
 import { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import StudentDetailView from "./StudentDetailView";
 import AddStudentForm from "./AddStudentForm";
+import ExportModal from "../../components/ui/ExportModal";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
+import { getRowStyle } from "../../lib/conditionalFormat";
 import { api } from "../../hooks/useAPI";
 import { API_URL } from "../../lib/api";
+
+// ── এক্সপোর্ট মডালে দেখানো কলামগুলো — সব student ফিল্ড ──
+const EXPORT_COLUMNS = [
+  { key: "id", label: "ID" },
+  { key: "name_en", label: "Name (EN)" },
+  { key: "name_bn", label: "Name (BN)" },
+  { key: "phone", label: "Phone" },
+  { key: "whatsapp", label: "WhatsApp" },
+  { key: "email", label: "Email" },
+  { key: "dob", label: "DOB" },
+  { key: "gender", label: "Gender" },
+  { key: "passport_number", label: "Passport" },
+  { key: "country", label: "Country" },
+  { key: "school", label: "School" },
+  { key: "batch", label: "Batch" },
+  { key: "status", label: "Status" },
+  { key: "branch", label: "Branch" },
+  { key: "source", label: "Source" },
+  { key: "counselor", label: "Counselor" },
+  { key: "created", label: "Created" },
+];
 
 export default function StudentsPage({ students, setStudents, reloadData, stepConfigs, setActivePage }) {
   const t = useTheme();
@@ -32,6 +56,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const [filterBatch, setFilterBatch] = useState("All");
   const [filterSchool, setFilterSchool] = useState("All");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // ── Excel Import state ──
   const [showImport, setShowImport] = useState(false);
@@ -126,6 +152,9 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const [serverTotal, setServerTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  // ── ExportModal দেখানোর state — কলাম সিলেক্ট করে CSV ডাউনলোড ──
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportModalData, setExportModalData] = useState([]);
   const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name_en");
 
   // ── Search debounce — টাইপ করার সময় প্রতিটি keystroke-এ API call এড়ানো ──
@@ -246,13 +275,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("students.pipeline")}</p>
         </div>
         <div className="flex gap-2 relative">
+          {/* ── এক্সপোর্ট মেনু — বর্তমান পেজ / সব স্টুডেন্ট ExportModal দিয়ে ── */}
           <Button variant="ghost" size="xs" icon={Download} onClick={() => setShowExportMenu(p => !p)}>{tr("common.export")}</Button>
           {showExportMenu && (
             <div className="absolute right-0 top-8 z-50 rounded-xl shadow-lg min-w-[200px] overflow-hidden"
               style={{ background: t.card, border: `1px solid ${t.border}` }}>
               {[
-                { label: `📋 বর্তমান পেজ (${students.length} জন)`, data: students, mode: "page" },
-                { label: `📦 সব স্টুডেন্ট (${serverTotal} জন)`, data: null, mode: "all" },
+                { label: `📋 বর্তমান পেজ (${students.length} জন)`, mode: "page" },
+                { label: `📦 সব স্টুডেন্ট (${serverTotal} জন)`, mode: "all" },
               ].map((opt) => (
                 <button key={opt.label} className="w-full text-left px-4 py-2.5 text-xs transition"
                   style={{ color: t.text }}
@@ -260,7 +290,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   onClick={async () => {
                     // "সব" export হলে সার্ভার থেকে সব data আনো (limit=100 per page, loop)
-                    let exportData = opt.data || students;
+                    let exportData = students;
                     if (opt.mode === "all") {
                       try {
                         const params = { page: 1, limit: 100 };
@@ -285,30 +315,9 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                         exportData = allData;
                       } catch { exportData = students; }
                     }
-                    const cols = [
-                      { h: "ID", k: "id" }, { h: "Name (EN)", k: "name_en" }, { h: "Name (BN)", k: "name_bn" },
-                      { h: "Name (Katakana)", k: "name_katakana" }, { h: "Phone", k: "phone" }, { h: "WhatsApp", k: "whatsapp" },
-                      { h: "Email", k: "email" }, { h: "DOB", k: "dob" }, { h: "Gender", k: "gender" },
-                      { h: "Marital Status", k: "marital_status" }, { h: "Nationality", k: "nationality" },
-                      { h: "NID", k: "nid" }, { h: "Passport No", k: "passport_number" },
-                      { h: "Passport Issue", k: "passport_issue" }, { h: "Passport Expiry", k: "passport_expiry" },
-                      { h: "Permanent Address", k: "permanent_address" }, { h: "Current Address", k: "current_address" },
-                      { h: "Visa Type", k: "visa_type" }, { h: "Country", k: "country" }, { h: "School", k: "school" },
-                      { h: "Batch", k: "batch" }, { h: "Intake", k: "intake" }, { h: "Agent", k: "agent" },
-                      { h: "Source", k: "source" }, { h: "Counselor", k: "counselor" }, { h: "Type", k: "type" },
-                      { h: "Branch", k: "branch" }, { h: "Google Drive", k: "gdrive_folder_url" },
-                      { h: "Status", k: "status" }, { h: "Created", k: "created" }, { h: "Notes", k: "internal_notes" },
-                    ];
-                    const PHONE_KEYS = ["phone", "whatsapp"];
-                    const csv = cols.map(c => c.h).join(",") + "\n" +
-                      exportData.map(s => cols.map(c => {
-                        const v = String(s[c.k] ?? "").replace(/"/g, '""');
-                        if (PHONE_KEYS.includes(c.k) && v && /^0\d+$/.test(v)) return `="` + v + `"`;
-                        return `"${v}"`;
-                      }).join(",")).join("\n");
-                    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-                    Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `Students_${new Date().toISOString().slice(0,10)}.csv` }).click();
-                    toast.exported(`Students (${exportData.length} records)`);
+                    // ExportModal ওপেন — কলাম সিলেক্ট করে CSV ডাউনলোড
+                    setExportModalData(exportData);
+                    setShowExportModal(true);
                     setShowExportMenu(false);
                   }}>
                   {opt.label}
@@ -529,7 +538,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               {PIPELINE_STATUSES.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
             </select>
             {bulkStatus && <Button size="xs" onClick={bulkChangeStatus}>পরিবর্তন করুন</Button>}
-            <Button variant="ghost" size="xs" onClick={bulkDelete} style={{ color: t.rose }}>{tr("common.delete")}</Button>
+            <Button variant="ghost" size="xs" onClick={() => setShowBulkDeleteConfirm(true)} style={{ color: t.rose }}>{tr("common.delete")}</Button>
             <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>{tr("common.cancel")}</Button>
           </div>
         ) : (
@@ -556,10 +565,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               </tr>
             </thead>
             <tbody>
-              {paginated.map((s) => (
-                <tr key={s.id} className="cursor-pointer" style={{ borderBottom: `1px solid ${t.border}`, background: selectedIds.has(s.id) ? `${t.cyan}08` : "transparent" }}
+              {paginated.map((s) => {
+                // ── শর্তভিত্তিক সারি রং — conditionalFormat রুল অনুযায়ী ──
+                const condStyle = getRowStyle("students", s);
+                const defaultBg = selectedIds.has(s.id) ? `${t.cyan}08` : (condStyle?.background || "transparent");
+                return (
+                <tr key={s.id} className="cursor-pointer" style={{ borderBottom: `1px solid ${t.border}`, background: defaultBg }}
                   onMouseEnter={e => { if (!selectedIds.has(s.id)) e.currentTarget.style.background = t.hoverBg; }}
-                  onMouseLeave={e => { if (!selectedIds.has(s.id)) e.currentTarget.style.background = "transparent"; }}
+                  onMouseLeave={e => { if (!selectedIds.has(s.id)) e.currentTarget.style.background = defaultBg; }}
                   onClick={() => setSelectedId(s.id)}>
                   <td className="py-3 px-2" onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} className="rounded" style={{ accentColor: t.cyan }} />
@@ -587,13 +600,32 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                     <button onClick={() => setSelectedId(s.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>👁 বিস্তারিত</button>
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>
         {paginated.length === 0 && !loading && <div className="flex flex-col items-center py-12 opacity-40"><p className="text-sm">{tr("common.noData")}</p></div>}
         <Pagination total={serverTotal} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
       </Card>
+
+      {/* ── ExportModal — কলাম নির্বাচন করে CSV এক্সপোর্ট ── */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        columns={EXPORT_COLUMNS}
+        data={exportModalData}
+        fileName="Students"
+        onExport={(count) => toast.exported(`Students (${count} records)`)}
+      />
+
+      {/* ── বাল্ক ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={async () => { setShowBulkDeleteConfirm(false); await bulkDelete(); }}
+        itemName={`${selectedIds.size} জন স্টুডেন্ট`}
+        message={`${selectedIds.size} জন স্টুডেন্ট মুছে ফেলা হবে। এই কাজ undo করা যাবে না।`}
+      />
     </div>
   );
 }

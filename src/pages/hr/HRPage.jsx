@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import PhoneInput from "../../components/ui/PhoneInput";
@@ -21,7 +22,7 @@ export default function HRPage() {
   const [activeTab, setActiveTab] = useState("employees");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [newEmp, setNewEmp] = useState({ name: "", role: "", branch: "", salary: "", phone: "", email: "" });
   const [salaryHistory, setSalaryHistory] = useState([]);
 
@@ -105,7 +106,7 @@ export default function HRPage() {
       setEmployees(prev => prev.filter(e => e.id !== id));
       toast.success("কর্মচারী মুছে ফেলা হয়েছে");
     } catch { toast.error("মুছতে ব্যর্থ"); }
-    setDeleteConfirmId(null);
+    setDeleteTarget(null);
   };
 
   return (
@@ -304,17 +305,10 @@ export default function HRPage() {
                           onMouseEnter={e => e.currentTarget.style.color = t.cyan} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
                           <Edit3 size={14} />
                         </button>
-                        {deleteConfirmId === emp.id ? (
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => handleDelete(emp.id)} className="text-[10px] px-2 py-1 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
-                            <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted }}>না</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setDeleteConfirmId(emp.id)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
-                            onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                        <button onClick={() => setDeleteTarget(emp)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
+                          onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -561,6 +555,14 @@ export default function HRPage() {
           </Card>
         );
       })()}
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => handleDelete(deleteTarget.id)}
+        itemName={deleteTarget?.name || ""}
+      />
     </div>
   );
 }

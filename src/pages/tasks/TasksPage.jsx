@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import { PRIORITY_CONFIG, TASK_STATUS_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -34,7 +35,7 @@ export default function TasksPage({ students = [] }) {
     }).catch((err) => { console.error("[Tasks Load]", err); toast.error("টাস্ক ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [newTask, setNewTask] = useState({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "" });
 
   const todoCount       = tasks.filter(tk => tk.status === "todo").length;
@@ -73,7 +74,7 @@ export default function TasksPage({ students = [] }) {
   const deleteTask = async (id) => {
     try { await api.del(`/tasks/${id}`); } catch (err) { console.error("[Task Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
     setTasks(prev => prev.filter(tk => tk.id !== id));
-    setDeleteId(null);
+    setDeleteTarget(null);
     toast.success("টাস্ক মুছে ফেলা হয়েছে");
   };
 
@@ -177,15 +178,7 @@ export default function TasksPage({ students = [] }) {
                   return (
                     <div key={task.id} className="p-3 rounded-xl group"
                       style={{ background: t.card, border: `1px solid ${isOverdue ? `${t.rose}40` : t.border}` }}>
-                      {/* Delete confirm */}
-                      {deleteId === task.id ? (
-                        <div className="flex items-center gap-2 mb-2 p-2 rounded-lg" style={{ background: `${t.rose}10` }}>
-                          <AlertTriangle size={12} style={{ color: t.rose }} />
-                          <span className="text-[10px] flex-1" style={{ color: t.rose }}>মুছে ফেলবেন?</span>
-                          <button onClick={() => setDeleteId(null)} className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: t.muted }}>না</button>
-                          <button onClick={() => deleteTask(task.id)} className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ</button>
-                        </div>
-                      ) : null}
+                      {/* Delete confirm — DeleteConfirmModal ব্যবহার করা হয়েছে (নিচে) */}
 
                       <div className="flex items-start gap-2">
                         {/* Cycle button */}
@@ -220,7 +213,7 @@ export default function TasksPage({ students = [] }) {
                         </div>
 
                         {/* Delete button */}
-                        <button onClick={() => setDeleteId(task.id)}
+                        <button onClick={() => setDeleteTarget(task)}
                           className="opacity-0 group-hover:opacity-100 p-1 rounded transition shrink-0"
                           style={{ color: t.rose }}>
                           <Trash2 size={12} />
@@ -234,6 +227,14 @@ export default function TasksPage({ students = [] }) {
           );
         })}
       </div>
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTask(deleteTarget.id)}
+        itemName={deleteTarget?.title || ""}
+      />
     </div>
   );
 }
