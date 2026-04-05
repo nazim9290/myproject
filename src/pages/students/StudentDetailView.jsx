@@ -1398,30 +1398,57 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
           <Card delay={350}>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2" style={{ color: t.muted }}>
-                <BookOpen size={12} /> অধ্যয়ন পরিকল্পনা
+                <BookOpen size={12} /> Purpose of Study
               </h4>
-              <button onClick={() => openSectionEdit("study_plan")}
-                className="text-[10px] px-2 py-1 rounded-lg transition"
-                style={{ color: t.cyan }}
-                onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
-                ✏️ Edit
-              </button>
+              <div className="flex items-center gap-2">
+                {/* AI Generate বাটন — প্রথমবার generate, save হলে আর AI call হবে না */}
+                <button onClick={async () => {
+                  if (student.reason_for_study && !window.confirm("আগের Purpose of Study replace হবে — নতুন করে generate করবেন?")) return;
+                  try {
+                    toast.success("AI generating...");
+                    const result = await api.post(`/students/${student.id}/generate-study-purpose`);
+                    if (result.reason_for_study) {
+                      onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
+                      toast.success(`Purpose of Study generated (${result.word_count} words)`);
+                    }
+                  } catch (err) { toast.error(err.message || "AI generation ব্যর্থ"); }
+                }}
+                  className="text-[10px] px-2 py-1 rounded-lg transition font-medium"
+                  style={{ background: `${t.purple}15`, color: t.purple }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${t.purple}25`}
+                  onMouseLeave={e => e.currentTarget.style.background = `${t.purple}15`}>
+                  🤖 {student.reason_for_study ? "Re-generate" : "AI Generate"}
+                </button>
+                <button onClick={() => openSectionEdit("study_plan")}
+                  className="text-[10px] px-2 py-1 rounded-lg transition"
+                  style={{ color: t.cyan }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                  ✏️ Edit
+                </button>
+              </div>
             </div>
             <div className="space-y-2.5">
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>জাপানে পড়ার কারণ</label>
-                <div className="p-3 rounded-lg text-[11px] leading-relaxed whitespace-pre-wrap" style={{ background: t.inputBg, color: t.text }}>
-                  {student.reason_for_study || "—"}
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>Purpose of Study</label>
+                  {student.reason_for_study && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                      {student.reason_for_study.split(/\s+/).length} words
+                    </span>
+                  )}
+                </div>
+                <div className="p-3 rounded-lg text-[11px] leading-relaxed whitespace-pre-wrap" style={{ background: t.inputBg, color: t.text, minHeight: student.reason_for_study ? "auto" : 60 }}>
+                  {student.reason_for_study || "🤖 AI Generate বাটন চাপুন — student data থেকে auto-generate হবে"}
                 </div>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ভবিষ্যৎ পরিকল্পনা</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Future Plan</label>
                 <div className="p-3 rounded-lg text-[11px] leading-relaxed whitespace-pre-wrap" style={{ background: t.inputBg, color: t.text }}>
                   {student.future_plan || "—"}
                 </div>
               </div>
-              <ReadOnlyField label="অধ্যয়নের বিষয়" value={student.study_subject} />
+              <ReadOnlyField label="Study Subject" value={student.study_subject} />
             </div>
           </Card>
 
