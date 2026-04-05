@@ -105,7 +105,7 @@ const NAV_ICONS = {
   "super-admin": Shield,
 };
 
-function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts, canAccessPage }) {
+function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobileOpen, setMobileOpen, isMobile, badgeCounts, canAccessPage, agencyInfo }) {
   const { t: tr } = useLanguage();
   const w = collapsed ? 64 : 220;
   const visible = isMobile ? mobileOpen : true;
@@ -138,15 +138,19 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
           className="flex items-center gap-2.5 px-4 shrink-0"
           style={{ height: 60, borderBottom: `1px solid ${t.border}` }}
         >
-          <div
-            className="shrink-0 h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black"
-            style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}
-          >
-            <span style={{ color: "#fff" }}>A</span>
-          </div>
+          {/* Agency logo বা default icon */}
+          {agencyInfo?.logo_url ? (
+            <img src={agencyInfo.logo_url.startsWith("http") ? agencyInfo.logo_url : `${window.location.origin}${agencyInfo.logo_url}`}
+              alt="" className="shrink-0 h-8 w-8 rounded-xl object-cover" />
+          ) : (
+            <div className="shrink-0 h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black"
+              style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}>
+              <span style={{ color: "#fff" }}>{(agencyInfo?.name || "A").charAt(0).toUpperCase()}</span>
+            </div>
+          )}
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: "#fff" }}>{tr("app.name")}</p>
+              <p className="text-sm font-bold truncate" style={{ color: "#fff" }}>{agencyInfo?.name || tr("app.name")}</p>
               <p className="text-[9px] truncate" style={{ color: t.muted }}>{tr("app.subtitle")}</p>
             </div>
           )}
@@ -201,9 +205,16 @@ function Sidebar({ activePage, setActivePage, t, collapsed, setCollapsed, mobile
           })}
         </nav>
 
+        {/* Powered by AgencyBook — platform branding */}
+        {!collapsed && (
+          <div className="shrink-0 px-3 py-2 text-center" style={{ borderTop: `1px solid ${t.border}` }}>
+            <p className="text-[8px] tracking-wider uppercase" style={{ color: `${t.muted}80` }}>Powered by <span style={{ color: t.cyan }}>AgencyBook</span></p>
+          </div>
+        )}
+
         {/* Desktop collapse toggle */}
         {!isMobile && (
-          <div className="shrink-0 p-2" style={{ borderTop: `1px solid ${t.border}` }}>
+          <div className="shrink-0 p-2" style={{ borderTop: collapsed ? `1px solid ${t.border}` : "none" }}>
             <button
               onClick={() => setCollapsed((v) => !v)}
               className="w-full flex items-center justify-center p-2 rounded-lg transition-all"
@@ -488,6 +499,9 @@ function AppShell({ isDark, setIsDark }) {
     language: "bn",
   });
 
+  // ── Agency info — নাম, লোগো sidebar ও login-এ দেখানোর জন্য ──
+  const [agencyInfo, setAgencyInfo] = useState(null);
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener("resize", handler);
@@ -501,10 +515,13 @@ function AppShell({ isDark, setIsDark }) {
     if (!token) { setDataLoaded(true); return; } // token ছাড়া API call করার দরকার নেই
 
     try {
-      const [studRes, visRes] = await Promise.all([
+      const [studRes, visRes, agencyRes] = await Promise.all([
         studentsApi.list({ limit: 500 }),
         visitorsApi.list({ limit: 500 }),
+        api.get("/agency/me").catch(() => null),
       ]);
+      // Agency info set — sidebar ও login page-এ ব্যবহার হবে
+      if (agencyRes && agencyRes.name) setAgencyInfo(agencyRes);
       // students/visitors API response: { data: [...] } format
       const studs = Array.isArray(studRes) ? studRes : studRes.data || [];
       const visis = Array.isArray(visRes) ? visRes : visRes.data || [];
@@ -809,6 +826,7 @@ function AppShell({ isDark, setIsDark }) {
           badgeCounts={{
             visitors: visitors.filter(v => ["interested", "new", "contacted", "Interested"].includes(v.status)).length || null,
           }}
+          agencyInfo={agencyInfo}
         />
 
         <div

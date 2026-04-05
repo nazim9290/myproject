@@ -145,7 +145,10 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               🎓 স্টুডেন্ট পোর্টাল লগইন
             </button>
           )}
-          {/* প্রডাকশনে demo credentials সরানো হয়েছে */}
+          {/* Platform branding */}
+          <p className="text-center mt-6 text-[9px] tracking-wider uppercase" style={{ color: `${t.muted}60` }}>
+            Powered by <span style={{ color: t.cyan }}>AgencyBook</span>
+          </p>
         </div>
       </div>
     </div>
