@@ -326,8 +326,9 @@ export default function SuperAdminPage() {
           <div>
             <h3 className="text-sm font-semibold flex items-center gap-2">💰 প্রাইসিং কনফিগ</h3>
             <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
-              প্রতি স্টুডেন্ট ENROLLED হলে: <strong style={{ color: t.emerald }}>৳{pricing.per_student_fee?.toLocaleString("en-IN")}</strong>
+              প্রতি স্টুডেন্ট: <strong style={{ color: t.emerald }}>৳{pricing.per_student_fee?.toLocaleString("en-IN")}</strong>
               {" "}• Trial: <strong>{pricing.trial_days} দিন</strong>
+              {" "}• OCR Credit: <strong style={{ color: t.cyan }}>৳{pricing.ocr_credit_price || 5}/scan</strong>
             </p>
           </div>
           <Button variant="ghost" size="xs" icon={Edit3} onClick={() => setShowPricingForm(!showPricingForm)}>
@@ -345,6 +346,11 @@ export default function SuperAdminPage() {
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Free Trial (দিন)</label>
               <input type="number" value={pricing.trial_days} onChange={e => setPricing(p => ({ ...p, trial_days: Number(e.target.value) }))}
+                className="w-24 px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>OCR Credit মূল্য (৳/scan)</label>
+              <input type="number" value={pricing.ocr_credit_price || 5} onChange={e => setPricing(p => ({ ...p, ocr_credit_price: Number(e.target.value) }))}
                 className="w-24 px-3 py-2 rounded-lg text-sm outline-none" style={is} />
             </div>
             <Button size="xs" icon={Save} onClick={async () => {
@@ -369,7 +375,7 @@ export default function SuperAdminPage() {
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                {["এজেন্সি", "ক্রেডিট", "অ্যাকশন"].map(h => (
+                {["এজেন্সি", "ক্রেডিট", "মূল্য (৳5/scan)", "অ্যাকশন"].map(h => (
                   <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                 ))}
               </tr>
@@ -383,6 +389,12 @@ export default function SuperAdminPage() {
                   <td className="py-2 px-3">
                     <span className="font-bold text-sm" style={{ color: (agency.ocr_credits || 0) > 0 ? t.emerald : t.rose }}>
                       {agency.ocr_credits || 0}
+                    </span>
+                    <span className="text-[9px] ml-1" style={{ color: t.muted }}>scan</span>
+                  </td>
+                  <td className="py-2 px-3">
+                    <span className="font-medium" style={{ color: t.text }}>
+                      ৳{((agency.ocr_credits || 0) * (pricing.ocr_credit_price || 5)).toLocaleString("en-IN")}
                     </span>
                   </td>
                   <td className="py-2 px-3">
