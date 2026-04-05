@@ -249,6 +249,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const [viewTab, setViewTab] = useState("active");
   const [confirmAction, setConfirmAction] = useState(null); // {type:"convert", visitor}
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [insightFilter, setInsightFilter] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [archiveDays, setArchiveDays] = useState(30);
   const [showSettings, setShowSettings] = useState(false);
@@ -334,7 +335,6 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const paginated = sortFn(visitors);
 
   // ── Insight filter — TableInsights group card click করলে client-side filter ──
-  const [insightFilter, setInsightFilter] = useState(null);
   const displayData = insightFilter?.value
     ? paginated.filter(v => String(v[insightFilter.field] || "").toLowerCase() === String(insightFilter.value).toLowerCase())
     : paginated;

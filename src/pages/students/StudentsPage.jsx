@@ -73,6 +73,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [insightFilter, setInsightFilter] = useState(null);
 
   // ── Excel Import state ──
   const [showImport, setShowImport] = useState(false);
@@ -276,8 +277,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   // শুধু client-side sort প্রয়োগ করা হচ্ছে (API order by created_at desc)
   const paginated = sortFn(students);
 
-  // ── Insight filter — TableInsights group card click করলে client-side filter ──
-  const [insightFilter, setInsightFilter] = useState(null); // { field, value }
+  // ── Insight filter — TableInsights group card click করলে client-side filter (hook early) ──
   const displayData = insightFilter?.value
     ? paginated.filter(s => String(s[insightFilter.field] || "").toLowerCase() === String(insightFilter.value).toLowerCase())
     : paginated;
