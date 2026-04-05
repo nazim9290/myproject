@@ -276,6 +276,12 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   // শুধু client-side sort প্রয়োগ করা হচ্ছে (API order by created_at desc)
   const paginated = sortFn(students);
 
+  // ── Insight filter — TableInsights group card click করলে client-side filter ──
+  const [insightFilter, setInsightFilter] = useState(null); // { field, value }
+  const displayData = insightFilter?.value
+    ? paginated.filter(s => String(s[insightFilter.field] || "").toLowerCase() === String(insightFilter.value).toLowerCase())
+    : paginated;
+
   // ── KPI counts — current page-এর data থেকে (approximate; সার্ভারে total থেকে exact) ──
   const activeCount = students.filter((s) => !["CANCELLED", "PAUSED"].includes(s.status)).length;
   const visaCount = students.filter((s) => ["VISA_GRANTED", "ARRIVED", "COMPLETED"].includes(s.status)).length;
@@ -547,6 +553,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         module="students"
         data={paginated}
         fields={INSIGHT_FIELDS}
+        onFilter={(field, value) => setInsightFilter(value ? { field, value } : null)}
       />
 
       <Card delay={100}>
@@ -587,7 +594,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               </tr>
             </thead>
             <tbody>
-              {paginated.map((s) => {
+              {displayData.map((s) => {
                 // ── শর্তভিত্তিক সারি রং — conditionalFormat রুল অনুযায়ী ──
                 const condStyle = getRowStyle("students", s);
                 const defaultBg = selectedIds.has(s.id) ? `${t.cyan}08` : (condStyle?.background || "transparent");

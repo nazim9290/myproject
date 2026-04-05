@@ -332,6 +332,13 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   // ── সার্ভার থেকে ইতিমধ্যে ফিল্টার ও পেজিনেট করা data এসেছে ──
   // শুধু client-side sort প্রয়োগ করা হচ্ছে
   const paginated = sortFn(visitors);
+
+  // ── Insight filter — TableInsights group card click করলে client-side filter ──
+  const [insightFilter, setInsightFilter] = useState(null);
+  const displayData = insightFilter?.value
+    ? paginated.filter(v => String(v[insightFilter.field] || "").toLowerCase() === String(insightFilter.value).toLowerCase())
+    : paginated;
+
   const allBranches = ["All", ...new Set(visitors.map(v => v.branch).filter(Boolean))];
 
   // KPI counts — current page data থেকে (approximate)
@@ -848,6 +855,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         module="visitors"
         data={paginated}
         fields={VISITOR_INSIGHT_FIELDS}
+        onFilter={(field, value) => setInsightFilter(value ? { field, value } : null)}
       />
 
       <Card delay={100}>
@@ -863,7 +871,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           <SortHeader label={tr("visitors.followUp")} sortKey="lastFollowUp" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
           <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{color:t.muted}}>{tr("common.actions")}</th>
         </tr></thead><tbody>
-          {paginated.map(v=>{
+          {displayData.map(v=>{
             const dc=v.interested_countries?v.interested_countries[0]:v.country;
             const mc=v.interested_countries&&v.interested_countries.length>1;
             const days=daysDiff(v.date);

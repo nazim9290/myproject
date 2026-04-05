@@ -87,6 +87,7 @@ export default function TableInsights({
   data = [],
   fields = [],
   onRulesChange,
+  onFilter,        // callback: (fieldKey, value) => void — click করলে parent-এ filter পাঠায়
 }) {
   const t = useTheme();
 
@@ -94,6 +95,7 @@ export default function TableInsights({
   const [showStats, setShowStats] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [groupByKey, setGroupByKey] = useState("");
+  const [activeGroupValue, setActiveGroupValue] = useState(null); // কোন group card active/selected
 
   // ═══════════════════════════════════════════
   // গ্রুপ বাই ফলাফল — নির্বাচিত ফিল্ড অনুযায়ী গণনা
@@ -143,7 +145,7 @@ export default function TableInsights({
         {/* ── গ্রুপ বাই ড্রপডাউন ── */}
         <select
           value={groupByKey}
-          onChange={(e) => setGroupByKey(e.target.value)}
+          onChange={(e) => { setGroupByKey(e.target.value); setActiveGroupValue(null); if (onFilter) onFilter(e.target.value, null); }}
           className="px-2.5 py-1.5 rounded-xl text-xs outline-none"
           style={inputStyle}
         >
@@ -220,20 +222,29 @@ export default function TableInsights({
 
           {/* ── গ্রুপ কার্ড গ্রিড ── */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {groupedData.map((g, idx) => (
+            {groupedData.map((g, idx) => {
+              const isActive = activeGroupValue === g.value;
+              const accent = accentColors[idx % accentColors.length];
+              return (
               <div
                 key={g.value}
-                className="p-2.5 rounded-lg transition-all duration-200"
+                className="p-2.5 rounded-lg transition-all duration-200 cursor-pointer"
                 style={{
-                  background: t.cardSolid,
-                  border: `1px solid ${t.border}`,
+                  background: isActive ? `${accent}12` : t.cardSolid,
+                  border: `1px solid ${isActive ? `${accent}60` : t.border}`,
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.borderColor = accentColors[idx % accentColors.length] + "60")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.borderColor = t.border)
-                }
+                onClick={() => {
+                  // toggle — আবার click করলে filter clear
+                  const newVal = isActive ? null : g.value;
+                  setActiveGroupValue(newVal);
+                  if (onFilter) onFilter(groupByKey, newVal);
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.borderColor = accent + "60";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.borderColor = t.border;
+                }}
               >
                 {/* ── মান ও গণনা ── */}
                 <div className="flex items-center justify-between mb-1.5">
@@ -276,7 +287,21 @@ export default function TableInsights({
                   {g.pct}%
                 </p>
               </div>
-            ))}
+              );
+            })}
+
+            {/* ── active filter clear বাটন ── */}
+            {activeGroupValue && (
+              <div className="col-span-full flex items-center gap-2 mt-1">
+                <span className="text-[10px]" style={{ color: t.muted }}>
+                  ফিল্টার: <strong style={{ color: t.cyan }}>{activeGroupValue}</strong>
+                </span>
+                <button onClick={() => { setActiveGroupValue(null); if (onFilter) onFilter(groupByKey, null); }}
+                  className="text-[10px] px-2 py-0.5 rounded-lg" style={{ background: `${t.rose}15`, color: t.rose }}>
+                  ✕ Clear
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
