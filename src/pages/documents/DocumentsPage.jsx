@@ -41,6 +41,11 @@ export default function DocumentsPage({ students }) {
   const [fieldValues, setFieldValues] = useState({});
   const [saving, setSaving] = useState(false);
 
+  // ── Cross-validation state ──
+  const [showCrossValidate, setShowCrossValidate] = useState(false);
+  const [crossValidateData, setCrossValidateData] = useState(null);
+  const [crossValidateLoading, setCrossValidateLoading] = useState(false);
+
   // OCR Scan — ডকুমেন্ট ইমেজ থেকে auto-fill (credit system সহ)
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
@@ -506,6 +511,59 @@ export default function DocumentsPage({ students }) {
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>{selectedStudent.id} • {selectedStudent.batch || "—"} • {completedTypes}/{totalTypes} {tr("documents.documentsCompleted")}</p>
           </div>
         </div>
+
+        {/* ── Cross-Validation Button ── */}
+        <Card delay={0}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold flex items-center gap-2">🔍 Cross-Validation</h3>
+              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>বিভিন্ন ডকুমেন্টে একই ফিল্ডের মান মিলছে কিনা যাচাই করুন</p>
+            </div>
+            <Button size="xs" variant="ghost" onClick={async () => {
+              setCrossValidateLoading(true);
+              try {
+                const result = await api.get(`/documents/cross-validate/${selectedStudent.id}`);
+                setCrossValidateData(result);
+                setShowCrossValidate(true);
+              } catch (err) { toast.error("Cross-validation ব্যর্থ"); }
+              setCrossValidateLoading(false);
+            }}>{crossValidateLoading ? "চেক হচ্ছে..." : "Mismatch চেক করুন"}</Button>
+          </div>
+        </Card>
+
+        {/* ── Cross-Validation Result Modal ── */}
+        <Modal isOpen={showCrossValidate} onClose={() => setShowCrossValidate(false)} title="Document Cross-Validation" subtitle={`${selectedStudent.name_en} — ${selectedStudent.id}`} size="lg">
+          {crossValidateData && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{
+                background: crossValidateData.mismatches?.length > 0 ? `${t.rose}10` : `${t.emerald}10`,
+                border: `1px solid ${crossValidateData.mismatches?.length > 0 ? `${t.rose}30` : `${t.emerald}30`}`,
+              }}>
+                <span className="text-2xl">{crossValidateData.mismatches?.length > 0 ? "⚠️" : "✅"}</span>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: crossValidateData.mismatches?.length > 0 ? t.rose : t.emerald }}>
+                    {crossValidateData.mismatches?.length > 0 ? `${crossValidateData.mismatches.length} Mismatch Found` : "No Mismatch — All Fields Match!"}
+                  </p>
+                  <p className="text-[10px]" style={{ color: t.muted }}>{crossValidateData.total_docs} documents checked</p>
+                </div>
+              </div>
+
+              {(crossValidateData.mismatches || []).map((m, i) => (
+                <div key={i} className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
+                  <p className="text-xs font-bold mb-2" style={{ color: t.rose }}>⚠️ {m.field}</p>
+                  <div className="space-y-1.5">
+                    {(m.entries || []).map((e, j) => (
+                      <div key={j} className="flex items-center justify-between text-xs">
+                        <span style={{ color: t.muted }}>{e.doc_type}</span>
+                        <span className="font-medium px-2 py-0.5 rounded" style={{ background: `${t.amber}15`, color: t.text }}>{e.value || "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
 
         {/* Doc Type Cards — শুধু active doc types */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
