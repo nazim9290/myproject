@@ -1405,19 +1405,25 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <button onClick={async () => {
                   if (student.reason_for_study && !window.confirm("আগের Purpose of Study replace হবে — নতুন করে generate করবেন?")) return;
                   try {
-                    toast.success("AI generating...");
+                    toast.success("AI generating... (5 credits)");
                     const result = await api.post(`/students/${student.id}/generate-study-purpose`);
                     if (result.reason_for_study) {
                       onUpdate({ ...student, reason_for_study: result.reason_for_study, updated_at: new Date().toISOString() });
-                      toast.success(`Purpose of Study generated (${result.word_count} words)`);
+                      toast.success(`Purpose of Study generated (${result.word_count} words) — ${result.credits_remaining} credits left`);
                     }
-                  } catch (err) { toast.error(err.message || "AI generation ব্যর্থ"); }
+                  } catch (err) {
+                    if (err.message?.includes("credit")) {
+                      toast.error("AI credit অপর্যাপ্ত — অ্যাডমিনের সাথে যোগাযোগ করুন");
+                    } else {
+                      toast.error(err.message || "AI generation ব্যর্থ");
+                    }
+                  }
                 }}
-                  className="text-[10px] px-2 py-1 rounded-lg transition font-medium"
+                  className="text-[10px] px-2.5 py-1 rounded-lg transition font-medium"
                   style={{ background: `${t.purple}15`, color: t.purple }}
                   onMouseEnter={e => e.currentTarget.style.background = `${t.purple}25`}
                   onMouseLeave={e => e.currentTarget.style.background = `${t.purple}15`}>
-                  🤖 {student.reason_for_study ? "Re-generate" : "AI Generate"}
+                  🤖 {student.reason_for_study ? "Re-generate (5 credits)" : "AI Generate (5 credits)"}
                 </button>
                 <button onClick={() => openSectionEdit("study_plan")}
                   className="text-[10px] px-2 py-1 rounded-lg transition"
