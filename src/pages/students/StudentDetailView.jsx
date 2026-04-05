@@ -1412,11 +1412,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       toast.success(`Purpose of Study generated (${result.word_count} words) — ${result.credits_remaining} credits left`);
                     }
                   } catch (err) {
-                    if (err.message?.includes("credit")) {
-                      toast.error("AI credit অপর্যাপ্ত — অ্যাডমিনের সাথে যোগাযোগ করুন");
-                    } else {
-                      toast.error(err.message || "AI generation ব্যর্থ");
-                    }
+                    toast.error(err.message || "AI generation ব্যর্থ");
                   }
                 }}
                   className="text-[10px] px-2.5 py-1 rounded-lg transition font-medium"
