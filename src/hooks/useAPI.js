@@ -49,13 +49,16 @@ async function request(path, options = {}) {
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
-  // Error handling — API error হলে throw + console.error
+  // Error handling — API error হলে throw
   // extra data (missing_fields, code) Error object-এ attach করা হয়
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Request failed" }));
-    console.error(`%c[DB FAIL]%c ${method} ${path} → ${res.status}`, "color:#f43f5e;font-weight:bold", "color:#94a3b8", err.error || "");
+    // 400 validation error → warn (expected), 500 server error → error
+    if (res.status >= 500) {
+      console.error(`%c[DB FAIL]%c ${method} ${path} → ${res.status}`, "color:#f43f5e;font-weight:bold", "color:#94a3b8", err.error || "");
+    }
     const error = new Error(err.error || "Request failed");
-    error.data = err; // পুরো response data attach — missing_fields, code etc.
+    error.data = err;
     error.status = res.status;
     throw error;
   }
