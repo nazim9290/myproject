@@ -171,19 +171,14 @@ export default function SuperAdminPage() {
 
     try {
       if (editingTemplate) {
-        if (tplForm.file) {
-          // ফাইল সহ আপডেট — delete old + create new
-          await fetch(`${API_URL}/super-admin/default-templates/${editingTemplate.id}`, { method: "DELETE", headers });
-          const res = await fetch(`${API_URL}/super-admin/default-templates`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
-          if (res.ok) { toast.success("টেমপ্লেট আপডেট হয়েছে (নতুন ফাইল সহ)"); }
-          else { const d = await res.json(); toast.error(d.error || "আপডেট ব্যর্থ"); return; }
-        } else {
-          // ফাইল ছাড়া আপডেট — PATCH (JSON)
-          const body = { name: tplForm.name, name_bn: tplForm.name_bn, description: tplForm.description, category: tplForm.category, sub_category: tplForm.sub_category, country: tplForm.country };
-          const res = await fetch(`${API_URL}/super-admin/default-templates/${editingTemplate.id}`, { method: "PATCH", headers, body: JSON.stringify(body) });
-          if (res.ok) { toast.success("টেমপ্লেট আপডেট হয়েছে"); }
-          else { const d = await res.json(); toast.error(d.error || "আপডেট ব্যর্থ"); return; }
-        }
+        // PATCH — file সহ বা ছাড়া দুটোই FormData দিয়ে (placeholder auto-detect)
+        const res = await fetch(`${API_URL}/super-admin/default-templates/${editingTemplate.id}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (res.ok) { toast.success(tplForm.file ? "টেমপ্লেট আপডেট হয়েছে (placeholder re-detect)" : "টেমপ্লেট আপডেট হয়েছে"); }
+        else { const d = await res.json(); toast.error(d.error || "আপডেট ব্যর্থ"); return; }
       } else {
         // নতুন তৈরি — FormData দিয়ে (file সহ)
         const res = await fetch(`${API_URL}/super-admin/default-templates`, {
