@@ -507,11 +507,6 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   );
 
   // ── সেকশন-ভিত্তিক ফিল্ড কনফিগ (Modal-এ dynamic render হবে) ──
-  // destination fields dynamic — sectionForm state থেকে conditional fields বের হয়
-  const getFields = (section) => {
-    if (section === "destination") return getConditionalDestFields(sectionForm);
-    return SECTION_FIELDS_STATIC[section] || [];
-  };
   const SECTION_FIELDS_STATIC = {
     personal: personalFields,
     passport: passportFields,
@@ -524,6 +519,11 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       { label: tr("students.f_futurePlan"), key: "future_plan", type: "textarea" },
       { label: tr("students.f_studySubject"), key: "study_subject", type: "text" },
     ],
+  };
+  // destination fields dynamic — sectionForm state থেকে conditional fields বের হয়
+  const getFields = (section) => {
+    if (section === "destination") return getConditionalDestFields(sectionForm);
+    return SECTION_FIELDS_STATIC[section] || [];
   };
 
   // ── সেকশন Modal-এর টাইটেল — i18n ──
@@ -1403,7 +1403,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               <div className="flex items-center gap-2">
                 {/* AI Generate বাটন — প্রথমবার generate, save হলে আর AI call হবে না */}
                 <button onClick={async () => {
-                  if (student.reason_for_study && !window.confirm("আগের Purpose of Study replace হবে — নতুন করে generate করবেন?")) return;
+                  if (student.reason_for_study) { if (!confirm("আগের Purpose of Study replace হবে — নতুন করে generate করবেন?")) return; }
                   try {
                     toast.success("AI generating... (5 credits)");
                     const result = await api.post(`/students/${student.id}/generate-study-purpose`);
