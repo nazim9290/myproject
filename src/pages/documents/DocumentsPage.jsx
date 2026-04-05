@@ -58,9 +58,9 @@ export default function DocumentsPage({ students }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Credit check — scan করার আগেই check
-    if (ocrCredits !== null && ocrCredits <= 0) {
-      toast.error("OCR credit শেষ — অ্যাডমিনের সাথে যোগাযোগ করুন");
+    // Credit check — প্রতি scan-এ 5 credit লাগে
+    if (ocrCredits !== null && ocrCredits < 5) {
+      toast.error(`OCR credit অপর্যাপ্ত (${ocrCredits}/5) — অ্যাডমিনের সাথে যোগাযোগ করুন`);
       return;
     }
 
@@ -297,10 +297,10 @@ export default function DocumentsPage({ students }) {
               {ocrCredits !== null && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
                   style={{
-                    background: ocrCredits > 0 ? `${t.emerald}15` : `${t.rose}15`,
-                    color: ocrCredits > 0 ? t.emerald : t.rose,
+                    background: ocrCredits >= 5 ? `${t.emerald}15` : `${t.rose}15`,
+                    color: ocrCredits >= 5 ? t.emerald : t.rose,
                   }}>
-                  {ocrCredits > 0 ? `${ocrCredits} credits` : "No credits"}
+                  {ocrCredits >= 5 ? `${ocrCredits} credits (5/scan)` : `${ocrCredits} credits — insufficient`}
                 </span>
               )}
             </div>

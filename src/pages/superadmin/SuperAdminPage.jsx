@@ -368,7 +368,7 @@ export default function SuperAdminPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold flex items-center gap-2">🔍 OCR Credits</h3>
-            <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>এজেন্সিতে OCR scan credit যোগ করুন — Haiku AI + Google Vision</p>
+            <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>৳1 = 1 credit • প্রতি scan = 5 credit (৳5) • Haiku AI + Google Vision</p>
           </div>
         </div>
         <div className="overflow-x-auto">
