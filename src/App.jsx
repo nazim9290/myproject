@@ -460,6 +460,17 @@ function AppShell({ isDark, setIsDark }) {
   const toast = useToast();
   const { user: authUser, login, setMockUser, logout, loading: authLoading } = useAuth();
   const [activePage, setActivePage] = useState("dashboard");
+
+  // ── Analytics — page view tracking (centralized) ──
+  useEffect(() => {
+    if (!activePage || !authUser) return;
+    const now = Date.now();
+    if (window._lastTrack === activePage && now - (window._lastTrackTime || 0) < 30000) return;
+    window._lastTrack = activePage;
+    window._lastTrackTime = now;
+    api.post("/analytics/track", { page: activePage }).catch(() => {});
+  }, [activePage, authUser]);
+
   const [collapsed, setCollapsed] = useState(false);   // desktop collapse
   const [mobileOpen, setMobileOpen] = useState(false); // mobile overlay
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);

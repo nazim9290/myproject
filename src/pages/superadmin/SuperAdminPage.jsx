@@ -60,6 +60,11 @@ export default function SuperAdminPage() {
     name: "", name_bn: "", description: "", category: "excel", sub_category: "", country: "Japan", file: null,
   });
 
+  // ── অ্যানালিটিক্স state ──
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsDays, setAnalyticsDays] = useState(30);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
   // ── ম্যাপিং Modal state ──
   const [mappingTemplate, setMappingTemplate] = useState(null);
   const [templateMappings, setTemplateMappings] = useState({});
@@ -106,6 +111,29 @@ export default function SuperAdminPage() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  // ── অ্যানালিটিক্স ডাটা লোড ──
+  const loadAnalytics = async (days) => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/analytics/summary?days=${days}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      } else {
+        toast.error("অ্যানালিটিক্স লোড ব্যর্থ");
+      }
+    } catch (err) {
+      console.error("[Analytics Load]", err);
+      toast.error("অ্যানালিটিক্স লোড করতে সমস্যা হয়েছে");
+    }
+    setAnalyticsLoading(false);
+  };
+
+  // অ্যানালিটিক্স ট্যাবে গেলে ডাটা ফেচ
+  useEffect(() => {
+    if (activeTab === "analytics") loadAnalytics(analyticsDays);
+  }, [activeTab, analyticsDays]);
 
   // ── Agency তৈরি ──
   const createAgency = async () => {
@@ -307,6 +335,7 @@ export default function SuperAdminPage() {
           { key: "credits", label: "OCR Credits", icon: "🔍" },
           { key: "templates", label: "টেমপ্লেট", icon: "📄" },
           { key: "settings", label: "সেটিংস", icon: "⚙️" },
+          { key: "analytics", label: "অ্যানালিটিক্স", icon: "📊" },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
@@ -725,6 +754,202 @@ export default function SuperAdminPage() {
           );
         })()}
       </Modal>
+
+      </>}
+
+      {/* ══ TAB: ANALYTICS ══ */}
+      {activeTab === "analytics" && <>
+
+        {/* ── তারিখ পরিসীমা নির্বাচন ── */}
+        <div className="flex items-center gap-2">
+          {[
+            { days: 7, label: "৭ দিন" },
+            { days: 30, label: "৩০ দিন" },
+            { days: 90, label: "৯০ দিন" },
+          ].map(opt => (
+            <button key={opt.days} onClick={() => setAnalyticsDays(opt.days)}
+              className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
+              style={{
+                background: analyticsDays === opt.days ? t.cyan : t.inputBg,
+                color: analyticsDays === opt.days ? "#fff" : t.muted,
+                border: `1px solid ${analyticsDays === opt.days ? t.cyan : t.inputBorder}`,
+              }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {analyticsLoading ? (
+          <div className="text-center py-20 text-xs" style={{ color: t.muted }}>অ্যানালিটিক্স লোড হচ্ছে...</div>
+        ) : analyticsData ? (<>
+
+          {/* ── KPI কার্ড ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: "মোট পেজ ভিউ", value: (analyticsData.totalPageViews || 0).toLocaleString("en-IN"), color: t.cyan, icon: "👁️" },
+              { label: "সক্রিয় ইউজার", value: analyticsData.activeUsers || 0, color: t.emerald, icon: "👤" },
+              { label: "সবচেয়ে ব্যবহৃত ফিচার", value: analyticsData.mostUsedFeature || "—", color: t.purple, icon: "⭐" },
+              { label: "পিক আওয়ার", value: analyticsData.peakHour != null ? `${analyticsData.peakHour}:00` : "—", color: t.amber, icon: "⏰" },
+            ].map((kpi, i) => (
+              <Card key={i} delay={i * 40}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
+                    <p className="text-2xl font-bold mt-1" style={{ color: kpi.color }}>{kpi.value}</p>
+                  </div>
+                  <span className="text-2xl opacity-40">{kpi.icon}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* ── ফিচার ব্যবহার — হরিজন্টাল বার চার্ট ── */}
+          <Card delay={100}>
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">📊 ফিচার ব্যবহার</h3>
+            <div className="space-y-3">
+              {(analyticsData.featureUsage || []).length === 0 ? (
+                <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ডাটা নেই</p>
+              ) : (() => {
+                const maxVal = Math.max(...(analyticsData.featureUsage || []).map(f => f.count || 0), 1);
+                const barColors = [t.cyan, t.emerald, t.purple, t.amber, t.rose];
+                return (analyticsData.featureUsage || []).map((feature, i) => {
+                  const pct = ((feature.count || 0) / maxVal) * 100;
+                  return (
+                    <div key={feature.name || i} className="flex items-center gap-3">
+                      <div className="w-28 text-xs font-medium truncate" style={{ color: t.text }}>{feature.name}</div>
+                      <div className="flex-1 h-6 rounded-lg overflow-hidden" style={{ background: `${t.border}40` }}>
+                        <div className="h-full rounded-lg transition-all duration-500 flex items-center px-2"
+                          style={{ width: `${Math.max(pct, 2)}%`, background: barColors[i % barColors.length] }}>
+                          {pct > 20 && <span className="text-[10px] font-bold text-white">{(feature.count || 0).toLocaleString("en-IN")}</span>}
+                        </div>
+                      </div>
+                      {pct <= 20 && <span className="text-[10px] font-medium" style={{ color: t.muted }}>{(feature.count || 0).toLocaleString("en-IN")}</span>}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </Card>
+
+          {/* ── সক্রিয় ইউজার তালিকা ── */}
+          <Card delay={150}>
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">👤 সক্রিয় ইউজার</h3>
+            {(analyticsData.activeUsersList || []).length === 0 ? (
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ডাটা নেই</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                      {["ইউজার", "রোল", "পেজ ভিউ"].map(h => (
+                        <th key={h} className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(analyticsData.activeUsersList || []).map((user, i) => (
+                      <tr key={user.id || i} style={{ borderBottom: `1px solid ${t.border}` }}
+                        onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                              style={{ background: `${t.cyan}15`, color: t.cyan }}>
+                              {(user.name || "U").charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium">{user.name || "—"}</p>
+                              {user.email && <p className="text-[10px]" style={{ color: t.muted }}>{user.email}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-[10px] px-2 py-0.5 rounded-lg font-medium"
+                            style={{ background: `${t.purple}15`, color: t.purple }}>
+                            {user.role || "—"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-bold" style={{ color: t.cyan }}>{(user.pageViews || 0).toLocaleString("en-IN")}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* ── পিক আওয়ার চার্ট — ২৪ ঘণ্টা ── */}
+          <Card delay={200}>
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">⏰ পিক আওয়ার (২৪ ঘণ্টা)</h3>
+            {(analyticsData.hourlyData || []).length === 0 ? (
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ডাটা নেই</p>
+            ) : (() => {
+              const hours = analyticsData.hourlyData || [];
+              const maxH = Math.max(...hours.map(h => h.count || 0), 1);
+              return (
+                <div className="flex items-end gap-1" style={{ height: 140 }}>
+                  {Array.from({ length: 24 }, (_, hr) => {
+                    const found = hours.find(h => h.hour === hr);
+                    const count = found ? found.count || 0 : 0;
+                    const heightPct = (count / maxH) * 100;
+                    const isPeak = analyticsData.peakHour === hr;
+                    return (
+                      <div key={hr} className="flex-1 flex flex-col items-center gap-1 group relative" title={`${hr}:00 — ${count} ভিউ`}>
+                        <div className="w-full rounded-t-md transition-all duration-300"
+                          style={{
+                            height: `${Math.max(heightPct, 3)}%`,
+                            background: isPeak ? t.amber : `${t.cyan}80`,
+                            minHeight: 4,
+                          }} />
+                        <span className="text-[8px]" style={{ color: hr % 3 === 0 ? t.muted : "transparent" }}>{hr}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </Card>
+
+          {/* ── দৈনিক ট্রেন্ড ── */}
+          <Card delay={250}>
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">📈 দৈনিক ট্রেন্ড</h3>
+            {(analyticsData.dailyTrend || []).length === 0 ? (
+              <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ডাটা নেই</p>
+            ) : (() => {
+              const daily = analyticsData.dailyTrend || [];
+              const maxD = Math.max(...daily.map(d => d.count || 0), 1);
+              return (
+                <div>
+                  <div className="flex items-end gap-[2px]" style={{ height: 120 }}>
+                    {daily.map((day, i) => {
+                      const heightPct = ((day.count || 0) / maxD) * 100;
+                      return (
+                        <div key={day.date || i} className="flex-1 group relative" title={`${day.date || ""} — ${day.count || 0} ভিউ`}>
+                          <div className="w-full rounded-t-sm transition-all duration-300"
+                            style={{
+                              height: `${Math.max(heightPct, 2)}%`,
+                              background: t.emerald,
+                              minHeight: 2,
+                            }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* তারিখ লেবেল — শুরু ও শেষ */}
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[9px]" style={{ color: t.muted }}>{daily[0]?.date || ""}</span>
+                    <span className="text-[9px]" style={{ color: t.muted }}>{daily[daily.length - 1]?.date || ""}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </Card>
+
+        </>) : (
+          <div className="text-center py-20 text-xs" style={{ color: t.muted }}>অ্যানালিটিক্স ডাটা পাওয়া যায়নি</div>
+        )}
 
       </>}
 
