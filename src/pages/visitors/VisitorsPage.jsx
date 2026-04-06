@@ -59,8 +59,11 @@ function NewVisitorForm({ onSave, onCancel }) {
     api.get("/branches").then(d => { if (Array.isArray(d)) setBranchesList(d); }).catch(() => {});
     api.get("/agents").then(d => { if (Array.isArray(d)) setAgentsList(d); }).catch(() => {});
   }, []);
+  // ── User-এর branch auto-detect — JWT token থেকে ──
+  const userBranch = (() => { try { const t = localStorage.getItem("agencyos_token"); if (!t) return ""; const p = JSON.parse(atob(t.split(".")[1])); return p.branch || ""; } catch { return ""; } })();
+
   const [form, setForm] = useState({
-    name: "", name_en: "", phone: "", guardian_phone: "", email: "", address: "", dob: "", gender: "Male", branch: "",
+    name: "", name_en: "", phone: "", guardian_phone: "", email: "", address: "", dob: "", gender: "Male", branch: userBranch,
     education: [
       { level: "SSC/Dakhil", year: "", board: "", gpa: "", subject: "" },
       { level: "HSC/Alim/Diploma", year: "", board: "", gpa: "", subject: "" },

@@ -31,7 +31,8 @@ const BLANK_FORM = {
   // Section 6 — Visa & Destination
   visa_type: "Language Student",
   country: "Japan", school: "", batch: "April 2026", intake: "", agent: "",
-  source: "Walk-in", counselor: "", type: "own", branch: "",
+  source: "Walk-in", counselor: "", type: "own",
+  branch: (() => { try { const t = localStorage.getItem("agencyos_token"); if (!t) return ""; return JSON.parse(atob(t.split(".")[1])).branch || ""; } catch { return ""; } })(),
   // Section 7
   gdrive_folder_url: "",
   // Section 8
