@@ -744,7 +744,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>ব্যক্তিগত তথ্য</h4>
-            <div className="space-y-2">{[{l:"নাম",val:v.name},{l:"বাংলা",val:v.name_bn},{l:"ফোন",val:formatPhoneDisplay(v.phone)},{l:"অভিভাবক",val:formatPhoneDisplay(v.guardian_phone)},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob},{l:"লিঙ্গ",val:v.gender}].map(f=>
+            <div className="space-y-2">{[{l:"নাম",val:v.name},{l:"ফোন",val:formatPhoneDisplay(v.phone)},{l:"অভিভাবক",val:formatPhoneDisplay(v.guardian_phone)},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob ? v.dob.slice(0,10) : "—"},{l:"লিঙ্গ",val:v.gender}].map(f=>
               <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium">{f.val||"—"}</span></div>
             )}</div>
           </Card>
