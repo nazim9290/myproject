@@ -15,6 +15,7 @@ import SortHeader from "../../components/ui/SortHeader";
 import ExportModal from "../../components/ui/ExportModal";
 import { getRowStyle } from "../../lib/conditionalFormat";
 import TableInsights from "../../components/ui/TableInsights";
+import DateInput from "../../components/ui/DateInput";
 import { api } from "../../hooks/useAPI";
 
 // ── টেবিল ইনসাইটস — গ্রুপিং ও শর্তভিত্তিক ফর্ম্যাটিং ফিল্ডসমূহ ──
@@ -101,7 +102,7 @@ function NewVisitorForm({ onSave, onCancel }) {
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (ইংরেজি)</label>
         <input value={form.name_en} onChange={e => set("name_en", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Full Name" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>জন্ম তারিখ</label>
-        <input type="date" value={form.dob} onChange={e => set("dob", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} /></div>
+        <DateInput value={form.dob} onChange={v => set("dob", v)} size="md" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন <span className="req-star">*</span></label>
         <PhoneInput value={form.phone} onChange={v => set("phone", v)} error={errors.phone} size="md" /><FieldError error={errors.phone} /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অভিভাবকের ফোন</label>
@@ -226,7 +227,7 @@ function NewVisitorForm({ onSave, onCancel }) {
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কাউন্সেলর</label>
         <select value={form.counselor} onChange={e => set("counselor", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Mina</option><option>Sadia</option><option>Karim</option></select></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরবর্তী ফলোআপ</label>
-        <input type="date" value={form.next_follow_up} onChange={e => set("next_follow_up", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} /></div>
+        <DateInput value={form.next_follow_up} onChange={v => set("next_follow_up", v)} size="md" /></div>
       </div>
       <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কাউন্সেলিং নোট</label>
       <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="আলোচনার বিবরণ..." /></div></>}
@@ -522,7 +523,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
               <select value={ed[f.k]||f.opts[0]} onChange={e=>se(f.k,e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>{f.opts.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
             ))}
             <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>পরবর্তী ফলো-আপ</label>
-            <input type="date" value={ed.next_follow_up||""} onChange={e=>se("next_follow_up",e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
+            <DateInput value={ed.next_follow_up||""} onChange={v=>se("next_follow_up",v)} size="md" /></div>
             <div className="md:col-span-3"><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>নোট</label>
             <textarea value={ed.notes||""} onChange={e=>se("notes",e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is}/></div>
           </div></Card>

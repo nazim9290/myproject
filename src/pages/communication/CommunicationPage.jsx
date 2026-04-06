@@ -10,6 +10,7 @@ import Modal from "../../components/ui/Modal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
+import DateInput from "../../components/ui/DateInput";
 import { COMM_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -138,7 +139,7 @@ export default function CommunicationPage({ students = [] }) {
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফলোআপ তারিখ</label>
-            <input type="date" value={form.follow_up_date} onChange={e => sf("follow_up_date", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} min={today} />
+            <DateInput value={form.follow_up_date} onChange={v => sf("follow_up_date", v)} size="md" min={today} />
           </div>
           <div className="md:col-span-3">
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট <span className="req-star">*</span></label>

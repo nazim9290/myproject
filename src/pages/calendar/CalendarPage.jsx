@@ -8,6 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
+import DateInput from "../../components/ui/DateInput";
 import { EVENT_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -82,7 +83,7 @@ export default function CalendarPage({ students = [] }) {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ <span className="req-star">*</span></label>
-                  <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+                  <DateInput value={form.date} onChange={v => setForm(p => ({ ...p, date: v }))} size="md" />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সময়</label>

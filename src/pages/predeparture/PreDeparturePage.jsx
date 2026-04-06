@@ -6,6 +6,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import DateInput from "../../components/ui/DateInput";
 import { preDeparture, API_URL } from "../../lib/api";
 import { api } from "../../hooks/useAPI";
 
@@ -771,7 +772,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
             {!sec.subtitle && <div className="mb-3" />}
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10px]" style={{ color: t.muted }}>{tr("preDeparture.deadline")}:</span>
-              <input type="date" value={deadlines[sec.step] || ""} onChange={e => setDeadlineFn(sec.step, e.target.value)} className="px-2 py-1 rounded text-[10px] outline-none" style={inputStyle} />
+              <DateInput value={deadlines[sec.step] || ""} onChange={v => setDeadlineFn(sec.step, v)} size="sm" />
               {deadlines[sec.step] && isOverdue(deadlines[sec.step]) && <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>ওভারডিউ!</span>}
             </div>
             <div className="space-y-3">

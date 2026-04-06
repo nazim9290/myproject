@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import DateInput from "../../components/ui/DateInput";
 import { batches as batchesApi } from "../../lib/api";
 import BatchDetailView from "./BatchDetailView";
 
@@ -104,12 +105,12 @@ function NewBatchForm({ onSave, onCancel }) {
         </div>
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শুরুর তারিখ <span className="req-star">*</span></label>
-          <input type="date" value={form.startDate} onChange={e => set("startDate", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.startDate ? t.rose : t.inputBorder }} />
+          <DateInput value={form.startDate} onChange={v => set("startDate", v)} size="md" error={!!err.startDate} />
           {err.startDate && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.startDate}</p>}
         </div>
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষের তারিখ</label>
-          <input type="date" value={form.endDate} onChange={e => set("endDate", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+          <DateInput value={form.endDate} onChange={v => set("endDate", v)} size="md" />
         </div>
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সর্বোচ্চ স্টুডেন্ট</label>

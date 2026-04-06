@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
+import DateInput from "../../components/ui/DateInput";
 import { batches as batchesApi } from "../../lib/api";
 
 const ATT_STATUS = ["P", "A", "L"]; // Present / Absent / Late
@@ -396,7 +397,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold">দৈনিক উপস্থিতি</h3>
             <div className="flex items-center gap-3">
-              <input type="date" value={attDate} onChange={e => setAttDate(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is} />
+              <DateInput value={attDate} onChange={v => setAttDate(v)} size="sm" />
               <Button icon={Save} size="xs" onClick={saveAttendance}>সংরক্ষণ</Button>
             </div>
           </div>
@@ -455,7 +456,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
-                  <input type="date" value={testForm.date} onChange={e => setTestForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
+                  <DateInput value={testForm.date} onChange={v => setTestForm(p => ({ ...p, date: v }))} size="sm" />
                 </div>
               </div>
               <div className="flex items-center justify-between mb-2">
@@ -540,7 +541,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরীক্ষার তারিখ</label>
-                  <input type="date" value={examForm.date} onChange={e => setExamForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
+                  <DateInput value={examForm.date} onChange={v => setExamForm(p => ({ ...p, date: v }))} size="sm" />
                 </div>
               </div>
               <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>প্রতি স্টুডেন্টের স্কোর ও ফলাফল</p>

@@ -11,6 +11,7 @@ import Button from "../../components/ui/Button";
 import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
+import DateInput from "../../components/ui/DateInput";
 import { ALL_ROLES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -482,13 +483,11 @@ export default function HRPage() {
                   </div>
                   <div>
                     <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>শুরু *</label>
-                    <input type="date" value={leaveForm.start_date} onChange={e => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    <DateInput value={leaveForm.start_date} onChange={v => setLeaveForm({ ...leaveForm, start_date: v })} size="sm" className="mt-1" />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>শেষ *</label>
-                    <input type="date" value={leaveForm.end_date} onChange={e => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    <DateInput value={leaveForm.end_date} onChange={v => setLeaveForm({ ...leaveForm, end_date: v })} size="sm" className="mt-1" />
                   </div>
                 </div>
                 <div className="mt-3">

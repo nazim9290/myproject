@@ -11,6 +11,7 @@ import Pagination from "../../components/ui/Pagination";
 import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
+import DateInput from "../../components/ui/DateInput";
 import { SUB_STATUS } from "../../data/mockData";
 import SchoolDetailView from "./SchoolDetailView";
 import { api } from "../../hooks/useAPI";
@@ -324,11 +325,11 @@ export default function SchoolsPage({ students }) {
                     {(form.intakes || []).map((intake, idx) => (
                       <div key={intake.month} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: t.inputBg }}>
                         <span className="text-xs font-medium w-20" style={{ color: t.amber }}>{intake.month}</span>
-                        <input type="date" value={intake.deadline || ""} onChange={e => {
+                        <DateInput value={intake.deadline || ""} onChange={v => {
                           const updated = [...(form.intakes || [])];
-                          updated[idx] = { ...updated[idx], deadline: e.target.value };
+                          updated[idx] = { ...updated[idx], deadline: v };
                           sf("intakes", updated);
-                        }} className="flex-1 px-2 py-1 rounded text-xs outline-none" style={is} />
+                        }} size="sm" className="flex-1" />
                         <span className="text-[9px]" style={{ color: t.muted }}>ডেডলাইন</span>
                       </div>
                     ))}

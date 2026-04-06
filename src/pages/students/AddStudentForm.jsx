@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import PhoneInput, { isValidPhone } from "../../components/ui/PhoneInput";
+import DateInput from "../../components/ui/DateInput";
 import { api } from "../../hooks/useAPI";
 
 // ─── helpers ────────────────────────────────────────────
@@ -185,7 +186,7 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                 <input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="email@example.com" {...inp()} />
               </Field>
               <Field label="Date of Birth">
-                <input type="date" value={form.dob} onChange={e => set("dob", e.target.value)} {...inp()} />
+                <DateInput value={form.dob} onChange={v => set("dob", v)} size="sm" />
               </Field>
               <Field label="Gender">
                 {sel([{v:"Male",l:"Male"}, {v:"Female",l:"Female"}, {v:"Other",l:"Other"}], form.gender, v => set("gender", v))}
@@ -203,10 +204,10 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                 <input value={form.passport_number} onChange={e => set("passport_number", e.target.value)} placeholder="A12345678" {...inp()} />
               </Field>
               <Field label="Passport Issue Date">
-                <input type="date" value={form.passport_issue} onChange={e => set("passport_issue", e.target.value)} {...inp()} />
+                <DateInput value={form.passport_issue} onChange={v => set("passport_issue", v)} size="sm" />
               </Field>
               <Field label="Passport Expiry Date">
-                <input type="date" value={form.passport_expiry} onChange={e => set("passport_expiry", e.target.value)} {...inp()} />
+                <DateInput value={form.passport_expiry} onChange={v => set("passport_expiry", v)} size="sm" />
               </Field>
             </div>
             <Field label="Permanent Address">
@@ -275,9 +276,9 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
               <div key={row.id} className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
                 <Field label="Company"><input value={row.company} onChange={e => updateRow("employment", row.id, "company", e.target.value)} placeholder="Company Name" {...inp()} /></Field>
                 <Field label="Position"><input value={row.position} onChange={e => updateRow("employment", row.id, "position", e.target.value)} placeholder="Job Title" {...inp()} /></Field>
-                <Field label="Start Date"><input type="date" value={row.start_date} onChange={e => updateRow("employment", row.id, "start_date", e.target.value)} {...inp()} /></Field>
+                <Field label="Start Date"><DateInput value={row.start_date} onChange={v => updateRow("employment", row.id, "start_date", v)} size="sm" /></Field>
                 <div className="flex gap-2 items-end">
-                  <Field label="End Date" classes="flex-1"><input type="date" value={row.end_date} onChange={e => updateRow("employment", row.id, "end_date", e.target.value)} {...inp()} /></Field>
+                  <Field label="End Date" classes="flex-1"><DateInput value={row.end_date} onChange={v => updateRow("employment", row.id, "end_date", v)} size="sm" /></Field>
                   {delBtn(() => removeRow("employment", row.id))}
                 </div>
               </div>
@@ -323,7 +324,7 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
                     {["N1","N2","N3","N4","N5","A2","A2.2","Basic"].map(l => <option key={l}>{l}</option>)}
                   </select>
                 </Field>
-                <Field label="Exam Date"><input type="date" value={row.date} onChange={e => updateRow("jp_exams", row.id, "date", e.target.value)} {...inp()} /></Field>
+                <Field label="Exam Date"><DateInput value={row.date} onChange={v => updateRow("jp_exams", row.id, "date", v)} size="sm" /></Field>
                 <Field label="Score"><input value={row.score} onChange={e => updateRow("jp_exams", row.id, "score", e.target.value)} placeholder="180 / A" {...inp()} /></Field>
                 <div className="flex gap-2 items-end">
                   <Field label="Result" classes="flex-1">

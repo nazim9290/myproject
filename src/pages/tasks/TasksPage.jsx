@@ -8,6 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
+import DateInput from "../../components/ui/DateInput";
 import { PRIORITY_CONFIG, TASK_STATUS_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -135,7 +136,7 @@ export default function TasksPage({ students = [] }) {
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষ তারিখ</label>
-            <input type="date" value={newTask.dueDate} onChange={e => setNewTask(p => ({ ...p, dueDate: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+            <DateInput value={newTask.dueDate} onChange={v => setNewTask(p => ({ ...p, dueDate: v }))} size="md" />
           </div>
           <div className="md:col-span-2">
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট লিংক (ঐচ্ছিক)</label>

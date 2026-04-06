@@ -11,6 +11,7 @@ import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
+import DateInput from "../../components/ui/DateInput";
 import { CATEGORY_CONFIG, FEE_CATEGORIES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -108,13 +109,13 @@ function AddEntryForm({ type, onSave, onCancel }) {
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিশোধের তারিখ</label>
-              <input type="date" value={form.dueDate} onChange={e => set("dueDate", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+              <DateInput value={form.dueDate} onChange={v => set("dueDate", v)} size="md" />
             </div>
           </>
         ) : (
           <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
-            <input type="date" value={form.date} onChange={e => set("date", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+            <DateInput value={form.date} onChange={v => set("date", v)} size="md" />
           </div>
         )}
       </div>

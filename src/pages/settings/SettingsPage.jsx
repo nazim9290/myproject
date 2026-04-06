@@ -13,6 +13,7 @@ import { API_URL } from "../../lib/api";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 import ConditionalFormatRules from "../../components/ui/ConditionalFormatRules";
+import DateInput from "../../components/ui/DateInput";
 
 // ── Administration ট্যাব কনফিগ — i18nKey দিয়ে translation ──
 const ADMIN_TABS = [
@@ -1711,10 +1712,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             {/* তারিখ */}
             <div>
               <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>তারিখ *</label>
-              <input type="date" value={holidayForm.date}
-                onChange={e => setHolidayForm(prev => ({ ...prev, date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl text-xs outline-none"
-                style={{ background: t.inputBg, border: `1px solid ${!holidayForm.date ? t.rose : t.inputBorder}`, color: t.text }} />
+              <DateInput value={holidayForm.date} onChange={v => setHolidayForm(prev => ({ ...prev, date: v }))} size="sm" error={!holidayForm.date} />
             </div>
             {/* নাম (English) */}
             <div>

@@ -9,6 +9,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
+import DateInput from "../../components/ui/DateInput";
 import { ATT_STATUS } from "../../data/mockData";
 
 const ATT_CYCLE = ["present", "absent", "late"];
@@ -249,8 +250,7 @@ export default function AttendancePage({ students = [], currentUser }) {
                 title="আগের ক্লাসের দিন">
                 <ChevronLeft size={14} style={{ color: t.text }} />
               </button>
-              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={is} />
+              <DateInput value={selectedDate} onChange={v => setSelectedDate(v)} size="md" className="flex-1" />
               <button onClick={goNext} className="p-2 rounded-lg transition shrink-0"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}
                 onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}

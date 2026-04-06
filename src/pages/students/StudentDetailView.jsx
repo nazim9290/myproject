@@ -8,6 +8,7 @@ import Modal from "../../components/ui/Modal";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
+import DateInput from "../../components/ui/DateInput";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { FEE_CATEGORIES, CATEGORY_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
@@ -1202,9 +1203,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   </div>
                   <div>
                     <label className="text-[10px] block mb-1" style={{ color: t.muted }}>পরীক্ষার তারিখ</label>
-                    <input type="date" value={jpExamForm.exam_date} onChange={e => setJpExamForm(p => ({ ...p, exam_date: e.target.value }))}
-                      className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
-                      style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    <DateInput value={jpExamForm.exam_date} onChange={v => setJpExamForm(p => ({ ...p, exam_date: v }))} size="sm" />
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
@@ -2067,8 +2066,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       {(f.options || []).map(o => <option key={o} value={o}>{o || "—"}</option>)}
                     </select>
                   ) : f.type === "date" ? (
-                    <input type="date" value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} />
+                    <DateInput value={sectionForm[f.key] || ""} onChange={v => setSectionForm(p => ({ ...p, [f.key]: v }))} size="sm" />
                   ) : f.type === "textarea" ? (
                     <textarea value={sectionForm[f.key] || ""} onChange={e => setSectionForm(p => ({ ...p, [f.key]: e.target.value }))}
                       rows={3} className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-y" style={is}
@@ -2153,9 +2151,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       {f.opts.map(o => <option key={o}>{o}</option>)}
                     </select>
                   ) : f.type === "date" ? (
-                    <input type="date" value={sponsorForm[f.key] || ""} onChange={e => sf(f.key, e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    <DateInput value={sponsorForm[f.key] || ""} onChange={v => sf(f.key, v)} size="sm" />
                   ) : f.type === "phone" ? (
                     <PhoneInput value={sponsorForm[f.key] || ""} onChange={v => sf(f.key, v)} size="sm" />
                   ) : (
@@ -2263,9 +2259,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </div>
               <div>
                 <label className="text-[10px] block mb-1" style={{ color: t.muted }}>স্বাক্ষরের তারিখ</label>
-                <input type="date" value={sponsorForm.sign_date || ""} onChange={e => sf("sign_date", e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                <DateInput value={sponsorForm.sign_date || ""} onChange={v => sf("sign_date", v)} size="sm" />
               </div>
               <div className="flex items-center gap-6 pt-4">
                 <label className="flex items-center gap-2 cursor-pointer">
