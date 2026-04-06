@@ -499,7 +499,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
         <div className="space-y-5 anim-fade">
           <div className="flex items-center gap-4">
             <button onClick={() => setEditMode(false)} className="p-2 rounded-xl hover:bg-white/5"><ArrowLeft size={18}/></button>
-            <div className="flex-1"><h2 className="text-xl font-bold">সম্পাদনা: {v.name}</h2></div>
+            <div className="flex-1"><h2 className="text-xl font-bold">সম্পাদনা: {v.name_en || v.name}</h2></div>
             <Button variant="ghost" size="xs" onClick={() => setEditMode(false)}>{tr("common.cancel")}</Button>
             <Button size="xs" icon={Save} onClick={saveEdit}>{tr("common.save")}</Button>
           </div>
@@ -541,8 +541,8 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             <ArrowLeft size={16} /> <span className="hidden sm:inline">ফিরুন</span>
           </button>
           <div className="flex-1">
-            <h2 className="text-xl font-bold">{v.name}</h2>
-            <p className="text-xs" style={{color:t.muted}}>{v.name_bn||""} • {v.display_id || v.id} • {days}d ago</p>
+            <h2 className="text-xl font-bold">{v.name_en || v.name}</h2>
+            <p className="text-xs" style={{color:t.muted}}>{v.display_id || v.id} • {days}d ago</p>
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="xs" icon={Phone} onClick={() => markFollowUp(v.id)}>{tr("visitors.followUp")}</Button>
@@ -744,7 +744,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>ব্যক্তিগত তথ্য</h4>
-            <div className="space-y-2">{[{l:"নাম",val:v.name},{l:"ফোন",val:formatPhoneDisplay(v.phone)},{l:"অভিভাবক",val:formatPhoneDisplay(v.guardian_phone)},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob ? v.dob.slice(0,10) : "—"},{l:"লিঙ্গ",val:v.gender}].map(f=>
+            <div className="space-y-2">{[{l:"নাম",val:v.name_en || v.name},{l:"ফোন",val:formatPhoneDisplay(v.phone)},{l:"অভিভাবক",val:formatPhoneDisplay(v.guardian_phone)},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob ? v.dob.slice(0,10) : "—"},{l:"লিঙ্গ",val:v.gender}].map(f=>
               <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium">{f.val||"—"}</span></div>
             )}</div>
           </Card>
@@ -888,7 +888,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
               {/* নাম */}
               <td className="py-3 px-3"><div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{background:t.cyan+"15",color:t.cyan}}>{v.name.charAt(0)}</div>
-                <div><span className="font-medium block">{v.name}</span>{v.name_bn&&<span className="text-[9px] block" style={{color:t.muted}}>{v.name_bn}</span>}</div>
+                <div><span className="font-medium block">{v.name_en || v.name}</span></div>
               </div></td>
               {/* ফোন */}
               <td className="py-3 px-3 font-mono text-[11px]" style={{color:t.textSecondary}}>{formatPhoneDisplay(v.phone)}</td>
