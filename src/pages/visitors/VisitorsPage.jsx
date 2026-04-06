@@ -100,10 +100,8 @@ function NewVisitorForm({ onSave, onCancel }) {
     <div className="space-y-2">
       <SectionHeader icon="👤" title="ব্যক্তিগত তথ্য" sKey="personal" />
       {sections.personal && <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা) <span className="req-star">*</span></label>
-        <input value={form.name} onChange={e => set("name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: errors.name ? t.rose : t.inputBorder }} placeholder="পুরো নাম" /><FieldError error={errors.name} /></div>
-        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (ইংরেজি)</label>
-        <input value={form.name_en} onChange={e => set("name_en", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Full Name" /></div>
+        <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Full Name <span className="req-star">*</span></label>
+        <input value={form.name} onChange={e => { set("name", e.target.value); if (!form.name_en) set("name_en", e.target.value); }} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: errors.name ? t.rose : t.inputBorder }} placeholder="FULL NAME IN ENGLISH" /><FieldError error={errors.name} /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>জন্ম তারিখ</label>
         <DateInput value={form.dob} onChange={v => set("dob", v)} size="md" /></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন <span className="req-star">*</span></label>
@@ -509,10 +507,12 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             <Button size="xs" icon={Save} onClick={saveEdit}>{tr("common.save")}</Button>
           </div>
           <Card delay={0}><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {[{k:"name",l:"নাম (ইংরেজি)"},{k:"name_bn",l:"নাম (বাংলা)"},{k:"email",l:"ইমেইল"},{k:"dob",l:"জন্ম তারিখ",type:"date"}].map(f=>(
+            {[{k:"name",l:"নাম (ইংরেজি)"},{k:"email",l:"ইমেইল"}].map(f=>(
               <div key={f.k}><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>{f.l}</label>
-              <input type={f.type||"text"} value={ed[f.k]||""} onChange={e=>se(f.k,e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
+              <input value={ed[f.k]||""} onChange={e=>se(f.k,e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
             ))}
+            <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>জন্ম তারিখ</label>
+            <DateInput value={ed.dob||""} onChange={v=>se("dob",v)} size="md" /></div>
             <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>ফোন</label>
             <PhoneInput value={ed.phone||""} onChange={v=>se("phone",v)} size="md" /></div>
             <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>অভিভাবকের ফোন</label>
