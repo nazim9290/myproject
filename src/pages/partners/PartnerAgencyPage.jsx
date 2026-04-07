@@ -34,6 +34,8 @@ export default function PartnerAgencyPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedStudents, setExpandedStudents] = useState([]);
   const [form, setForm] = useState({ name: "", contact_person: "", phone: "", email: "", address: "", services: [], commission_rate: "", notes: "" });
 
   // ── Search, pagination, sort ──
@@ -110,6 +112,16 @@ export default function PartnerAgencyPage() {
   const openEdit = (p) => {
     setForm({ name: p.name || "", contact_person: p.contact_person || "", phone: p.phone || "", email: p.email || "", address: p.address || "", services: p.services || [], commission_rate: String(p.commission_rate || ""), notes: p.notes || "" });
     setEditingId(p.id); setShowForm(true);
+  };
+
+  // ── Expand row — partner-এর students load ──
+  const toggleExpand = async (partnerId) => {
+    if (expandedId === partnerId) { setExpandedId(null); return; }
+    try {
+      const data = await partnersApi.getStudents(partnerId);
+      setExpandedStudents(Array.isArray(data) ? data : []);
+    } catch { setExpandedStudents([]); }
+    setExpandedId(partnerId);
   };
 
   // ── Currency ──
@@ -224,16 +236,17 @@ export default function PartnerAgencyPage() {
                   <tr><td colSpan={7} className="py-8 text-center text-xs" style={{ color: t.muted }}>কোনো পার্টনার পাওয়া যায়নি</td></tr>
                 )}
                 {paginated.map(p => (
-                  <tr key={p.id} style={{ borderBottom: `1px solid ${t.border}` }}
+                  <React.Fragment key={p.id}>
+                  <tr style={{ borderBottom: `1px solid ${t.border}` }}
                     onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 cursor-pointer" onClick={() => toggleExpand(p.id)}>
                       <p className="font-semibold" style={{ color: t.text }}>{p.name}</p>
                       <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{p.address || "—"}</p>
                     </td>
                     <td className="py-3 px-4" style={{ color: t.text }}>{p.contact_person || "—"}</td>
                     <td className="py-3 px-4" style={{ color: t.muted }}>{formatPhoneDisplay(p.phone)}</td>
-                    <td className="py-3 px-4 text-center font-bold" style={{ color: t.cyan }}>{p.studentCount || 0}</td>
+                    <td className="py-3 px-4 text-center font-bold cursor-pointer" style={{ color: t.cyan }} onClick={() => toggleExpand(p.id)}>{p.studentCount || 0}</td>
                     <td className="py-3 px-4 font-mono font-semibold" style={{ color: t.emerald }}>{fmt(p.revenue)}</td>
                     <td className="py-3 px-4 font-mono font-semibold" style={{ color: (p.due || 0) > 0 ? t.rose : t.emerald }}>
                       {(p.due || 0) > 0 ? fmt(p.due) : "—"}
@@ -258,6 +271,36 @@ export default function PartnerAgencyPage() {
                       </div>
                     </td>
                   </tr>
+                  {/* ── Expanded — partner-এর students তালিকা ── */}
+                  {expandedId === p.id && (
+                    <tr><td colSpan={8} style={{ background: t.inputBg }}>
+                      <div className="px-6 py-3">
+                        <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.muted }}>
+                          {p.name}-এর স্টুডেন্ট ({expandedStudents.length})
+                        </p>
+                        {expandedStudents.length === 0 ? (
+                          <p className="text-xs py-2" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই — Student Profile → Destination Info → Type = "partner" → Partner Agency সিলেক্ট করুন</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {expandedStudents.map(ps => (
+                              <div key={ps.id} className="flex items-center gap-3 text-xs py-1.5 px-2 rounded-lg transition"
+                                onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                                <span className="font-medium flex-1">{ps.students?.name_en || ps.student_name || "—"}</span>
+                                <span style={{ color: t.muted }}>{ps.student_id || ""}</span>
+                                <span className="font-mono" style={{ color: t.emerald }}>ফি: {fmt(ps.fee)}</span>
+                                <span className="font-mono" style={{ color: ps.paid >= ps.fee ? t.emerald : t.amber }}>পেমেন্ট: {fmt(ps.paid)}</span>
+                                <Badge color={ps.paid >= ps.fee ? t.emerald : (ps.paid > 0 ? t.amber : t.rose)} size="xs">
+                                  {ps.paid >= ps.fee ? "পরিশোধিত" : ps.paid > 0 ? "আংশিক" : "বকেয়া"}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </td></tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
