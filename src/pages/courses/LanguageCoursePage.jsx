@@ -251,7 +251,7 @@ export default function LanguageCoursePage({ students }) {
   // ── KPI: students prop থেকে হিসাব (mock batchStudents সরানো হয়েছে) ──
   const totalStudents = batches.reduce((s, b) => s + (b.enrolledCount || 0), 0) || (students || []).filter(s => s.batch).length;
   const avgAttendance = 0; // attendance API থেকে আসবে পরে
-  const passedExam = (students || []).filter(s => s.status === "EXAM_PASSED" || s.status === "DOC_COLLECTION").length;
+  const passedExam = batches.reduce((s, b) => s + (b.passedCount || 0), 0) || (students || []).filter(s => s.status === "EXAM_PASSED" || s.status === "DOC_COLLECTION").length;
 
   return (
     <div className="space-y-5 anim-fade">
@@ -359,7 +359,7 @@ export default function LanguageCoursePage({ students }) {
           // ── ব্যাচের students: students prop থেকে batch name মিলিয়ে ──
           const bStudents = (students || []).filter(s => s.batch === batch.name || s.batch_id === batch.id);
           const enrollCount = batch.enrolledCount || bStudents.length;
-          const bPassed = bStudents.filter(s => s.status === "EXAM_PASSED").length;
+          const bPassed = batch.passedCount || bStudents.filter(s => s.status === "EXAM_PASSED").length;
           const countryColor = batch.country === "Japan" ? t.rose : batch.country === "Germany" ? t.amber : t.cyan;
           // সাপ্তাহিক ঘণ্টা — DB value অথবা class_days × hours_per_day থেকে calculate
           const wHours = batch.weekly_hours || ((batch.class_days || []).length * (parseFloat(batch.class_hours_per_day) || 2)) || 0;
