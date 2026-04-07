@@ -192,7 +192,37 @@ const doExport = () => {
 
 ---
 
-## 10. New Page Registration
+## 10. Searchable Dropdown — বড় list (5+ items) এ MUST use
+
+Student, School, User/Staff dropdown-এ ALWAYS `SearchableSelect` ব্যবহার করো — কখনোই `<select>` দিয়ে বড় list রেন্ডার করো না।
+
+```jsx
+import SearchableSelect from "../../components/ui/SearchableSelect";
+
+<SearchableSelect
+  label="স্টুডেন্ট"
+  value={form.studentId}
+  placeholder="স্টুডেন্ট খুঁজুন..."
+  options={students.map(s => ({ value: s.id, label: `${s.name_en} (${s.id})` }))}
+  onChange={v => setForm(p => ({ ...p, studentId: v }))}
+/>
+```
+
+**কখন ব্যবহার করবে:**
+- Students dropdown (সবসময়)
+- Schools dropdown (সবসময়)
+- Users/Staff dropdown (5+ জন হলে)
+- যেকোনো list যেখানে 5+ items আছে
+
+**কখন `<select>` ব্যবহার করবে:**
+- ছোট fixed list (priority, status, country, gender — 2-5 items)
+- Staff/assignee যদি মাত্র 2-3 জন
+
+**Staff/Assignee/Counselor — সবসময় `/users` API থেকে আনবে, হার্ডকোড করবে না।**
+
+---
+
+## 11. New Page Registration
 
 After creating `src/pages/<module>/MyPage.jsx`, add to App.jsx:
 ```jsx
