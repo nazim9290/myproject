@@ -224,6 +224,17 @@ export default function LanguageCoursePage({ students }) {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [activeTab, setActiveTab] = useState("students");
   const [showNewBatch, setShowNewBatch] = useState(false);
+  const [batchFilter, setBatchFilter] = useState({ teacher: "", level: "", branch: "", class_time: "", status: "" });
+
+  // ── ফিল্টার করা ব্যাচ — dropdown অনুযায়ী ──
+  const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+  const filteredBatches = [...batches]
+    .filter(b => !batchFilter.teacher || b.teacher === batchFilter.teacher)
+    .filter(b => !batchFilter.level || b.level === batchFilter.level)
+    .filter(b => !batchFilter.branch || b.branch === batchFilter.branch)
+    .filter(b => !batchFilter.class_time || b.class_time === batchFilter.class_time)
+    .filter(b => !batchFilter.status || b.status === batchFilter.status)
+    .sort((a, b) => (b.created_at || b.start_date || "").localeCompare(a.created_at || a.start_date || ""));
 
   // ── প্রথম load-এ API থেকে batches আনো ──
   useEffect(() => {
@@ -303,8 +314,48 @@ export default function LanguageCoursePage({ students }) {
         />
       )}
 
+      {/* ── ব্যাচ ফিল্টার — শিক্ষক, সময়, লেভেল, ব্রাঞ্চ, স্ট্যাটাস ── */}
+      <Card delay={50}>
+        <div className="flex flex-wrap gap-2 items-center">
+          <select value={batchFilter.teacher} onChange={e => setBatchFilter(p => ({ ...p, teacher: e.target.value }))}
+            className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
+            <option value="">সব শিক্ষক</option>
+            {[...new Set(batches.map(b => b.teacher).filter(Boolean))].map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select value={batchFilter.level} onChange={e => setBatchFilter(p => ({ ...p, level: e.target.value }))}
+            className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
+            <option value="">সব লেভেল</option>
+            {[...new Set(batches.map(b => b.level).filter(Boolean))].map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+          <select value={batchFilter.branch} onChange={e => setBatchFilter(p => ({ ...p, branch: e.target.value }))}
+            className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
+            <option value="">সব ব্রাঞ্চ</option>
+            {[...new Set(batches.map(b => b.branch).filter(Boolean))].map(br => <option key={br} value={br}>{br}</option>)}
+          </select>
+          <select value={batchFilter.class_time} onChange={e => setBatchFilter(p => ({ ...p, class_time: e.target.value }))}
+            className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
+            <option value="">সব সময়</option>
+            {[...new Set(batches.map(b => b.class_time).filter(Boolean))].map(ct => <option key={ct} value={ct}>{ct}</option>)}
+          </select>
+          <select value={batchFilter.status} onChange={e => setBatchFilter(p => ({ ...p, status: e.target.value }))}
+            className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
+            <option value="">সব স্ট্যাটাস</option>
+            <option value="active">সক্রিয়</option>
+            <option value="completed">সম্পন্ন</option>
+            <option value="upcoming">আসন্ন</option>
+          </select>
+          {Object.values(batchFilter).some(v => v) && (
+            <button onClick={() => setBatchFilter({ teacher: "", level: "", branch: "", class_time: "", status: "" })}
+              className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.rose, background: `${t.rose}10` }}>✕ Clear</button>
+          )}
+          <span className="text-[10px] ml-auto" style={{ color: t.muted }}>
+            {filteredBatches.length}/{batches.length} ব্যাচ
+          </span>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {[...batches].sort((a, b) => (b.created_at || b.start_date || "").localeCompare(a.created_at || a.start_date || "")).map((batch, i) => {
+        {filteredBatches.map((batch, i) => {
           // ── ব্যাচের students: students prop থেকে batch name মিলিয়ে ──
           const bStudents = (students || []).filter(s => s.batch === batch.name || s.batch_id === batch.id);
           const enrollCount = batch.enrolledCount || bStudents.length;
