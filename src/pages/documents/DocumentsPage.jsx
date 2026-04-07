@@ -34,7 +34,7 @@ export default function DocumentsPage({ students }) {
   const [filterBatch, setFilterBatch] = useState("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name_en");
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("created", "desc");
 
   // Student detail view
   const [studentDocData, setStudentDocData] = useState([]); // saved document_data for selected student
