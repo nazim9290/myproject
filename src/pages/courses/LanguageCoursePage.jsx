@@ -7,6 +7,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { batches as batchesApi } from "../../lib/api";
+import { api } from "../../hooks/useAPI";
 import BatchDetailView from "./BatchDetailView";
 
 // ═══════════════════════════════════════════════════════
@@ -35,11 +36,27 @@ function calcSchedulePreview(startDate, endDate, classDays, hoursPerDay) {
   return { weeklyHours: classDays.length * h, totalClasses: totalDays, totalHours: totalDays * h };
 }
 
+// ── Time slot options — ক্লাসের সময় dropdown-এর জন্য ──
+const TIME_SLOTS = [
+  "08:00 - 10:00", "09:00 - 11:00", "10:00 - 12:00", "11:00 - 13:00",
+  "13:00 - 15:00", "14:00 - 16:00", "15:00 - 17:00", "16:00 - 18:00",
+  "18:00 - 20:00", "19:00 - 21:00",
+];
+
 function NewBatchForm({ onSave, onCancel }) {
   const t = useTheme();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+
+  // ── Users (শিক্ষক) ও Branches API থেকে load ──
+  const [staffList, setStaffList] = useState([]);
+  const [branchesList, setBranchesList] = useState([]);
+  useEffect(() => {
+    api.get("/users").then(d => { if (Array.isArray(d)) setStaffList(d); }).catch(() => {});
+    api.get("/branches").then(d => { if (Array.isArray(d)) setBranchesList(d); }).catch(() => {});
+  }, []);
+
   const [form, setForm] = useState({
-    name: "", country: "Japan", level: "N5", branch: "Main",
+    name: "", country: "Japan", level: "N5", branch: "",
     startDate: "", endDate: "", capacity: "20",
     schedule: "", teacher: "",
     // ── ক্লাস শিডিউল fields ──
@@ -118,12 +135,16 @@ function NewBatchForm({ onSave, onCancel }) {
         </div>
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শিক্ষক</label>
-          <input value={form.teacher} onChange={e => set("teacher", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Tanaka Sensei..." />
+          <select value={form.teacher} onChange={e => set("teacher", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+            <option value="">— শিক্ষক নির্বাচন —</option>
+            {staffList.map(u => <option key={u.id} value={u.name}>{u.name} ({u.role})</option>)}
+          </select>
         </div>
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
           <select value={form.branch} onChange={e => set("branch", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-            <option value="Main">Main (HQ)</option><option value="Chattogram">চট্টগ্রাম</option><option value="Sylhet">সিলেট</option>
+            <option value="">— ব্রাঞ্চ নির্বাচন —</option>
+            {branchesList.map(b => <option key={b.id} value={b.name}>{b.name}{b.city ? ` (${b.city})` : ""}</option>)}
           </select>
         </div>
 
@@ -164,8 +185,11 @@ function NewBatchForm({ onSave, onCancel }) {
             {/* ক্লাসের সময় */}
             <div className="md:col-span-2">
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্লাসের সময়</label>
-              <input value={form.class_time} onChange={e => set("class_time", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="10:00 AM - 12:00 PM" />
+              <select value={form.class_time} onChange={e => set("class_time", e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                <option value="">— সময় নির্বাচন —</option>
+                {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </div>
 
