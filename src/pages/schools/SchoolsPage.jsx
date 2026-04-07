@@ -21,6 +21,7 @@ const BLANK_SCHOOL = {
   contact_person: "", contact_email: "", contact_phone: "",
   shoukai_fee: "", tuition_y1: "", tuition_y2: "", admission_fee: "",
   min_jp_level: "", interview_type: "", has_dormitory: false,
+  immigration_bureau: "",
   intakes: [], // [{month: "April", deadline: "2026-01-15"}, ...]
   gdrive_url: "", website: "", notes: "",
 };
@@ -105,6 +106,7 @@ export default function SchoolsPage({ students }) {
       contact_person: school.contact_person || "", contact_email: school.contact_email || "", contact_phone: school.contact_phone || "",
       shoukai_fee: school.shoukai_fee || "", tuition_y1: school.tuition_y1 || "", tuition_y2: school.tuition_y2 || "", admission_fee: school.admission_fee || "",
       min_jp_level: school.min_jp_level || "", interview_type: school.interview_type || "", has_dormitory: school.has_dormitory || false,
+      immigration_bureau: school.immigration_bureau || "",
       intakes: school.intakes || (school.deadline_april || school.deadline_october ? [
         ...(school.deadline_april ? [{ month: "April", deadline: school.deadline_april }] : []),
         ...(school.deadline_october ? [{ month: "October", deadline: school.deadline_october }] : []),
@@ -284,6 +286,11 @@ export default function SchoolsPage({ students }) {
                     <option value="">—</option><option>Online</option><option>In-person</option><option>Written + Online</option><option>None</option>
                   </select>
                 </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমিগ্রেশন ব্যুরো</label>
+                  <input value={form.immigration_bureau || ""} onChange={e => sf("immigration_bureau", e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Tokyo, Osaka, Fukuoka..." />
+                </div>
                 <div className="flex items-center gap-3 pt-5">
                   <label className="text-xs" style={{ color: t.muted }}>ডরমিটরি আছে?</label>
                   <button onClick={() => sf("has_dormitory", !form.has_dormitory)}
@@ -379,8 +386,9 @@ export default function SchoolsPage({ students }) {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] mb-3" style={{ color: t.textSecondary }}>
-                    <MapPin size={11} /> {school.city || "—"}
+                  <div className="flex items-center gap-3 text-[11px] mb-3" style={{ color: t.textSecondary }}>
+                    <span className="flex items-center gap-1"><MapPin size={11} /> {school.city || "—"}</span>
+                    {school.immigration_bureau && <span className="px-1.5 py-0.5 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>🏛 {school.immigration_bureau}</span>}
                   </div>
                   {(school.deadline || school.fees) && (
                     <div className="flex gap-3 mb-2 text-[10px]" style={{ color: t.muted }}>
