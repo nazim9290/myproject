@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Phone, Save, X, Search, Trash2 } from "lucide-react";
+import SearchableSelect from "../../components/ui/SearchableSelect";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -121,11 +122,9 @@ export default function CommunicationPage({ students = [] }) {
       <Modal isOpen={!!showForm} onClose={() => setShowForm(false)} title="নতুন যোগাযোগ লগ" size="md">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট</label>
-            <select value={form.studentId} onChange={e => sf("studentId", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-              <option value="">— স্টুডেন্ট নির্বাচন করুন —</option>
-              {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
-            </select>
+            <SearchableSelect label="স্টুডেন্ট" value={form.studentId} placeholder="স্টুডেন্ট খুঁজুন..."
+              options={students.map(s => ({ value: s.id, label: `${s.name_en} (${s.id})` }))}
+              onChange={v => sf("studentId", v)} />
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
