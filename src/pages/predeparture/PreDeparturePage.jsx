@@ -380,8 +380,11 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
     }).catch(() => { /* ডিফল্ট টেমপ্লেট না পেলে চুপ থাকো */ });
   }, []);
 
-  // দেশ অনুযায়ী ফিল্টার — matching country অথবা "All" দেশ
-  const countryTemplates = defaultTemplates.filter(tmpl => !tmpl.country || tmpl.country === "All" || tmpl.country === country);
+  // দেশ ও category অনুযায়ী ফিল্টার — শুধু excel/pre_departure template (docgen = Certificate page-এর জন্য)
+  const countryTemplates = defaultTemplates.filter(tmpl =>
+    (!tmpl.country || tmpl.country === "All" || tmpl.country === country) &&
+    (tmpl.category !== "docgen")
+  );
 
   // ── ডিফল্ট টেমপ্লেট দিয়ে ডকুমেন্ট Generate ──
   const generateFromDefault = async (tmpl) => {
