@@ -8,7 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { PRIORITY_CONFIG, TASK_STATUS_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -207,7 +207,7 @@ export default function TasksPage({ students = [] }) {
                             <Badge color={pr.color} size="xs">{pr.label}</Badge>
                             {task.dueDate && (
                               <span className="text-[10px]" style={{ color: isOverdue ? t.rose : t.muted }}>
-                                {isOverdue ? "⏰ " : ""}{task.dueDate}
+                                {isOverdue ? "⏰ " : ""}{formatDateDisplay(task.dueDate)}
                               </span>
                             )}
                           </div>

@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 
 export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
   const t = useTheme();
@@ -36,23 +37,23 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
   const sections = [
     { key: "coe", icon: "📋", title: "সিওই তথ্য", color: t.cyan, items: [
       { label: "COE নম্বর", value: st.coe.number },
-      { label: "প্রাপ্তির তারিখ", value: st.coe.date },
-      { label: "মেয়াদ শেষ", value: st.coe.expiry },
+      { label: "প্রাপ্তির তারিখ", value: formatDateDisplay(st.coe.date) },
+      { label: "মেয়াদ শেষ", value: formatDateDisplay(st.coe.expiry) },
       { label: "বাকি দিন", value: `${Math.max(0, Math.ceil((new Date(st.coe.expiry) - new Date()) / 86400000))} দিন`, warn: Math.ceil((new Date(st.coe.expiry) - new Date()) / 86400000) < 30 },
     ]},
     { key: "health", icon: "🏥", title: "স্বাস্থ্য পরীক্ষা", color: t.emerald, items: st.healthTests.map((h) => ({
-      label: h.test, value: h.status === "done" ? `✅ ${h.result} (${h.date})` : h.status === "scheduled" ? `📅 Scheduled: ${h.date}` : "❌ বাকি আছে",
+      label: h.test, value: h.status === "done" ? `✅ ${h.result} (${formatDateDisplay(h.date)})` : h.status === "scheduled" ? `📅 Scheduled: ${formatDateDisplay(h.date)}` : "❌ বাকি আছে",
       warn: h.status !== "done",
     }))},
     { key: "tuition", icon: "💰", title: "টিউশন রেমিটেন্স", color: t.amber, items: [
       { label: "পরিমাণ", value: `${st.tuition.currency} ${st.tuition.amount.toLocaleString()}` },
       { label: "ব্যাংক", value: st.tuition.bank || "❌ বাকি" },
       { label: "TT Reference", value: st.tuition.ttRef || "—" },
-      { label: "পাঠানোর তারিখ", value: st.tuition.sentDate || "—" },
+      { label: "পাঠানোর তারিখ", value: formatDateDisplay(st.tuition.sentDate) },
       { label: "স্কুল পেয়েছে", value: st.tuition.receivedBySchool ? "✅ হ্যাঁ" : "⏳ অপেক্ষমাণ", warn: !st.tuition.receivedBySchool },
     ]},
     { key: "vfs", icon: "🛂", title: "ভিএফএস আবেদন", color: t.purple, items: [
-      { label: "অ্যাপয়েন্টমেন্ট তারিখ", value: st.vfs.appointmentDate || "❌ তারিখ নেওয়া হয়নি", warn: !st.vfs.appointmentDate },
+      { label: "অ্যাপয়েন্টমেন্ট তারিখ", value: st.vfs.appointmentDate ? formatDateDisplay(st.vfs.appointmentDate) : "❌ তারিখ নেওয়া হয়নি", warn: !st.vfs.appointmentDate },
       { label: "সময়", value: st.vfs.time || "—" },
       { label: "লোকেশন", value: st.vfs.location || "—" },
       { label: "ফর্ম পূরণ", value: st.vfs.formFilled ? "✅ সম্পন্ন" : "❌ বাকি", warn: !st.vfs.formFilled },
@@ -208,7 +209,7 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
             </div>
             <div className="flex-1 grid grid-cols-3 gap-4 text-xs">
               <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>ফ্লাইট</p><p className="font-bold">{st.flight.number}</p></div>
-              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>তারিখ</p><p className="font-bold">{st.flight.date}</p></div>
+              <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>তারিখ</p><p className="font-bold">{formatDateDisplay(st.flight.date)}</p></div>
               <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>সময়</p><p className="font-bold">{st.flight.time}</p></div>
               <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>থেকে</p><p className="font-bold">{st.flight.from || "DAC"}</p></div>
               <div><p className="text-[9px] uppercase" style={{ color: t.muted }}>গন্তব্য</p><p className="font-bold">{st.flight.to || "NRT"}</p></div>

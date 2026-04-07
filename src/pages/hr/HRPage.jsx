@@ -11,7 +11,7 @@ import Button from "../../components/ui/Button";
 import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { ALL_ROLES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -295,7 +295,7 @@ export default function HRPage() {
                     <td className="py-3 px-4" style={{ color: t.muted }}>{emp.role}</td>
                     <td className="py-3 px-4" style={{ color: t.muted }}>{emp.branch}</td>
                     <td className="py-3 px-4" style={{ color: t.muted }}>{emp.phone || "—"}</td>
-                    <td className="py-3 px-4" style={{ color: t.muted }}>{emp.joinDate || "—"}</td>
+                    <td className="py-3 px-4" style={{ color: t.muted }}>{formatDateDisplay(emp.joinDate)}</td>
                     <td className="py-3 px-4 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
                     <td className="py-3 px-4">
                       <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? tr("common.active") : tr("common.inactive")}</Badge>
@@ -528,8 +528,8 @@ export default function HRPage() {
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <td className="py-3 px-4 font-medium">{l.employees?.name || "—"}</td>
                       <td className="py-3 px-4"><Badge color={t.cyan} size="xs">{LEAVE_TYPES[l.type] || l.type}</Badge></td>
-                      <td className="py-3 px-4 font-mono">{l.start_date?.slice(0, 10)}</td>
-                      <td className="py-3 px-4 font-mono">{l.end_date?.slice(0, 10)}</td>
+                      <td className="py-3 px-4 font-mono">{formatDateDisplay(l.start_date)}</td>
+                      <td className="py-3 px-4 font-mono">{formatDateDisplay(l.end_date)}</td>
                       <td className="py-3 px-4 font-bold" style={{ color: t.cyan }}>{l.days}</td>
                       <td className="py-3 px-4" style={{ color: t.muted }}>{l.reason || "—"}</td>
                       <td className="py-3 px-4"><Badge color={STATUS_COLORS[l.status] || t.muted} size="xs">{STATUS_LABELS[l.status] || l.status}</Badge></td>

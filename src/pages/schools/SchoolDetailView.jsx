@@ -10,6 +10,7 @@ import { SUB_STATUS } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
 import { API_URL } from "../../lib/api";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 const token = () => localStorage.getItem("agencyos_token");
 
 // Interview List-এ available columns — user select/deselect করবে
@@ -568,7 +569,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                         <span className="text-[10px] font-mono" style={{ color: t.cyan }}>#{sub.submission_number || 1}</span>
                         {sub.intake && <span className="text-[10px]" style={{ color: t.muted }}>{sub.intake}</span>}
                       </div>
-                      <p className="text-[10px]" style={{ color: t.muted }}>{sub.submission_date ? sub.submission_date.slice(0, 10) : "—"}{sub.recheck_count > 0 ? ` • ${sub.recheck_count}x রিচেক` : ""}</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(sub.submission_date)}{sub.recheck_count > 0 ? ` • ${sub.recheck_count}x রিচেক` : ""}</p>
                     </div>
 
                     {/* Status dropdown */}
@@ -616,7 +617,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                           <span>{fb.resolved ? "✅" : fb.severity === "error" ? "🔴" : "⚠️"}</span>
                           <span className="font-medium" style={{ color: fb.resolved ? t.emerald : fb.severity === "error" ? t.rose : t.amber }}>{fb.doc}</span>
                           <span className="flex-1" style={{ color: t.textSecondary }}>{fb.issue}</span>
-                          <span className="text-[9px]" style={{ color: t.muted }}>{fb.date ? fb.date.slice(0, 10) : ""}</span>
+                          <span className="text-[9px]" style={{ color: t.muted }}>{formatDateDisplay(fb.date)}</span>
                           {!fb.resolved && (
                             <button onClick={() => resolveFeedback(sub.id, fbIdx)}
                               className="text-[10px] px-2 py-0.5 rounded" style={{ color: t.emerald, background: `${t.emerald}10` }}>

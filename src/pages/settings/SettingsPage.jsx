@@ -13,7 +13,7 @@ import { API_URL } from "../../lib/api";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 import ConditionalFormatRules from "../../components/ui/ConditionalFormatRules";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 
 // ── Administration ট্যাব কনফিগ — i18nKey দিয়ে translation ──
 const ADMIN_TABS = [
@@ -759,7 +759,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 <div key={i} className="flex items-center justify-between py-1.5 text-[11px]">
                   <div className="flex items-center gap-2">
                     <CheckCircle size={10} style={{ color: t.emerald }} />
-                    <span style={{ color: t.textSecondary }}>{b.date}</span>
+                    <span style={{ color: t.textSecondary }}>{formatDateDisplay(b.date)}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span style={{ color: t.muted }}>{b.size}</span>
@@ -1671,7 +1671,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     <div>
                       <p className="text-xs font-semibold" style={{ color: t.text }}>{h.name_bn || h.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-[10px]" style={{ color: t.muted }}>{h.date}</p>
+                        <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(h.date)}</p>
                         {h.name_bn && h.name && <p className="text-[10px]" style={{ color: t.muted }}>({h.name})</p>}
                         {h.recurring && (
                           <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>

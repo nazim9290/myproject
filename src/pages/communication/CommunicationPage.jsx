@@ -10,7 +10,7 @@ import Modal from "../../components/ui/Modal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { COMM_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -191,12 +191,12 @@ export default function CommunicationPage({ students = [] }) {
                         <Badge color={log.direction === "inbound" ? t.emerald : t.amber} size="xs">{log.direction === "inbound" ? "← ইনবাউন্ড" : "→ আউটবাউন্ড"}</Badge>
                         {log.follow_up_date && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: isFollowUpDue ? `${t.rose}15` : `${t.amber}15`, color: isFollowUpDue ? t.rose : t.amber }}>
-                            {isFollowUpDue ? "⚠️" : "📅"} ফলোআপ: {log.follow_up_date}
+                            {isFollowUpDue ? "⚠️" : "📅"} ফলোআপ: {formatDateDisplay(log.follow_up_date)}
                           </span>
                         )}
                       </div>
                       <p className="text-xs mt-1" style={{ color: t.textSecondary }}>{log.summary}</p>
-                      <p className="text-[10px] mt-1" style={{ color: t.muted }}>👤 {log.user} • {log.date} {log.time}</p>
+                      <p className="text-[10px] mt-1" style={{ color: t.muted }}>👤 {log.user} • {formatDateDisplay(log.date)} {log.time}</p>
                     </div>
                     <button onClick={() => setDeleteTarget(log)} className="opacity-0 group-hover:opacity-100 p-1 rounded transition shrink-0" style={{ color: t.rose }}>
                       <Trash2 size={13} />

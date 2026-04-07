@@ -285,8 +285,13 @@ export default function DateInput({
 export { toDisplay, toISO, isValidDate };
 
 // ─── ইউটিলিটি: তারিখ display helper (table/card-এ দেখানোর জন্য) ───
+// সম্পূর্ণ ISO datetime ("2025-12-06T15:00:00.000Z") এবং date-only ("2025-12-06") দুটোই হ্যান্ডেল করে
 export function formatDateDisplay(iso) {
   if (!iso) return "—";
-  const display = toDisplay(iso);
+  // "T" বা স্পেস থাকলে শুধু date অংশ নেওয়া (datetime → date)
+  const dateOnly = String(iso).includes("T") ? String(iso).split("T")[0]
+    : String(iso).includes(" ") ? String(iso).split(" ")[0]
+    : String(iso);
+  const display = toDisplay(dateOnly);
   return display || "—";
 }

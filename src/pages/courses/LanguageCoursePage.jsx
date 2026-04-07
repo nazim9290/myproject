@@ -5,7 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { batches as batchesApi } from "../../lib/api";
 import BatchDetailView from "./BatchDetailView";
 
@@ -303,7 +303,7 @@ export default function LanguageCoursePage({ students }) {
                     {[
                       { icon: Users, text: `${enrollCount}/${batch.capacity || 30} শিক্ষার্থী` },
                       { icon: BookOpen, text: batch.level },
-                      { icon: Calendar, text: batch.start_date || batch.startDate || "—" },
+                      { icon: Calendar, text: formatDateDisplay(batch.start_date || batch.startDate) },
                       { icon: User, text: batch.teacher || "—" },
                       // ক্লাস শিডিউল — সময় ও সাপ্তাহিক ঘণ্টা (থাকলে দেখাও)
                       ...(batch.class_time ? [{ icon: Clock, text: batch.class_time }] : []),

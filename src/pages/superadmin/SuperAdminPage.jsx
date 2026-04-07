@@ -9,6 +9,7 @@ import Modal from "../../components/ui/Modal";
 import PhoneInput from "../../components/ui/PhoneInput";
 import { API_URL } from "../../lib/api";
 import FieldMapperTable from "../../components/ui/FieldMapper";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 
 /**
  * SuperAdminPage — Platform-level agency management
@@ -926,7 +927,7 @@ export default function SuperAdminPage() {
                     {daily.map((day, i) => {
                       const heightPct = ((day.count || 0) / maxD) * 100;
                       return (
-                        <div key={day.date || i} className="flex-1 group relative" title={`${day.date || ""} — ${day.count || 0} ভিউ`}>
+                        <div key={day.date || i} className="flex-1 group relative" title={`${formatDateDisplay(day.date)} — ${day.count || 0} ভিউ`}>
                           <div className="w-full rounded-t-sm transition-all duration-300"
                             style={{
                               height: `${Math.max(heightPct, 2)}%`,
@@ -939,8 +940,8 @@ export default function SuperAdminPage() {
                   </div>
                   {/* তারিখ লেবেল — শুরু ও শেষ */}
                   <div className="flex justify-between mt-1">
-                    <span className="text-[9px]" style={{ color: t.muted }}>{daily[0]?.date || ""}</span>
-                    <span className="text-[9px]" style={{ color: t.muted }}>{daily[daily.length - 1]?.date || ""}</span>
+                    <span className="text-[9px]" style={{ color: t.muted }}>{formatDateDisplay(daily[0]?.date)}</span>
+                    <span className="text-[9px]" style={{ color: t.muted }}>{formatDateDisplay(daily[daily.length - 1]?.date)}</span>
                   </div>
                 </div>
               );

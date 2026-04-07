@@ -13,6 +13,7 @@ import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import { inventory as inventoryApi } from "../../lib/api";
 import { api } from "../../hooks/useAPI";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 
 const INVENTORY_CATEGORIES = ["Electronics", "Furniture", "Stationery", "Books", "Kitchen", "Cleaning", "Vehicle", "Others"];
 const CONDITION_OPTIONS = [
@@ -501,7 +502,7 @@ export default function InventoryPage() {
                     <tr key={log.id} style={{ borderBottom: `1px solid ${t.border}` }}
                       onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                      <td className="py-3 px-4 font-mono" style={{ color: t.muted }}>{log.date}</td>
+                      <td className="py-3 px-4 font-mono" style={{ color: t.muted }}>{formatDateDisplay(log.date)}</td>
                       <td className="py-3 px-4">
                         <Badge color={actionColor} size="xs">{log.icon} {log.action}</Badge>
                       </td>

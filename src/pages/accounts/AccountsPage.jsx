@@ -11,7 +11,7 @@ import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { CATEGORY_CONFIG, FEE_CATEGORIES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -542,7 +542,7 @@ export default function AccountsPage({ students = [] }) {
                             <tr key={row.paymentId} style={{ borderBottom: `1px solid ${t.border}` }}
                               onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                              <td className="py-2.5 px-3 font-mono text-[10px]" style={{ color: t.muted }}>{row.date}</td>
+                              <td className="py-2.5 px-3 font-mono text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(row.date)}</td>
                               <td className="py-2.5 px-3">
                                 <p className="font-medium">{row.studentName}</p>
                                 <p className="text-[9px]" style={{ color: t.muted }}>{row.studentId}</p>
@@ -683,7 +683,7 @@ export default function AccountsPage({ students = [] }) {
                         return (
                           <tr key={exp.id} style={{ borderBottom: `1px solid ${t.border}` }}
                             onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                            <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{exp.date}</td>
+                            <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatDateDisplay(exp.date)}</td>
                             <td className="py-3 px-3"><Badge color={cat?.color || t.muted} size="xs">{cat?.icon} {cat?.label}</Badge></td>
                             <td className="py-3 px-3" style={{ color: t.textSecondary }}>{exp.description}</td>
                             <td className="py-3 px-3 font-semibold font-mono" style={{ color: t.rose }}>৳{exp.amount.toLocaleString()}</td>

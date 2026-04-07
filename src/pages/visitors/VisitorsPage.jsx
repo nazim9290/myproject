@@ -15,7 +15,7 @@ import SortHeader from "../../components/ui/SortHeader";
 import ExportModal from "../../components/ui/ExportModal";
 import { getRowStyle } from "../../lib/conditionalFormat";
 import TableInsights from "../../components/ui/TableInsights";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { api } from "../../hooks/useAPI";
 
 // ── টেবিল ইনসাইটস — গ্রুপিং ও শর্তভিত্তিক ফর্ম্যাটিং ফিল্ডসমূহ ──
@@ -747,7 +747,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <Card delay={50}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>ব্যক্তিগত তথ্য</h4>
-            <div className="space-y-2">{[{l:"নাম",val:v.name_en || v.name},{l:"ফোন",val:formatPhoneDisplay(v.phone)},{l:"অভিভাবক",val:formatPhoneDisplay(v.guardian_phone)},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:v.dob ? v.dob.slice(0,10) : "—"},{l:"লিঙ্গ",val:v.gender}].map(f=>
+            <div className="space-y-2">{[{l:"নাম",val:v.name_en || v.name},{l:"ফোন",val:formatPhoneDisplay(v.phone)},{l:"অভিভাবক",val:formatPhoneDisplay(v.guardian_phone)},{l:"ইমেইল",val:v.email},{l:"ঠিকানা",val:v.address},{l:"জন্ম তারিখ",val:formatDateDisplay(v.dob)},{l:"লিঙ্গ",val:v.gender}].map(f=>
               <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium">{f.val||"—"}</span></div>
             )}</div>
           </Card>
@@ -758,7 +758,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             {v.has_jp_cert && <div className="mt-3 p-3 rounded-lg" style={{background:t.inputBg}}><p className="text-xs font-semibold">{v.jp_exam_type||"JLPT"} — {v.jp_level} — Score: {v.jp_score||"—"}</p></div>}
           </Card>
           <Card delay={150}><h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{color:t.muted}}>সোর্স ও ফলো-আপ</h4>
-            <div className="space-y-2">{[{l:"সোর্স",val:v.source},{l:"এজেন্ট",val:v.agent_name},{l:"কাউন্সেলর",val:v.counselor},{l:"ভিজিটের তারিখ",val:(v.date||"").slice(0,10)+" ("+days+" দিন আগে)"},{l:"শেষ ফলো-আপ",val:v.lastFollowUp?(v.lastFollowUp||"").slice(0,10)+" ("+daysDiff(v.lastFollowUp)+" দিন আগে)":"করা হয়নি"},{l:"পরবর্তী ফলো-আপ",val:v.next_follow_up}].map(f=>
+            <div className="space-y-2">{[{l:"সোর্স",val:v.source},{l:"এজেন্ট",val:v.agent_name},{l:"কাউন্সেলর",val:v.counselor},{l:"ভিজিটের তারিখ",val:formatDateDisplay(v.date)+" ("+days+" দিন আগে)"},{l:"শেষ ফলো-আপ",val:v.lastFollowUp?formatDateDisplay(v.lastFollowUp)+" ("+daysDiff(v.lastFollowUp)+" দিন আগে)":"করা হয়নি"},{l:"পরবর্তী ফলো-আপ",val:formatDateDisplay(v.next_follow_up)}].map(f=>
               <div key={f.l} className="flex justify-between text-xs"><span style={{color:t.muted}}>{f.l}</span><span className="font-medium" style={{color:f.val==="করা হয়নি"?t.rose:t.text}}>{f.val||"—"}</span></div>
             )}</div>
           </Card>
@@ -915,7 +915,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
               {/* Source */}
               <td className="py-3 px-3" style={{color:t.textSecondary}}>{v.source}</td>
               {/* তারিখ */}
-              <td className="py-3 px-3"><span className="text-[10px] font-mono" style={{color:days>14?t.rose:days>7?t.amber:t.muted}}>{(v.date||"").slice(0,10)} ({days}d)</span></td>
+              <td className="py-3 px-3"><span className="text-[10px] font-mono" style={{color:days>14?t.rose:days>7?t.amber:t.muted}}>{formatDateDisplay(v.date)} ({days}d)</span></td>
               {/* Follow-up */}
               <td className="py-3 px-3">{fuBad?<span className="text-[10px] font-semibold" style={{color:t.rose}}>বিলম্বিত</span>:v.lastFollowUp?<span className="text-[10px]" style={{color:t.emerald}}>✓ {fuD}d</span>:<span className="text-[10px]" style={{color:t.muted}}>—</span>}</td>
               {/* Action */}
