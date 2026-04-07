@@ -1286,8 +1286,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 ].map(f => (
                   <div key={f.key}>
                     <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                    <input type={f.type === "date" ? "date" : "text"} value={workForm[f.key] || ""} onChange={e => setWorkForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    {f.type === "date" ? (
+                      <DateInput value={workForm[f.key] || ""} onChange={v => setWorkForm(p => ({ ...p, [f.key]: v }))} size="sm" />
+                    ) : (
+                      <input value={workForm[f.key] || ""} onChange={e => setWorkForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    )}
                   </div>
                 ))}
                 <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
