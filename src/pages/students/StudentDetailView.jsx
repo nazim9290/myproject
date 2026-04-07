@@ -1104,7 +1104,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             </Modal>
             {education.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {education.map((edu, idx) => (
+                {[...education].sort((a, b) => (a.entrance_year || a.year || "9999").localeCompare(b.entrance_year || b.year || "9999")).map((edu, idx) => (
                   <div key={edu.id || idx} className="p-3 rounded-lg" style={{ background: t.inputBg }}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.cyan }}>
