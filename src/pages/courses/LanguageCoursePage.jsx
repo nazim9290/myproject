@@ -359,9 +359,10 @@ export default function LanguageCoursePage({ students }) {
           // ── ব্যাচের students: students prop থেকে batch name মিলিয়ে ──
           const bStudents = (students || []).filter(s => s.batch === batch.name || s.batch_id === batch.id);
           const enrollCount = batch.enrolledCount || bStudents.length;
-          const bAvgAtt = 0; // attendance API থেকে আসবে
           const bPassed = bStudents.filter(s => s.status === "EXAM_PASSED").length;
           const countryColor = batch.country === "Japan" ? t.rose : batch.country === "Germany" ? t.amber : t.cyan;
+          // সাপ্তাহিক ঘণ্টা — DB value অথবা class_days × hours_per_day থেকে calculate
+          const wHours = batch.weekly_hours || ((batch.class_days || []).length * (parseFloat(batch.class_hours_per_day) || 2)) || 0;
           return (
             <Card key={batch.id} delay={200 + i * 60} className="cursor-pointer group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 !p-0 overflow-hidden">
               <div onClick={() => { setSelectedBatch(batch); setActiveTab("students"); }}>
@@ -376,13 +377,13 @@ export default function LanguageCoursePage({ students }) {
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     {[
-                      { icon: Users, text: `${enrollCount}/${batch.capacity || 30} শিক্ষার্থী` },
-                      { icon: BookOpen, text: batch.level },
+                      { icon: Users, text: `${enrollCount}/${batch.capacity || 20} শিক্ষার্থী` },
+                      { icon: BookOpen, text: batch.level || "—" },
                       { icon: Calendar, text: formatDateDisplay(batch.start_date || batch.startDate) },
                       { icon: User, text: batch.teacher || "—" },
-                      // ক্লাস শিডিউল — সময় ও সাপ্তাহিক ঘণ্টা (থাকলে দেখাও)
+                      // ক্লাস শিডিউল — সময় ও সাপ্তাহিক ঘণ্টা
                       ...(batch.class_time ? [{ icon: Clock, text: batch.class_time }] : []),
-                      ...(batch.weekly_hours ? [{ icon: Clock, text: `${batch.weekly_hours} ঘণ্টা/সপ্তাহ` }] : []),
+                      ...(wHours > 0 ? [{ icon: Clock, text: `${wHours} ঘণ্টা/সপ্তাহ` }] : []),
                     ].map((item, j) => (
                       <div key={j} className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
                         <item.icon size={12} /> {item.text}
@@ -391,8 +392,11 @@ export default function LanguageCoursePage({ students }) {
                   </div>
                   <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                     <div className="flex gap-3">
-                      <span className="text-[10px]" style={{ color: bAvgAtt >= 80 ? t.emerald : t.amber }}>উপস্থিতি: <span className="font-bold">{bAvgAtt}%</span></span>
-                      <span className="text-[10px]" style={{ color: t.emerald }}>পাস: <span className="font-bold">{bPassed}</span></span>
+                      <span className="text-[10px]" style={{ color: t.textSecondary }}>শিক্ষার্থী: <span className="font-bold" style={{ color: t.cyan }}>{enrollCount}</span></span>
+                      <span className="text-[10px]" style={{ color: t.textSecondary }}>পাস: <span className="font-bold" style={{ color: bPassed > 0 ? t.emerald : t.muted }}>{bPassed}</span></span>
+                      {batch.class_days && batch.class_days.length > 0 && (
+                        <span className="text-[10px]" style={{ color: t.textSecondary }}>ক্লাস: <span className="font-bold">{batch.class_days.join(", ")}</span></span>
+                      )}
                     </div>
                     <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />
                   </div>
