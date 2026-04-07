@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X, Search } from "lucide-react";
+import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X, Search, ChevronRight } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../../components/ui/Card";
@@ -361,56 +361,81 @@ export default function SchoolsPage({ students }) {
           {schools.map((school, i) => {
             const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;
             const name = school.name_en || school.name;
+            // ইন্টেক মাসগুলো
+            const intakeMonths = (school.intakes || []).map(ik => ik.month).join(", ");
             return (
-              <Card key={school.id} delay={200 + i * 60} className="group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 !p-0 overflow-hidden">
-                <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${countryColor}, ${t.purple})` }} />
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 cursor-pointer" onClick={() => setSelectedSchool(school)}>
-                      <p className="text-sm font-bold group-hover:text-cyan-400 transition">{name}</p>
-                      {school.name_jp && <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{school.name_jp}</p>}
+              <Card key={school.id} delay={200 + i * 60} className="cursor-pointer group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 !p-0 overflow-hidden">
+                <div onClick={() => setSelectedSchool(school)}>
+                  <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${countryColor}, ${t.purple})` }} />
+                  <div className="p-5">
+                    {/* হেডার — নাম, JP নাম, country badge, edit/delete */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold group-hover:text-cyan-400 transition">{name}</p>
+                        {school.name_jp && <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{school.name_jp}</p>}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                        <Badge color={countryColor} size="xs">{school.country}</Badge>
+                        <button onClick={() => openEdit(school)} className="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }} title="Edit">✏️</button>
+                        {deleteSchoolId === school.id ? (
+                          <div className="flex gap-1 ml-1">
+                            <button onClick={async () => {
+                              try { await api.del(`/schools/${school.id}`); toast.success("স্কুল মুছে ফেলা হয়েছে"); fetchSchools(); } catch (err) { toast.error(err.message); }
+                              setDeleteSchoolId(null);
+                            }} className="text-[9px] px-2 py-0.5 rounded" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
+                            <button onClick={() => setDeleteSchoolId(null)} className="text-[9px] px-1" style={{ color: t.muted }}>না</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDeleteSchoolId(school.id)} className="p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }} title="Delete">🗑️</button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Badge color={countryColor} size="xs">{school.country}</Badge>
-                      <button onClick={() => openEdit(school)} className="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }} title="Edit">✏️</button>
-                      {deleteSchoolId === school.id ? (
-                        <div className="flex gap-1 ml-1">
-                          <button onClick={async () => {
-                            try { await api.del(`/schools/${school.id}`); toast.success("স্কুল মুছে ফেলা হয়েছে"); fetchSchools(); } catch (err) { toast.error(err.message); }
-                            setDeleteSchoolId(null);
-                          }} className="text-[9px] px-2 py-0.5 rounded" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
-                          <button onClick={() => setDeleteSchoolId(null)} className="text-[9px] px-1" style={{ color: t.muted }}>না</button>
+
+                    {/* তথ্য grid — শহর, ইমিগ্রেশন, লেভেল, ইন্টারভিউ, ফি */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
+                        <MapPin size={12} /> {school.city || "—"}
+                      </div>
+                      {school.immigration_bureau && (
+                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
+                          🏛 {school.immigration_bureau}
                         </div>
-                      ) : (
-                        <button onClick={() => setDeleteSchoolId(school.id)} className="p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }} title="Delete">🗑️</button>
+                      )}
+                      {school.min_jp_level && (
+                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
+                          📖 {school.min_jp_level}
+                        </div>
+                      )}
+                      {school.interview_type && (
+                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
+                          🎤 {school.interview_type}
+                        </div>
+                      )}
+                      {school.shoukai_fee > 0 && (
+                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
+                          💴 ¥{Number(school.shoukai_fee).toLocaleString()}
+                        </div>
+                      )}
+                      {school.tuition_y1 > 0 && (
+                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
+                          🎓 ¥{Number(school.tuition_y1).toLocaleString()}
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-[11px] mb-3" style={{ color: t.textSecondary }}>
-                    <span className="flex items-center gap-1"><MapPin size={11} /> {school.city || "—"}</span>
-                    {school.immigration_bureau && <span className="px-1.5 py-0.5 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>🏛 {school.immigration_bureau}</span>}
-                  </div>
-                  {(school.deadline || school.fees) && (
-                    <div className="flex gap-3 mb-2 text-[10px]" style={{ color: t.muted }}>
-                      {school.deadline && <span>📅 {formatDateDisplay(school.deadline)}</span>}
-                      {school.fees && <span>💴 ¥{Number(school.fees).toLocaleString()}</span>}
+
+                    {/* ইন্টেক ও ডরমিটরি */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {intakeMonths && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.amber}15`, color: t.amber }}>📅 {intakeMonths}</span>}
+                      {school.has_dormitory && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.emerald}15`, color: t.emerald }}>🏠 ডরমিটরি</span>}
                     </div>
-                  )}
-                  <div className="flex justify-end mb-2">
-                    <button onClick={() => setSelectedSchool(school)} className="px-3 py-1 rounded-lg text-[10px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>👁 বিস্তারিত দেখুন</button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 pt-3 cursor-pointer" onClick={() => setSelectedSchool(school)} style={{ borderTop: `1px solid ${t.border}` }}>
-                    <div className="text-center">
-                      <p className="text-lg font-bold" style={{ color: t.cyan }}>{school.studentsReferred || 0}</p>
-                      <p className="text-[9px]" style={{ color: t.muted }}>রেফার</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold" style={{ color: t.emerald }}>{school.studentsArrived || 0}</p>
-                      <p className="text-[9px]" style={{ color: t.muted }}>পৌঁছেছে</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold" style={{ color: t.amber }}>{school.shoukaiPerStudent > 0 ? `¥${(school.shoukaiPerStudent / 1000).toFixed(0)}K` : "—"}</p>
-                      <p className="text-[9px]" style={{ color: t.muted }}>শোকাই/জন</p>
+
+                    {/* ফুটার — রেফার ও পৌঁছেছে */}
+                    <div className="flex items-center justify-between pt-3 mt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                      <div className="flex gap-4">
+                        <span className="text-[10px]" style={{ color: t.textSecondary }}>রেফার: <span className="font-bold" style={{ color: t.cyan }}>{school.studentsReferred || 0}</span></span>
+                        <span className="text-[10px]" style={{ color: t.textSecondary }}>পৌঁছেছে: <span className="font-bold" style={{ color: t.emerald }}>{school.studentsArrived || 0}</span></span>
+                      </div>
+                      <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />
                     </div>
                   </div>
                 </div>
