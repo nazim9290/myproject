@@ -35,12 +35,13 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
               studentId: e.student_id,
               name: e.students?.name_en || e.student_id,
               attendance: 0, lastTest: null,
-              jlptStatus: "Preparing", examType: null, jlptLevel: null, jlptScore: null,
+              jlptStatus: "Preparing", examType: null, jlptLevel: null, jlptScore: null, examId: null,
             };
             try {
               const detail = await apiHook.get(`/students/${e.student_id}`);
               const exam = (detail.student_jp_exams || [])[0];
               if (exam) {
+                base.examId = exam.id || null;
                 base.examType = exam.exam_type || null;
                 base.jlptLevel = exam.level || null;
                 base.jlptScore = exam.score ? parseInt(exam.score) : null;
@@ -238,29 +239,37 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [examForm, setExamForm] = useState({ examType: "JLPT", level: "N5", date: today });
   const [showExamForm, setShowExamForm] = useState(false);
   const saveExamResults = async () => {
-    setBStudents(prev => prev.map(s => {
-      const u = examUpdates[s.studentId];
-      if (!u) return s;
-      return { ...s, examType: examForm.examType, jlptLevel: examForm.level, jlptScore: parseInt(u.score) || null, jlptStatus: u.result };
-    }));
-    // DB-তে student_jp_exams table-এ save
+    // DB-তে student_jp_exams table-এ save/update
     try {
       const { api } = await import("../../hooks/useAPI");
       for (const [studentId, u] of Object.entries(examUpdates)) {
         if (u.score || u.result) {
-          await api.post(`/students/${studentId}/exam-result`, {
+          // existing exam_id থাকলে update, না থাকলে insert
+          const student = bStudents.find(s => s.studentId === studentId);
+          const resp = await api.post(`/students/${studentId}/exam-result`, {
+            exam_id: student?.examId || null,
             exam_type: examForm.examType,
             level: examForm.level,
             score: u.score || null,
             result: u.result || null,
             exam_date: examForm.date || null,
-          }).catch(() => {});
+          });
+          // response থেকে examId আপডেট
+          if (resp && resp.id) {
+            setBStudents(prev => prev.map(s => s.studentId === studentId ? { ...s, examId: resp.id } : s));
+          }
         }
       }
+      // সফল হলে local state আপডেট
+      setBStudents(prev => prev.map(s => {
+        const u = examUpdates[s.studentId];
+        if (!u) return s;
+        return { ...s, examType: examForm.examType, jlptLevel: examForm.level, jlptScore: parseInt(u.score) || null, jlptStatus: u.result };
+      }));
+      toast.success("পরীক্ষার ফলাফল সংরক্ষণ হয়েছে");
     } catch (err) { console.error("[Exam Result Save]", err); toast.error("পরীক্ষার ফলাফল সার্ভারে সেভ ব্যর্থ"); }
     setExamUpdates({});
     setShowExamForm(false);
-    toast.success("পরীক্ষার ফলাফল সংরক্ষণ হয়েছে");
   };
 
   const avgAtt = bStudents.length > 0 ? Math.round(bStudents.reduce((s, st) => s + st.attendance, 0) / bStudents.length) : 0;
@@ -633,8 +642,23 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         <Card delay={100}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold">জেএলপিটি / এনএটি / জেপিটি ফলাফল</h3>
-            <Button icon={showExamForm ? X : Plus} size="xs" onClick={() => setShowExamForm(v => !v)}>
-              {showExamForm ? "বাতিল" : "ফলাফল এন্ট্রি"}
+            <Button icon={showExamForm ? X : Plus} size="xs" onClick={() => {
+              if (!showExamForm) {
+                // বিদ্যমান exam data pre-fill করো
+                const updates = {};
+                bStudents.forEach(s => {
+                  if (s.jlptScore || s.jlptStatus !== "Preparing") {
+                    updates[s.studentId] = { score: s.jlptScore ? String(s.jlptScore) : "", result: s.jlptStatus || "Preparing" };
+                  }
+                });
+                setExamUpdates(updates);
+                // প্রথম student-এর exam data থেকে form pre-fill
+                const first = bStudents.find(s => s.examType);
+                if (first) setExamForm(p => ({ ...p, examType: first.examType || "JLPT", level: first.jlptLevel || "N5" }));
+              }
+              setShowExamForm(v => !v);
+            }}>
+              {showExamForm ? "বাতিল" : "ফলাফল এন্ট্রি / আপডেট"}
             </Button>
           </div>
 
