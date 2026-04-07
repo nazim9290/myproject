@@ -1109,6 +1109,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.cyan }}>
                         {edu.level || `পরীক্ষা ${idx + 1}`}
+                        {edu.group_name ? ` (${edu.group_name})` : ""}
                       </p>
                       <div className="flex gap-1">
                         <button onClick={() => { setEditingEduId(edu.id); setEduForm({ level: edu.level || "", school_name: edu.school_name || "", year: edu.passing_year || edu.year || "", board: edu.board || "", gpa: edu.gpa || "", group_name: edu.group_name || "", school_type: edu.school_type || "", entrance_year: edu.entrance_year || "", address: edu.address || "" }); setShowEduForm(true); }}
@@ -1119,6 +1120,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     </div>
                     <div className="space-y-1.5 text-xs">
                       {[
+                        { label: "পরীক্ষা", value: edu.level },
                         { label: "স্কুলের ধরন", value: edu.school_type },
                         { label: "প্রতিষ্ঠান", value: edu.school_name || edu.institution },
                         { label: "ভর্তির সন", value: edu.entrance_year },
