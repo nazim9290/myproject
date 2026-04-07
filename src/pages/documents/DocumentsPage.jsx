@@ -43,7 +43,6 @@ export default function DocumentsPage({ students }) {
   const [saving, setSaving] = useState(false);
 
   // ── Cross-validation state ──
-  const [showCrossValidate, setShowCrossValidate] = useState(false);
   const [crossValidateData, setCrossValidateData] = useState(null);
   const [crossValidateLoading, setCrossValidateLoading] = useState(false);
 
@@ -513,79 +512,56 @@ export default function DocumentsPage({ students }) {
           </div>
         </div>
 
-        {/* ── Cross-Validation Button ── */}
+        {/* ── Cross-Validation — inline auto-load ── */}
         <Card delay={0}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold flex items-center gap-2">🔍 Cross-Validation</h3>
-              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>বিভিন্ন ডকুমেন্টে একই ফিল্ডের মান মিলছে কিনা যাচাই করুন</p>
-            </div>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              🔍 Cross-Validation
+              {crossValidateData && (
+                crossValidateData.mismatches?.length > 0
+                  ? <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.rose}15`, color: t.rose }}>{crossValidateData.mismatches.length} অমিল</span>
+                  : <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.emerald}15`, color: t.emerald }}>✓ সব মিলেছে</span>
+              )}
+            </h3>
             <Button size="xs" variant="ghost" onClick={async () => {
               setCrossValidateLoading(true);
               try {
                 const result = await api.get(`/documents/cross-validate/${selectedStudent.id}`);
                 setCrossValidateData(result);
-                setShowCrossValidate(true);
+                if (result.mismatches?.length === 0) toast.success("সব তথ্য মিলে গেছে ✓");
               } catch (err) { toast.error("Cross-validation ব্যর্থ"); }
               setCrossValidateLoading(false);
-            }}>{crossValidateLoading ? "চেক হচ্ছে..." : "Mismatch চেক করুন"}</Button>
+            }}>{crossValidateLoading ? "চেক হচ্ছে..." : crossValidateData ? "পুনরায় চেক" : "চেক করুন"}</Button>
           </div>
-        </Card>
+          <p className="text-[10px] mb-2" style={{ color: t.muted }}>Student Profile-এর ডাটা vs ডকুমেন্টে দেয়া ডাটা তুলনা</p>
 
-        {/* ── Cross-Validation Result Modal ── */}
-        <Modal isOpen={showCrossValidate} onClose={() => setShowCrossValidate(false)} title="Document Cross-Validation" subtitle={`${selectedStudent.name_en} — Student Profile vs Documents`} size="lg">
-          {crossValidateData && (
-            <div className="space-y-4">
-              {/* ── সারাংশ ── */}
-              <div className="flex items-center gap-3 p-3 rounded-xl" style={{
-                background: crossValidateData.mismatches?.length > 0 ? `${t.rose}10` : `${t.emerald}10`,
-                border: `1px solid ${crossValidateData.mismatches?.length > 0 ? `${t.rose}30` : `${t.emerald}30`}`,
-              }}>
-                <span className="text-2xl">{crossValidateData.mismatches?.length > 0 ? "⚠️" : "✅"}</span>
-                <div>
-                  <p className="text-sm font-bold" style={{ color: crossValidateData.mismatches?.length > 0 ? t.rose : t.emerald }}>
-                    {crossValidateData.mismatches?.length > 0 ? `${crossValidateData.mismatches.length} Mismatch Found` : "All Fields Match!"}
-                  </p>
-                  <p className="text-[10px]" style={{ color: t.muted }}>
-                    {crossValidateData.total_docs} documents checked • {crossValidateData.matches_count || 0} fields matched
-                  </p>
-                </div>
-              </div>
-
-              {/* ── Mismatch তালিকা — Profile vs Document ── */}
-              {(crossValidateData.mismatches || []).map((m, i) => (
-                <div key={i} className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
-                  <p className="text-xs font-bold mb-2" style={{ color: t.rose }}>⚠️ {m.field}</p>
-                  <div className="space-y-1.5">
-                    {/* Student Profile — সঠিক মান */}
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.emerald}15`, color: t.emerald }}>✓ Profile</span>
-                        <span style={{ color: t.muted }}>Student Profile (সঠিক)</span>
-                      </span>
-                      <span className="font-bold" style={{ color: t.emerald }}>{m.profile_value || "—"}</span>
-                    </div>
-                    {/* Document — ভিন্ন মান */}
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>✗ Doc</span>
-                        <span style={{ color: t.muted }}>{m.doc_type}</span>
-                      </span>
-                      <span className="font-bold" style={{ color: t.rose }}>{m.doc_value || "—"}</span>
+          {/* ── Mismatch list — inline ── */}
+          {crossValidateData && crossValidateData.mismatches?.length > 0 && (
+            <div className="space-y-2 mt-2">
+              {crossValidateData.mismatches.map((m, i) => (
+                <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl" style={{ background: `${t.rose}06`, border: `1px solid ${t.rose}20` }}>
+                  <span className="text-sm mt-0.5">⚠️</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold" style={{ color: t.rose }}>{m.field}</p>
+                    <div className="mt-1.5 space-y-1">
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style={{ background: `${t.emerald}15`, color: t.emerald }}>Profile</span>
+                        <span className="font-medium truncate">{m.profile_value || "—"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style={{ background: `${t.rose}15`, color: t.rose }}>{m.doc_type}</span>
+                        <span className="font-medium truncate" style={{ color: t.rose }}>{m.doc_value || "—"}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
-
-              {/* ── কোনো mismatch না থাকলে info ── */}
-              {crossValidateData.mismatches?.length === 0 && (
-                <p className="text-xs text-center py-4" style={{ color: t.muted }}>
-                  সব ডকুমেন্টের তথ্য Student Profile-এর সাথে মিলে গেছে
-                </p>
-              )}
+              <p className="text-[10px] text-center pt-1" style={{ color: t.muted }}>
+                {crossValidateData.matches_count || 0} ফিল্ড মিলেছে • {crossValidateData.total_docs} ডকুমেন্ট চেক হয়েছে
+              </p>
             </div>
           )}
-        </Modal>
+        </Card>
 
         {/* Doc Type Cards — শুধু active doc types */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
