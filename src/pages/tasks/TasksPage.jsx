@@ -18,7 +18,7 @@ const COLUMNS = [
   { key: "done",        label: "সম্পন্ন",   icon: CheckCircle,   colorKey: "emerald" },
 ];
 
-export default function TasksPage({ students = [] }) {
+export default function TasksPage({ students = [], schools: schoolsProp }) {
   const t = useTheme();
   const toast = useToast();
   const { t: tr } = useLanguage();
@@ -35,9 +35,17 @@ export default function TasksPage({ students = [] }) {
       })));
     }).catch((err) => { console.error("[Tasks Load]", err); toast.error("টাস্ক ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
+  // স্কুল তালিকা — API থেকে load
+  const [schools, setSchools] = useState([]);
+  useEffect(() => {
+    api.get("/schools").then(data => {
+      if (Array.isArray(data)) setSchools(data);
+    }).catch(() => {});
+  }, []);
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [newTask, setNewTask] = useState({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "" });
+  const [newTask, setNewTask] = useState({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "", schoolId: "" });
 
   const todoCount       = tasks.filter(tk => tk.status === "todo").length;
   const inProgressCount = tasks.filter(tk => tk.status === "in_progress").length;
@@ -58,16 +66,16 @@ export default function TasksPage({ students = [] }) {
   const addTask = async () => {
     if (!newTask.title.trim()) { toast.error("টাস্কের বিবরণ দিন"); return; }
     const student = students.find(s => s.id === newTask.studentId);
-    const payload = { title: newTask.title, priority: newTask.priority, due_date: newTask.dueDate || null, student_id: newTask.studentId || null, status: "pending" };
+    const school = schools.find(s => s.id === newTask.schoolId);
+    const payload = { title: newTask.title, priority: newTask.priority, due_date: newTask.dueDate || null, student_id: newTask.studentId || null, school_id: newTask.schoolId || null, status: "pending" };
     try {
       const saved = await api.post("/tasks", payload);
-      setTasks(prev => [{ ...saved, status: "todo", studentName: student?.name_en || "", dueDate: saved.due_date }, ...prev]);
+      setTasks(prev => [{ ...saved, status: "todo", studentName: student?.name_en || "", schoolName: school?.name_en || "", dueDate: saved.due_date }, ...prev]);
     } catch (err) {
       console.error("[Task Create]", err);
-      toast.error("সার্ভারে সেভ ব্যর্থ, লোকালে রাখা হয়েছে");
-      setTasks(prev => [{ id: `T-${Date.now()}`, title: newTask.title, priority: newTask.priority, dueDate: newTask.dueDate, status: "todo", studentName: student?.name_en || "" }, ...prev]);
+      toast.error("সার্ভারে সেভ ব্যর্থ");
     }
-    setNewTask({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "" });
+    setNewTask({ title: "", assignee: "", priority: "medium", dueDate: "", studentId: "", schoolId: "" });
     setShowAddForm(false);
     toast.success("টাস্ক যোগ হয়েছে!");
   };
@@ -138,11 +146,18 @@ export default function TasksPage({ students = [] }) {
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষ তারিখ</label>
             <DateInput value={newTask.dueDate} onChange={v => setNewTask(p => ({ ...p, dueDate: v }))} size="md" />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট লিংক (ঐচ্ছিক)</label>
             <select value={newTask.studentId} onChange={e => setNewTask(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
               <option value="">— কোনো স্টুডেন্ট না —</option>
               {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুল লিংক (ঐচ্ছিক)</label>
+            <select value={newTask.schoolId} onChange={e => setNewTask(p => ({ ...p, schoolId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+              <option value="">— কোনো স্কুল না —</option>
+              {schools.map(s => <option key={s.id} value={s.id}>{s.name_en}</option>)}
             </select>
           </div>
         </div>
@@ -198,6 +213,9 @@ export default function TasksPage({ students = [] }) {
                             )}
                             {task.studentName && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}10`, color: t.cyan }}>👤 {task.studentName}</span>
+                            )}
+                            {(task.schoolName || task.schools?.name_en) && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.amber}10`, color: t.amber }}>🏫 {task.schoolName || task.schools?.name_en}</span>
                             )}
                             {task.autoCreated && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}10`, color: t.purple }}>⚡ স্বয়ংক্রিয়</span>
