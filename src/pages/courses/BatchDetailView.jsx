@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search, Edit3 } from "lucide-react";
+import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search, Edit3, ChevronDown, ChevronUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -148,6 +148,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [testBatchFilter, setTestBatchFilter] = useState(batch.id);
   const [testExtraStudents, setTestExtraStudents] = useState([]); // IDs from other batches
   const [editingTest, setEditingTest] = useState(null); // যে test edit হচ্ছে তার id
+  const [expandedTest, setExpandedTest] = useState(null); // কোন test-এর student scores দেখাচ্ছে
 
   // Current batch only (other batches would need separate API calls)
   const allBatchIds = [batch.id];
@@ -487,24 +488,23 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
 
       {/* ── Tests tab ── */}
       {activeTab === "tests" && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <Button icon={Plus} size="xs" onClick={() => setShowAddTest(v => !v)}>নতুন টেস্ট</Button>
+        <Card delay={100}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold">ক্লাস টেস্ট ফলাফল</h3>
+            <Button icon={showAddTest ? X : Plus} size="xs" onClick={() => { setShowAddTest(v => !v); if (showAddTest) { setEditingTest(null); setTestForm({ testName: "", date: today, totalMarks: 100 }); setTestScores({}); } }}>
+              {showAddTest ? "বাতিল" : "নতুন টেস্ট"}
+            </Button>
           </div>
 
+          {/* ── টেস্ট যোগ / সম্পাদনা ফর্ম ── */}
           {showAddTest && (
-            <Card delay={0}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold">{editingTest ? "ক্লাস টেস্ট সম্পাদনা" : "ক্লাস টেস্ট যোগ করুন"}</h3>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowAddTest(false); setEditingTest(null); setTestForm({ testName: "", date: today, totalMarks: 100 }); setTestScores({}); }}>বাতিল</Button>
-                  <Button icon={Save} size="xs" onClick={saveTest}>{editingTest ? "আপডেট" : "সংরক্ষণ"}</Button>
-                </div>
-              </div>
+            <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <p className="text-xs font-semibold mb-3">{editingTest ? "📝 টেস্ট সম্পাদনা করুন" : "📝 নতুন টেস্ট যোগ করুন"}</p>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টেস্টের নাম <span className="req-star">*</span></label>
-                  <input value={testForm.testName} onChange={e => setTestForm(p => ({ ...p, testName: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Weekly Test 1..." />
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টেস্টের নাম <span style={{ color: t.rose }}>*</span></label>
+                  <input value={testForm.testName} onChange={e => setTestForm(p => ({ ...p, testName: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Weekly Test 1..." />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
@@ -516,34 +516,105 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                     className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="100" />
                 </div>
               </div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>প্রতি স্টুডেন্টের স্কোর (/{parseInt(testForm.totalMarks) || 100})</p>
-                <div className="flex items-center gap-2">
-                  <select value="" onChange={e => { if (e.target.value) addExtraBatchStudents(e.target.value); }}
-                    className="px-2 py-1 rounded text-[10px] outline-none" style={is}>
-                    <option value="">+ অন্য ব্যাচ থেকে যোগ করুন</option>
-                    {allBatchIds.filter(id => id !== batch.id).map(id => <option key={id} value={id}>{id}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+
+              {/* ── স্টুডেন্ট লিস্ট — নম্বর ইনপুট ── */}
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>প্রতি স্টুডেন্টের নম্বর (/{parseInt(testForm.totalMarks) || 100})</p>
+              <div className="space-y-2 mb-3">
                 {testStudentList.map(bs => (
-                  <div key={bs.studentId} className="flex items-center gap-2">
-                    <span className="text-xs flex-1 truncate">{bs.name}</span>
-                    {bs.fromBatch !== batch.name && <span className="text-[9px] px-1 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>{bs.fromBatch}</span>}
-                    <input type="number" min="0" max={parseInt(testForm.totalMarks) || 100} value={testScores[bs.studentId] || ""} onChange={e => setTestScores(p => ({ ...p, [bs.studentId]: e.target.value }))}
-                      className="w-16 px-2 py-1.5 rounded-lg text-xs text-center outline-none" style={is} placeholder="—" />
+                  <div key={bs.studentId} className="flex items-center gap-3">
+                    <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: `${t.cyan}15`, color: t.cyan }}>
+                      {bs.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{bs.name}</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{bs.studentId}</p>
+                    </div>
+                    <input type="number" min="0" max={parseInt(testForm.totalMarks) || 100} value={testScores[bs.studentId] || ""}
+                      onChange={e => setTestScores(p => ({ ...p, [bs.studentId]: e.target.value }))}
+                      className="w-20 px-2 py-1.5 rounded-lg text-xs text-center outline-none" style={is} placeholder="—" />
                   </div>
                 ))}
               </div>
-            </Card>
+              <div className="flex justify-end">
+                <Button icon={Save} size="xs" onClick={saveTest}>{editingTest ? "আপডেট করুন" : "সংরক্ষণ করুন"}</Button>
+              </div>
+            </div>
           )}
 
-          {bTests.length === 0 && !showAddTest && <Card delay={0}><EmptyState icon={FileText} title="কোনো ক্লাস টেস্ট নেই" /></Card>}
-          {bTests.length > 0 && (
-            <Card delay={50}>
-              <h3 className="text-sm font-semibold mb-3">টেস্ট স্কোর ট্রেন্ড</h3>
-              <ResponsiveContainer width="100%" height={180}>
+          {/* ── টেস্ট তালিকা — প্রতিটি expandable ── */}
+          {bTests.length === 0 && !showAddTest && <EmptyState icon={FileText} title="কোনো ক্লাস টেস্ট নেই" subtitle="উপরের বাটন থেকে নতুন টেস্ট যোগ করুন" />}
+          <div className="space-y-2">
+            {bTests.map((test, i) => {
+              const tm = test.totalMarks || 100;
+              const isExpanded = expandedTest === test.id;
+              const scoreEntries = test.scores && typeof test.scores === "object" ? Object.entries(test.scores) : [];
+              return (
+                <div key={test.id || i} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.border}` }}>
+                  {/* টেস্ট header — click করলে expand */}
+                  <div className="flex items-center gap-3 p-3 cursor-pointer transition"
+                    onClick={() => setExpandedTest(isExpanded ? null : test.id)}
+                    onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <div className="h-9 w-9 rounded-xl flex items-center justify-center text-sm shrink-0" style={{ background: `${t.purple}15` }}>📝</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">{test.testName}</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(test.date)} • সর্বোচ্চ: {tm} • {scoreEntries.length} জন</p>
+                    </div>
+                    <div className="text-right mr-2">
+                      <p className="text-lg font-bold" style={{ color: test.avgScore >= tm * 0.7 ? t.emerald : test.avgScore >= tm * 0.4 ? t.amber : t.rose }}>{test.avgScore}</p>
+                      <p className="text-[9px]" style={{ color: t.muted }}>গড় /{tm}</p>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); startEditTest(test); }} className="p-1.5 rounded-lg transition" title="সম্পাদনা"
+                      style={{ color: t.muted }} onMouseEnter={e => { e.currentTarget.style.color = t.cyan; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = t.muted; }}>
+                      <Edit3 size={13} />
+                    </button>
+                    {isExpanded ? <ChevronUp size={14} style={{ color: t.muted }} /> : <ChevronDown size={14} style={{ color: t.muted }} />}
+                  </div>
+
+                  {/* expanded — student scores list */}
+                  {isExpanded && (
+                    <div className="px-3 pb-3" style={{ borderTop: `1px solid ${t.border}` }}>
+                      <div className="space-y-1.5 mt-2">
+                        {scoreEntries.length === 0 && <p className="text-xs text-center py-2" style={{ color: t.muted }}>কোনো স্কোর নেই</p>}
+                        {scoreEntries.map(([sid, score]) => {
+                          const st = bStudents.find(s => s.studentId === sid);
+                          const sc = parseInt(score) || 0;
+                          const pct = tm > 0 ? (sc / tm) * 100 : 0;
+                          const clr = pct >= 70 ? t.emerald : pct >= 40 ? t.amber : t.rose;
+                          return (
+                            <div key={sid} className="flex items-center gap-3 p-2 rounded-lg transition"
+                              onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+                                style={{ background: `${clr}15`, color: clr }}>
+                                {st ? st.name.split(" ").map(n => n[0]).join("").slice(0, 2) : "?"}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium">{st?.name || sid}</p>
+                                <p className="text-[10px]" style={{ color: t.muted }}>{sid}</p>
+                              </div>
+                              {/* প্রগ্রেস বার */}
+                              <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: `${t.muted}20` }}>
+                                <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, background: clr }} />
+                              </div>
+                              <p className="text-sm font-bold w-16 text-right" style={{ color: clr }}>{sc}<span className="text-[10px] font-normal" style={{ color: t.muted }}>/{tm}</span></p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── চার্ট — একাধিক টেস্ট থাকলে ── */}
+          {bTests.length > 1 && (
+            <div className="mt-4">
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>স্কোর ট্রেন্ড</p>
+              <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={bTests}>
                   <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} />
                   <XAxis dataKey="testName" tick={{ fill: t.chartAxisTick, fontSize: 9 }} axisLine={false} tickLine={false} />
@@ -552,33 +623,9 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   <Bar dataKey="avgScore" fill={t.cyan} radius={[6,6,0,0]} barSize={32} name="গড় স্কোর" />
                 </BarChart>
               </ResponsiveContainer>
-            </Card>
+            </div>
           )}
-          {bTests.map((test, i) => (
-            <Card key={test.id || i} delay={100 + i * 40} className="!p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl flex items-center justify-center text-sm" style={{ background: `${t.purple}15` }}>📝</div>
-                  <div>
-                    <p className="text-sm font-semibold">{test.testName}</p>
-                    <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(test.date)} • সর্বোচ্চ: {test.totalMarks || 100}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-lg font-bold" style={{ color: test.avgScore >= (test.totalMarks || 100) * 0.7 ? t.emerald : t.amber }}>{test.avgScore}</p>
-                    <p className="text-[9px]" style={{ color: t.muted }}>গড় স্কোর /{test.totalMarks || 100}</p>
-                  </div>
-                  <button onClick={() => startEditTest(test)} className="p-2 rounded-lg transition" title="সম্পাদনা"
-                    style={{ color: t.muted }} onMouseEnter={e => { e.currentTarget.style.background = t.hoverBg; e.currentTarget.style.color = t.cyan; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.muted; }}>
-                    <Edit3 size={14} />
-                  </button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        </Card>
       )}
 
       {/* ── Exams tab ── */}
