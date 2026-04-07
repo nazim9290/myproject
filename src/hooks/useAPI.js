@@ -125,6 +125,7 @@ export const api = {
   get: (path) => request(path),                                                    // GET — data আনো
   post: (path, body) => request(path, { method: "POST", body: JSON.stringify(body) }),   // POST — নতুন তৈরি
   patch: (path, body) => request(path, { method: "PATCH", body: JSON.stringify(body) }), // PATCH — আপডেট
+  put: (path, body) => request(path, { method: "PUT", body: JSON.stringify(body) }),     // PUT — সম্পূর্ণ আপডেট
   del: (path) => request(path, { method: "DELETE" }),                               // DELETE — মুছে ফেলো
   upload: (path, formData) => request(path, { method: "POST", body: formData }),    // POST — file upload
 };
