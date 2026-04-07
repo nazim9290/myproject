@@ -269,7 +269,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
   const [pageSize, setPageSize] = useState(20);
   const [serverTotal, setServerTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name");
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("date", "desc");
 
   // ── Search debounce — টাইপ করার সময় প্রতিটি keystroke-এ API call এড়ানো ──
   const searchTimerRef = useRef(null);

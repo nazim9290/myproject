@@ -171,7 +171,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   // ── ExportModal দেখানোর state — কলাম সিলেক্ট করে CSV ডাউনলোড ──
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportModalData, setExportModalData] = useState([]);
-  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("name_en");
+  const { sortKey, sortDir, toggleSort, sortFn } = useSortable("created", "desc");
 
   // ── Search debounce — টাইপ করার সময় প্রতিটি keystroke-এ API call এড়ানো ──
   const searchTimerRef = useRef(null);
