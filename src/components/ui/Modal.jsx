@@ -61,7 +61,7 @@ export default function Modal({ isOpen, onClose, title, subtitle, size = "md", c
 
       {/* ─── Modal কন্টেন্ট বক্স ─── */}
       <div
-        className={`w-full ${SIZES[size]} rounded-2xl shadow-2xl overflow-hidden`}
+        className={`w-full ${SIZES[size]} rounded-2xl shadow-2xl`}
         style={{
           background: t.card,
           border: `1px solid ${t.border}`,

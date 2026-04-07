@@ -86,12 +86,17 @@ export default function TasksPage({ students = [], schools: schoolsProp }) {
       })));
     }).catch((err) => { console.error("[Tasks Load]", err); toast.error("টাস্ক ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
-  // স্কুল তালিকা — API থেকে load
+  // স্কুল ও ব্যবহারকারী তালিকা — API থেকে load
   const [schools, setSchools] = useState([]);
+  const [users, setUsers] = useState([]);
   useEffect(() => {
     api.get("/schools").then(data => {
       const arr = Array.isArray(data) ? data : data?.data || [];
       setSchools(arr);
+    }).catch(() => {});
+    api.get("/users").then(data => {
+      const arr = Array.isArray(data) ? data : data?.data || [];
+      setUsers(arr);
     }).catch(() => {});
   }, []);
 
@@ -185,7 +190,7 @@ export default function TasksPage({ students = [], schools: schoolsProp }) {
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অ্যাসাইনি</label>
             <select value={newTask.assignee} onChange={e => setNewTask(p => ({ ...p, assignee: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
               <option value="">নির্বাচন করুন</option>
-              <option>Mina</option><option>Sadia</option><option>Karim</option>
+              {users.map(u => <option key={u.id} value={u.name || u.email}>{u.name || u.email}</option>)}
             </select>
           </div>
           <div>
