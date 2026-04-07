@@ -14,7 +14,7 @@ import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { COMM_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
-const BLANK = { studentId: "", type: "phone", direction: "outbound", notes: "", follow_up_date: "", user: "Mina" };
+const BLANK = { studentId: "", type: "phone", direction: "outbound", notes: "", follow_up_date: "", user: "" };
 
 export default function CommunicationPage({ students = [] }) {
   const t = useTheme();
@@ -31,6 +31,15 @@ export default function CommunicationPage({ students = [] }) {
       })));
     }).catch((err) => { console.error("[Communication Load]", err); toast.error("যোগাযোগ লগ লোড করতে সমস্যা হয়েছে"); });
   }, []);
+  // ── ব্যবহারকারী তালিকা — API থেকে ──
+  const [users, setUsers] = useState([]);
+  useEffect(() => {
+    api.get("/users").then(data => {
+      const arr = Array.isArray(data) ? data : data?.data || [];
+      setUsers(arr);
+    }).catch(() => {});
+  }, []);
+
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -134,7 +143,8 @@ export default function CommunicationPage({ students = [] }) {
           <div>
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
             <select value={form.user} onChange={e => sf("user", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-              <option>Mina</option><option>Sadia</option><option>Karim</option>
+              <option value="">নির্বাচন করুন</option>
+              {users.map(u => <option key={u.id} value={u.name || u.email}>{u.name || u.email}</option>)}
             </select>
           </div>
           <div>

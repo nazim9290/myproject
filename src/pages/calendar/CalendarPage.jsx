@@ -24,6 +24,12 @@ export default function CalendarPage({ students = [] }) {
       if (Array.isArray(data)) setEvents(data.map(e => ({ ...e, time: e.time || "", staff: "" })));
     }).catch((err) => { console.error("[Calendar Load]", err); toast.error("ক্যালেন্ডার ডাটা লোড করতে সমস্যা হয়েছে"); });
   }, []);
+  // ── ব্যবহারকারী তালিকা ──
+  const [usersList, setUsersList] = useState([]);
+  useEffect(() => {
+    api.get("/users").then(d => { const arr = Array.isArray(d) ? d : d?.data || []; setUsersList(arr); }).catch(() => {});
+  }, []);
+
   const [filterType, setFilterType] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -78,7 +84,8 @@ export default function CalendarPage({ students = [] }) {
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ</label>
                   <select value={form.staff} onChange={e => setForm(p => ({ ...p, staff: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="">—</option><option>Mina</option><option>Sadia</option><option>Karim</option>
+                    <option value="">নির্বাচন করুন</option>
+                    {usersList.map(u => <option key={u.id} value={u.name || u.email}>{u.name || u.email}</option>)}
                   </select>
                 </div>
                 <div>
