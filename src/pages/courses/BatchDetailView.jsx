@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search } from "lucide-react";
+import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search, Edit3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -53,12 +53,19 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           console.log("[Batch] Enrolled:", enriched.length, "students loaded with exam data");
         }
 
-        // Class tests load
+        // Class tests load — scores সহ
         if (data && data.tests && data.tests.length > 0) {
-          setBTests(data.tests.map(t => ({
-            id: t.id, batchId: t.batch_id, testName: t.test_name,
-            date: t.date, avgScore: t.avg_score, scores: t.scores || {},
-          })));
+          setBTests(data.tests.map(t => {
+            // class_test_scores array থেকে scores object তৈরি
+            const scoreMap = {};
+            (t.class_test_scores || []).forEach(s => { scoreMap[s.student_id] = s.score; });
+            const vals = Object.values(scoreMap).filter(v => v !== null && v !== undefined);
+            const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+            return {
+              id: t.id, batchId: t.batch_id, testName: t.test_name,
+              date: t.date, totalMarks: t.total_marks || 100, avgScore: avg, scores: scoreMap,
+            };
+          }));
         }
       } catch (err) {
         console.error("Batch detail load error:", err);
@@ -134,12 +141,13 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     }
   };
 
-  // Add class test — supports adding students from other batches
+  // Add / Edit class test — supports adding students from other batches
   const [showAddTest, setShowAddTest] = useState(false);
-  const [testForm, setTestForm] = useState({ testName: "", date: today });
+  const [testForm, setTestForm] = useState({ testName: "", date: today, totalMarks: 100 });
   const [testScores, setTestScores] = useState({});
   const [testBatchFilter, setTestBatchFilter] = useState(batch.id);
   const [testExtraStudents, setTestExtraStudents] = useState([]); // IDs from other batches
+  const [editingTest, setEditingTest] = useState(null); // যে test edit হচ্ছে তার id
 
   // Current batch only (other batches would need separate API calls)
   const allBatchIds = [batch.id];
@@ -158,26 +166,70 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     toast.info("অন্য ব্যাচ থেকে যোগ করা শীঘ্রই আসছে");
   };
 
-  const addTest = async () => {
+  // ক্লাস টেস্ট সংরক্ষণ — নতুন অথবা edit
+  const saveTest = async () => {
     if (!testForm.testName.trim()) { toast.error("টেস্টের নাম দিন"); return; }
+    const tm = parseInt(testForm.totalMarks) || 100;
     const allScored = testStudentList.filter(s => testScores[s.studentId]);
-    const scores = allScored.map(s => parseInt(testScores[s.studentId]) || 0);
-    const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-    const newTest = { id: `CT-${Date.now()}`, batchId: batch.id, testName: testForm.testName, date: testForm.date, avgScore: avg, scores: testScores };
-    setBTests(prev => [...prev, newTest]);
-    setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
-    // DB-তে class_tests table-এ save
+    const scoreVals = allScored.map(s => parseInt(testScores[s.studentId]) || 0);
+    const avg = scoreVals.length ? Math.round(scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length) : 0;
+
     try {
-      const saved = await batchesApi.create ? null : null; // dummy
       const { api: apiHook } = await import("../../hooks/useAPI");
-      const dbTest = await apiHook.post(`/batches/${batch.id}/tests`, { test_name: testForm.testName, date: testForm.date, avg_score: avg, scores: testScores });
-      if (dbTest && dbTest.id) newTest.id = dbTest.id;
-    } catch (err) { console.error("[Class Test Save]", err); toast.error("ক্লাস টেস্ট সার্ভারে সেভ ব্যর্থ"); }
-    setTestForm({ testName: "", date: today });
+
+      if (editingTest) {
+        // ── আপডেট মোড ──
+        const updated = await apiHook.put(`/batches/${batch.id}/tests/${editingTest}`, {
+          test_name: testForm.testName, date: testForm.date, total_marks: tm, scores: testScores,
+        });
+        // local state আপডেট
+        const scoreMap = {};
+        (updated?.class_test_scores || []).forEach(s => { scoreMap[s.student_id] = s.score; });
+        setBTests(prev => prev.map(t => t.id === editingTest ? {
+          ...t, testName: testForm.testName, date: testForm.date, totalMarks: tm,
+          avgScore: avg, scores: Object.keys(scoreMap).length > 0 ? scoreMap : testScores,
+        } : t));
+        setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
+        toast.success("ক্লাস টেস্ট আপডেট হয়েছে");
+      } else {
+        // ── নতুন টেস্ট ──
+        const dbTest = await apiHook.post(`/batches/${batch.id}/tests`, {
+          test_name: testForm.testName, date: testForm.date, total_marks: tm, scores: testScores,
+        });
+        const scoreMap = {};
+        (dbTest?.class_test_scores || []).forEach(s => { scoreMap[s.student_id] = s.score; });
+        const newTest = {
+          id: dbTest?.id || `CT-${Date.now()}`, batchId: batch.id, testName: testForm.testName,
+          date: testForm.date, totalMarks: tm, avgScore: avg,
+          scores: Object.keys(scoreMap).length > 0 ? scoreMap : testScores,
+        };
+        setBTests(prev => [...prev, newTest]);
+        setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
+        toast.success(`ক্লাস টেস্ট যোগ হয়েছে (${allScored.length} জনের রেজাল্ট)`);
+      }
+    } catch (err) {
+      console.error("[Class Test Save]", err);
+      toast.error("ক্লাস টেস্ট সার্ভারে সেভ ব্যর্থ");
+    }
+    // ফর্ম রিসেট
+    setTestForm({ testName: "", date: today, totalMarks: 100 });
     setTestScores({});
     setTestExtraStudents([]);
+    setEditingTest(null);
     setShowAddTest(false);
-    toast.success(`ক্লাস টেস্ট যোগ হয়েছে (${allScored.length} জনের রেজাল্ট)`);
+  };
+
+  // ক্লাস টেস্ট edit শুরু — ফর্ম-এ ডাটা বসাও
+  const startEditTest = (test) => {
+    setTestForm({ testName: test.testName, date: test.date, totalMarks: test.totalMarks || 100 });
+    // scores object থেকে testScores সেট
+    const sMap = {};
+    if (test.scores && typeof test.scores === "object") {
+      Object.entries(test.scores).forEach(([sid, sc]) => { sMap[sid] = String(sc); });
+    }
+    setTestScores(sMap);
+    setEditingTest(test.id);
+    setShowAddTest(true);
   };
 
   // Update exam result
@@ -376,7 +428,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                             <span className="font-semibold" style={{ color: ac }}>{bs.attendance}%</span>
                           </div>
                         </td>
-                        <td className="py-3 px-3"><span className="font-semibold" style={{ color: tc }}>{bs.lastTest ?? "—"}</span>{bs.lastTest && <span style={{ color: t.muted }}>/100</span>}</td>
+                        <td className="py-3 px-3"><span className="font-semibold" style={{ color: tc }}>{bs.lastTest ?? "—"}</span>{bs.lastTest != null && <span style={{ color: t.muted }}>/{bTests.length > 0 ? (bTests[0].totalMarks || 100) : 100}</span>}</td>
                         <td className="py-3 px-3" style={{ color: t.textSecondary }}>{bs.examType || "—"}</td>
                         <td className="py-3 px-3">{bs.jlptLevel ? <Badge color={t.purple} size="xs">{bs.jlptLevel}</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
                         <td className="py-3 px-3 font-mono">{bs.jlptScore ?? "—"}</td>
@@ -443,13 +495,13 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           {showAddTest && (
             <Card delay={0}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold">ক্লাস টেস্ট যোগ করুন</h3>
+                <h3 className="text-sm font-bold">{editingTest ? "ক্লাস টেস্ট সম্পাদনা" : "ক্লাস টেস্ট যোগ করুন"}</h3>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddTest(false)}>বাতিল</Button>
-                  <Button icon={Save} size="xs" onClick={addTest}>সংরক্ষণ</Button>
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowAddTest(false); setEditingTest(null); setTestForm({ testName: "", date: today, totalMarks: 100 }); setTestScores({}); }}>বাতিল</Button>
+                  <Button icon={Save} size="xs" onClick={saveTest}>{editingTest ? "আপডেট" : "সংরক্ষণ"}</Button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টেস্টের নাম <span className="req-star">*</span></label>
                   <input value={testForm.testName} onChange={e => setTestForm(p => ({ ...p, testName: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Weekly Test 1..." />
@@ -458,9 +510,14 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
                   <DateInput value={testForm.date} onChange={v => setTestForm(p => ({ ...p, date: v }))} size="sm" />
                 </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সর্বোচ্চ নম্বর</label>
+                  <input type="number" min="1" max="1000" value={testForm.totalMarks} onChange={e => setTestForm(p => ({ ...p, totalMarks: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="100" />
+                </div>
               </div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>প্রতি স্টুডেন্টের স্কোর (/100)</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>প্রতি স্টুডেন্টের স্কোর (/{parseInt(testForm.totalMarks) || 100})</p>
                 <div className="flex items-center gap-2">
                   <select value="" onChange={e => { if (e.target.value) addExtraBatchStudents(e.target.value); }}
                     className="px-2 py-1 rounded text-[10px] outline-none" style={is}>
@@ -474,7 +531,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   <div key={bs.studentId} className="flex items-center gap-2">
                     <span className="text-xs flex-1 truncate">{bs.name}</span>
                     {bs.fromBatch !== batch.name && <span className="text-[9px] px-1 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>{bs.fromBatch}</span>}
-                    <input type="number" min="0" max="100" value={testScores[bs.studentId] || ""} onChange={e => setTestScores(p => ({ ...p, [bs.studentId]: e.target.value }))}
+                    <input type="number" min="0" max={parseInt(testForm.totalMarks) || 100} value={testScores[bs.studentId] || ""} onChange={e => setTestScores(p => ({ ...p, [bs.studentId]: e.target.value }))}
                       className="w-16 px-2 py-1.5 rounded-lg text-xs text-center outline-none" style={is} placeholder="—" />
                   </div>
                 ))}
@@ -490,7 +547,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                 <BarChart data={bTests}>
                   <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} />
                   <XAxis dataKey="testName" tick={{ fill: t.chartAxisTick, fontSize: 9 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                  <YAxis tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, Math.max(...bTests.map(t => t.totalMarks || 100))]} />
                   <Tooltip contentStyle={{ background: t.tooltipBg, border: `1px solid ${t.tooltipBorder}`, borderRadius: 8, fontSize: 12, color: t.text }} />
                   <Bar dataKey="avgScore" fill={t.cyan} radius={[6,6,0,0]} barSize={32} name="গড় স্কোর" />
                 </BarChart>
@@ -498,15 +555,25 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             </Card>
           )}
           {bTests.map((test, i) => (
-            <Card key={i} delay={100 + i * 40} className="!p-4">
+            <Card key={test.id || i} delay={100 + i * 40} className="!p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl flex items-center justify-center text-sm" style={{ background: `${t.purple}15` }}>📝</div>
-                  <div><p className="text-sm font-semibold">{test.testName}</p><p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(test.date)}</p></div>
+                  <div>
+                    <p className="text-sm font-semibold">{test.testName}</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(test.date)} • সর্বোচ্চ: {test.totalMarks || 100}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold" style={{ color: test.avgScore >= 70 ? t.emerald : t.amber }}>{test.avgScore}</p>
-                  <p className="text-[9px]" style={{ color: t.muted }}>গড় স্কোর /100</p>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-lg font-bold" style={{ color: test.avgScore >= (test.totalMarks || 100) * 0.7 ? t.emerald : t.amber }}>{test.avgScore}</p>
+                    <p className="text-[9px]" style={{ color: t.muted }}>গড় স্কোর /{test.totalMarks || 100}</p>
+                  </div>
+                  <button onClick={() => startEditTest(test)} className="p-2 rounded-lg transition" title="সম্পাদনা"
+                    style={{ color: t.muted }} onMouseEnter={e => { e.currentTarget.style.background = t.hoverBg; e.currentTarget.style.color = t.cyan; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.muted; }}>
+                    <Edit3 size={14} />
+                  </button>
                 </div>
               </div>
             </Card>
