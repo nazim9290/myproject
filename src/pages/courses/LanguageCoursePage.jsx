@@ -304,7 +304,7 @@ export default function LanguageCoursePage({ students }) {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {batches.map((batch, i) => {
+        {[...batches].sort((a, b) => (b.created_at || b.start_date || "").localeCompare(a.created_at || a.start_date || "")).map((batch, i) => {
           // ── ব্যাচের students: students prop থেকে batch name মিলিয়ে ──
           const bStudents = (students || []).filter(s => s.batch === batch.name || s.batch_id === batch.id);
           const enrollCount = batch.enrolledCount || bStudents.length;
