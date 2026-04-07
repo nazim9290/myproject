@@ -8,7 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { EVENT_TYPES } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
 
@@ -216,7 +216,7 @@ export default function CalendarPage({ students = [] }) {
                 </div>
                 <div>
                   <p className="text-xs font-semibold" style={{ color: isToday ? t.cyan : t.text }}>
-                    {isToday ? "আজ" : ""} {date.slice(0, 10)}
+                    {isToday ? "আজ" : ""} {formatDateDisplay(date)}
                   </p>
                   <p className="text-[10px]" style={{ color: t.muted }}>{events.length} টি ইভেন্ট</p>
                 </div>

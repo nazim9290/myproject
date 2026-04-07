@@ -9,7 +9,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { ATT_STATUS } from "../../data/mockData";
 
 const ATT_CYCLE = ["present", "absent", "late"];
@@ -343,7 +343,7 @@ export default function AttendancePage({ students = [], currentUser }) {
       <Card delay={150}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">
-            {tr("attendance.title")} — {selectedDate}
+            {tr("attendance.title")} — {formatDateDisplay(selectedDate)}
             <span className="text-[10px] font-normal ml-2" style={{ color: t.muted }}>
               ({selectedDayLabel}বার) • {displayList.length} জন
             </span>

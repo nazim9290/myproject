@@ -7,6 +7,7 @@ import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { API_URL } from "../../lib/api";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 
 /**
  * StudentPortalPage — স্টুডেন্ট নিজের তথ্য দেখবে ও পূরণ করবে
@@ -441,7 +442,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
                   <tr key={p.id || i} style={{ borderBottom: `1px solid ${t.border}` }}
                     onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <td className="py-2.5 px-3 whitespace-nowrap">{p.date || p.created_at?.slice(0, 10) || "—"}</td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">{formatDateDisplay(p.date || p.created_at)}</td>
                     <td className="py-2.5 px-3">
                       <span className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: `${t.cyan}12`, color: t.cyan }}>
                         {PAYMENT_CAT_BN[p.category] || p.category || "—"}
@@ -556,7 +557,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <td className="py-2.5 px-3 font-medium">{typeLabel}</td>
                       <td className="py-2.5 px-3">{doc.label || "—"}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap">{doc.upload_date || doc.created_at?.slice(0, 10) || "—"}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">{formatDateDisplay(doc.upload_date || doc.created_at)}</td>
                       <td className="py-2.5 px-3">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
                           style={{ background: `${t[st.color]}15`, color: t[st.color] }}>

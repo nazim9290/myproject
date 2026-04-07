@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import PhoneInput from "../../components/ui/PhoneInput";
 import { API_URL } from "../../lib/api";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 
 export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isDark, setIsDark }) {
   const t = useTheme();
@@ -123,7 +124,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                 {{ owner: "মালিক", admin: "অ্যাডমিন", branch_manager: "ব্রাঞ্চ ম্যানেজার", counselor: "কাউন্সেলর", super_admin: "সুপার অ্যাডমিন" }[currentUser.role] || currentUser.role}
               </span>
               <span className="text-[10px]" style={{ color: t.muted }}>
-                যোগদান: {(currentUser.created_at || currentUser.joined || "").slice(0, 10)}
+                যোগদান: {formatDateDisplay(currentUser.created_at || currentUser.joined)}
               </span>
             </div>
           </div>

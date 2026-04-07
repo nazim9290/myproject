@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { DOC_TYPES, DOC_STATUS_CONFIG } from "../../data/mockData";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 
 const STATUS_CYCLE = ["not_submitted", "submitted", "verified", "issue"];
 const CROSS_FIELDS = ["name_en", "father_en", "mother_en", "dob", "permanent_address"];
@@ -151,7 +152,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                       {!docType?.base && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>শর্তসাপেক্ষ</span>}
                     </div>
                     <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
-                      {docType?.name_en}{doc.uploadDate && ` • আপলোড: ${doc.uploadDate}`}
+                      {docType?.name_en}{doc.uploadDate && ` • আপলোড: ${formatDateDisplay(doc.uploadDate)}`}
                     </p>
                     {doc.data && Object.keys(doc.data).length > 0 && (
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">

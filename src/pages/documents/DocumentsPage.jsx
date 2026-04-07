@@ -19,6 +19,7 @@ import Pagination from "../../components/ui/Pagination";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import { api } from "../../hooks/useAPI";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 
 export default function DocumentsPage({ students }) {
   const t = useTheme();
@@ -661,7 +662,7 @@ export default function DocumentsPage({ students }) {
 
                   <p className="text-[10px]" style={{ color: t.muted }}>
                     {comp.filled}/{comp.total} {tr("documents.fieldsFilled")}
-                    {saved && <span> • {tr("documents.lastSaved")}: {saved.updated_at?.slice(0, 10)}</span>}
+                    {saved && <span> • {tr("documents.lastSaved")}: {formatDateDisplay(saved.updated_at)}</span>}
                   </p>
                 </div>
               </Card>

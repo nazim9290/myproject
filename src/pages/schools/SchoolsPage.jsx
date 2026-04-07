@@ -11,7 +11,7 @@ import Pagination from "../../components/ui/Pagination";
 import PhoneInput from "../../components/ui/PhoneInput";
 import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { SUB_STATUS } from "../../data/mockData";
 import SchoolDetailView from "./SchoolDetailView";
 import { api } from "../../hooks/useAPI";
@@ -384,7 +384,7 @@ export default function SchoolsPage({ students }) {
                   </div>
                   {(school.deadline || school.fees) && (
                     <div className="flex gap-3 mb-2 text-[10px]" style={{ color: t.muted }}>
-                      {school.deadline && <span>📅 {school.deadline}</span>}
+                      {school.deadline && <span>📅 {formatDateDisplay(school.deadline)}</span>}
                       {school.fees && <span>💴 ¥{Number(school.fees).toLocaleString()}</span>}
                     </div>
                   )}
@@ -465,7 +465,7 @@ export default function SchoolsPage({ students }) {
                           onMouseEnter={(e) => e.currentTarget.style.background = t.hoverBg} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
                           <td className="py-3 px-4"><p className="font-medium">{sub.student_name || sub.students?.name_en || "—"}</p><p className="text-[9px]" style={{ color: t.muted }}>{sub.student_id}</p></td>
                           <td className="py-3 px-4" style={{ color: t.textSecondary }}>{sub.school_name || sub.schools?.name_en || "—"}</td>
-                          <td className="py-3 px-4 font-mono text-[11px]" style={{ color: t.textSecondary }}>{sub.submission_date ? sub.submission_date.slice(0, 10) : "—"}</td>
+                          <td className="py-3 px-4 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatDateDisplay(sub.submission_date)}</td>
                           <td className="py-3 px-4"><span className="font-mono font-semibold" style={{ color: t.cyan }}>#{sub.submission_no || sub.id?.slice(0,6)}</span></td>
                           <td className="py-3 px-4"><Badge color={st.color} size="xs">{st.icon} {st.label}</Badge></td>
                           <td className="py-3 px-4">{(sub.feedback || []).length > 0 ? <Badge color={t.rose} size="xs">{sub.feedback.length} সমস্যা</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
@@ -517,7 +517,7 @@ export default function SchoolsPage({ students }) {
                         <p className="text-sm font-semibold">{sub.student_name || sub.students?.name_en || "—"}</p>
                         <Badge color={st.color} size="xs">{st.icon} {st.label}</Badge>
                       </div>
-                      <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{sub.school_name || sub.schools?.name_en || "—"} • #{sub.submission_no || ""} • {sub.submission_date ? sub.submission_date.slice(0, 10) : ""}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{sub.school_name || sub.schools?.name_en || "—"} • #{sub.submission_no || ""} • {formatDateDisplay(sub.submission_date)}</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -527,7 +527,7 @@ export default function SchoolsPage({ students }) {
                         <div>
                           <p className="text-xs font-semibold" style={{ color: t.rose }}>{fb.doc}</p>
                           <p className="text-[11px] mt-0.5" style={{ color: t.textSecondary }}>{fb.issue}</p>
-                          <p className="text-[9px] mt-1" style={{ color: t.muted }}>তারিখ: {fb.date ? fb.date.slice(0, 10) : "—"}</p>
+                          <p className="text-[9px] mt-1" style={{ color: t.muted }}>তারিখ: {formatDateDisplay(fb.date)}</p>
                         </div>
                       </div>
                     ))}

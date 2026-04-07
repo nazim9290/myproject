@@ -7,7 +7,7 @@ import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { batches as batchesApi } from "../../lib/api";
 
 const ATT_STATUS = ["P", "A", "L"]; // Present / Absent / Late
@@ -502,7 +502,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl flex items-center justify-center text-sm" style={{ background: `${t.purple}15` }}>📝</div>
-                  <div><p className="text-sm font-semibold">{test.testName}</p><p className="text-[10px]" style={{ color: t.muted }}>{test.date}</p></div>
+                  <div><p className="text-sm font-semibold">{test.testName}</p><p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(test.date)}</p></div>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold" style={{ color: test.avgScore >= 70 ? t.emerald : t.amber }}>{test.avgScore}</p>

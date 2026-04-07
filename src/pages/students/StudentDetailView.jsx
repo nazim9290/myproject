@@ -8,7 +8,7 @@ import Modal from "../../components/ui/Modal";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
-import DateInput from "../../components/ui/DateInput";
+import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { FEE_CATEGORIES, CATEGORY_CONFIG } from "../../data/mockData";
 import { api } from "../../hooks/useAPI";
@@ -184,7 +184,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [checked, setChecked] = useState({});       // { "ENROLLED_en1": true, ... }
   const [noteText, setNoteText] = useState("");
   const [activityLog, setActivityLog] = useState([
-    { time: student.created, text: `Student created — ${student.source || "Walk-in"}`, type: "create" },
+    { time: formatDateDisplay(student.created), text: `Student created — ${student.source || "Walk-in"}`, type: "create" },
   ]);
   // DB থেকে activity log load
   useEffect(() => {
@@ -939,7 +939,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   <ReadOnlyField label={tr("students.f_batch")} value={student.batch} />
                   <ReadOnlyField label={tr("students.f_counselor")} value={student.counselor} />
                   <ReadOnlyField label={tr("students.f_source")} value={student.source} />
-                  <ReadOnlyField label={tr("students.f_enrollDate")} value={student.created} />
+                  <ReadOnlyField label={tr("students.f_enrollDate")} value={formatDateDisplay(student.created)} />
                   <ReadOnlyField label={tr("students.f_type")} value={student.student_type === "own" ? "Own" : student.student_type === "agent" ? "Agent" : "Partner"} />
                 </div>
               </Card>
@@ -997,7 +997,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </div>
               <div className="space-y-2.5">
                 {personalFields.map(f => (
-                  <ReadOnlyField key={f.key} label={f.label} value={student[f.key]} />
+                  <ReadOnlyField key={f.key} label={f.label} value={f.type === "date" ? formatDateDisplay(student[f.key]) : student[f.key]} />
                 ))}
               </div>
             </Card>
@@ -1016,7 +1016,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </div>
               <div className="space-y-2.5">
                 {passportFields.map(f => (
-                  <ReadOnlyField key={f.key} label={f.label} value={student[f.key]} />
+                  <ReadOnlyField key={f.key} label={f.label} value={f.type === "date" ? formatDateDisplay(student[f.key]) : student[f.key]} />
                 ))}
               </div>
             </Card>
@@ -1040,6 +1040,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 {destinationExtraFields.map(f => {
                   let val = student[f.key];
                   if (f.key === "student_type") val = val === "own" ? "Own" : val === "agent" ? "Agent" : "Partner";
+                  if (f.key === "created") val = formatDateDisplay(val);
                   return <ReadOnlyField key={f.key} label={f.label} value={val} />;
                 })}
                 {/* Conditional: Source=Agent/Referral → Agent দেখাও */}
@@ -1240,7 +1241,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                             : e.result === "Fail" ? <span style={{ color: t.rose }}>Fail</span>
                             : e.result || "—"}
                         </td>
-                        <td className="py-2 px-3" style={{ color: t.muted }}>{e.exam_date || "—"}</td>
+                        <td className="py-2 px-3" style={{ color: t.muted }}>{formatDateDisplay(e.exam_date)}</td>
                         <td className="py-2 px-3">
                           <div className="flex items-center gap-2">
                             <button onClick={() => {
@@ -1316,8 +1317,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       {[
                         { label: "পদবী", value: we.position },
                         { label: "ঠিকানা", value: we.address },
-                        { label: "শুরু", value: we.start_date },
-                        { label: "শেষ", value: we.end_date || "চলমান" },
+                        { label: "শুরু", value: formatDateDisplay(we.start_date) },
+                        { label: "শেষ", value: we.end_date ? formatDateDisplay(we.end_date) : "চলমান" },
                       ].map(f => (
                         <div key={f.label} className="flex justify-between">
                           <span style={{ color: t.muted }}>{f.label}</span>
@@ -1682,7 +1683,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                           {p.note && <span style={{ color: t.muted }}>{p.note}</span>}
                         </div>
                         <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: t.muted }}>
-                          <Clock size={9} /> {p.date}
+                          <Clock size={9} /> {formatDateDisplay(p.date)}
                         </p>
                       </div>
                       <button onClick={() => deletePayment(p.id)}
@@ -1730,14 +1731,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               {[
                 { label: "নাম", key: "name" },
                 { label: "সম্পর্ক", key: "relationship" },
-                { label: "জন্ম তারিখ", key: "dob" },
+                { label: "জন্ম তারিখ", key: "dob", isDate: true },
                 { label: "ফোন", key: "phone", isPhone: true },
                 { label: "NID", key: "nid" },
                 { label: "ঠিকানা", key: "address" },
               ].map(f => (
                 <div key={f.key}>
                   <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{f.label}</label>
-                  <p className="text-xs font-medium py-1">{f.isPhone ? formatPhoneDisplay(sponsor[f.key]) : (sponsor[f.key] || "—")}</p>
+                  <p className="text-xs font-medium py-1">{f.isPhone ? formatPhoneDisplay(sponsor[f.key]) : f.isDate ? formatDateDisplay(sponsor[f.key]) : (sponsor[f.key] || "—")}</p>
                 </div>
               ))}
             </div>
@@ -1796,7 +1797,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl group" style={{ background: t.inputBg }}>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold">{b.bank_name} — {b.branch}</p>
-                    <p className="text-[10px]" style={{ color: t.muted }}>A/C: {b.account_no} | ব্যালেন্স: ৳{Number(b.balance || 0).toLocaleString("en-IN")} ({b.balance_date})</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>A/C: {b.account_no} | ব্যালেন্স: ৳{Number(b.balance || 0).toLocaleString("en-IN")} ({formatDateDisplay(b.balance_date)})</p>
                     <p className="text-[10px]" style={{ color: t.muted }}>{b.name_in_statement}</p>
                   </div>
                   <button onClick={() => removeBank(b.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded transition" style={{ color: t.rose }}>
@@ -1835,7 +1836,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>স্বাক্ষরের তারিখ</label>
-                <p className="text-xs font-medium py-1">{sponsor.sign_date || "—"}</p>
+                <p className="text-xs font-medium py-1">{formatDateDisplay(sponsor.sign_date)}</p>
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>ছাত্রের অ্যাকাউন্টে পেমেন্ট</label>

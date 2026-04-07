@@ -11,6 +11,7 @@ import { SYSTEM_FIELDS, FieldPicker } from "../../components/ui/FieldMapper";
 // Templates loaded from backend API only
 
 import { API_URL as API } from "../../lib/api";
+import { formatDateDisplay } from "../../components/ui/DateInput";
 const token = () => localStorage.getItem("agencyos_token");
 
 // সব group-এর সব fields flatten করে একটি flat list — manual mapping dropdown-এ ব্যবহার হয়
@@ -657,7 +658,7 @@ export default function ExcelAutoFillPage({ students }) {
           const isComplete = pct >= 100;
           const name = tmpl.schoolName || tmpl.school_name;
           const file = tmpl.fileName || tmpl.file_name;
-          const date = tmpl.uploadDate || (tmpl.created_at || "").slice(0, 10);
+          const date = formatDateDisplay(tmpl.uploadDate || tmpl.created_at);
 
           return (
             <Card key={tmpl.id} delay={150 + i * 60} className="!p-4">
