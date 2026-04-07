@@ -55,9 +55,11 @@ function NewVisitorForm({ onSave, onCancel }) {
   // API থেকে branches ও agents load (mock data সরানো হয়েছে)
   const [branchesList, setBranchesList] = useState([]);
   const [agentsList, setAgentsList] = useState([]);
+  const [usersList, setUsersList] = useState([]);
   useEffect(() => {
     api.get("/branches").then(d => { if (Array.isArray(d)) setBranchesList(d); }).catch(() => {});
     api.get("/agents").then(d => { if (Array.isArray(d)) setAgentsList(d); }).catch(() => {});
+    api.get("/users").then(d => { const arr = Array.isArray(d) ? d : d?.data || []; setUsersList(arr); }).catch(() => {});
   }, []);
   // ── User-এর branch auto-detect — JWT token থেকে ──
   const userBranch = (() => { try { const t = localStorage.getItem("agencyos_token"); if (!t) return ""; const p = JSON.parse(atob(t.split(".")[1])); return p.branch || ""; } catch { return ""; } })();
@@ -226,7 +228,7 @@ function NewVisitorForm({ onSave, onCancel }) {
         {form.source === "Referral" && <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>রেফারার নাম / ফোন</label>
         <input value={form.referral_info || ""} onChange={e => set("referral_info", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যিনি রেফার করেছেন তার নাম বা ফোন" /></div>}
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কাউন্সেলর</label>
-        <select value={form.counselor} onChange={e => set("counselor", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option>Mina</option><option>Sadia</option><option>Karim</option></select></div>
+        <select value={form.counselor} onChange={e => set("counselor", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}><option value="">নির্বাচন করুন</option>{usersList.map(u => <option key={u.id} value={u.name || u.email}>{u.name || u.email}</option>)}</select></div>
         <div><label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরবর্তী ফলোআপ</label>
         <DateInput value={form.next_follow_up} onChange={v => set("next_follow_up", v)} size="md" /></div>
       </div>
@@ -521,7 +523,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             <input value={ed.address||""} onChange={e=>se("address",e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}/></div>
             {[{k:"visa_type",l:"ভিসার ধরন",opts:["Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Other"]},
               {k:"source",l:"সোর্স",opts:["Walk-in","Facebook","Agent","Referral","Website","YouTube"]},
-              {k:"counselor",l:"কাউন্সেলর",opts:["Mina","Sadia","Karim"]}].map(f=>(
+              {k:"counselor",l:"কাউন্সেলর",opts:usersList.map(u=>u.name||u.email)}].map(f=>(
               <div key={f.k}><label className="text-[10px] uppercase tracking-wider block mb-1" style={{color:t.muted}}>{f.l}</label>
               <select value={ed[f.k]||f.opts[0]} onChange={e=>se(f.k,e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>{f.opts.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
             ))}
