@@ -544,6 +544,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     const fields = getFields(section);
     const formData = {};
     fields.forEach(f => { formData[f.key] = student[f.key] || ""; });
+    // destination section — conditional fields-এর key গুলোও include করো (agent_id, partner_id, counselor)
+    if (section === "destination") {
+      ["agent_id", "partner_id", "counselor", "student_type", "source", "country", "school", "school_id", "batch", "batch_id", "intake", "visa_type", "branch"].forEach(k => {
+        if (formData[k] === undefined) formData[k] = student[k] || "";
+      });
+    }
     setSectionForm(formData);
     setEditSection(section);
   };
