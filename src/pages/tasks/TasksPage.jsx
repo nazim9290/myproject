@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, ClipboardList, Clock, CheckCircle, AlertTriangle, Check, Save, X, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, ClipboardList, Clock, CheckCircle, AlertTriangle, Check, Save, X, Trash2, Search } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -17,6 +17,57 @@ const COLUMNS = [
   { key: "in_progress", label: "চলছে",       icon: Clock,         colorKey: "amber"   },
   { key: "done",        label: "সম্পন্ন",   icon: CheckCircle,   colorKey: "emerald" },
 ];
+
+// সার্চযোগ্য ড্রপডাউন — বড় list থেকে সহজে খুঁজে বের করা
+function SearchableSelect({ label, value, options, onChange, placeholder, is, t }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const ref = useRef(null);
+  const selected = options.find(o => o.value === value);
+  const filtered = q ? options.filter(o => o.label.toLowerCase().includes(q.toLowerCase())).slice(0, 15) : options.slice(0, 15);
+
+  // বাইরে click করলে বন্ধ
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{label}</label>
+      <button type="button" onClick={() => { setOpen(!open); setQ(""); }}
+        className="w-full px-3 py-2 rounded-lg text-sm text-left outline-none truncate" style={is}>
+        {selected ? selected.label : <span style={{ color: t.muted }}>{placeholder}</span>}
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-xl shadow-lg overflow-hidden" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+          <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${t.border}` }}>
+            <Search size={13} style={{ color: t.muted }} />
+            <input autoFocus value={q} onChange={e => setQ(e.target.value)}
+              className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder="খুঁজুন..." />
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            <button type="button" onClick={() => { onChange(""); setOpen(false); }}
+              className="w-full text-left px-3 py-2 text-xs transition" style={{ color: t.muted }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>— নির্বাচন বাতিল —</button>
+            {filtered.map(o => (
+              <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); }}
+                className="w-full text-left px-3 py-2 text-xs transition truncate"
+                style={{ color: value === o.value ? t.cyan : t.text, fontWeight: value === o.value ? 600 : 400 }}
+                onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                {o.label}
+              </button>
+            ))}
+            {filtered.length === 0 && <p className="text-xs text-center py-3" style={{ color: t.muted }}>কিছু পাওয়া যায়নি</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TasksPage({ students = [], schools: schoolsProp }) {
   const t = useTheme();
@@ -39,7 +90,8 @@ export default function TasksPage({ students = [], schools: schoolsProp }) {
   const [schools, setSchools] = useState([]);
   useEffect(() => {
     api.get("/schools").then(data => {
-      if (Array.isArray(data)) setSchools(data);
+      const arr = Array.isArray(data) ? data : data?.data || [];
+      setSchools(arr);
     }).catch(() => {});
   }, []);
 
@@ -146,20 +198,12 @@ export default function TasksPage({ students = [], schools: schoolsProp }) {
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষ তারিখ</label>
             <DateInput value={newTask.dueDate} onChange={v => setNewTask(p => ({ ...p, dueDate: v }))} size="md" />
           </div>
-          <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট লিংক (ঐচ্ছিক)</label>
-            <select value={newTask.studentId} onChange={e => setNewTask(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-              <option value="">— কোনো স্টুডেন্ট না —</option>
-              {students.map(s => <option key={s.id} value={s.id}>{s.name_en} ({s.id})</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুল লিংক (ঐচ্ছিক)</label>
-            <select value={newTask.schoolId} onChange={e => setNewTask(p => ({ ...p, schoolId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-              <option value="">— কোনো স্কুল না —</option>
-              {schools.map(s => <option key={s.id} value={s.id}>{s.name_en}</option>)}
-            </select>
-          </div>
+          <SearchableSelect label="স্টুডেন্ট লিংক (ঐচ্ছিক)" value={newTask.studentId} placeholder="স্টুডেন্ট খুঁজুন..."
+            options={students.map(s => ({ value: s.id, label: `${s.name_en} (${s.id})` }))}
+            onChange={v => setNewTask(p => ({ ...p, studentId: v }))} is={is} t={t} />
+          <SearchableSelect label="স্কুল লিংক (ঐচ্ছিক)" value={newTask.schoolId} placeholder="স্কুল খুঁজুন..."
+            options={schools.map(s => ({ value: s.id, label: s.name_en }))}
+            onChange={v => setNewTask(p => ({ ...p, schoolId: v }))} is={is} t={t} />
         </div>
         <div className="flex gap-2 justify-end mt-4">
           <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>{tr("common.cancel")}</Button>
