@@ -144,6 +144,33 @@
     "created": "Created", "exported": "Exported"
   },
 
+  "tasks": {
+    "title": "Tasks", "subtitle": "Task & Assignment Management",
+    "addNew": "New Task", "todo": "To Do", "inProgress": "In Progress", "done": "Done",
+    "overdue": "Overdue", "description": "Task Description",
+    "descriptionPlaceholder": "What needs to be done...",
+    "assignee": "Assignee", "priority": "Priority", "dueDate": "Due Date",
+    "high": "High", "medium": "Medium", "low": "Low",
+    "noTasks": "No tasks", "studentLink": "Student Link (optional)",
+    "studentSearch": "Search student...", "schoolLink": "School Link (optional)",
+    "schoolSearch": "Search school...", "select": "Select", "auto": "Auto"
+  },
+
+  "calendar": {
+    "title": "Calendar", "subtitle": "Appointments, Interviews & Schedule",
+    "addEvent": "New Event", "editEvent": "Edit Event",
+    "eventTitle": "Title", "eventTitlePlaceholder": "Event title...",
+    "eventType": "Type", "student": "Student", "noStudent": "— None —",
+    "staff": "Staff", "date": "Date", "time": "Time",
+    "note": "Note", "notePlaceholder": "Optional description...",
+    "thisWeek": "This Week", "totalEvents": "Total Events",
+    "deadlines": "Deadlines", "upcomingInterviews": "Upcoming Interviews",
+    "daysWithEvents": "days with events", "today": "Today",
+    "eventsCount": "events", "select": "Select", "edit": "Edit",
+    "sun": "Sun", "mon": "Mon", "tue": "Tue", "wed": "Wed",
+    "thu": "Thu", "fri": "Fri", "sat": "Sat"
+  },
+
   "classTest": {
     "title": "Class Test", "addNew": "New Test", "testName": "Test Name",
     "totalMarks": "Total Marks", "avgScore": "Average Score", "editTest": "Edit Test",

@@ -145,6 +145,33 @@
     "created": "Create হয়েছে", "exported": "Export হয়েছে"
   },
 
+  "tasks": {
+    "title": "Tasks", "subtitle": "Task ও Assignment Management",
+    "addNew": "নতুন Task", "todo": "করতে হবে", "inProgress": "চলছে", "done": "সম্পন্ন",
+    "overdue": "সময় পার", "description": "Task-এর বিবরণ",
+    "descriptionPlaceholder": "কী করতে হবে...",
+    "assignee": "Assignee", "priority": "Priority", "dueDate": "শেষ Date",
+    "high": "জরুরি", "medium": "মাঝারি", "low": "সাধারণ",
+    "noTasks": "কোনো task নেই", "studentLink": "Student Link (optional)",
+    "studentSearch": "Student খুঁজুন...", "schoolLink": "School Link (optional)",
+    "schoolSearch": "School খুঁজুন...", "select": "Select করুন", "auto": "Auto"
+  },
+
+  "calendar": {
+    "title": "Calendar", "subtitle": "Appointment, Interview ও Schedule",
+    "addEvent": "নতুন Event", "editEvent": "Event Edit",
+    "eventTitle": "Title", "eventTitlePlaceholder": "Event title...",
+    "eventType": "Type", "student": "Student", "noStudent": "— কেউ নেই —",
+    "staff": "Staff", "date": "Date", "time": "সময়",
+    "note": "Note", "notePlaceholder": "Optional বিবরণ...",
+    "thisWeek": "এই সপ্তাহে", "totalEvents": "Total Events",
+    "deadlines": "Deadlines", "upcomingInterviews": "Upcoming Interviews",
+    "daysWithEvents": "দিনে events", "today": "আজ",
+    "eventsCount": "টি event", "select": "Select করুন", "edit": "Edit",
+    "sun": "রবি", "mon": "সোম", "tue": "মঙ্গল", "wed": "বুধ",
+    "thu": "বৃহ", "fri": "শুক্র", "sat": "শনি"
+  },
+
   "classTest": {
     "title": "Class Test", "addNew": "নতুন Test", "testName": "Test-এর নাম",
     "totalMarks": "Total Marks", "avgScore": "Average Score", "editTest": "Test Edit",
