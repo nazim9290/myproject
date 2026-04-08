@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Layers, DollarSign, Building, AlertTriangle, Download, Search, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -16,18 +17,21 @@ import { api } from "../../hooks/useAPI";
 import { formatDateDisplay } from "../../components/ui/DateInput";
 
 const INVENTORY_CATEGORIES = ["Electronics", "Furniture", "Stationery", "Books", "Kitchen", "Cleaning", "Vehicle", "Others"];
-const CONDITION_OPTIONS = [
-  { value: "new", label: "নতুন", icon: "🟢" },
-  { value: "good", label: "ভালো", icon: "🔵" },
-  { value: "fair", label: "মোটামুটি", icon: "🟡" },
-  { value: "repair", label: "মেরামত দরকার", icon: "🟠" },
-  { value: "damaged", label: "ক্ষতিগ্রস্ত", icon: "🔴" },
-  { value: "disposed", label: "বাতিল", icon: "⚫" },
+const CONDITION_KEYS = [
+  { value: "new", trKey: "inventory.condNew", icon: "🟢" },
+  { value: "good", trKey: "inventory.condGood", icon: "🔵" },
+  { value: "fair", trKey: "inventory.condFair", icon: "🟡" },
+  { value: "repair", trKey: "inventory.condRepair", icon: "🟠" },
+  { value: "damaged", trKey: "inventory.condDamaged", icon: "🔴" },
+  { value: "disposed", trKey: "inventory.condDisposed", icon: "⚫" },
 ];
 
 export default function InventoryPage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
+  // CONDITION_OPTIONS — tr() দিয়ে translated labels
+  const CONDITION_OPTIONS = CONDITION_KEYS.map(c => ({ ...c, label: tr(c.trKey) }));
   const [items, setItems] = useState([]);
 
   // ── Backend API থেকে inventory items লোড — DB fields → frontend fields ম্যাপ ──
@@ -195,8 +199,8 @@ export default function InventoryPage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">ইনভেন্টরি</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>সম্পদ, মালামাল ও ব্যবহার্য সামগ্রী ব্যবস্থাপনা</p>
+          <h2 className="text-xl font-bold">{tr("inventory.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("inventory.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" icon={Download} size="xs" onClick={() => {
@@ -204,19 +208,19 @@ export default function InventoryPage() {
             const blob = new Blob([String.fromCharCode(0xFEFF) + csv], { type: "text/csv;charset=utf-8" });
             const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url;
             a.download = `Inventory_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
-          }}>Export</Button>
-          <Button icon={Plus} onClick={() => { setAddForm(emptyForm); setEditingId(null); setShowAddForm(!showAddForm); }}>আইটেম যোগ করুন</Button>
+          }}>{tr("common.export")}</Button>
+          <Button icon={Plus} onClick={() => { setAddForm(emptyForm); setEditingId(null); setShowAddForm(!showAddForm); }}>{tr("inventory.addItem")}</Button>
         </div>
       </div>
 
       {/* ── KPI কার্ডস ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "মোট আইটেম", value: totalItems, color: t.cyan, icon: Layers },
-          { label: "মোট মূল্য", value: `৳${(totalValue / 1000).toFixed(0)}K`, color: t.purple, icon: DollarSign },
-          { label: "ব্রাঞ্চ", value: branches.length, color: t.amber, icon: Building },
-          { label: "মেরামত দরকার", value: needsRepair, color: needsRepair > 0 ? t.rose : t.emerald, icon: AlertTriangle },
-          { label: "কম স্টক", value: lowStock, color: lowStock > 0 ? t.rose : t.emerald, icon: AlertTriangle },
+          { label: tr("inventory.totalItems"), value: totalItems, color: t.cyan, icon: Layers },
+          { label: tr("inventory.totalValue"), value: `৳${(totalValue / 1000).toFixed(0)}K`, color: t.purple, icon: DollarSign },
+          { label: tr("inventory.branches"), value: branches.length, color: t.amber, icon: Building },
+          { label: tr("inventory.needsRepair"), value: needsRepair, color: needsRepair > 0 ? t.rose : t.emerald, icon: AlertTriangle },
+          { label: tr("inventory.lowStock"), value: lowStock, color: lowStock > 0 ? t.rose : t.emerald, icon: AlertTriangle },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 40}>
             <div className="flex items-center justify-between">
@@ -235,9 +239,9 @@ export default function InventoryPage() {
       {/* ── ট্যাব সুইচার ── */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "assets", label: "স্থায়ী সম্পদ", count: items.length },
-          { key: "consumables", label: "ব্যবহার্য সামগ্রী", count: consumables.length },
-          { key: "log", label: "মুভমেন্ট লগ", count: movementLogs.length },
+          { key: "assets", label: tr("inventory.fixedAssets"), count: items.length },
+          { key: "consumables", label: tr("inventory.consumables"), count: consumables.length },
+          { key: "log", label: tr("inventory.movementLog"), count: movementLogs.length },
         ].map((tab) => (
           <button key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1); setSearch(""); }}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
@@ -254,17 +258,17 @@ export default function InventoryPage() {
           <Search size={14} style={{ color: t.muted }} />
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-            placeholder="নাম, ক্যাটাগরি, ব্রাঞ্চ দিয়ে খুঁজুন..." />
+            placeholder={tr("inventory.searchPlaceholder")} />
         </div>
         {/* Assets ট্যাবে অতিরিক্ত ফিল্টার */}
         {activeTab === "assets" && (
           <>
             <select value={filterBranch} onChange={(e) => { setFilterBranch(e.target.value); setPage(1); }} className="px-3 py-2 rounded-xl text-xs outline-none" style={inputStyle}>
-              <option value="All">সব ব্রাঞ্চ</option>
+              <option value="All">{tr("inventory.allBranches")}</option>
               {branches.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
             <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }} className="px-3 py-2 rounded-xl text-xs outline-none" style={inputStyle}>
-              <option value="All">সব ক্যাটাগরি</option>
+              <option value="All">{tr("inventory.allCategories")}</option>
               {INVENTORY_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </>
@@ -275,19 +279,19 @@ export default function InventoryPage() {
       {activeTab === "assets" && (
         <>
           {/* ── সম্পদ যোগ/সম্পাদনা Modal ── */}
-          <Modal isOpen={!!showAddForm} onClose={() => { setShowAddForm(false); setEditingId(null); }} title={editingId ? "আইটেম সম্পাদনা" : "নতুন আইটেম যোগ করুন"} size="lg">
+          <Modal isOpen={!!showAddForm} onClose={() => { setShowAddForm(false); setEditingId(null); }} title={editingId ? tr("inventory.editItem") : tr("inventory.addNewItem")} size="lg">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               {[
-                { key: "name", label: "সম্পদের নাম *", placeholder: "e.g. Desktop Computer" },
-                { key: "brand", label: "ব্র্যান্ড", placeholder: "e.g. Dell" },
-                { key: "model", label: "মডেল", placeholder: "e.g. OptiPlex 3090" },
-                { key: "quantity", label: "পরিমাণ", placeholder: "1", type: "number" },
-                { key: "price", label: "ক্রয়মূল্য (৳/unit)", placeholder: "45000", type: "number" },
-                { key: "vendor", label: "বিক্রেতা", placeholder: "e.g. Star Tech" },
-                { key: "location", label: "ঠিক কোথায়", placeholder: "e.g. ক্লাসরুম ১" },
-                { key: "assignedTo", label: "ব্যবহারকারী", placeholder: "e.g. Shared" },
-                { key: "purchaseDate", label: "ক্রয় তারিখ", type: "date" },
-                { key: "warranty", label: "ওয়ারেন্টি শেষ", type: "date" },
+                { key: "name", label: tr("inventory.assetName"), placeholder: "e.g. Desktop Computer" },
+                { key: "brand", label: tr("inventory.brand"), placeholder: "e.g. Dell" },
+                { key: "model", label: tr("inventory.model"), placeholder: "e.g. OptiPlex 3090" },
+                { key: "quantity", label: tr("inventory.quantity"), placeholder: "1", type: "number" },
+                { key: "price", label: tr("inventory.purchasePrice"), placeholder: "45000", type: "number" },
+                { key: "vendor", label: tr("inventory.vendorLabel"), placeholder: "e.g. Star Tech" },
+                { key: "location", label: tr("inventory.location"), placeholder: "e.g. Classroom 1" },
+                { key: "assignedTo", label: tr("inventory.assignedTo"), placeholder: "e.g. Shared" },
+                { key: "purchaseDate", label: tr("inventory.purchaseDate"), type: "date" },
+                { key: "warranty", label: tr("inventory.warranty"), type: "date" },
               ].map((f) => (
                 <div key={f.key}>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
@@ -295,27 +299,27 @@ export default function InventoryPage() {
                 </div>
               ))}
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("inventory.category")}</label>
                 <select value={addForm.category} onChange={(e) => setAddForm({ ...addForm, category: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
                   {INVENTORY_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("inventory.branch")}</label>
                 <select value={addForm.branch} onChange={(e) => setAddForm({ ...addForm, branch: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
                   <option>ঢাকা (HQ)</option><option>চট্টগ্রাম</option><option>সিলেট</option>
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>অবস্থা</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("inventory.conditionLabel")}</label>
                 <select value={addForm.condition} onChange={(e) => setAddForm({ ...addForm, condition: e.target.value })} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle}>
                   {CONDITION_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
                 </select>
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <Button variant="ghost" size="xs" onClick={() => { setShowAddForm(false); setEditingId(null); }}>বাতিল</Button>
-              <Button size="xs" onClick={handleAdd}>সংরক্ষণ করুন</Button>
+              <Button variant="ghost" size="xs" onClick={() => { setShowAddForm(false); setEditingId(null); }}>{tr("inventory.cancel")}</Button>
+              <Button size="xs" onClick={handleAdd}>{tr("inventory.save")}</Button>
             </div>
           </Modal>
 
@@ -325,14 +329,14 @@ export default function InventoryPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    <SortHeader label="নাম" sortKey="name" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
-                    <SortHeader label="ক্যাটাগরি" sortKey="category" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
-                    <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
-                    <SortHeader label="পরিমাণ" sortKey="quantity" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
-                    <SortHeader label="মূল্য" sortKey="price" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
-                    <SortHeader label="অবস্থা" sortKey="condition" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
-                    <SortHeader label="তারিখ" sortKey="purchaseDate" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
-                    <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+                    <SortHeader label={tr("inventory.name")} sortKey="name" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <SortHeader label={tr("inventory.category")} sortKey="category" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <SortHeader label={tr("inventory.branch")} sortKey="branch" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <SortHeader label={tr("inventory.quantity")} sortKey="quantity" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <SortHeader label={tr("inventory.price")} sortKey="price" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <SortHeader label={tr("inventory.condition")} sortKey="condition" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <SortHeader label={tr("inventory.date")} sortKey="purchaseDate" currentKey={assetSort.sortKey} currentDir={assetSort.sortDir} onSort={assetSort.toggleSort} />
+                    <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("inventory.action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -355,7 +359,7 @@ export default function InventoryPage() {
                         <td className="py-3 px-4" style={{ color: t.textSecondary }}>{item.branch}</td>
                         <td className="py-3 px-4">
                           <span className="font-bold" style={{ color: t.cyan }}>{item.quantity}</span>
-                          <span className="text-[10px] ml-1" style={{ color: t.muted }}>পিস</span>
+                          <span className="text-[10px] ml-1" style={{ color: t.muted }}>{tr("inventory.pieces")}</span>
                         </td>
                         <td className="py-3 px-4">
                           <p className="font-bold font-mono" style={{ color: t.purple }}>৳{totalCost.toLocaleString("en-IN")}</p>
@@ -365,7 +369,7 @@ export default function InventoryPage() {
                           <button onClick={() => cycleCondition(item.id)}
                             className="px-2 py-1 rounded-lg text-[10px] font-medium transition"
                             style={{ background: `${cond.color}15`, color: cond.color, border: `1px solid ${cond.color}30` }}
-                            title="ক্লিক করে অবস্থা পরিবর্তন">
+                            title={tr("inventory.changeCondition")}>
                             {cond.icon} {cond.label}
                           </button>
                         </td>
@@ -373,11 +377,11 @@ export default function InventoryPage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1 justify-end">
                             <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
-                              onMouseEnter={e => e.currentTarget.style.color = t.cyan} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
+                              onMouseEnter={e => e.currentTarget.style.color = t.cyan} onMouseLeave={e => e.currentTarget.style.color = t.muted} title={tr("inventory.editTooltip")}>
                               <Edit3 size={14} />
                             </button>
                             <button onClick={() => setDeleteTarget(item)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
-                              onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                              onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted} title={tr("inventory.deleteTooltip")}>
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -387,7 +391,7 @@ export default function InventoryPage() {
                   })}
                 </tbody>
               </table>
-              {sortedAssets.length === 0 && <EmptyState icon={Layers} title="কোনো আইটেম পাওয়া যায়নি" subtitle="ফিল্টার বা সার্চ পরিবর্তন করুন" />}
+              {sortedAssets.length === 0 && <EmptyState icon={Layers} title={tr("inventory.noItemsFound")} subtitle={tr("inventory.noItemsSubtitle")} />}
             </div>
             {sortedAssets.length > 0 && (
               <Pagination total={sortedAssets.length} page={assetSafePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
@@ -396,7 +400,7 @@ export default function InventoryPage() {
 
           {/* ── ব্রাঞ্চ ভিত্তিক সারাংশ ── */}
           <Card delay={300}>
-            <h3 className="text-sm font-semibold mb-3">ব্রাঞ্চ ভিত্তিক সারাংশ</h3>
+            <h3 className="text-sm font-semibold mb-3">{tr("inventory.branchSummary")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {branches.map((branch) => {
                 const bItems = items.filter((i) => i.branch === branch);
@@ -407,9 +411,9 @@ export default function InventoryPage() {
                   <div key={branch} className="p-3 rounded-xl" style={{ background: t.inputBg }}>
                     <p className="text-sm font-bold">{branch}</p>
                     <div className="grid grid-cols-3 gap-2 mt-2">
-                      <div><p className="text-[9px]" style={{ color: t.muted }}>আইটেম</p><p className="text-sm font-bold" style={{ color: t.cyan }}>{bCount}</p></div>
-                      <div><p className="text-[9px]" style={{ color: t.muted }}>মূল্য</p><p className="text-sm font-bold" style={{ color: t.purple }}>৳{(bValue / 1000).toFixed(0)}K</p></div>
-                      <div><p className="text-[9px]" style={{ color: t.muted }}>সমস্যা</p><p className="text-sm font-bold" style={{ color: bRepair > 0 ? t.rose : t.emerald }}>{bRepair}</p></div>
+                      <div><p className="text-[9px]" style={{ color: t.muted }}>{tr("inventory.items")}</p><p className="text-sm font-bold" style={{ color: t.cyan }}>{bCount}</p></div>
+                      <div><p className="text-[9px]" style={{ color: t.muted }}>{tr("inventory.value")}</p><p className="text-sm font-bold" style={{ color: t.purple }}>৳{(bValue / 1000).toFixed(0)}K</p></div>
+                      <div><p className="text-[9px]" style={{ color: t.muted }}>{tr("inventory.issues")}</p><p className="text-sm font-bold" style={{ color: bRepair > 0 ? t.rose : t.emerald }}>{bRepair}</p></div>
                     </div>
                   </div>
                 );
@@ -426,13 +430,13 @@ export default function InventoryPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  <SortHeader label="নাম" sortKey="name" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="ক্যাটাগরি" sortKey="category" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="পরিমাণ" sortKey="quantity" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="একক মূল্য" sortKey="price" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <SortHeader label="ক্রয় তারিখ" sortKey="purchase_date" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
-                  <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>স্টক অবস্থা</th>
+                  <SortHeader label={tr("inventory.name")} sortKey="name" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label={tr("inventory.category")} sortKey="category" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label={tr("inventory.branch")} sortKey="branch" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label={tr("inventory.quantity")} sortKey="quantity" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label={tr("inventory.unitPrice")} sortKey="price" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <SortHeader label={tr("inventory.purchaseDate")} sortKey="purchase_date" currentKey={consumableSort.sortKey} currentDir={consumableSort.sortDir} onSort={consumableSort.toggleSort} />
+                  <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("inventory.stockStatus")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,7 +449,7 @@ export default function InventoryPage() {
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <td className="py-3 px-4">
                         <p className="font-semibold">{item.name}</p>
-                        {item.vendor && <p className="text-[10px]" style={{ color: t.muted }}>বিক্রেতা: {item.vendor}</p>}
+                        {item.vendor && <p className="text-[10px]" style={{ color: t.muted }}>{tr("inventory.vendor")}: {item.vendor}</p>}
                       </td>
                       <td className="py-3 px-4">
                         <Badge color={isLow ? t.rose : t.emerald} size="xs">{item.category}</Badge>
@@ -453,7 +457,7 @@ export default function InventoryPage() {
                       <td className="py-3 px-4" style={{ color: t.textSecondary }}>{item.branch || "—"}</td>
                       <td className="py-3 px-4">
                         <span className="font-bold" style={{ color: isLow ? t.rose : t.emerald }}>{item.quantity}</span>
-                        <span className="text-[10px] ml-1" style={{ color: t.muted }}>পিস</span>
+                        <span className="text-[10px] ml-1" style={{ color: t.muted }}>{tr("inventory.pieces")}</span>
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-mono" style={{ color: t.purple }}>৳{(item.price || 0).toLocaleString("en-IN")}</span>
@@ -464,7 +468,7 @@ export default function InventoryPage() {
                           <div className="h-1.5 w-16 rounded-full overflow-hidden" style={{ background: `${t.muted}20` }}>
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, ((item.quantity || 0) / 10) * 100)}%`, background: isLow ? t.rose : t.emerald }} />
                           </div>
-                          {isLow && <Badge color={t.rose} size="xs">কম স্টক!</Badge>}
+                          {isLow && <Badge color={t.rose} size="xs">{tr("inventory.lowStockAlert")}</Badge>}
                         </div>
                       </td>
                     </tr>
@@ -472,7 +476,7 @@ export default function InventoryPage() {
                 })}
               </tbody>
             </table>
-            {sortedConsumables.length === 0 && <EmptyState icon={Layers} title="কোনো সামগ্রী পাওয়া যায়নি" subtitle="সার্চ পরিবর্তন করুন" />}
+            {sortedConsumables.length === 0 && <EmptyState icon={Layers} title={tr("inventory.noConsumablesFound")} subtitle={tr("inventory.noConsumablesSubtitle")} />}
           </div>
           {sortedConsumables.length > 0 && (
             <Pagination total={sortedConsumables.length} page={consSafePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
@@ -487,12 +491,12 @@ export default function InventoryPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  <SortHeader label="তারিখ" sortKey="date" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
-                  <SortHeader label="ধরন" sortKey="action" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
-                  <SortHeader label="আইটেম" sortKey="item" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
-                  <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
-                  <SortHeader label="কর্মী" sortKey="by" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
-                  <SortHeader label="খরচ" sortKey="cost" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
+                  <SortHeader label={tr("inventory.logDate")} sortKey="date" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
+                  <SortHeader label={tr("inventory.logType")} sortKey="action" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
+                  <SortHeader label={tr("inventory.logItem")} sortKey="item" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
+                  <SortHeader label={tr("inventory.logBranch")} sortKey="branch" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
+                  <SortHeader label={tr("inventory.logStaff")} sortKey="by" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
+                  <SortHeader label={tr("inventory.logCost")} sortKey="cost" currentKey={logSort.sortKey} currentDir={logSort.sortDir} onSort={logSort.toggleSort} />
                 </tr>
               </thead>
               <tbody>
@@ -520,7 +524,7 @@ export default function InventoryPage() {
                 })}
               </tbody>
             </table>
-            {sortedLogs.length === 0 && <EmptyState icon={Layers} title="কোনো লগ পাওয়া যায়নি" subtitle="সার্চ পরিবর্তন করুন" />}
+            {sortedLogs.length === 0 && <EmptyState icon={Layers} title={tr("inventory.noLogsFound")} subtitle={tr("inventory.noLogsSubtitle")} />}
           </div>
           {sortedLogs.length > 0 && (
             <Pagination total={sortedLogs.length} page={logSafePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />

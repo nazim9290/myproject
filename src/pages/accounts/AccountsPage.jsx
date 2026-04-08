@@ -61,7 +61,7 @@ function AddEntryForm({ type, onSave, onCancel }) {
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.categoryLabel")}</label>
           <select value={form.category} onChange={e => set("category", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
             {cats.map(c => <option key={c} value={c}>{CATEGORY_CONFIG[c]?.icon} {CATEGORY_CONFIG[c]?.label || c}</option>)}
           </select>
@@ -70,51 +70,51 @@ function AddEntryForm({ type, onSave, onCancel }) {
         {type === "income" ? (
           <>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্টের নাম <span className="req-star">*</span></label>
-              <input value={form.studentName} onChange={e => set("studentName", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.studentName ? t.rose : t.inputBorder }} placeholder="স্টুডেন্টের নাম..." />
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.studentName")} <span className="req-star">*</span></label>
+              <input value={form.studentName} onChange={e => set("studentName", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.studentName ? t.rose : t.inputBorder }} placeholder={`${tr("accounts.studentName")}...`} />
               {err.studentName && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.studentName}</p>}
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট ID</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.studentId")}</label>
               <input value={form.studentId} onChange={e => set("studentId", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="S-2026-001" />
             </div>
           </>
         ) : (
           <div className="md:col-span-2">
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ <span className="req-star">*</span></label>
-            <input value={form.description} onChange={e => set("description", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.description ? t.rose : t.inputBorder }} placeholder="খরচের বিবরণ..." />
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.descriptionLabel")} <span className="req-star">*</span></label>
+            <input value={form.description} onChange={e => set("description", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.description ? t.rose : t.inputBorder }} placeholder={`${tr("accounts.descriptionLabel")}...`} />
             {err.description && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.description}</p>}
           </div>
         )}
 
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিমাণ (৳) <span className="req-star">*</span></label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.amountLabel")} <span className="req-star">*</span></label>
           <input type="number" value={form.amount} onChange={e => set("amount", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.amount ? t.rose : t.inputBorder }} placeholder="45000" />
           {err.amount && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.amount}</p>}
           {type === "income" && INCOME_CATS.includes(form.category) && form.amount && (
-            <p className="text-[10px] mt-1" style={{ color: t.purple }}>ট্যাক্স (15%): ৳{Math.round(+form.amount * 0.15).toLocaleString()}</p>
+            <p className="text-[10px] mt-1" style={{ color: t.purple }}>{tr("accounts.taxPercent")}: ৳{Math.round(+form.amount * 0.15).toLocaleString()}</p>
           )}
         </div>
 
         {type === "income" ? (
           <>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কিস্তি সংখ্যা</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.installmentCount")}</label>
               <select value={form.installments} onChange={e => set("installments", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="1">১ কিস্তি (একসাথে)</option>
-                <option value="2">২ কিস্তি</option>
-                <option value="3">৩ কিস্তি</option>
-                <option value="4">৪ কিস্তি</option>
+                <option value="1">{tr("accounts.installmentOne")}</option>
+                <option value="2">{tr("accounts.installmentTwo")}</option>
+                <option value="3">{tr("accounts.installmentThree")}</option>
+                <option value="4">{tr("accounts.installmentFour")}</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরিশোধের তারিখ</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.dueDate")}</label>
               <DateInput value={form.dueDate} onChange={v => set("dueDate", v)} size="md" />
             </div>
           </>
         ) : (
           <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("accounts.dateLabel")}</label>
             <DateInput value={form.date} onChange={v => set("date", v)} size="md" />
           </div>
         )}
@@ -244,7 +244,7 @@ export default function AccountsPage({ students = [] }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold">{tr("accounts.title")}</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>আয়, ব্যয়, ট্যাক্স ও লাভ-ক্ষতি</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("accounts.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <div className="relative">
@@ -252,9 +252,9 @@ export default function AccountsPage({ students = [] }) {
             {showExportMenu && (
               <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[170px]" style={{ background: t.cardSolid, border: `1px solid ${t.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
                 {[
-                  { label: "💰 আয় CSV", fn: doExportIncome },
-                  { label: "💸 ব্যয় CSV", fn: doExportExpense },
-                  { label: "📊 লাভ-ক্ষতি রিপোর্ট", fn: doExportPL },
+                  { label: `💰 ${tr("accounts.incomeCSV")}`, fn: doExportIncome },
+                  { label: `💸 ${tr("accounts.expenseCSV")}`, fn: doExportExpense },
+                  { label: `📊 ${tr("accounts.plReport")}`, fn: doExportPL },
                 ].map(({ label, fn }) => (
                   <button key={label} onClick={() => { fn(); setShowExportMenu(false); }} className="w-full px-4 py-2.5 text-xs text-left transition"
                     onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -265,16 +265,16 @@ export default function AccountsPage({ students = [] }) {
             )}
           </div>
           <div className="relative">
-            <Button icon={Plus} onClick={() => setShowAddMenu(v => !v)}>নতুন এন্ট্রি ▾</Button>
+            <Button icon={Plus} onClick={() => setShowAddMenu(v => !v)}>{tr("accounts.newEntry")} ▾</Button>
             {showAddMenu && (
               <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden min-w-[180px]" style={{ background: t.cardSolid, border: `1px solid ${t.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
                 <button onClick={() => { setShowAddForm("income"); setActiveTab("income"); setShowAddMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-xs text-left transition"
                   onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <span style={{ color: t.emerald }}>💰</span> আয় এন্ট্রি
+                  <span style={{ color: t.emerald }}>💰</span> {tr("accounts.incomeEntry")}
                 </button>
                 <button onClick={() => { setShowAddForm("expense"); setActiveTab("expense"); setShowAddMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-xs text-left transition"
                   onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <span style={{ color: t.rose }}>💸</span> ব্যয় এন্ট্রি
+                  <span style={{ color: t.rose }}>💸</span> {tr("accounts.expenseEntry")}
                 </button>
               </div>
             )}
@@ -286,9 +286,9 @@ export default function AccountsPage({ students = [] }) {
         {[
           { label: `${tr("common.total")} ${tr("accounts.income")}`, value: fmt(totalIncome), color: t.emerald, icon: TrendingUp },
           { label: `${tr("common.total")} ${tr("accounts.expense")}`, value: fmt(totalExpense), color: t.rose, icon: TrendingDown },
-          { label: "লাভ", value: fmt(profit), color: profit > 0 ? t.emerald : t.rose, icon: DollarSign },
-          { label: "বকেয়া", value: fmt(totalDue), color: t.amber, icon: Clock },
-          { label: "ট্যাক্স (15%)", value: fmt(totalTax), color: t.purple, icon: FileText },
+          { label: tr("accounts.profit"), value: fmt(profit), color: profit > 0 ? t.emerald : t.rose, icon: DollarSign },
+          { label: tr("accounts.dues"), value: fmt(totalDue), color: t.amber, icon: Clock },
+          { label: tr("accounts.tax"), value: fmt(totalTax), color: t.purple, icon: FileText },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -306,11 +306,11 @@ export default function AccountsPage({ students = [] }) {
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "overview", label: "📊 সারসংক্ষেপ" },
-          { key: "student_fees", label: "🎓 স্টুডেন্ট ফি" },
-          { key: "income", label: "💰 অন্যান্য আয়" },
-          { key: "expense", label: "💸 ব্যয়" },
-          { key: "dues", label: "⏰ বকেয়া" },
+          { key: "overview", label: `📊 ${tr("accounts.overview")}` },
+          { key: "student_fees", label: `🎓 ${tr("accounts.studentFees")}` },
+          { key: "income", label: `💰 ${tr("accounts.otherIncome")}` },
+          { key: "expense", label: `💸 ${tr("accounts.expenseTab")}` },
+          { key: "dues", label: `⏰ ${tr("accounts.duesTab")}` },
         ].map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200"
@@ -358,7 +358,7 @@ export default function AccountsPage({ students = [] }) {
       {activeTab === "overview" && (
         <div className="grid grid-cols-12 gap-5">
           <Card className="col-span-12 lg:col-span-8" delay={200}>
-            <h3 className="text-sm font-semibold mb-4">মাসিক লাভ-ক্ষতি</h3>
+            <h3 className="text-sm font-semibold mb-4">{tr("accounts.monthlyPL")}</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={(() => {
                 // API data থেকে monthly P&L generate
@@ -371,16 +371,16 @@ export default function AccountsPage({ students = [] }) {
                 <XAxis dataKey="month" tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 100000).toFixed(0)}L`} />
                 <Tooltip contentStyle={{ background: t.tooltipBg, border: `1px solid ${t.tooltipBorder}`, borderRadius: 8, fontSize: 12, color: t.text }} formatter={(v) => [fmt(v)]} />
-                <Bar dataKey="income" fill={t.emerald} radius={[4, 4, 0, 0]} barSize={20} name="আয়" />
-                <Bar dataKey="expense" fill={t.rose} radius={[4, 4, 0, 0]} barSize={20} name="ব্যয়" />
+                <Bar dataKey="income" fill={t.emerald} radius={[4, 4, 0, 0]} barSize={20} name={tr("accounts.chartIncome")} />
+                <Bar dataKey="expense" fill={t.rose} radius={[4, 4, 0, 0]} barSize={20} name={tr("accounts.chartExpense")} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
           <Card className="col-span-12 lg:col-span-4" delay={250}>
-            <h3 className="text-sm font-semibold mb-4">আয়ের খাত (স্টুডেন্ট ফি)</h3>
+            <h3 className="text-sm font-semibold mb-4">{tr("accounts.incomeSectorStudentFee")}</h3>
             <div className="space-y-2.5">
               {Object.entries(catBreakdown).length === 0 ? (
-                <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো পেমেন্ট রেকর্ড নেই</p>
+                <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("accounts.noPaymentRecord")}</p>
               ) : Object.entries(catBreakdown).sort((a, b) => b[1] - a[1]).map(([cat, amount]) => {
                 const conf = CATEGORY_CONFIG[cat] || { label: cat, color: "#94a3b8", icon: "💰" };
                 const pct = Math.round((amount / Math.max(studentCollected, 1)) * 100);
@@ -405,7 +405,7 @@ export default function AccountsPage({ students = [] }) {
         <div className="space-y-5">
           {/* Category breakdown */}
           <Card delay={80}>
-            <h3 className="text-sm font-semibold mb-4">খাত অনুযায়ী আয় (স্টুডেন্ট ফি)</h3>
+            <h3 className="text-sm font-semibold mb-4">{tr("accounts.categoryWiseIncome")}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
               {FEE_CATEGORIES.map(cat => {
                 const collected = catBreakdown[cat.id] || 0;
@@ -421,7 +421,7 @@ export default function AccountsPage({ students = [] }) {
                       <span className="text-[11px] font-semibold flex-1">{cat.label}</span>
                     </div>
                     <p className="text-base font-bold" style={{ color: cat.color }}>৳{collected.toLocaleString()}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>মোট: ৳{totalCharged.toLocaleString()}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{tr("accounts.totalLabel")}: ৳{totalCharged.toLocaleString()}</p>
                     <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: t.border }}>
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: cat.color }} />
                     </div>
@@ -433,7 +433,7 @@ export default function AccountsPage({ students = [] }) {
 
           {/* Per-student summary */}
           <Card delay={100}>
-            <h3 className="text-sm font-semibold mb-3">স্টুডেন্ট ওয়াইজ সারসংক্ষেপ</h3>
+            <h3 className="text-sm font-semibold mb-3">{tr("accounts.studentWiseSummary")}</h3>
             {/* সার্চ বার */}
             <div className="flex flex-wrap gap-3 items-center mb-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
@@ -441,7 +441,7 @@ export default function AccountsPage({ students = [] }) {
                 <Search size={14} style={{ color: t.muted }} />
                 <input value={feeSummarySearch} onChange={e => { setFeeSummarySearch(e.target.value); setFeeSummaryPage(1); }}
                   className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                  placeholder="স্টুডেন্টের নাম খুঁজুন..." />
+                  placeholder={tr("accounts.searchStudentPlaceholder")} />
               </div>
             </div>
             {(() => {
@@ -457,12 +457,12 @@ export default function AccountsPage({ students = [] }) {
                     <table className="w-full text-xs">
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                          <SortHeader label="স্টুডেন্ট" sortKey="name" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
-                          <SortHeader label="ব্রাঞ্চ" sortKey="branch" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
-                          <SortHeader label="মোট নির্ধারিত" sortKey="totalDue" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
-                          <SortHeader label="কালেক্ট হয়েছে" sortKey="totalCollected" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
-                          <SortHeader label="বাকি" sortKey="balance" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
-                          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অগ্রগতি</th>
+                          <SortHeader label={tr("accounts.student")} sortKey="name" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label={tr("accounts.branch")} sortKey="branch" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label={tr("accounts.totalAssigned")} sortKey="totalDue" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label={tr("accounts.collected")} sortKey="totalCollected" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <SortHeader label={tr("accounts.remaining")} sortKey="balance" currentKey={feeSummarySort.sortKey} currentDir={feeSummarySort.sortDir} onSort={feeSummarySort.toggleSort} />
+                          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("accounts.progress")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -503,7 +503,7 @@ export default function AccountsPage({ students = [] }) {
 
           {/* Payment transaction log */}
           <Card delay={120}>
-            <h3 className="text-sm font-semibold mb-3">পেমেন্ট লেজার (সর্বশেষ)</h3>
+            <h3 className="text-sm font-semibold mb-3">{tr("accounts.paymentLedger")}</h3>
             {/* সার্চ বার */}
             <div className="flex flex-wrap gap-3 items-center mb-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]"
@@ -511,7 +511,7 @@ export default function AccountsPage({ students = [] }) {
                 <Search size={14} style={{ color: t.muted }} />
                 <input value={ledgerSearch} onChange={e => { setLedgerSearch(e.target.value); setLedgerPage(1); }}
                   className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                  placeholder="স্টুডেন্টের নাম খুঁজুন..." />
+                  placeholder={tr("accounts.searchStudentPlaceholder")} />
               </div>
             </div>
             {(() => {
@@ -527,12 +527,12 @@ export default function AccountsPage({ students = [] }) {
                     <table className="w-full text-xs">
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                          <SortHeader label="তারিখ" sortKey="date" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
-                          <SortHeader label="স্টুডেন্ট" sortKey="studentName" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
-                          <SortHeader label="খাত" sortKey="category" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
-                          <SortHeader label="পদ্ধতি" sortKey="method" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
-                          <SortHeader label="পরিমাণ" sortKey="amount" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
-                          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>নোট</th>
+                          <SortHeader label={tr("accounts.date")} sortKey="date" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label={tr("accounts.student")} sortKey="studentName" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label={tr("accounts.sector")} sortKey="category" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label={tr("accounts.method")} sortKey="method" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <SortHeader label={tr("accounts.amount")} sortKey="amount" currentKey={ledgerSort.sortKey} currentDir={ledgerSort.sortDir} onSort={ledgerSort.toggleSort} />
+                          <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("accounts.note")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -555,7 +555,7 @@ export default function AccountsPage({ students = [] }) {
                           );
                         })}
                         {sortedLedger.length === 0 && (
-                          <tr><td colSpan="6" className="py-6 text-center text-xs" style={{ color: t.muted }}>কোনো পেমেন্ট রেকর্ড নেই</td></tr>
+                          <tr><td colSpan="6" className="py-6 text-center text-xs" style={{ color: t.muted }}>{tr("accounts.noPaymentRecord")}</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -578,7 +578,7 @@ export default function AccountsPage({ students = [] }) {
               <Search size={14} style={{ color: t.muted }} />
               <input value={incomeSearch} onChange={e => { setIncomeSearch(e.target.value); setIncomePage(1); }}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                placeholder="স্টুডেন্টের নাম খুঁজুন..." />
+                placeholder={tr("accounts.searchStudentPlaceholder")} />
             </div>
           </div>
           {(() => {
@@ -594,14 +594,14 @@ export default function AccountsPage({ students = [] }) {
                   <table className="w-full text-xs">
                     <thead>
                       <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                        <SortHeader label="স্টুডেন্ট" sortKey="studentName" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
-                        <SortHeader label="ক্যাটাগরি" sortKey="category" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
-                        <SortHeader label="মোট" sortKey="amount" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
-                        <SortHeader label="ট্যাক্স" sortKey="tax" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
-                        <SortHeader label="পরিশোধিত" sortKey="paidAmount" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
-                        <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>বাকি</th>
-                        <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>কিস্তি</th>
-                        <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label={tr("accounts.student")} sortKey="studentName" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label={tr("accounts.category")} sortKey="category" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label={tr("accounts.total")} sortKey="amount" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label={tr("accounts.taxLabel")} sortKey="tax" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <SortHeader label={tr("accounts.paidAmount")} sortKey="paidAmount" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
+                        <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("accounts.remainingDue")}</th>
+                        <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("accounts.installment")}</th>
+                        <SortHeader label={tr("accounts.statusLabel")} sortKey="status" currentKey={incomeSort.sortKey} currentDir={incomeSort.sortDir} onSort={incomeSort.toggleSort} />
                       </tr>
                     </thead>
                     <tbody>
@@ -628,7 +628,7 @@ export default function AccountsPage({ students = [] }) {
                             <td className="py-3 px-3" style={{ color: t.textSecondary }}>{paidInst}/{inst}</td>
                             <td className="py-3 px-3">
                               <Badge color={inc.status === "paid" || inc.status === "collected" ? t.emerald : inc.status === "partial" ? t.amber : t.rose} size="xs">
-                                {inc.status === "paid" || inc.status === "collected" ? "পরিশোধিত" : inc.status === "partial" ? "আংশিক" : "অপরিশোধিত"}
+                                {inc.status === "paid" || inc.status === "collected" ? tr("accounts.paid") : inc.status === "partial" ? tr("accounts.partial") : tr("accounts.unpaid")}
                               </Badge>
                             </td>
                           </tr>
@@ -654,7 +654,7 @@ export default function AccountsPage({ students = [] }) {
               <Search size={14} style={{ color: t.muted }} />
               <input value={expenseSearch} onChange={e => { setExpenseSearch(e.target.value); setExpensePage(1); }}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                placeholder="বিবরণ দিয়ে খুঁজুন..." />
+                placeholder={tr("accounts.searchDescPlaceholder")} />
             </div>
           </div>
           {(() => {
@@ -671,10 +671,10 @@ export default function AccountsPage({ students = [] }) {
                   <table className="w-full text-xs">
                     <thead>
                       <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                        <SortHeader label="তারিখ" sortKey="date" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
-                        <SortHeader label="ক্যাটাগরি" sortKey="category" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
-                        <SortHeader label="বিবরণ" sortKey="description" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
-                        <SortHeader label="পরিমাণ" sortKey="amount" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                        <SortHeader label={tr("accounts.date")} sortKey="date" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                        <SortHeader label={tr("accounts.category")} sortKey="category" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                        <SortHeader label={tr("accounts.description")} sortKey="description" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
+                        <SortHeader label={tr("accounts.amount")} sortKey="amount" currentKey={expenseSort.sortKey} currentDir={expenseSort.sortDir} onSort={expenseSort.toggleSort} />
                       </tr>
                     </thead>
                     <tbody>
@@ -691,7 +691,7 @@ export default function AccountsPage({ students = [] }) {
                         );
                       })}
                       <tr style={{ borderTop: `2px solid ${t.border}` }}>
-                        <td colSpan="3" className="py-3 px-3 text-right font-semibold">মোট খরচ:</td>
+                        <td colSpan="3" className="py-3 px-3 text-right font-semibold">{tr("accounts.totalExpense")}:</td>
                         <td className="py-3 px-3 font-bold font-mono" style={{ color: t.rose }}>৳{filteredTotal.toLocaleString()}</td>
                       </tr>
                     </tbody>
@@ -708,8 +708,8 @@ export default function AccountsPage({ students = [] }) {
       {activeTab === "dues" && (
         <Card delay={100}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">বকেয়া পেমেন্ট</h3>
-            <Badge color={t.rose}>{incomeData.filter((i) => i.status !== "paid").length} জন</Badge>
+            <h3 className="text-sm font-semibold">{tr("accounts.duePayments")}</h3>
+            <Badge color={t.rose}>{incomeData.filter((i) => i.status !== "paid").length} {tr("accounts.persons")}</Badge>
           </div>
           <div className="space-y-3">
             {incomeData.filter((i) => i.status !== "paid").sort((a, b) => (a.dueDate || "z").localeCompare(b.dueDate || "z")).map((inc) => {
@@ -726,18 +726,18 @@ export default function AccountsPage({ students = [] }) {
                       {isOverdue && <Badge color={t.rose} size="xs">Overdue!</Badge>}
                     </div>
                     <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
-                      কিস্তি: {inc.paid}/{inc.installments} পরিশোধিত
+                      {tr("accounts.installmentPaid")}: {inc.paid}/{inc.installments} {tr("accounts.installmentPaidSuffix")}
                       {inc.dueDate && ` • Due: ${inc.dueDate}`}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold font-mono" style={{ color: t.amber }}>৳{due.toLocaleString()}</p>
-                    <p className="text-[9px]" style={{ color: t.muted }}>বাকি</p>
+                    <p className="text-[9px]" style={{ color: t.muted }}>{tr("accounts.remainingLabel")}</p>
                   </div>
                   {canCollect ? (
                     <button onClick={() => collectPayment(inc.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-medium transition shrink-0 flex items-center gap-1"
                       style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                      <Check size={11} /> কালেক্ট
+                      <Check size={11} /> {tr("accounts.collect")}
                     </button>
                   ) : (
                     <span className="px-3 py-1.5 rounded-lg text-[10px] font-medium shrink-0" style={{ background: `${t.muted}10`, color: t.muted }}>Done</span>
@@ -748,7 +748,7 @@ export default function AccountsPage({ students = [] }) {
             {incomeData.filter((i) => i.status !== "paid").length === 0 && (
               <div className="text-center py-8" style={{ color: t.muted }}>
                 <p className="text-2xl mb-2">✅</p>
-                <p className="text-sm">সমস্ত পেমেন্ট সম্পন্ন!</p>
+                <p className="text-sm">{tr("accounts.allPaymentsComplete")}</p>
               </div>
             )}
           </div>
