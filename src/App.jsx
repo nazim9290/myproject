@@ -400,7 +400,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
   // Suspense wrapper — lazy loaded page-এর জন্য
   const renderPage = () => { switch (activePage) {
     case "dashboard":
-      return <DashboardPage />;
+      return <DashboardPage userRole={currentUser.role} userName={currentUser.name} />;
     case "visitors":
       return <VisitorsPage visitors={visitors} setVisitors={setVisitors} onConvertToStudent={onConvertToStudent} reloadData={reloadData} />;
     case "students":
@@ -450,7 +450,7 @@ function PageRenderer({ activePage, students, setStudents, visitors, setVisitors
     case "profile":
       return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} onLogout={onLogout} isDark={isDark} setIsDark={setIsDark} />;
     default:
-      return <DashboardPage />;
+      return <DashboardPage userRole={currentUser.role} userName={currentUser.name} />;
   }};
   return <Suspense fallback={<PageSkeleton type="table" />}>{renderPage()}</Suspense>;
 }

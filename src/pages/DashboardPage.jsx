@@ -13,7 +13,9 @@ import { dashboard } from "../lib/api";
  * DashboardPage — মূল ড্যাশবোর্ড
  * API থেকে real-time stats, pipeline, revenue, alerts দেখায়
  */
-export default function DashboardPage() {
+export default function DashboardPage({ userRole = "admin", userName = "" }) {
+  // role check — admin/owner সব দেখবে, বাকিরা সীমিত
+  const isAdmin = ["admin", "owner", "super_admin"].includes(userRole);
   const t = useTheme();
   const toast = useToast();
   const { t: tr, lang } = useLanguage();
@@ -120,67 +122,74 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            icon: Users, label: tr("dashboard.totalStudents"), value: data.students.total,
-            sub: `Active: ${data.students.active}`, color: t.cyan,
-          },
-          {
-            icon: DollarSign, label: tr("dashboard.monthlyIncome"), value: fmtShort(data.revenue.thisMonth),
-            sub: `${tr("dashboard.dues")}: ${fmtShort(data.dues)}`, color: t.emerald,
-          },
-          {
-            icon: FileText, label: tr("dashboard.docProcessing"), value: data.docInProgress,
-            sub: "ডকুমেন্ট পর্যায়ে আছে", color: t.amber,
-          },
-          {
-            icon: Plane, label: tr("dashboard.visaArrived"), value: data.visaGranted,
-            sub: "ভিসা পেয়েছে বা পৌঁছেছে", color: t.purple,
-          },
-        ].map((kpi, i) => (
-          <Card key={i} delay={i * 60}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
-                <p className="mt-1.5 text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
-                <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{kpi.sub}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: `${kpi.color}15` }}>
-                <kpi.icon size={18} style={{ color: kpi.color }} />
-              </div>
+      {/* ── Counselor/Staff welcome — non-admin ── */}
+      {!isAdmin && (
+        <Card delay={100}>
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl flex items-center justify-center text-xl font-bold" style={{ background: `${t.cyan}15`, color: t.cyan }}>
+              {(userName || "U").charAt(0)}
             </div>
-          </Card>
-        ))}
-      </div>
+            <div>
+              <p className="text-sm font-bold">স্বাগতম, {userName || "User"}!</p>
+              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>ভূমিকা: {userRole} • আজকের কাজ ও আপডেট দেখুন</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* ── KPI Cards — Admin/Owner only ── */}
+      {isAdmin && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { icon: Users, label: tr("dashboard.totalStudents"), value: data.students.total, sub: `Active: ${data.students.active}`, color: t.cyan },
+            { icon: DollarSign, label: tr("dashboard.monthlyIncome"), value: fmtShort(data.revenue.thisMonth), sub: `${tr("dashboard.dues")}: ${fmtShort(data.dues)}`, color: t.emerald },
+            { icon: FileText, label: tr("dashboard.docProcessing"), value: data.docInProgress, sub: "ডকুমেন্ট পর্যায়ে আছে", color: t.amber },
+            { icon: Plane, label: tr("dashboard.visaArrived"), value: data.visaGranted, sub: "ভিসা পেয়েছে বা পৌঁছেছে", color: t.purple },
+          ].map((kpi, i) => (
+            <Card key={i} delay={i * 60}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
+                  <p className="mt-1.5 text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{kpi.sub}</p>
+                </div>
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: `${kpi.color}15` }}>
+                  <kpi.icon size={18} style={{ color: kpi.color }} />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-5">
-        {/* ── Monthly Revenue Chart ── */}
-        <Card className="col-span-12 lg:col-span-8" delay={250}>
-          <h3 className="text-sm font-semibold mb-4">{tr("dashboard.monthlyRevenue")}</h3>
-          {data.revenue.monthly.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={data.revenue.monthly}>
-                <defs>
-                  <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={t.cyan} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={t.cyan} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} />
-                <XAxis dataKey="month" tick={{ fill: t.chartAxisTick, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: t.chartAxisTick, fontSize: 11 }} axisLine={false} tickLine={false}
-                  tickFormatter={(v) => v >= 100000 ? `${(v / 100000).toFixed(0)}L` : `${(v / 1000).toFixed(0)}K`} />
-                <Tooltip contentStyle={{ background: t.tooltipBg, border: `1px solid ${t.tooltipBorder}`, borderRadius: 8, fontSize: 12, color: t.text }}
-                  formatter={(v) => [fmt(v), "আয়"]} />
-                <Area type="monotone" dataKey="amount" stroke={t.cyan} strokeWidth={2} fill="url(#rg)" dot={{ fill: t.cyan, r: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-xs text-center py-10" style={{ color: t.muted }}>এখনো কোনো পেমেন্ট রেকর্ড নেই</p>
-          )}
-        </Card>
+        {/* ── Monthly Revenue Chart — Admin only ── */}
+        {isAdmin && (
+          <Card className="col-span-12 lg:col-span-8" delay={250}>
+            <h3 className="text-sm font-semibold mb-4">{tr("dashboard.monthlyRevenue")}</h3>
+            {data.revenue.monthly.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={data.revenue.monthly}>
+                  <defs>
+                    <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={t.cyan} stopOpacity={0.25} />
+                      <stop offset="100%" stopColor={t.cyan} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} />
+                  <XAxis dataKey="month" tick={{ fill: t.chartAxisTick, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: t.chartAxisTick, fontSize: 11 }} axisLine={false} tickLine={false}
+                    tickFormatter={(v) => v >= 100000 ? `${(v / 100000).toFixed(0)}L` : `${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip contentStyle={{ background: t.tooltipBg, border: `1px solid ${t.tooltipBorder}`, borderRadius: 8, fontSize: 12, color: t.text }}
+                    formatter={(v) => [fmt(v), "আয়"]} />
+                  <Area type="monotone" dataKey="amount" stroke={t.cyan} strokeWidth={2} fill="url(#rg)" dot={{ fill: t.cyan, r: 3 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-xs text-center py-10" style={{ color: t.muted }}>এখনো কোনো পেমেন্ট রেকর্ড নেই</p>
+            )}
+          </Card>
+        )}
 
         {/* ── Alerts ── */}
         <Card className="col-span-12 lg:col-span-4" delay={300}>
@@ -210,8 +219,8 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* ── Pipeline Funnel ── */}
-        <Card className="col-span-12 lg:col-span-6" delay={350}>
+        {/* ── Pipeline Funnel — Admin only ── */}
+        {isAdmin && <Card className="col-span-12 lg:col-span-6" delay={350}>
           <h3 className="text-sm font-semibold mb-3">{tr("dashboard.pipelineFunnel")}</h3>
           {pipelineChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -227,8 +236,10 @@ export default function DashboardPage() {
           )}
         </Card>
 
+        }
+
         {/* ── Recent Visitors ── */}
-        <Card className="col-span-12 lg:col-span-6" delay={400}>
+        <Card className={`col-span-12 ${isAdmin ? "lg:col-span-6" : ""}`} delay={400}>
           <h3 className="text-sm font-semibold mb-3">{tr("dashboard.recentVisitors")}</h3>
           <div className="space-y-2">
             {(data.recentVisitors || []).length > 0 ? data.recentVisitors.map((v) => (
@@ -277,28 +288,30 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* ── Quick Stats Row ── */}
-        <Card className="col-span-12 lg:col-span-4" delay={500}>
-          <div className="text-center py-3">
-            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("common.total")} {tr("nav.visitors")}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: t.cyan }}>{data.visitors.total}</p>
-            <p className="text-[10px]" style={{ color: t.muted }}>{tr("common.thisMonth")}: {data.visitors.thisMonth}</p>
-          </div>
-        </Card>
-        <Card className="col-span-12 lg:col-span-4" delay={550}>
-          <div className="text-center py-3">
-            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("common.thisMonth")} {tr("accounts.expense")}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: t.rose }}>{fmtShort(data.expenses.thisMonth)}</p>
-            <p className="text-[10px]" style={{ color: t.muted }}>নিট: {fmtShort(data.revenue.thisMonth - data.expenses.thisMonth)}</p>
-          </div>
-        </Card>
-        <Card className="col-span-12 lg:col-span-4" delay={600}>
-          <div className="text-center py-3">
-            <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("dashboard.dues")}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: t.amber }}>{fmtShort(data.dues)}</p>
-            <p className="text-[10px]" style={{ color: t.muted }}>pending + partial</p>
-          </div>
-        </Card>
+        {/* ── Quick Stats Row — Admin only ── */}
+        {isAdmin && (<>
+          <Card className="col-span-12 lg:col-span-4" delay={500}>
+            <div className="text-center py-3">
+              <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("common.total")} {tr("nav.visitors")}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: t.cyan }}>{data.visitors.total}</p>
+              <p className="text-[10px]" style={{ color: t.muted }}>{tr("common.thisMonth")}: {data.visitors.thisMonth}</p>
+            </div>
+          </Card>
+          <Card className="col-span-12 lg:col-span-4" delay={550}>
+            <div className="text-center py-3">
+              <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("common.thisMonth")} {tr("accounts.expense")}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: t.rose }}>{fmtShort(data.expenses.thisMonth)}</p>
+              <p className="text-[10px]" style={{ color: t.muted }}>নিট: {fmtShort(data.revenue.thisMonth - data.expenses.thisMonth)}</p>
+            </div>
+          </Card>
+          <Card className="col-span-12 lg:col-span-4" delay={600}>
+            <div className="text-center py-3">
+              <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("dashboard.dues")}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: t.amber }}>{fmtShort(data.dues)}</p>
+              <p className="text-[10px]" style={{ color: t.muted }}>pending + partial</p>
+            </div>
+          </Card>
+        </>)}
       </div>
     </div>
   );
