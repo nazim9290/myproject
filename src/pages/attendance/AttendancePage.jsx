@@ -240,22 +240,20 @@ export default function AttendancePage({ students = [], currentUser }) {
           </div>
 
           {/* তারিখ নেভিগেশন — আগের/পরের ক্লাস দিন */}
-          <div className="flex-1 min-w-[250px]">
+          <div className="min-w-[200px]">
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.date")}</label>
-            <div className="flex items-center gap-1">
-              <button onClick={goPrev} className="p-2 rounded-lg transition shrink-0"
-                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}
+            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: `1px solid ${t.inputBorder}` }}>
+              <button onClick={goPrev} className="px-2 py-2 transition shrink-0"
+                style={{ background: t.inputBg }}
                 onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                onMouseLeave={e => e.currentTarget.style.background = t.inputBg}
-                title="আগের ক্লাসের দিন">
+                onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
                 <ChevronLeft size={14} style={{ color: t.text }} />
               </button>
-              <DateInput value={selectedDate} onChange={v => setSelectedDate(v)} size="md" className="flex-1" />
-              <button onClick={goNext} className="p-2 rounded-lg transition shrink-0"
-                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}
+              <DateInput value={selectedDate} onChange={v => setSelectedDate(v)} size="md" className="flex-1" style={{ border: "none", borderRadius: 0 }} />
+              <button onClick={goNext} className="px-2 py-2 transition shrink-0"
+                style={{ background: t.inputBg }}
                 onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                onMouseLeave={e => e.currentTarget.style.background = t.inputBg}
-                title="পরের ক্লাসের দিন">
+                onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
                 <ChevronRight size={14} style={{ color: t.text }} />
               </button>
             </div>
