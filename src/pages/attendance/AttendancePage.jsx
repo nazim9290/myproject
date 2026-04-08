@@ -37,12 +37,17 @@ const getDayNum = (dateStr) => new Date(dateStr + "T00:00:00").getDay();
 // ── পরবর্তী/পূর্ববর্তী ক্লাসের দিন খুঁজে বের করা ──
 function findNextClassDay(dateStr, classDayNums, direction = 1) {
   if (classDayNums.length === 0) return dateStr;
-  const d = new Date(dateStr + "T00:00:00");
-  // সর্বোচ্চ ৭ দিন সামনে/পেছনে — এক সপ্তাহের মধ্যে অবশ্যই পাবে
+  // UTC date parse — timezone shift এড়ানো
+  const parts = dateStr.split("-").map(Number);
+  const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
   for (let i = 1; i <= 7; i++) {
-    d.setDate(d.getDate() + direction);
-    if (classDayNums.includes(d.getDay())) {
-      return d.toISOString().slice(0, 10);
+    d.setUTCDate(d.getUTCDate() + direction);
+    if (classDayNums.includes(d.getUTCDay())) {
+      // UTC date → YYYY-MM-DD string (timezone-safe)
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
     }
   }
   return dateStr;
