@@ -21,8 +21,8 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
   const initials = (info.name || "U").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const avatarRef = useRef(null);
   const [avatarUrl, setAvatarUrl] = useState(currentUser.avatar_url || "");
-  // currentUser update হলে avatar sync
-  useEffect(() => { if (currentUser.avatar_url) setAvatarUrl(currentUser.avatar_url); }, [currentUser.avatar_url]);
+  // currentUser update হলে avatar sync — null/empty হলে clear করো
+  useEffect(() => { setAvatarUrl(currentUser.avatar_url || ""); }, [currentUser.avatar_url, currentUser.id]);
 
   // ── প্রোফাইল ছবি আপলোড ──
   const handleAvatarUpload = async (e) => {
