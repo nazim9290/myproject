@@ -278,7 +278,7 @@ export default function UserRolePage() {
               <Search size={14} style={{ color: t.muted }} />
               <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                placeholder="নাম, ইমেইল, Branch বা Role দিয়ে খুঁজুন..." />
+                placeholder="নাম, ইমেইল, Branch বা Role দিয়ে খুঁজুন..." autoComplete="off" />
             </div>
           </Card>
 
@@ -362,7 +362,8 @@ export default function UserRolePage() {
                             <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
                               <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
                                 placeholder="নতুন পাসওয়ার্ড (৮+ অক্ষর)" className="flex-1 px-2 py-1 rounded text-xs outline-none"
-                                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                                autoComplete="new-password" />
                               <button onClick={resetPassword} className="px-2 py-1 rounded text-xs font-medium"
                                 style={{ background: t.amber, color: "#000" }}>রিসেট</button>
                               <button onClick={() => setResetPasswordId(null)} className="text-xs" style={{ color: t.muted }}>✕</button>
