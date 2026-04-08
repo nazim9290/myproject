@@ -1007,6 +1007,136 @@ Super Admin-এর default template পরিবর্তন করতে পা
       },
     ],
   },
+  {
+    id: "class-test",
+    icon: Award,
+    title: "ক্লাস টেস্ট",
+    subtitle: "ব্যাচ-ভিত্তিক পরীক্ষা, নম্বর ও সম্পাদনা",
+    color: "#a78bfa",
+    topics: [
+      {
+        q: "ক্লাস টেস্ট কীভাবে যোগ করবো?",
+        a: `Language Course → ব্যাচে ক্লিক → ক্লাস টেস্ট ট্যাব → "নতুন টেস্ট" বাটন:
+
+১. টেস্টের নাম দিন (যেমন: Weekly Test 1)
+২. তারিখ সিলেক্ট করুন
+৩. সর্বোচ্চ নম্বর সেট করুন (default ১০০, পরিবর্তন করা যায়)
+৪. প্রতি স্টুডেন্টের নম্বর দিন
+৫. সংরক্ষণ করুন`,
+      },
+      {
+        q: "টেস্ট সম্পাদনা (edit) কীভাবে করবো?",
+        a: `প্রতিটি টেস্টের পাশে ✏️ (edit) আইকন আছে:
+
+• ক্লিক করলে ফর্মে আগের ডাটা pre-fill হবে
+• নাম, তারিখ, সর্বোচ্চ নম্বর পরিবর্তন করতে পারবেন
+• স্টুডেন্টদের নম্বর আপডেট করতে পারবেন
+• "আপডেট করুন" বাটনে ক্লিক করলে DB-তে সেভ হবে
+
+টেস্ট কার্ডে ক্লিক করলে expand হয়ে প্রতি student-এর নম্বর ও progress bar দেখায়।`,
+      },
+    ],
+  },
+  {
+    id: "cross-validation",
+    icon: CheckCircle,
+    title: "Cross-Validation",
+    subtitle: "Student Profile vs Document ডাটা তুলনা",
+    color: "#f97316",
+    topics: [
+      {
+        q: "Cross-Validation কী?",
+        a: `Student Profile-এ যে তথ্য দেওয়া আছে (নাম, জন্মতারিখ, ঠিকানা ইত্যাদি) সেগুলো ডকুমেন্টে দেওয়া তথ্যের সাথে মিলছে কিনা — সেটা যাচাই করে।
+
+Documents → Student সিলেক্ট → "চেক করুন" বাটন:
+• সবুজ badge = সব মিলেছে ✓
+• লাল badge = অমিল আছে (কতটি)
+• প্রতিটি অমিল দেখায়: Profile-এর মান vs Document-এর মান`,
+      },
+    ],
+  },
+  {
+    id: "branch-access",
+    icon: Lock,
+    title: "ব্রাঞ্চ অ্যাক্সেস কন্ট্রোল",
+    subtitle: "HQ ব্রাঞ্চ, ব্রাঞ্চ-ভিত্তিক ডাটা ফিল্টার",
+    color: "#ef4444",
+    topics: [
+      {
+        q: "ব্রাঞ্চ অ্যাক্সেস কীভাবে কাজ করে?",
+        a: `• Admin / Owner — সব ব্রাঞ্চের ডাটা দেখতে পারে
+• HQ (হেড অফিস) ব্রাঞ্চের staff — সব ব্রাঞ্চের ডাটা দেখতে পারে
+• অন্য ব্রাঞ্চের staff — শুধু নিজের ব্রাঞ্চের student, visitor, document দেখবে
+
+HQ ব্রাঞ্চ সেট করতে: Settings → Branches → ব্রাঞ্চ এডিট → "HQ" চেকবক্স টিক করুন`,
+      },
+      {
+        q: "Dashboard কি সবার জন্য একই?",
+        a: `না! Role-based dashboard:
+
+• Admin/Owner: পূর্ণ dashboard — Revenue chart, Pipeline, Dues, Expenses সব দেখায়
+• Counselor/Staff: সীমিত dashboard — আজকের overview, alerts, visitors, tasks দেখায়
+  (Revenue, Pipeline Funnel, Monthly Income, Expense — এগুলো দেখায় না)`,
+      },
+    ],
+  },
+  {
+    id: "immigration-school",
+    icon: Globe,
+    title: "স্কুল ইমিগ্রেশন ব্যুরো",
+    subtitle: "স্কুল কোন ইমিগ্রেশনের অন্তর্গত",
+    color: "#8b5cf6",
+    topics: [
+      {
+        q: "স্কুলের ইমিগ্রেশন ব্যুরো কীভাবে সেট করবো?",
+        a: `Schools → স্কুল যোগ/এডিট করুন → "ইমিগ্রেশন ব্যুরো" ফিল্ডে লিখুন।
+যেমন: Tokyo, Osaka, Fukuoka, Nagoya ইত্যাদি।
+
+স্কুল কার্ডে 🏛 badge-এ immigration bureau দেখাবে। কার্ডে এছাড়াও দেখায়:
+শহর, JP Level, Interview type, শোকাই ফি, টিউশন, ইন্টেক, ডরমিটরি।`,
+      },
+    ],
+  },
+  {
+    id: "partner-b2b",
+    icon: Briefcase,
+    title: "পার্টনার এজেন্সি (B2B)",
+    subtitle: "পার্টনার তৈরি, student assign, fee tracking",
+    color: "#14b8a6",
+    topics: [
+      {
+        q: "পার্টনার এজেন্সি কীভাবে কাজ করে?",
+        a: `B2B মডেল — অন্য এজেন্সি student পাঠায়, আপনি process করেন:
+
+১. Partner Agency → "নতুন পার্টনার" — নাম, contact, commission rate দিন
+২. Student Profile → Destination Info → Type = "partner" → Partner সিলেক্ট
+৩. Save করলে partner_students table-এ auto-entry হয়
+৪. Partner page-এ student count, revenue, due দেখায়
+
+Partner-এর নামে ক্লিক করলে assigned students তালিকা expand হয় — fee ও payment status সহ।`,
+      },
+    ],
+  },
+  {
+    id: "doc-audit-log",
+    icon: FileText,
+    title: "ডকুমেন্ট অডিট লগ",
+    subtitle: "কে কখন কোন ডকুমেন্ট আপডেট করেছে",
+    color: "#eab308",
+    topics: [
+      {
+        q: "ডকুমেন্ট কে আপডেট করেছে কীভাবে জানবো?",
+        a: `প্রতিবার কোনো document data save/update হলে activity log-এ record হয়:
+
+• কে আপডেট করেছে (user name/email)
+• কখন (timestamp)
+• কোন document (Birth Certificate, SSC ইত্যাদি)
+• কোন student-এর জন্য
+
+দেখতে: Settings → Activity Log → module: "documents" ফিল্টার করুন।`,
+      },
+    ],
+  },
 ];
 
 export default function HelpPage() {
