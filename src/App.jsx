@@ -583,7 +583,7 @@ function AppShell({ isDark, setIsDark }) {
         role: authUser.role || prev.role,
         branch: authUser.branch || prev.branch,
         agency_id: authUser.agency_id || prev.agency_id,
-        avatar_url: authUser.avatar_url || prev.avatar_url,
+        avatar_url: authUser.avatar_url ?? "",
         phone: authUser.phone || prev.phone,
         created_at: authUser.created_at || prev.created_at,
       }));
