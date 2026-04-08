@@ -50,7 +50,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       const token = localStorage.getItem("agencyos_token");
       const res = await fetch(`${API_URL}/users/${currentUser.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: info.name, phone: info.phone }),
+        body: JSON.stringify({ name: info.name, phone: info.phone, designation: info.designation }),
       });
       if (res.ok) {
         const data = await res.json();
