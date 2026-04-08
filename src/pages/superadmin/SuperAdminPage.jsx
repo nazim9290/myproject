@@ -119,17 +119,22 @@ export default function SuperAdminPage() {
     try {
       const res = await fetch(`${API_URL}/analytics/summary?days=${days}`, { headers });
       if (res.ok) {
-        const data = await res.json();
-        // safe defaults — undefined/null field গুলো empty array/0 দিয়ে replace
+        const d = await res.json();
+        // Backend → Frontend field mapping + safe defaults
+        const pageViews = Array.isArray(d.pageViews) ? d.pageViews : [];
+        const peakHours = Array.isArray(d.peakHours) ? d.peakHours : [];
+        const peakEntry = peakHours.reduce((max, h) => (h.count > (max?.count || 0) ? h : max), null);
         setAnalyticsData({
-          totalPageViews: data.totalPageViews || 0,
-          activeUsers: data.activeUsers || 0,
-          mostUsedFeature: data.mostUsedFeature || "—",
-          peakHour: data.peakHour ?? null,
-          featureUsage: Array.isArray(data.featureUsage) ? data.featureUsage : [],
-          activeUsersList: Array.isArray(data.activeUsersList) ? data.activeUsersList : [],
-          hourlyData: Array.isArray(data.hourlyData) ? data.hourlyData : [],
-          dailyTrend: Array.isArray(data.dailyTrend) ? data.dailyTrend : [],
+          totalPageViews: d.totalViews || 0,
+          activeUsers: Array.isArray(d.activeUsers) ? d.activeUsers.length : 0,
+          mostUsedFeature: pageViews[0]?.page || "—",
+          peakHour: peakEntry?.hour ?? null,
+          featureUsage: pageViews.map(p => ({ name: p.page, count: p.count })),
+          activeUsersList: (Array.isArray(d.activeUsers) ? d.activeUsers : []).map(u => ({
+            name: u.user_name || "—", role: u.user_role || "—", pageViews: u.count || 0,
+          })),
+          hourlyData: peakHours,
+          dailyTrend: Array.isArray(d.dailyTrend) ? d.dailyTrend : [],
         });
       } else {
         toast.error("অ্যানালিটিক্স লোড ব্যর্থ");
