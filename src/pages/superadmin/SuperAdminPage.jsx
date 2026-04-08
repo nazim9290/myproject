@@ -120,7 +120,17 @@ export default function SuperAdminPage() {
       const res = await fetch(`${API_URL}/analytics/summary?days=${days}`, { headers });
       if (res.ok) {
         const data = await res.json();
-        setAnalyticsData(data);
+        // safe defaults — undefined/null field গুলো empty array/0 দিয়ে replace
+        setAnalyticsData({
+          totalPageViews: data.totalPageViews || 0,
+          activeUsers: data.activeUsers || 0,
+          mostUsedFeature: data.mostUsedFeature || "—",
+          peakHour: data.peakHour ?? null,
+          featureUsage: Array.isArray(data.featureUsage) ? data.featureUsage : [],
+          activeUsersList: Array.isArray(data.activeUsersList) ? data.activeUsersList : [],
+          hourlyData: Array.isArray(data.hourlyData) ? data.hourlyData : [],
+          dailyTrend: Array.isArray(data.dailyTrend) ? data.dailyTrend : [],
+        });
       } else {
         toast.error("অ্যানালিটিক্স লোড ব্যর্থ");
       }
@@ -386,7 +396,7 @@ export default function SuperAdminPage() {
           <div>
             <h3 className="text-sm font-semibold flex items-center gap-2">💰 প্রাইসিং কনফিগ</h3>
             <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
-              প্রতি স্টুডেন্ট: <strong style={{ color: t.emerald }}>৳{pricing.per_student_fee?.toLocaleString("en-IN")}</strong>
+              প্রতি স্টুডেন্ট: <strong style={{ color: t.emerald }}>৳{Number(pricing.per_student_fee || 0).toLocaleString("en-IN")}</strong>
               {" "}• Trial: <strong>{pricing.trial_days} দিন</strong>
               {" "}• OCR Credit: <strong style={{ color: t.cyan }}>৳{pricing.ocr_credit_price || 5}/scan</strong>
             </p>
@@ -759,7 +769,7 @@ export default function SuperAdminPage() {
       </>}
 
       {/* ══ TAB: ANALYTICS ══ */}
-      {activeTab === "analytics" && <>
+      {activeTab === "analytics" && analyticsData !== undefined && <>
 
         {/* ── তারিখ পরিসীমা নির্বাচন ── */}
         <div className="flex items-center gap-2">
