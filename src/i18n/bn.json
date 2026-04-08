@@ -309,6 +309,50 @@
     "exported": "ডাউনলোড হয়েছে"
   },
 
+  "schools": {
+    "title": "স্কুল", "subtitle": "স্কুল ডাটাবেজ, সাবমিশন ও রিচেক ট্র্যাকিং",
+    "addNew": "স্কুল যোগ করুন", "editSchool": "স্কুল এডিট করুন",
+    "totalSchools": "মোট স্কুল", "totalReferred": "মোট রেফার", "arrived": "পৌঁছেছে", "recheckPending": "রিচেক বাকি",
+    "submissions": "সাবমিশন", "recheckLog": "রিচেক লগ",
+    "basicInfo": "মূল তথ্য", "nameEn": "নাম (English)", "nameJp": "নাম (Japanese)", "city": "শহর",
+    "website": "ওয়েবসাইট", "docFolder": "কেইয়াকু / ডকুমেন্ট ফোল্ডার",
+    "contact": "যোগাযোগ", "contactPerson": "যোগাযোগ ব্যক্তি",
+    "feesRequirements": "ফি ও শর্তাবলী", "shoukaiFee": "শোকাই ফি (¥)",
+    "tuitionY1": "টিউশন ১ম বছর (¥)", "tuitionY2": "টিউশন ২য় বছর (¥)", "admissionFee": "ভর্তি ফি (¥)",
+    "minJpLevel": "ন্যূনতম JP লেভেল", "interviewType": "ইন্টারভিউ ধরন",
+    "immigrationBureau": "ইমিগ্রেশন ব্যুরো", "hasDormitory": "ডরমিটরি আছে?",
+    "intakesDeadlines": "ইন্টেক ও ডেডলাইন", "deadline": "ডেডলাইন",
+    "selectIntake": "ইন্টেক সিলেক্ট করুন — January, April, July, October",
+    "notesComments": "নোট / মন্তব্য", "dormitory": "ডরমিটরি",
+    "referred": "রেফার", "student": "স্টুডেন্ট", "issues": "সমস্যা",
+    "noSchoolsFound": "কোনো স্কুল পাওয়া যায়নি", "noSubmissionsFound": "কোনো সাবমিশন পাওয়া যায়নি",
+    "tryDifferentSearch": "সার্চ পরিবর্তন করে আবার চেষ্টা করুন",
+    "noRecheckPending": "কোনো রিচেক বাকি নেই", "allDocsAccepted": "সব ডকুমেন্ট গ্রহণযোগ্য"
+  },
+
+  "agents": {
+    "title": "এজেন্ট", "subtitle": "এজেন্ট ও শোকাই ফি ম্যানেজমেন্ট",
+    "addNew": "এজেন্ট যোগ করুন", "editAgent": "এজেন্ট পরিবর্তন",
+    "totalAgents": "মোট এজেন্ট", "totalReferred": "মোট রেফার",
+    "feePaid": "ফি দেওয়া হয়েছে", "feeDue": "ফি বাকি আছে",
+    "area": "এলাকা", "bankAccount": "ব্যাংক অ্যাকাউন্ট",
+    "commissionPerStudent": "কমিশন/স্টুডেন্ট (৳)", "referred": "রেফার করেছেন", "commission": "কমিশন",
+    "noAgentsFound": "কোনো এজেন্ট পাওয়া যায়নি",
+    "pay": "পরিশোধ", "referredStudents": "রেফার করা স্টুডেন্ট", "method": "পদ্ধতি"
+  },
+
+  "communication": {
+    "title": "যোগাযোগ", "subtitle": "যোগাযোগ লগ",
+    "addNew": "নতুন যোগাযোগ লগ", "type": "ধরন", "direction": "দিক",
+    "staff": "স্টাফ", "followUpDate": "ফলো-আপ তারিখ", "note": "নোট", "noLogs": "কোনো লগ নেই"
+  },
+
+  "partners": {
+    "title": "পার্টনার এজেন্সি", "subtitle": "B2B পার্টনার",
+    "addNew": "পার্টনার যোগ করুন", "contactPerson": "যোগাযোগ ব্যক্তি",
+    "commissionRate": "কমিশন হার", "revenue": "আয়", "due": "বকেয়া"
+  },
+
   "tasks": {
     "title": "টাস্ক",
     "subtitle": "টাস্ক ও অ্যাসাইনমেন্ট ম্যানেজমেন্ট",
