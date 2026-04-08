@@ -108,10 +108,10 @@ export default function AddStudentForm({ onSave, onCancel, studentsCount }) {
 
   const validate = () => {
     const e = {};
-    if (!form.name_en.trim()) e.name_en = "Name is required";
-    if (!form.phone.trim()) e.phone = "Phone is required";
-    else if (!isValidPhone(form.phone)) e.phone = "Enter a valid phone number";
-    if (!form.branch) e.branch = "Select a branch";
+    if (!form.name_en.trim()) e.name_en = "নাম দিন";
+    if (!form.phone.trim()) e.phone = "ফোন নম্বর দিন";
+    else if (!isValidPhone(form.phone)) e.phone = "সঠিক ফোন নম্বর দিন";
+    if (!form.branch) e.branch = "ব্রাঞ্চ নির্বাচন করুন";
     setErrors(e);
     if (Object.keys(e).length) {
       setOpen(p => ({ ...p, personal: true, destination: true }));

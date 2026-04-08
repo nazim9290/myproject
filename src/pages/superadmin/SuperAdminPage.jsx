@@ -1019,7 +1019,7 @@ export default function SuperAdminPage() {
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পাসওয়ার্ড *</label>
-              <input type="password" value={form.admin_password} onChange={e => setForm(p => ({ ...p, admin_password: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমপক্ষে ৬ অক্ষর" />
+              <input type="password" value={form.admin_password} onChange={e => setForm(p => ({ ...p, admin_password: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="কমপক্ষে ৬ অক্ষর" autoComplete="new-password" />
             </div>
           </div>
 

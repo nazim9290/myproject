@@ -40,8 +40,8 @@ export default function AgentsPage() {
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   const totalReferred = agents.reduce((s, a) => s + a.students.length, 0);
-  const totalFeeDue = agents.reduce((s, a) => s + a.students.filter((st) => !st.feePaid).length * a.commissionPerStudent, 0);
-  const totalFeePaid = agents.reduce((s, a) => s + a.students.filter((st) => st.feePaid).length * a.commissionPerStudent, 0);
+  const totalFeeDue = agents.reduce((s, a) => s + a.students.filter((st) => !st.feePaid).length * (Number(a.commissionPerStudent) || 0), 0);
+  const totalFeePaid = agents.reduce((s, a) => s + a.students.filter((st) => st.feePaid).length * (Number(a.commissionPerStudent) || 0), 0);
 
   // ── ফিল্টার, সর্ট, পেজিনেশন লজিক ──
   const filtered = agents
@@ -210,7 +210,7 @@ export default function AgentsPage() {
 
                       {/* কমিশন */}
                       <td className="py-3 px-4 font-mono">
-                        ৳{agent.commissionPerStudent.toLocaleString("en-IN")}
+                        ৳{(Number(agent.commissionPerStudent) || 0).toLocaleString("en-IN")}
                       </td>
 
                       {/* স্ট্যাটাস */}

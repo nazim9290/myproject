@@ -85,7 +85,7 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
                 <Lock size={14} style={{ color: t.muted }} />
                 <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(""); }}
                   className="flex-1 bg-transparent text-sm outline-none" style={{ color: t.text }}
-                  placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handleLogin()} />
+                  placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handleLogin()} autoComplete="current-password" />
               </div>
             </div>
 

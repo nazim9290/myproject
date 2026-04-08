@@ -205,7 +205,7 @@ export default function HRPage() {
                     <label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: t.muted }}>পাসওয়ার্ড * (৮+ অক্ষর)</label>
                     <input type="password" value={newEmp.password} onChange={e => setNewEmp({ ...newEmp, password: e.target.value })}
                       placeholder="********" className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none"
-                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                      style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} autoComplete="new-password" />
                   </div>
                   <div>
                     <label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: t.muted }}>সিস্টেম রোল</label>
