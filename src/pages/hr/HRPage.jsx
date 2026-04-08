@@ -47,7 +47,7 @@ export default function HRPage() {
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const activeEmps = employees.filter((e) => e.status === "active");
-  const totalSalary = activeEmps.reduce((s, e) => s + (e.salary || 0), 0);
+  const totalSalary = activeEmps.reduce((s, e) => s + (Number(e.salary) || 0), 0);
 
   // সার্চ ফিল্টার — নাম বা ফোন দিয়ে কর্মী খুঁজুন
   const filteredEmps = sortFn(
@@ -296,7 +296,7 @@ export default function HRPage() {
                     <td className="py-3 px-4" style={{ color: t.muted }}>{emp.branch}</td>
                     <td className="py-3 px-4" style={{ color: t.muted }}>{emp.phone || "—"}</td>
                     <td className="py-3 px-4" style={{ color: t.muted }}>{formatDateDisplay(emp.joinDate)}</td>
-                    <td className="py-3 px-4 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
+                    <td className="py-3 px-4 font-mono font-bold" style={{ color: t.emerald }}>৳{(Number(emp.salary) || 0).toLocaleString()}</td>
                     <td className="py-3 px-4">
                       <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? tr("common.active") : tr("common.inactive")}</Badge>
                     </td>
@@ -347,7 +347,7 @@ export default function HRPage() {
                       <td className="py-2.5 px-3 font-medium">{emp.name}</td>
                       <td className="py-2.5 px-3" style={{ color: t.muted }}>{emp.role}</td>
                       <td className="py-2.5 px-3" style={{ color: t.muted }}>{emp.branch}</td>
-                      <td className="py-2.5 px-3 font-mono font-bold" style={{ color: t.emerald }}>৳{(emp.salary || 0).toLocaleString()}</td>
+                      <td className="py-2.5 px-3 font-mono font-bold" style={{ color: t.emerald }}>৳{(Number(emp.salary) || 0).toLocaleString()}</td>
                       <td className="py-2.5 px-3">
                         <Badge color={emp.status === "active" ? t.emerald : t.muted} size="xs">{emp.status === "active" ? tr("common.active") : tr("common.inactive")}</Badge>
                       </td>
@@ -368,7 +368,7 @@ export default function HRPage() {
                   <tr style={{ borderTop: `2px solid ${t.border}` }}>
                     <td colSpan={3} className="py-2.5 px-3 font-bold text-xs">মোট মাসিক বেতন</td>
                     <td className="py-2.5 px-3 font-mono font-bold text-sm" style={{ color: t.amber }}>
-                      ৳{filteredEmps.reduce((s, e) => s + (e.salary || 0), 0).toLocaleString()}
+                      ৳{filteredEmps.reduce((s, e) => s + (Number(e.salary) || 0), 0).toLocaleString()}
                     </td>
                     <td /><td />
                   </tr>
