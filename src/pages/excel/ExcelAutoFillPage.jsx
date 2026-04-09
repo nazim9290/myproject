@@ -46,8 +46,14 @@ export default function ExcelAutoFillPage({ students }) {
     };
     load();
   }, []);
-  const [view, setView] = useState("list"); // list | upload | mapping | generate
+  const [view, setView] = useState("list"); // list | upload | mapping | generate | ai-review
   const [activeTemplate, setActiveTemplate] = useState(null);
+
+  // AI Analysis state
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [aiStats, setAiStats] = useState(null);
+  const [aiEngine, setAiEngine] = useState("");
 
   // Schools list for dropdown
   const [schoolsList, setSchoolsList] = useState([]);
@@ -151,6 +157,84 @@ export default function ExcelAutoFillPage({ students }) {
     setMappings([]);
     setView("mapping");
     toast.success(tr("excel.manualMappingStart"));
+  };
+
+  // ════════════════════════════════════════
+  // AI Auto-Detect — Claude Haiku analysis
+  // ════════════════════════════════════════
+  const doAIAnalyze = async () => {
+    if (!uploadFile && !activeTemplate?.id) { toast.error("ফাইল বা template সিলেক্ট করুন"); return; }
+    setAiAnalyzing(true);
+    setAiSuggestions([]);
+    try {
+      let res;
+      if (activeTemplate?.id && !activeTemplate.id.startsWith("tmpl-")) {
+        // Existing template — ID দিয়ে analyze
+        res = await fetch(`${API}/excel/ai-analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+          body: JSON.stringify({ template_id: activeTemplate.id }),
+        });
+      } else {
+        // New file upload
+        const form = new FormData();
+        form.append("file", uploadFile);
+        form.append("school_name", uploadSchool || "");
+        res = await fetch(`${API}/excel/ai-analyze`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token()}` },
+          body: form,
+        });
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setAiSuggestions((data.suggestions || []).map(s => ({ ...s, approved: s.confidence === "high" || s.confidence === "medium" })));
+      setAiStats(data.stats);
+      setAiEngine(data.engine || "claude-haiku");
+      setView("ai-review");
+      toast.success(`AI: ${data.stats?.total || 0} fields detected (${data.engine || "haiku"})`);
+    } catch (err) {
+      toast.error("AI Analysis: " + (err.message || "ব্যর্থ"));
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
+
+  // AI suggestions → insert placeholders & save template
+  const doAIInsert = async () => {
+    const approved = aiSuggestions.filter(s => s.approved);
+    if (!approved.length) { toast.error("কমপক্ষে ১টি field approve করুন"); return; }
+    setAiAnalyzing(true);
+    try {
+      const form = new FormData();
+      if (uploadFile) form.append("file", uploadFile);
+      if (activeTemplate?.id && !activeTemplate.id.startsWith("tmpl-")) form.append("template_id", activeTemplate.id);
+      form.append("school_name", uploadSchool || activeTemplate?.school_name || "");
+      form.append("suggestions", JSON.stringify(approved));
+
+      const res = await fetch(`${API}/excel/ai-insert-placeholders`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token()}` },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Template list-এ যোগ বা আপডেট
+      setTemplates(prev => {
+        const exists = prev.find(t => t.id === data.id);
+        if (exists) return prev.map(t => t.id === data.id ? data : t);
+        return [data, ...prev];
+      });
+      setView("list");
+      setAiSuggestions([]);
+      toast.success(`${approved.length} placeholders inserted — template saved!`);
+    } catch (err) {
+      toast.error(err.message || "Insert failed");
+    } finally {
+      setAiAnalyzing(false);
+    }
   };
 
   // Auto-detect field from Japanese/Bengali/English label
@@ -370,6 +454,11 @@ export default function ExcelAutoFillPage({ students }) {
 
             <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
               <Button variant="ghost" onClick={() => { setView("list"); setUploadFile(null); setUploadSchool(""); }}>{tr("common.cancel")}</Button>
+              {/* AI Auto-Detect — placeholder ছাড়া raw Excel upload করলে AI বসাবে */}
+              <Button variant="ghost" onClick={doAIAnalyze} disabled={aiAnalyzing || !uploadFile}
+                style={{ borderColor: `${t.purple}40`, color: t.purple }}>
+                {aiAnalyzing ? "🤖 AI Analyzing..." : "🤖 AI Auto-Detect"}
+              </Button>
               <Button icon={Upload} onClick={doUpload} disabled={uploading}>
                 {uploading ? tr("excel.uploading") : tr("excel.uploadAndDetect")}
               </Button>
@@ -587,6 +676,118 @@ export default function ExcelAutoFillPage({ students }) {
                 <span className="ml-auto font-mono" style={{ color: t.purple }}>{m.field}</span>
               </div>
             ))}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // ================================================================
+  // RENDER: AI REVIEW VIEW — AI suggestions review & approve
+  // ================================================================
+  if (view === "ai-review") {
+    const approvedCount = aiSuggestions.filter(s => s.approved).length;
+    const confColor = { high: t.emerald, medium: t.amber, low: t.rose };
+    return (
+      <div className="space-y-5 anim-fade">
+        <div className="flex items-center gap-4">
+          <button onClick={() => { setView("upload"); setAiSuggestions([]); }} className="p-2 rounded-xl transition" style={{ background: "transparent" }}
+            onMouseEnter={e => e.currentTarget.style.background = t.hoverBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <ArrowLeft size={18} />
+          </button>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold">AI Analysis — {uploadSchool || activeTemplate?.school_name || "Template"}</h2>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>
+              {aiStats ? `${aiStats.total} fields detected • High: ${aiStats.high} • Medium: ${aiStats.medium} • Low: ${aiStats.low}` : ""}
+              {aiEngine === "rule-based" && <span className="ml-2 px-1.5 py-0.5 rounded text-[9px]" style={{ background: `${t.amber}15`, color: t.amber }}>Rule-based (AI unavailable)</span>}
+            </p>
+          </div>
+          <Button icon={Save} onClick={doAIInsert} disabled={aiAnalyzing || approvedCount === 0}>
+            {aiAnalyzing ? "Inserting..." : `Insert ${approvedCount} Placeholders`}
+          </Button>
+        </div>
+
+        {/* Bulk actions */}
+        <Card delay={30}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={() => setAiSuggestions(prev => prev.map(s => ({ ...s, approved: true })))}
+              className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: `${t.emerald}15`, color: t.emerald }}>
+              ✓ Select All
+            </button>
+            <button onClick={() => setAiSuggestions(prev => prev.map(s => ({ ...s, approved: s.confidence === "high" })))}
+              className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: `${t.cyan}15`, color: t.cyan }}>
+              ✓ High Confidence Only
+            </button>
+            <button onClick={() => setAiSuggestions(prev => prev.map(s => ({ ...s, approved: false })))}
+              className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: `${t.muted}15`, color: t.muted }}>
+              ✗ Deselect All
+            </button>
+            <span className="ml-auto text-xs" style={{ color: t.muted }}>
+              {approvedCount}/{aiSuggestions.length} approved
+            </span>
+          </div>
+        </Card>
+
+        {/* Suggestions table */}
+        <Card delay={60}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                  {["", "Sheet", "Cell", "Detected Label", "System Field", "Modifier", "Confidence", "AI Reasoning"].map(h => (
+                    <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {aiSuggestions.map((s, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${t.border}`, opacity: s.approved ? 1 : 0.5 }}
+                    onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    {/* Checkbox */}
+                    <td className="py-2.5 px-3">
+                      <input type="checkbox" checked={!!s.approved}
+                        onChange={() => setAiSuggestions(prev => prev.map((x, j) => j === i ? { ...x, approved: !x.approved } : x))}
+                        className="rounded" style={{ accentColor: t.cyan }} />
+                    </td>
+                    {/* Sheet */}
+                    <td className="py-2.5 px-3">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}10`, color: t.purple }}>{s.sheet || "—"}</span>
+                    </td>
+                    {/* Cell */}
+                    <td className="py-2.5 px-3 font-mono font-bold" style={{ color: t.cyan }}>{s.cellRef}</td>
+                    {/* Label */}
+                    <td className="py-2.5 px-3" style={{ color: t.text }}>{s.label || "—"}</td>
+                    {/* Field — editable via FieldPicker */}
+                    <td className="py-2.5 px-3" style={{ minWidth: 200 }}>
+                      <FieldPicker
+                        placeholderKey={String(i)}
+                        selectedField={s.field || ""}
+                        selectedModifier={s.modifier || ""}
+                        onFieldChange={(_, val) => setAiSuggestions(prev => prev.map((x, j) => j === i ? { ...x, field: val, approved: !!val } : x))}
+                        onModifierChange={(_, val) => setAiSuggestions(prev => prev.map((x, j) => j === i ? { ...x, modifier: val } : x))}
+                      />
+                    </td>
+                    {/* Modifier */}
+                    <td className="py-2.5 px-3 font-mono text-[10px]" style={{ color: t.purple }}>{s.modifier || "—"}</td>
+                    {/* Confidence */}
+                    <td className="py-2.5 px-3">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: `${confColor[s.confidence] || t.muted}15`, color: confColor[s.confidence] || t.muted }}>
+                        {s.confidence}
+                      </span>
+                    </td>
+                    {/* Reasoning */}
+                    <td className="py-2.5 px-3 text-[10px] max-w-[200px] truncate" style={{ color: t.muted }} title={s.reasoning}>
+                      {s.reasoning || "—"}
+                    </td>
+                  </tr>
+                ))}
+                {aiSuggestions.length === 0 && (
+                  <tr><td colSpan={8} className="py-8 text-center text-xs" style={{ color: t.muted }}>No suggestions — AI could not detect any fields</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </Card>
       </div>
