@@ -1290,10 +1290,17 @@ function AIResumeBuilder({ t, toast, token, API_URL }) {
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || "Failed"); }
+      // Download .xlsx file
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(schoolName || "template").replace(/\s+/g, "_")}_with_placeholders.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
       setDone(true);
-      toast.success(`${approved.length} placeholders inserted — template saved!`);
+      toast.success(`${approved.length} placeholders inserted — ডাউনলোড হচ্ছে!`);
     } catch (err) {
       toast.error(err.message || "Insert ব্যর্থ");
     } finally {
@@ -1444,7 +1451,7 @@ function AIResumeBuilder({ t, toast, token, API_URL }) {
             </p>
             <Button onClick={doInsert} disabled={inserting || approvedCount === 0}
               style={{ background: `linear-gradient(135deg, ${t.emerald}, ${t.cyan})` }}>
-              {inserting ? "Inserting..." : `✅ Insert ${approvedCount} Placeholders & Save`}
+              {inserting ? "Inserting..." : `⬇️ Insert ${approvedCount} Placeholders & Download`}
             </Button>
           </div>
         </Card>
