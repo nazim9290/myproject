@@ -302,7 +302,8 @@ export default function PreDeparturePage() {
 // দেশভিত্তিক dynamic sections রেন্ডার
 // ═══════════════════════════════════════════════════════
 function DepartureDetail({ student: st, onBack, t, toast }) {
-  const { t: tr } = useLanguage();
+  const { t: tr, lang } = useLanguage();
+  const stepLbl = (step) => lang === "bn" ? step.label : (step.label_en || step.label);
   const country = st.country || "Japan";
   const countryInfo = COUNTRY_CONFIG[country] || COUNTRY_CONFIG.Japan;
   const countrySteps = getStepsForStudent(st);
