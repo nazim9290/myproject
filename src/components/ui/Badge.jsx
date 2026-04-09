@@ -1,4 +1,5 @@
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { PIPELINE_STATUSES } from "../../data/students";
 
 export function Badge({ children, color = null, size = "sm" }) {
@@ -13,7 +14,10 @@ export function Badge({ children, color = null, size = "sm" }) {
 }
 
 export function StatusBadge({ status }) {
+  const { t: tr } = useLanguage();
   const s = PIPELINE_STATUSES.find((p) => p.code === status);
   if (!s) return null;
-  return <Badge color={s.color}>{s.label}</Badge>;
+  // pipeline.CODE key থেকে translated label, fallback: data file-এর label
+  const label = tr(`pipeline.${status}`);
+  return <Badge color={s.color}>{label !== `pipeline.${status}` ? label : s.label}</Badge>;
 }

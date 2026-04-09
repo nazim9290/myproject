@@ -566,7 +566,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}
               className="px-2 py-1 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
               <option value="">{tr("students.bulk.changeStatus")}</option>
-              {PIPELINE_STATUSES.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
+              {PIPELINE_STATUSES.map(s => { const lbl = tr(`pipeline.${s.code}`); return <option key={s.code} value={s.code}>{lbl !== `pipeline.${s.code}` ? lbl : s.label}</option>; })}
             </select>
             {bulkStatus && <Button size="xs" onClick={bulkChangeStatus}>{tr("students.bulk.applyChange")}</Button>}
             <Button variant="ghost" size="xs" onClick={() => setShowBulkDeleteConfirm(true)} style={{ color: t.rose }}>{tr("common.delete")}</Button>

@@ -1302,7 +1302,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   <span className="text-base">{conf.icon || "📋"}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold">{ps?.label || s}</span>
+                      <span className="text-xs font-semibold">{(() => { const v = tr(`pipeline.${s}`); return v !== `pipeline.${s}` ? v : (ps?.label || s); })()}</span>
                       <span className="text-[9px] font-mono" style={{ color: t.muted }}>{s}</span>
                     </div>
                     <p className="text-[10px] truncate" style={{ color: t.muted }}>{conf.hint || "—"}</p>
@@ -1320,7 +1320,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
         {/* ── ধাপ Edit Modal ── */}
         <Modal isOpen={!!editingStep} onClose={() => setEditingStep(null)}
-          title={editingStep ? `${(() => { const ps = PIPELINE_STATUSES.find(p => p.code === editingStep); return ps?.label || editingStep; })()} — ${tr("settings.editChecklist")}` : ""}
+          title={editingStep ? `${(() => { const v = tr(`pipeline.${editingStep}`); return v !== `pipeline.${editingStep}` ? v : (PIPELINE_STATUSES.find(p => p.code === editingStep)?.label || editingStep); })()} — ${tr("settings.editChecklist")}` : ""}
           subtitle={editingStep ? `${tr("settings.step")}: ${editingStep}` : ""} size="xl">
           {editingStep && (
             <>

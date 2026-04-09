@@ -27,6 +27,11 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const toast = useToast();
   const { t: tr } = useLanguage();
 
+  // ── Pipeline label helper — tr() দিয়ে translated, fallback: data file-এর label ──
+  const pipeLabel = (code) => { const v = tr(`pipeline.${code}`); return v !== `pipeline.${code}` ? v : (PIPELINE_STATUSES.find(s => s.code === code)?.label || code); };
+  const stepHint = (code) => { const v = tr(`steps.${code}_hint`); return v !== `steps.${code}_hint` ? v : (STEPS_META[code]?.hint || ""); };
+  const stepNext = (code) => { const v = tr(`steps.${code}_next`); return v !== `steps.${code}_next` ? v : (STEPS_META[code]?.nextLabel || ""); };
+
   // ── ট্যাব কনফিগারেশন — i18n keys ব্যবহার করে ──
   const TABS = [
     { key: "overview", label: tr("students.overview"), icon: LayoutDashboard },
@@ -294,7 +299,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       const res = await api.patch(`/students/${student.id}`, { status: newStatus, updated_at: student.updated_at });
       const updated = { ...student, status: newStatus, updated_at: res?.updated_at || new Date().toISOString() };
       onUpdate(updated);
-      const stepLabel = PIPELINE_STATUSES.find(s => s.code === newStatus)?.label || newStatus;
+      const stepLabel = pipeLabel(newStatus);
       logActivity(msg || `Status → ${stepLabel}`, "status");
       toast.success(`${stepLabel} — ${tr("success.updated")}`);
       setChecked({});
@@ -616,7 +621,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <div className="min-w-0">
                   <p className="text-[10px]" style={{ color: t.muted }}>{tr("students.pipeline")}</p>
                   <p className="text-sm font-bold truncate" style={{ color: stepColor }}>
-                    {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus}
+                    {pipeLabel(currentStatus)}
                   </p>
                 </div>
               </div>
@@ -649,7 +654,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <div className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${requiredItems.length > 0 ? (checkedRequired / requiredItems.length) * 100 : 0}%`, background: allRequiredDone ? t.emerald : t.amber }} />
               </div>
-              <p className="text-[10px] mt-1" style={{ color: t.muted }}>{meta.hint}</p>
+              <p className="text-[10px] mt-1" style={{ color: t.muted }}>{stepHint(currentStatus) || meta.hint}</p>
             </Card>
 
             {/* Portal Access */}
@@ -677,7 +682,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold">{tr("students.pipelineProgress")}</h3>
               <p className="text-[11px]" style={{ color: t.muted }}>
-                {isPastCoe ? `${tr("common.completed")} — ${PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus}` : `${tr("students.step")} ${Math.max(currentStepIdx + 1, 1)} / ${MAIN_STEPS.length}`}
+                {isPastCoe ? `${tr("common.completed")} — ${pipeLabel(currentStatus)}` : `${tr("students.step")} ${Math.max(currentStepIdx + 1, 1)} / ${MAIN_STEPS.length}`}
               </p>
             </div>
             {/* Step circles — ENROLLED থেকে COE_RECEIVED পর্যন্ত */}
@@ -691,8 +696,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   return (
                     <div key={step.code} className="flex items-center">
                       <button
-                        onClick={() => !isTerminal && !isPastCoe && changeStatus(step.code, `Status → ${step.label}`)}
-                        title={step.label}
+                        onClick={() => !isTerminal && !isPastCoe && changeStatus(step.code, `Status → ${pipeLabel(step.code)}`)}
+                        title={pipeLabel(step.code)}
                         className="flex flex-col items-center gap-1.5 group transition-all"
                         style={{ minWidth: 52 }}
                       >
@@ -707,7 +712,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                         </div>
                         <span className="text-[9px] text-center leading-tight max-w-[52px]"
                           style={{ color: done ? t.emerald : active ? color : `${t.muted}70`, fontWeight: active ? 700 : 400 }}>
-                          {step.label}
+                          {pipeLabel(step.code)}
                         </span>
                       </button>
                       {i < MAIN_STEPS.length - 1 && (
@@ -729,7 +734,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   <span className="text-2xl">✈️</span>
                   <div>
                     <p className="text-sm font-semibold" style={{ color: t.emerald }}>
-                      {isPastCoe ? `${PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus} — ${tr("students.preDepartureRunning")}` : `COE Received — ${tr("students.startPreDeparture")}`}
+                      {isPastCoe ? `${pipeLabel(currentStatus)} — ${tr("students.preDepartureRunning")}` : `${pipeLabel("COE_RECEIVED")} — ${tr("students.startPreDeparture")}`}
                     </p>
                     <p className="text-[10px]" style={{ color: t.muted }}>{tr("students.preDepartureHint")}</p>
                   </div>
@@ -754,7 +759,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     <div className="text-3xl">✈️</div>
                     <div className="flex-1">
                       <p className="text-sm font-bold" style={{ color: t.emerald }}>
-                        {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label || currentStatus}
+                        {pipeLabel(currentStatus)}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: t.muted }}>
                         {tr("students.preDepartureManaging")}
@@ -784,7 +789,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                       <div className="text-left">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold" style={{ color: stepColor }}>
-                            {PIPELINE_STATUSES.find(s => s.code === currentStatus)?.label}
+                            {pipeLabel(currentStatus)}
                           </span>
                           <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${stepColor}15`, color: stepColor }}>
                             {checkedRequired}/{requiredItems.length} {tr("students.required")} ✓
@@ -795,7 +800,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{meta.hint}</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{stepHint(currentStatus) || meta.hint}</p>
                       </div>
                     </div>
                     <ChevronRight size={16} style={{ color: t.muted, transform: showStepCard ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
@@ -886,7 +891,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                             cursor: allRequiredDone ? "pointer" : "not-allowed",
                             boxShadow: allRequiredDone ? `0 4px 12px ${stepColor}40` : "none",
                           }}>
-                          {meta.nextLabel} <ChevronRight size={13} />
+                          {stepNext(currentStatus) || meta.nextLabel} <ChevronRight size={13} />
                         </button>
                         {!allRequiredDone && (
                           <button onClick={goNext}

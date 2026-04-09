@@ -134,7 +134,9 @@ const isStepDone = (st, stepKey) => {
 export default function PreDeparturePage() {
   const t = useTheme();
   const toast = useToast();
-  const { t: tr } = useLanguage();
+  const { t: tr, lang } = useLanguage();
+  // step label — ভাষা অনুযায়ী Bengali/English pick
+  const stepLbl = (step) => lang === "bn" ? step.label : (step.label_en || step.label);
   const [students, setStudents] = useState([]);
   const [kpi, setKpi] = useState({ total: 0, visaGranted: 0, healthPending: 0, vfsPending: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
@@ -274,7 +276,7 @@ export default function PreDeparturePage() {
                       {steps.map((step, j) => (
                         <div key={j} className="flex items-center gap-1 text-[9px]" style={{ color: step.done ? t.emerald : t.muted }}>
                           <span>{step.icon}</span>
-                          <span className="hidden sm:inline">{step.label}</span>
+                          <span className="hidden sm:inline">{stepLbl(step)}</span>
                           {step.done ? <Check size={9} /> : <Clock size={9} />}
                         </div>
                       ))}
@@ -733,7 +735,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
             <div key={idx} className="flex items-center gap-1 text-[9px]"
               style={{ color: step.done ? t.emerald : t.muted }}>
               <span>{step.icon}</span>
-              <span>{step.label}</span>
+              <span>{stepLbl(step)}</span>
               {step.done ? <Check size={9} /> : <Clock size={9} />}
               {idx < progressSteps.length - 1 && <span style={{ color: t.muted }}>→</span>}
             </div>

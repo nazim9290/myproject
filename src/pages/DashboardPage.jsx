@@ -77,7 +77,8 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
   // ── Pipeline chart data — PIPELINE_STATUSES থেকে label নিয়ে ──
   const pipelineChart = (data.pipeline || []).map(p => {
     const ps = PIPELINE_STATUSES.find(s => s.code === p.status);
-    return { stage: ps ? ps.label : p.status, count: p.count };
+    const lbl = tr(`pipeline.${p.status}`);
+    return { stage: lbl !== `pipeline.${p.status}` ? lbl : (ps ? ps.label : p.status), count: p.count };
   }).slice(0, 8); // শীর্ষ ৮টি দেখাবে
 
   // ── Currency format ──

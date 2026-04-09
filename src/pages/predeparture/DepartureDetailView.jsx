@@ -11,7 +11,8 @@ import { formatDateDisplay } from "../../components/ui/DateInput";
 export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
   const t = useTheme();
   const toast = useToast();
-  const { t: tr } = useLanguage();
+  const { t: tr, lang } = useLanguage();
+  const stepLbl = (step) => lang === "bn" ? step.label : (step.label_en || step.label);
   const [checklistState, setChecklistState] = useState(st.airportChecklist.map((c) => c.checked));
   const toggleChecklist = (idx) => { const n = [...checklistState]; n[idx] = !n[idx]; setChecklistState(n); };
   const checkedCount = checklistState.filter(Boolean).length;
@@ -106,7 +107,7 @@ export default function DepartureDetailView({ student: st, onBack, onUpdate }) {
                   style={{ background: step.done ? `${t.emerald}20` : `${t.muted}15`, border: `2px solid ${step.done ? t.emerald : `${t.muted}30`}` }}>
                   {step.icon}
                 </div>
-                <span className="text-[9px] font-medium" style={{ color: step.done ? t.emerald : t.muted }}>{step.label}</span>
+                <span className="text-[9px] font-medium" style={{ color: step.done ? t.emerald : t.muted }}>{stepLbl(step)}</span>
               </div>
               {i < arr.length - 1 && (
                 <div className="w-6 h-0.5 mx-1 rounded" style={{ background: step.done ? t.emerald : `${t.muted}30` }} />
