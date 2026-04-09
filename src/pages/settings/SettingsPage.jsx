@@ -13,6 +13,7 @@ import { API_URL } from "../../lib/api";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { DEFAULT_STEPS_META } from "../../data/pipelineSteps";
 import ConditionalFormatRules from "../../components/ui/ConditionalFormatRules";
+import { SYSTEM_FIELDS } from "../../components/ui/FieldMapper";
 import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 
 // ── Administration ট্যাব কনফিগ — i18nKey দিয়ে translation ──
@@ -942,6 +943,47 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               </div>
             ))}
             {docTypes.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("settings.noDocTypes")}</p>}
+          </div>
+        </Card>
+
+        {/* ── Student All Variables — সামগ্রিক ভ্যারিয়েবল তালিকা ── */}
+        <Card delay={100}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span style={{ color: t.purple }}>{"{{x}}"}</span> Student All Variables
+            </h3>
+            <button onClick={() => {
+              const all = SYSTEM_FIELDS.flatMap(g => g.fields).map(f => `{{${f.key}}}`).join("\n");
+              navigator.clipboard.writeText(all);
+              toast.success(tr("settings.allVarsCopied"));
+            }} className="text-[10px] px-2 py-1 rounded-lg" style={{ background: `${t.cyan}15`, color: t.cyan }}>
+              {tr("settings.copyAll")}
+            </button>
+          </div>
+          <p className="text-[10px] mb-3" style={{ color: t.muted }}>
+            Excel AutoFill, Doc Generator, Certificate — সব জায়গায় এই variables ব্যবহার করা যায়
+          </p>
+          <div className="space-y-3">
+            {SYSTEM_FIELDS.map((group, gi) => (
+              <div key={gi}>
+                <p className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: t.muted }}>{group.group}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.fields.map(f => {
+                    const gc = t[group.color] || t.cyan;
+                    return (
+                    <button key={f.key} onClick={() => { navigator.clipboard.writeText(`{{${f.key}}}`); toast.success(`{{${f.key}}} copied`); }}
+                      className="px-2 py-1 rounded-lg text-[10px] font-mono transition-all"
+                      style={{ background: `${gc}12`, color: gc, border: `1px solid ${gc}25` }}
+                      onMouseEnter={e => e.currentTarget.style.background = `${gc}25`}
+                      onMouseLeave={e => e.currentTarget.style.background = `${gc}12`}
+                      title={f.label}>
+                      {`{{${f.key}}}`}
+                    </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </Card>
 
