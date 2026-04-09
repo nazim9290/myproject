@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Save, LogOut, Lock, Eye, EyeOff, Bell, Globe, Shield, Camera, User, Phone, Mail, Briefcase, Building2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import PhoneInput from "../../components/ui/PhoneInput";
@@ -11,6 +12,7 @@ import { formatDateDisplay } from "../../components/ui/DateInput";
 export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isDark, setIsDark }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [activeTab, setActiveTab] = useState("profile");
   const [info, setInfo] = useState({ ...currentUser });
   const [passwords, setPasswords] = useState({ old: "", next: "", confirm: "" });
@@ -28,7 +30,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error("ফাইল সাইজ সর্বোচ্চ 2MB"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error(tr("profile.maxFileSize")); return; }
     const formData = new FormData();
     formData.append("avatar", file);
     try {
@@ -40,9 +42,9 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       if (res.ok && data.avatar_url) {
         setAvatarUrl(data.avatar_url);
         setCurrentUser(prev => ({ ...prev, avatar_url: data.avatar_url }));
-        toast.success("ছবি আপলোড হয়েছে!");
-      } else { toast.error(data.error || "আপলোড ব্যর্থ"); }
-    } catch { toast.error("আপলোড করতে সমস্যা হয়েছে"); }
+        toast.success(tr("profile.avatarUploaded"));
+      } else { toast.error(data.error || tr("profile.uploadFailed")); }
+    } catch { toast.error(tr("profile.uploadError")); }
   };
 
   const saveProfile = async () => {
@@ -55,15 +57,15 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       if (res.ok) {
         const data = await res.json();
         setCurrentUser(prev => ({ ...prev, ...data }));
-        toast.success("প্রোফাইল আপডেট হয়েছে!");
-      } else { toast.error("আপডেট ব্যর্থ"); }
-    } catch { toast.error("সার্ভার ত্রুটি"); }
+        toast.success(tr("profile.profileUpdated"));
+      } else { toast.error(tr("profile.updateFailed")); }
+    } catch { toast.error(tr("profile.serverError")); }
   };
 
   const changePassword = async () => {
-    if (!passwords.old) { toast.error("পুরানো পাসওয়ার্ড দিন"); return; }
-    if (passwords.next.length < 8) { toast.error("নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষর হতে হবে"); return; }
-    if (passwords.next !== passwords.confirm) { toast.error("পাসওয়ার্ড দুটি মিলছে না"); return; }
+    if (!passwords.old) { toast.error(tr("profile.enterOldPassword")); return; }
+    if (passwords.next.length < 8) { toast.error(tr("profile.minPasswordLength")); return; }
+    if (passwords.next !== passwords.confirm) { toast.error(tr("profile.passwordMismatch")); return; }
     try {
       const token = localStorage.getItem("agencyos_token");
       const res = await fetch(`${API_URL}/users/${currentUser.id}`, {
@@ -72,20 +74,20 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       });
       if (res.ok) {
         setPasswords({ old: "", next: "", confirm: "" });
-        toast.success("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!");
-      } else { const d = await res.json(); toast.error(d.error || "পরিবর্তন ব্যর্থ"); }
-    } catch { toast.error("সার্ভার ত্রুটি"); }
+        toast.success(tr("profile.passwordChanged"));
+      } else { const d = await res.json(); toast.error(d.error || tr("profile.changeFailed")); }
+    } catch { toast.error(tr("profile.serverError")); }
   };
 
   const savePrefs = () => {
     setCurrentUser((prev) => ({ ...prev, notifications: info.notifications, language: info.language }));
-    toast.success("পছন্দ সংরক্ষণ হয়েছে!");
+    toast.success(tr("profile.preferencesSaved"));
   };
 
   const tabs = [
-    { key: "profile", label: "প্রোফাইল" },
-    { key: "security", label: "নিরাপত্তা" },
-    { key: "preferences", label: "পছন্দ" },
+    { key: "profile", label: tr("profile.tabProfile") },
+    { key: "security", label: tr("profile.tabSecurity") },
+    { key: "preferences", label: tr("profile.tabPreferences") },
   ];
 
   return (
@@ -108,7 +110,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             <button
               className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full flex items-center justify-center shadow"
               style={{ background: t.cyan, color: "#fff" }}
-              title="ছবি পরিবর্তন"
+              title={tr("profile.changeAvatar")}
               onClick={() => avatarRef.current?.click()}
             >
               <Camera size={11} />
@@ -121,10 +123,10 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.cyan}20`, color: t.cyan }}>
-                {{ owner: "মালিক", admin: "অ্যাডমিন", branch_manager: "ব্রাঞ্চ ম্যানেজার", counselor: "কাউন্সেলর", super_admin: "সুপার অ্যাডমিন" }[currentUser.role] || currentUser.role}
+                {{ owner: tr("profile.roleOwner"), admin: tr("profile.roleAdmin"), branch_manager: tr("profile.roleBranchManager"), counselor: tr("profile.roleCounselor"), super_admin: tr("profile.roleSuperAdmin") }[currentUser.role] || currentUser.role}
               </span>
               <span className="text-[10px]" style={{ color: t.muted }}>
-                যোগদান: {formatDateDisplay(currentUser.created_at || currentUser.joined)}
+                {tr("profile.joined")}: {formatDateDisplay(currentUser.created_at || currentUser.joined)}
               </span>
             </div>
           </div>
@@ -135,7 +137,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             onMouseEnter={(e) => (e.currentTarget.style.background = "#ef444425")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "#ef444415")}
           >
-            <LogOut size={13} /> লগআউট
+            <LogOut size={13} /> {tr("profile.logout")}
           </button>
         </div>
       </Card>
@@ -163,11 +165,11 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       {/* === PROFILE TAB === */}
       {activeTab === "profile" && (
         <Card delay={50}>
-          <h3 className="text-sm font-bold mb-4">ব্যক্তিগত তথ্য</h3>
+          <h3 className="text-sm font-bold mb-4">{tr("profile.personalInfo")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                <User size={9} className="inline mr-1" />পুরো নাম (ইংরেজি)
+                <User size={9} className="inline mr-1" />{tr("profile.fullNameEn")}
               </label>
               <input
                 value={info.name}
@@ -178,7 +180,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                <User size={9} className="inline mr-1" />নাম (বাংলা)
+                <User size={9} className="inline mr-1" />{tr("profile.nameBn")}
               </label>
               <input
                 value={info.name_bn}
@@ -189,7 +191,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                <Mail size={9} className="inline mr-1" />ইমেইল
+                <Mail size={9} className="inline mr-1" />{tr("common.email")}
               </label>
               <input
                 value={info.email}
@@ -200,13 +202,13 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                <Phone size={9} className="inline mr-1" />ফোন নম্বর
+                <Phone size={9} className="inline mr-1" />{tr("profile.phoneNumber")}
               </label>
               <PhoneInput value={info.phone} onChange={v => setInfo(p => ({ ...p, phone: v }))} size="md" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                <Briefcase size={9} className="inline mr-1" />পদবি / Designation
+                <Briefcase size={9} className="inline mr-1" />{tr("profile.designation")}
               </label>
               <input
                 value={info.designation}
@@ -217,7 +219,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>
-                <Building2 size={9} className="inline mr-1" />শাখা / Branch
+                <Building2 size={9} className="inline mr-1" />{tr("profile.branch")}
               </label>
               <input
                 value={info.branch}
@@ -227,15 +229,15 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ভূমিকা / Role</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("profile.role")}</label>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
                 <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.cyan}20`, color: t.cyan }}>{info.role}</span>
-                <span className="text-[10px]" style={{ color: t.muted }}>— Admin দ্বারা নিয়ন্ত্রিত</span>
+                <span className="text-[10px]" style={{ color: t.muted }}>— {tr("profile.controlledByAdmin")}</span>
               </div>
             </div>
           </div>
           <div className="flex justify-end mt-5">
-            <Button icon={Save} onClick={saveProfile}>সংরক্ষণ করুন</Button>
+            <Button icon={Save} onClick={saveProfile}>{tr("common.save")}</Button>
           </div>
         </Card>
       )}
@@ -244,11 +246,11 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       {activeTab === "security" && (
         <Card delay={50}>
           <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-            <Shield size={14} style={{ color: t.cyan }} /> পাসওয়ার্ড পরিবর্তন
+            <Shield size={14} style={{ color: t.cyan }} /> {tr("profile.changePassword")}
           </h3>
           <div className="space-y-4 max-w-sm">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পুরানো পাসওয়ার্ড</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("profile.oldPassword")}</label>
               <div className="flex items-center rounded-lg overflow-hidden" style={is}>
                 <input
                   type={showOld ? "text" : "password"}
@@ -265,14 +267,14 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নতুন পাসওয়ার্ড</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("profile.newPassword")}</label>
               <div className="flex items-center rounded-lg overflow-hidden" style={is}>
                 <input
                   type={showNext ? "text" : "password"}
                   value={passwords.next}
                   onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
                   className="flex-1 px-3 py-2 bg-transparent text-sm outline-none"
-                  placeholder="কমপক্ষে ৮ অক্ষর"
+                  placeholder={tr("profile.minCharsPlaceholder")}
                   autoComplete="new-password"
                   data-form-type="other"
                 />
@@ -297,7 +299,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
               )}
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নতুন পাসওয়ার্ড নিশ্চিত করুন</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("profile.confirmPassword")}</label>
               <input
                 type="password"
                 value={passwords.confirm}
@@ -314,10 +316,10 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                 placeholder="••••••••"
               />
               {passwords.confirm && passwords.confirm !== passwords.next && (
-                <p className="text-[10px] mt-1" style={{ color: "#ef4444" }}>পাসওয়ার্ড মিলছে না</p>
+                <p className="text-[10px] mt-1" style={{ color: "#ef4444" }}>{tr("profile.passwordMismatch")}</p>
               )}
             </div>
-            <Button icon={Lock} onClick={changePassword}>পাসওয়ার্ড পরিবর্তন করুন</Button>
+            <Button icon={Lock} onClick={changePassword}>{tr("profile.changePassword")}</Button>
           </div>
         </Card>
       )}
@@ -325,14 +327,14 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
       {/* === PREFERENCES TAB === */}
       {activeTab === "preferences" && (
         <Card delay={50}>
-          <h3 className="text-sm font-bold mb-4">অ্যাপ পছন্দ</h3>
+          <h3 className="text-sm font-bold mb-4">{tr("profile.appPreferences")}</h3>
           <div className="space-y-1">
 
             {/* Theme */}
             <div className="flex items-center justify-between py-4" style={{ borderBottom: `1px solid ${t.border}` }}>
               <div>
-                <p className="text-sm font-medium">থিম</p>
-                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>Dark বা Light মোড বেছে নিন</p>
+                <p className="text-sm font-medium">{tr("profile.theme")}</p>
+                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{tr("profile.themeDesc")}</p>
               </div>
               <div className="flex gap-1 p-1 rounded-lg" style={{ background: t.inputBg }}>
                 {["dark", "light"].map((mode) => (
@@ -347,7 +349,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
                       color: (isDark ? "dark" : "light") === mode ? t.text : t.muted,
                     }}
                   >
-                    {mode === "dark" ? "🌙 ডার্ক" : "☀️ লাইট"}
+                    {mode === "dark" ? `🌙 ${tr("profile.dark")}` : `☀️ ${tr("profile.light")}`}
                   </button>
                 ))}
               </div>
@@ -357,9 +359,9 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             <div className="flex items-center justify-between py-4" style={{ borderBottom: `1px solid ${t.border}` }}>
               <div>
                 <p className="text-sm font-medium flex items-center gap-1.5">
-                  <Bell size={13} style={{ color: t.cyan }} /> নোটিফিকেশন
+                  <Bell size={13} style={{ color: t.cyan }} /> {tr("profile.notifications")}
                 </p>
-                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>Follow-up ও deadline রিমাইন্ডার</p>
+                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{tr("profile.notificationsDesc")}</p>
               </div>
               <button
                 onClick={() => setInfo((p) => ({ ...p, notifications: !p.notifications }))}
@@ -377,9 +379,9 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
             <div className="flex items-center justify-between py-4">
               <div>
                 <p className="text-sm font-medium flex items-center gap-1.5">
-                  <Globe size={13} style={{ color: t.cyan }} /> ভাষা / Language
+                  <Globe size={13} style={{ color: t.cyan }} /> {tr("profile.language")}
                 </p>
-                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>ইন্টারফেস ভাষা নির্বাচন করুন</p>
+                <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{tr("profile.languageDesc")}</p>
               </div>
               <select
                 value={info.language || "bn"}
@@ -394,7 +396,7 @@ export default function ProfilePage({ currentUser, setCurrentUser, onLogout, isD
           </div>
 
           <div className="flex justify-end mt-4">
-            <Button icon={Save} onClick={savePrefs}>সংরক্ষণ করুন</Button>
+            <Button icon={Save} onClick={savePrefs}>{tr("common.save")}</Button>
           </div>
         </Card>
       )}

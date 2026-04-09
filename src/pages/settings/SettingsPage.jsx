@@ -89,7 +89,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         setAgencyLogo(data.logo_url || "");
         setBranch(data.branch || "");
       }
-    }).catch((err) => { console.error("[Settings Load]", err); toast.error("সেটিংস ডাটা লোড করতে সমস্যা হয়েছে"); });
+    }).catch((err) => { console.error("[Settings Load]", err); toast.error(tr("settings.loadError")); });
   }, []);
 
   // ── এজেন্সি লোগো আপলোড ──
@@ -98,7 +98,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error("ফাইল সাইজ সর্বোচ্চ 2MB"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error(tr("settings.logoMaxSize")); return; }
     const formData = new FormData();
     formData.append("logo", file);
     try {
@@ -107,9 +107,9 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData,
       });
       const data = await res.json();
-      if (res.ok && data.logo_url) { setAgencyLogo(data.logo_url); toast.success("লোগো আপলোড হয়েছে!"); }
-      else { toast.error(data.error || "আপলোড ব্যর্থ"); }
-    } catch { toast.error("আপলোড করতে সমস্যা"); }
+      if (res.ok && data.logo_url) { setAgencyLogo(data.logo_url); toast.success(tr("settings.logoUploaded")); }
+      else { toast.error(data.error || tr("settings.uploadFailed")); }
+    } catch { toast.error(tr("settings.uploadError")); }
   };
   const [taxRate, setTaxRate] = useState("15");
   const [currency, setCurrency] = useState("BDT");
@@ -151,7 +151,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
   // checklist-এ নতুন item add
   const addChecklistItem = () => {
-    if (!newItemText.trim()) { toast.error("আইটেম টেক্সট দিন"); return; }
+    if (!newItemText.trim()) { toast.error(tr("settings.enterItemText")); return; }
     const id = `${editingStep.toLowerCase()}_${Date.now()}`;
     setEditChecklist(prev => [...prev, { id, text: newItemText.trim(), req: newItemReq }]);
     setNewItemText("");
@@ -187,7 +187,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       checklist: editChecklist,
     };
     updateStepConfigs(updated);
-    toast.success(`${editingStep} — চেকলিস্ট সংরক্ষিত হয়েছে`);
+    toast.success(`${editingStep} — ${tr("settings.checklistSaved")}`);
     setEditingStep(null);
   };
 
@@ -195,7 +195,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   const resetToDefaults = () => {
     if (!updateStepConfigs) return;
     updateStepConfigs(DEFAULT_STEPS_META);
-    toast.success("সব ধাপ ডিফল্ট ডেমো ডাটায় রিসেট হয়েছে");
+    toast.success(tr("settings.resetToDefaultsDone"));
     setEditingStep(null);
   };
 
@@ -208,26 +208,26 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
   // API থেকে branch লোড
   useEffect(() => {
-    api.get("/branches").then(data => { if (Array.isArray(data)) setBranches(data); }).catch((err) => { console.error("[Branches Load]", err); toast.error("ব্রাঞ্চ ডাটা লোড করতে সমস্যা হয়েছে"); });
+    api.get("/branches").then(data => { if (Array.isArray(data)) setBranches(data); }).catch((err) => { console.error("[Branches Load]", err); toast.error(tr("settings.branchLoadError")); });
   }, []);
 
   // Branch save (create/update)
   const saveBranch = async () => {
-    if (!branchForm.name.trim()) { toast.error("ব্রাঞ্চ নাম দিন"); return; }
+    if (!branchForm.name.trim()) { toast.error(tr("settings.enterBranchName")); return; }
     try {
       if (editingBranchId) {
         const updated = await api.patch(`/branches/${editingBranchId}`, branchForm);
         setBranches(prev => prev.map(b => b.id === editingBranchId ? updated : b));
-        toast.updated("ব্রাঞ্চ");
+        toast.updated(tr("settings.branch"));
       } else {
         const created = await api.post("/branches", branchForm);
         setBranches(prev => [...prev, created]);
-        toast.success("ব্রাঞ্চ যোগ হয়েছে");
+        toast.success(tr("settings.branchAdded"));
       }
       setBranchForm(EMPTY_BRANCH);
       setShowBranchForm(false);
       setEditingBranchId(null);
-    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+    } catch (err) { toast.error(err.message || tr("errors.saveFailed")); }
   };
 
   const editBranch = (b) => {
@@ -240,7 +240,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
     try {
       await api.delete(`/branches/${id}`);
       setBranches(prev => prev.filter(b => b.id !== id));
-      toast.success("ব্রাঞ্চ মুছে ফেলা হয়েছে");
+      toast.success(tr("settings.branchDeleted"));
     } catch (err) { toast.error(err.message); }
   };
 
@@ -258,15 +258,15 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
   // Holiday save (create)
   const saveHoliday = async () => {
-    if (!holidayForm.date) { toast.error("তারিখ দিন"); return; }
-    if (!holidayForm.name.trim()) { toast.error("ছুটির নাম দিন (English)"); return; }
+    if (!holidayForm.date) { toast.error(tr("settings.enterDate")); return; }
+    if (!holidayForm.name.trim()) { toast.error(tr("settings.enterHolidayName")); return; }
     try {
       const created = await api.post("/holidays", holidayForm);
       setHolidays(prev => [...prev, created].sort((a, b) => a.date.localeCompare(b.date)));
-      toast.success("ছুটি যোগ হয়েছে");
+      toast.success(tr("settings.holidayAdded"));
       setHolidayForm(EMPTY_HOLIDAY);
       setShowHolidayForm(false);
-    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+    } catch (err) { toast.error(err.message || tr("errors.saveFailed")); }
   };
 
   // Holiday delete
@@ -275,8 +275,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       await api.del(`/holidays/${id}`);
       setHolidays(prev => prev.filter(h => h.id !== id));
       setDeletingHolidayId(null);
-      toast.success("ছুটি মুছে ফেলা হয়েছে");
-    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+      toast.success(tr("settings.holidayDeleted"));
+    } catch (err) { toast.error(err.message || tr("errors.deleteFailed")); }
   };
 
   // ── Notification settings ──
@@ -302,7 +302,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
   const copyVariable = (key) => {
     navigator.clipboard.writeText(`{{${key}}}`);
-    toast.success(`Copied {{${key}}}`);
+    toast.success(`${tr("settings.copied")} {{${key}}}`);
   };
 
   const copyAllVariables = (dt) => {
@@ -310,7 +310,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       .filter(f => f.type !== "section_header" && f.type !== "repeatable")
       .map(f => `{{${f.key}}}`).join("\n");
     navigator.clipboard.writeText(keys);
-    toast.success(`${dt.name} — all variables copied!`);
+    toast.success(`${dt.name} — ${tr("settings.allVarsCopied")}`);
   };
 
   // ── Field Editor state — doc type-এর fields add/remove/reorder ──
@@ -326,9 +326,9 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   };
 
   const addNewField = () => {
-    if (!newField.key.trim() || !newField.label_en.trim()) { toast.error("Key and Label required"); return; }
+    if (!newField.key.trim() || !newField.label_en.trim()) { toast.error(tr("settings.keyLabelRequired")); return; }
     const keyExists = fieldEditorFields.some(f => f.key === newField.key.trim());
-    if (keyExists) { toast.error("Field key already exists"); return; }
+    if (keyExists) { toast.error(tr("settings.fieldKeyExists")); return; }
     setFieldEditorFields(prev => [...prev, { ...newField, key: newField.key.trim(), label_en: newField.label_en.trim() }]);
     setNewField({ key: "", label_en: "", type: "text", required: false });
   };
@@ -350,7 +350,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
     try {
       await api.patch(`/docdata/types/${fieldEditorDocType.id}`, { fields: fieldEditorFields });
       setDocTypes(prev => prev.map(dt => dt.id === fieldEditorDocType.id ? { ...dt, fields: fieldEditorFields } : dt));
-      toast.success("Fields updated!");
+      toast.success(tr("settings.fieldsUpdated"));
       setFieldEditorDocType(null);
     } catch (err) { toast.error(err.message); }
     setSavingFields(false);
@@ -401,14 +401,14 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   // একটি group-এ নতুন subject যোগ করো
   const addSubjectToGroup = (group) => {
     const val = (newSubjectInputs[group] || "").trim();
-    if (!val) { toast.error("Subject নাম দিন"); return; }
+    if (!val) { toast.error(tr("settings.enterSubjectName")); return; }
     setSubjectEditorFields(prev => {
       const updated = JSON.parse(JSON.stringify(prev));
       for (const f of updated) {
         if (f.type === "repeatable") {
           for (const sf of (f.subfields || [])) {
             if (sf.conditional_options?.values?.[group]) {
-              if (sf.conditional_options.values[group].includes(val)) { toast.error(`"${val}" ইতিমধ্যে আছে`); return prev; }
+              if (sf.conditional_options.values[group].includes(val)) { toast.error(`"${val}" ${tr("settings.alreadyExists")}`); return prev; }
               sf.conditional_options.values[group].push(val);
             }
           }
@@ -439,7 +439,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
   // default list-এ subject যোগ/সরাও
   const addSubjectToDefault = () => {
     const val = (newSubjectInputs["__default__"] || "").trim();
-    if (!val) { toast.error("Subject নাম দিন"); return; }
+    if (!val) { toast.error(tr("settings.enterSubjectName")); return; }
     setSubjectEditorFields(prev => {
       const updated = JSON.parse(JSON.stringify(prev));
       for (const f of updated) {
@@ -447,7 +447,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
           for (const sf of (f.subfields || [])) {
             if (sf.conditional_options) {
               if (!sf.conditional_options.default) sf.conditional_options.default = [];
-              if (sf.conditional_options.default.includes(val)) { toast.error(`"${val}" ইতিমধ্যে আছে`); return prev; }
+              if (sf.conditional_options.default.includes(val)) { toast.error(`"${val}" ${tr("settings.alreadyExists")}`); return prev; }
               sf.conditional_options.default.push(val);
             }
           }
@@ -483,9 +483,9 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       setDocTypes(prev => prev.map(d => d.id === subjectEditorDocType.id ? updated : d));
       setSubjectEditorDocType(updated);
       setSubjectEditorFields(JSON.parse(JSON.stringify(updated.fields || [])));
-      toast.success(`${subjectEditorDocType.name} — Subject list আপডেট হয়েছে`);
+      toast.success(`${subjectEditorDocType.name} — ${tr("settings.subjectListUpdated")}`);
     } catch (err) {
-      toast.error(err.message || "আপডেট ব্যর্থ");
+      toast.error(err.message || tr("errors.saveFailed"));
     } finally {
       setSavingSubjects(false);
     }
@@ -530,18 +530,18 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       {activeTab === "agency" && <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><Building size={14} /> এজেন্সি তথ্য</h3>
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Building size={14} /> {tr("settings.agencyInfo")}</h3>
             <Button icon={Save} size="xs" onClick={async () => {
               try {
                 await api.patch("/agency/me", { name: agencyName, branch, phone: agencyPhone, email: agencyEmail, address: agencyAddress });
-                toast.success("এজেন্সি তথ্য সংরক্ষণ হয়েছে!");
-              } catch { toast.error("সংরক্ষণ ব্যর্থ"); }
-            }}>সংরক্ষণ</Button>
+                toast.success(tr("settings.agencyInfoSaved"));
+              } catch { toast.error(tr("errors.saveFailed")); }
+            }}>{tr("common.save")}</Button>
           </div>
           <div className="space-y-3">
             {[
-              { label: "এজেন্সি নাম", value: agencyName, onChange: setAgencyName, placeholder: "Your Agency Name" },
-              { label: "ব্রাঞ্চ", value: branch, onChange: setBranch, placeholder: "Branch Name" },
+              { label: tr("settings.agencyName"), value: agencyName, onChange: setAgencyName, placeholder: "Your Agency Name" },
+              { label: tr("settings.branch"), value: branch, onChange: setBranch, placeholder: "Branch Name" },
             ].map((f) => (
               <div key={f.label}>
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
@@ -552,7 +552,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               </div>
             ))}
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্সি লোগো</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.agencyLogo")}</label>
               <div className="flex items-center gap-3">
                 {agencyLogo ? (
                   <img src={agencyLogo.startsWith("http") ? agencyLogo : `${API_URL.replace("/api", "")}${agencyLogo}`}
@@ -565,7 +565,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 <input ref={logoRef} type="file" accept=".jpg,.jpeg,.png,.webp,.svg" onChange={handleLogoUpload} className="hidden" />
                 <button onClick={() => logoRef.current?.click()} className="px-3 py-1.5 rounded-lg text-xs"
                   style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.textSecondary }}>
-                  লোগো পরিবর্তন
+                  {tr("settings.changeLogo")}
                 </button>
               </div>
             </div>
@@ -573,17 +573,17 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         </Card>
 
         <Card delay={100}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><DollarSign size={14} /> ফাইন্যান্স সেটিংস</h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><DollarSign size={14} /> {tr("settings.financeSettings")}</h3>
           <div className="space-y-3">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ট্যাক্স রেট (%)</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.taxRate")}</label>
               <input value={taxRate} onChange={(e) => setTaxRate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none transition"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
                 type="number" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কারেন্সি</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.currency")}</label>
               <select value={currency} onChange={(e) => setCurrency(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none transition"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
@@ -597,12 +597,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         </Card>
 
         <Card delay={150}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Eye size={14} /> অ্যাপিয়ারেন্স</h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Eye size={14} /> {tr("settings.appearance")}</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
               <div>
                 <p className="text-sm font-medium">{tr("settings.darkMode")}</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>UI থিম পরিবর্তন করুন</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>{tr("settings.darkModeDesc")}</p>
               </div>
               <button onClick={() => setIsDark(!isDark)}
                 className="relative w-11 h-6 rounded-full transition-all duration-300"
@@ -614,7 +614,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
               <div>
                 <p className="text-sm font-medium">{tr("settings.language")}</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>ইন্টারফেস ভাষা</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>{tr("settings.languageDesc")}</p>
               </div>
               <select value={lang} onChange={e => setLang(e.target.value)}
                 className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.mode === "dark" ? "rgba(255,255,255,0.1)" : "#e2e8f0", color: t.text }}>
@@ -625,7 +625,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         </Card>
 
         <Card delay={200}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Globe size={14} /> দেশ কনফিগারেশন</h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Globe size={14} /> {tr("settings.countryConfig")}</h3>
           <div className="space-y-2">
             {[
               { country: "Japan 🇯🇵", pipeline: "20 steps", docs: "11 base + conditional", status: "active" },
@@ -642,18 +642,18 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             ))}
             <button className="w-full py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
               style={{ background: `${t.cyan}10`, color: t.cyan }}>
-              <Plus size={12} /> নতুন দেশ যোগ করুন
+              <Plus size={12} /> {tr("settings.addCountry")}
             </button>
           </div>
         </Card>
 
         {isSuperAdmin && <Card delay={250}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Download size={14} /> ডেটা ব্যাকআপ ও এক্সপোর্ট</h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Download size={14} /> {tr("settings.dataBackupExport")}</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: t.inputBg }}>
               <div>
-                <p className="text-sm font-medium">অটো ব্যাকআপ</p>
-                <p className="text-[10px]" style={{ color: t.muted }}>প্রতিদিন রাত ২:০০ AM এ সব ডেটা auto backup</p>
+                <p className="text-sm font-medium">{tr("settings.autoBackup")}</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>{tr("settings.autoBackupDesc")}</p>
               </div>
               <button className="relative w-11 h-6 rounded-full transition-all duration-300" style={{ background: t.cyan }}>
                 <div className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-300" style={{ left: "22px" }} />
@@ -665,18 +665,18 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 <div className="flex items-center gap-2">
                   <CheckCircle size={14} style={{ color: t.emerald }} />
                   <div>
-                    <p className="text-xs font-medium" style={{ color: t.emerald }}>সর্বশেষ ব্যাকআপ সফল</p>
+                    <p className="text-xs font-medium" style={{ color: t.emerald }}>{tr("settings.lastBackupSuccess")}</p>
                     <p className="text-[10px]" style={{ color: t.muted }}>২২ মার্চ ২০২৬, ০২:০০ AM — ১২.৫ MB</p>
                   </div>
                 </div>
-                <Badge color={t.emerald} size="xs">✓ সফল</Badge>
+                <Badge color={t.emerald} size="xs">✓ {tr("settings.successful")}</Badge>
               </div>
             </div>
 
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>ম্যানুয়াল ব্যাকআপ</p>
+              <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("settings.manualBackup")}</p>
               {[
-                { icon: "📊", label: "সম্পূর্ণ ডেটাবেস ব্যাকআপ", sub: "সব টেবিলের সব ডেটা — JSON format", color: t.cyan,
+                { icon: "📊", label: tr("settings.fullDbBackup"), sub: tr("settings.fullDbBackupDesc"), color: t.cyan,
                   onClick: () => {
                     const allData = { students, visitors, exportDate: new Date().toISOString(), version: "1.0" };
                     const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" });
@@ -687,7 +687,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     toast.exported("Full Database Backup");
                   }
                 },
-                { icon: "🎓", label: "Students Export (CSV)", sub: "সব student data — CSV format", color: t.purple,
+                { icon: "🎓", label: tr("settings.studentsExportCsv"), sub: tr("settings.studentsExportCsvDesc"), color: t.purple,
                   onClick: () => {
                     const headers = "ID,Name EN,Name BN,Phone,DOB,Gender,Passport,Status,Country,School,Batch,Source,Type,Created";
                     const rows = (students || []).map((s) => `${s.id},${s.name_en},${s.name_bn},${s.phone},${s.dob},${s.gender},${s.passport},${s.status},${s.country},${s.school},${s.batch},${s.source},${s.type},${s.created}`);
@@ -700,7 +700,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     toast.exported(`Students CSV (${(students || []).length} records)`);
                   }
                 },
-                { icon: "🚶", label: "Visitors Export (CSV)", sub: "সব visitor data — CSV format", color: t.amber,
+                { icon: "🚶", label: tr("settings.visitorsExportCsv"), sub: tr("settings.visitorsExportCsvDesc"), color: t.amber,
                   onClick: () => {
                     const headers = "ID,Name,Phone,Country,Source,Counselor,Status,Date,Notes";
                     const rows = (visitors || []).map((v) => `${v.id},"${v.name}",${v.phone},${v.country},${v.source},${v.counselor},${v.status},${v.date},"${v.notes || ''}"`);
@@ -713,7 +713,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     toast.exported(`Visitors CSV (${(visitors || []).length} records)`);
                   }
                 },
-                { icon: "💰", label: "Financial Report Export", sub: "আয়-ব্যয় রিপোর্ট — CSV format", color: t.emerald,
+                { icon: "💰", label: tr("settings.financialExport"), sub: tr("settings.financialExportDesc"), color: t.emerald,
                   onClick: () => {
                     const csv = "Date,Type,Category,Description,Amount\n" + new Date().toISOString().slice(0,10) + ",Income,course_fee,Sample Income,50000\n" + new Date().toISOString().slice(0,10) + ",Expense,salary,Sample Expense,30000";
                     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
@@ -738,9 +738,9 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             </div>
 
             <div className="pt-2" style={{ borderTop: `1px solid ${t.border}` }}>
-              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>ব্যাকআপ শিডিউল</p>
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>{tr("settings.backupSchedule")}</p>
               <div className="flex gap-2">
-                {["প্রতিদিন", "সাপ্তাহিক", "মাসিক"].map((opt, i) => (
+                {[tr("settings.daily"), tr("settings.weekly"), tr("settings.monthly")].map((opt, i) => (
                   <button key={opt} className="flex-1 py-2 rounded-lg text-xs font-medium transition"
                     style={{ background: i === 0 ? `${t.cyan}20` : t.inputBg, color: i === 0 ? t.cyan : t.muted, border: `1px solid ${i === 0 ? `${t.cyan}40` : t.inputBorder}` }}>
                     {opt}
@@ -750,7 +750,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             </div>
 
             <div className="pt-2" style={{ borderTop: `1px solid ${t.border}` }}>
-              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>সাম্প্রতিক ব্যাকআপ</p>
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>{tr("settings.recentBackups")}</p>
               {[
                 { date: "২২ মার্চ ২০২৬, ০২:০০", size: "12.5 MB" },
                 { date: "২১ মার্চ ২০২৬, ০২:০০", size: "12.3 MB" },
@@ -763,7 +763,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   </div>
                   <div className="flex items-center gap-3">
                     <span style={{ color: t.muted }}>{b.size}</span>
-                    <button className="text-[10px] font-medium" style={{ color: t.cyan }}>Download</button>
+                    <button className="text-[10px] font-medium" style={{ color: t.cyan }}>{tr("common.download")}</button>
                   </div>
                 </div>
               ))}
@@ -777,33 +777,33 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       {activeTab === "appearance" && <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><Type size={14} /> লেবেল ডিজাইন সেটিংস</h3>
-            <Button icon={Save} size="xs" onClick={() => toast.success("লেবেল সেটিংস সংরক্ষণ হয়েছে!")}>সংরক্ষণ</Button>
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Type size={14} /> {tr("settings.labelDesign")}</h3>
+            <Button icon={Save} size="xs" onClick={() => toast.success(tr("settings.labelSettingsSaved"))}>{tr("common.save")}</Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেবেল ফন্ট সাইজ</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.labelFontSize")}</label>
               <select value={labelSettings.labelSize} onChange={e => updateLabelSettings({ labelSize: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-                <option value="9px">৯px (ছোট)</option>
-                <option value="10px">১০px (ডিফল্ট)</option>
-                <option value="11px">১১px</option>
-                <option value="12px">১২px (মাঝারি)</option>
-                <option value="13px">১৩px</option>
-                <option value="14px">১৪px (বড়)</option>
+                <option value="9px">{tr("settings.fontSize9")}</option>
+                <option value="10px">{tr("settings.fontSize10")}</option>
+                <option value="11px">{tr("settings.fontSize11")}</option>
+                <option value="12px">{tr("settings.fontSize12")}</option>
+                <option value="13px">{tr("settings.fontSize13")}</option>
+                <option value="14px">{tr("settings.fontSize14")}</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেবেল ফন্ট কালার</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.labelFontColor")}</label>
               <div className="flex gap-2 flex-wrap">
                 {[
-                  { label: "ডিফল্ট", value: "", color: t.muted },
-                  { label: "সাদা", value: "#e2e8f0", color: "#e2e8f0" },
-                  { label: "সায়ান", value: "#06b6d4", color: "#06b6d4" },
-                  { label: "বেগুনি", value: "#a855f7", color: "#a855f7" },
-                  { label: "সবুজ", value: "#22c55e", color: "#22c55e" },
-                  { label: "হলুদ", value: "#eab308", color: "#eab308" },
+                  { label: tr("settings.colorDefault"), value: "", color: t.muted },
+                  { label: tr("settings.colorWhite"), value: "#e2e8f0", color: "#e2e8f0" },
+                  { label: tr("settings.colorCyan"), value: "#06b6d4", color: "#06b6d4" },
+                  { label: tr("settings.colorPurple"), value: "#a855f7", color: "#a855f7" },
+                  { label: tr("settings.colorGreen"), value: "#22c55e", color: "#22c55e" },
+                  { label: tr("settings.colorYellow"), value: "#eab308", color: "#eab308" },
                 ].map(c => (
                   <button key={c.label} onClick={() => updateLabelSettings({ labelColor: c.value })}
                     className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] transition"
@@ -820,20 +820,20 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             </div>
           </div>
           <div className="mt-3 p-3 rounded-lg" style={{ background: t.inputBg }}>
-            <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: t.muted }}>প্রিভিউ</p>
+            <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: t.muted }}>{tr("settings.preview")}</p>
             <label style={{ fontSize: labelSettings.labelSize, color: labelSettings.labelColor || t.muted }} className="uppercase tracking-wider font-medium">
-              স্টুডেন্টের নাম <span className="req-star">*</span>
+              {tr("settings.previewStudentName")} <span className="req-star">*</span>
             </label>
           </div>
         </Card>
 
         {/* ── Dark/Light Mode Toggle ── */}
         <Card delay={80}>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Eye size={14} /> থিম মোড</h3>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Eye size={14} /> {tr("settings.themeMode")}</h3>
           <div className="flex gap-3">
             {[
-              { label: "ডার্ক মোড", value: true, icon: "🌙" },
-              { label: "লাইট মোড", value: false, icon: "☀️" },
+              { label: tr("settings.darkModeLabel"), value: true, icon: "🌙" },
+              { label: tr("settings.lightModeLabel"), value: false, icon: "☀️" },
             ].map(opt => (
               <button key={opt.label} onClick={() => setIsDark(opt.value)}
                 className="flex-1 py-3 rounded-xl text-xs font-medium transition flex items-center justify-center gap-2"
@@ -853,8 +853,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       {activeTab === "doc_types" && <div className="space-y-5">
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><FileText size={14} /> ডকুমেন্ট টাইপ তালিকা</h3>
-            <Button icon={Plus} size="xs" onClick={() => { setShowDocTypeForm(true); setEditingDocTypeId(null); setDocTypeForm({ name: "", name_bn: "", category: "personal" }); setDocTypeFields([]); }}>নতুন টাইপ</Button>
+            <h3 className="text-sm font-semibold flex items-center gap-2"><FileText size={14} /> {tr("settings.docTypeList")}</h3>
+            <Button icon={Plus} size="xs" onClick={() => { setShowDocTypeForm(true); setEditingDocTypeId(null); setDocTypeForm({ name: "", name_bn: "", category: "personal" }); setDocTypeFields([]); }}>{tr("settings.newDocType")}</Button>
           </div>
 
           {/* Add/Edit Form — Modal */}
@@ -877,12 +877,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     try {
                       await api.patch(`/docdata/types/${dt.id}`, { is_active: newActive });
                       setDocTypes(prev => prev.map(d => d.id === dt.id ? { ...d, is_active: newActive } : d));
-                      toast.success(newActive ? "সক্রিয় করা হয়েছে" : "নিষ্ক্রিয় করা হয়েছে");
+                      toast.success(newActive ? tr("settings.activated") : tr("settings.deactivated"));
                     } catch (err) { toast.error(err.message); }
                   }}
                     className="relative w-9 h-5 rounded-full transition-all shrink-0"
                     style={{ background: dt.is_active !== false ? t.emerald : `${t.muted}40` }}
-                    title={dt.is_active !== false ? "সক্রিয়" : "নিষ্ক্রিয়"}>
+                    title={dt.is_active !== false ? tr("common.active") : tr("common.inactive")}>
                     <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all"
                       style={{ left: dt.is_active !== false ? "18px" : "2px" }} />
                   </button>
@@ -893,13 +893,13 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     try {
                       await api.patch(`/docdata/types/${dt.id}`, { student_fillable: newVal });
                       setDocTypes(prev => prev.map(d => d.id === dt.id ? { ...d, student_fillable: newVal } : d));
-                      toast.success(newVal ? "Student পূরণ করতে পারবে" : "Student পূরণ করতে পারবে না");
+                      toast.success(newVal ? tr("settings.studentCanFill") : tr("settings.studentCannotFill"));
                     } catch (err) { toast.error(err.message); }
                   }}
                     className="text-[9px] px-1.5 py-0.5 rounded transition shrink-0"
                     style={{ background: dt.student_fillable ? `${t.purple}15` : `${t.muted}10`, color: dt.student_fillable ? t.purple : t.muted }}
-                    title={dt.student_fillable ? "Student Portal-এ দেখাবে — Student নিজে পূরণ করতে পারবে" : "শুধু Staff দেখবে — Student Portal-এ দেখাবে না"}>
-                    {dt.student_fillable ? "👨‍🎓 Student can fill" : "🔒 Staff only"}
+                    title={dt.student_fillable ? tr("settings.studentFillableTitle") : tr("settings.staffOnlyTitle")}>
+                    {dt.student_fillable ? `👨‍🎓 ${tr("settings.studentCanFillShort")}` : `🔒 ${tr("settings.staffOnlyShort")}`}
                   </button>
 
                   <div className="flex items-center gap-1">
@@ -925,14 +925,14 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     setDocTypeForm({ name: dt.name, name_bn: dt.name_bn || "", category: dt.category || "personal" });
                     setDocTypeFields(dt.fields || []);
                     setShowDocTypeForm(true);
-                  }} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan }}>Edit</button>
+                  }} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan }}>{tr("common.edit")}</button>
                   {deleteDocTypeId === dt.id ? (
                     <div className="flex gap-1">
                       <button onClick={async () => {
-                        try { await api.del(`/docdata/types/${dt.id}`); setDocTypes(prev => prev.filter(d => d.id !== dt.id)); toast.success("মুছে ফেলা হয়েছে"); } catch (err) { toast.error(err.message); }
+                        try { await api.del(`/docdata/types/${dt.id}`); setDocTypes(prev => prev.filter(d => d.id !== dt.id)); toast.success(tr("success.deleted")); } catch (err) { toast.error(err.message); }
                         setDeleteDocTypeId(null);
-                      }} className="text-[10px] px-2 py-1 rounded-lg" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
-                      <button onClick={() => setDeleteDocTypeId(null)} className="text-[10px] px-2 py-1" style={{ color: t.muted }}>না</button>
+                      }} className="text-[10px] px-2 py-1 rounded-lg" style={{ background: t.rose, color: "#fff" }}>{tr("common.delete")}</button>
+                      <button onClick={() => setDeleteDocTypeId(null)} className="text-[10px] px-2 py-1" style={{ color: t.muted }}>{tr("common.no")}</button>
                     </div>
                   ) : (
                     <button onClick={() => setDeleteDocTypeId(dt.id)} style={{ color: t.muted }}><Trash2 size={13} /></button>
@@ -941,18 +941,18 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 </div>
               </div>
             ))}
-            {docTypes.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো document type নেই</p>}
+            {docTypes.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("settings.noDocTypes")}</p>}
           </div>
         </Card>
 
         {/* ── Variables Viewer Modal ── */}
         <Modal isOpen={!!variablesDocType} onClose={() => setVariablesDocType(null)}
-          title={variablesDocType ? `${variablesDocType.name} — Template Variables` : ""} subtitle="Click any variable to copy. Use these in .docx templates." size="lg">
+          title={variablesDocType ? `${variablesDocType.name} — ${tr("settings.templateVariables")}` : ""} subtitle={tr("settings.templateVariablesDesc")} size="lg">
           {variablesDocType && (
             <>
               <div className="flex justify-end mb-3">
                 <button onClick={() => copyAllVariables(variablesDocType)} className="text-[10px] px-2 py-1 rounded-lg"
-                  style={{ background: `${t.cyan}15`, color: t.cyan }}>Copy All</button>
+                  style={{ background: `${t.cyan}15`, color: t.cyan }}>{tr("settings.copyAll")}</button>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {(variablesDocType.fields || []).filter(f => f.type !== "section_header").map(f => (
@@ -980,10 +980,10 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
               {/* Syntax Guide */}
               <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-                <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-3" style={{ color: t.purple }}>Syntax Guide — Modifiers</h4>
+                <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-3" style={{ color: t.purple }}>{tr("settings.syntaxGuide")}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px]">
                   <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
-                    <p className="font-semibold mb-1.5" style={{ color: t.emerald }}>Date Formats</p>
+                    <p className="font-semibold mb-1.5" style={{ color: t.emerald }}>{tr("settings.dateFormats")}</p>
                     <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
                       <p>{"{{dob:jp}}"} → 2000年11月13日</p>
                       <p>{"{{dob:slash}}"} → 2000/11/13</p>
@@ -995,7 +995,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     </div>
                   </div>
                   <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
-                    <p className="font-semibold mb-1.5" style={{ color: t.amber }}>Japanese Translation (:jp)</p>
+                    <p className="font-semibold mb-1.5" style={{ color: t.amber }}>{tr("settings.jpTranslation")}</p>
                     <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
                       <p>{"{{gender:jp}}"} → Male=男, Female=女</p>
                       <p>{"{{nationality:jp}}"} → バングラデシュ</p>
@@ -1004,7 +1004,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     </div>
                   </div>
                   <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
-                    <p className="font-semibold mb-1.5" style={{ color: t.rose }}>Custom Mapping</p>
+                    <p className="font-semibold mb-1.5" style={{ color: t.rose }}>{tr("settings.customMapping")}</p>
                     <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
                       <p>{"{{field:map(A=X,B=Y)}}"}</p>
                       <p>{"{{gender:map(Male=男,Female=女)}}"}</p>
@@ -1012,7 +1012,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     </div>
                   </div>
                   <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
-                    <p className="font-semibold mb-1.5" style={{ color: t.cyan }}>Name Parts</p>
+                    <p className="font-semibold mb-1.5" style={{ color: t.cyan }}>{tr("settings.nameParts")}</p>
                     <div className="space-y-0.5 font-mono" style={{ color: t.textSecondary }}>
                       <p>{"{{name_en:first}}"} → first word</p>
                       <p>{"{{name_en:last}}"} → rest</p>
@@ -1028,7 +1028,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
         {/* ── Field Editor Modal ── */}
         <Modal isOpen={!!fieldEditorDocType} onClose={() => setFieldEditorDocType(null)}
-          title={fieldEditorDocType ? `${fieldEditorDocType.name} — Fields` : ""} subtitle="Add, remove, or reorder fields. Custom fields will only apply to your agency." size="xl">
+          title={fieldEditorDocType ? `${fieldEditorDocType.name} — ${tr("settings.fields")}` : ""} subtitle={tr("settings.fieldsSubtitle")} size="xl">
           {fieldEditorDocType && (
             <>
               {/* Field list */}
@@ -1055,7 +1055,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
               {/* Add new field */}
               <div className="p-3 rounded-xl mb-4" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}20` }}>
-                <p className="text-[10px] font-semibold mb-2" style={{ color: t.emerald }}>+ Add Custom Field</p>
+                <p className="text-[10px] font-semibold mb-2" style={{ color: t.emerald }}>+ {tr("settings.addCustomField")}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <input value={newField.key} onChange={e => setNewField(p => ({ ...p, key: e.target.value.replace(/\s/g, "_") }))}
                     className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="field_key" />
@@ -1073,14 +1073,14 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                       <input type="checkbox" checked={newField.required} onChange={e => setNewField(p => ({ ...p, required: e.target.checked }))} /> Required
                     </label>
                     <button onClick={addNewField} className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                      style={{ background: t.emerald, color: "#fff" }}>Add</button>
+                      style={{ background: t.emerald, color: "#fff" }}>{tr("common.add")}</button>
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end">
                 <Button icon={Save} size="sm" onClick={saveFieldEditor} disabled={savingFields}>
-                  {savingFields ? "Saving..." : "Save Fields"}
+                  {savingFields ? tr("common.saving") : tr("settings.saveFields")}
                 </Button>
               </div>
             </>
@@ -1089,8 +1089,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
         {/* ── Subject List Editor Modal ── */}
         <Modal isOpen={!!(subjectEditorDocType && subjectEditorFields)} onClose={closeSubjectEditor}
-          title={subjectEditorDocType ? `${subjectEditorDocType.name_bn || subjectEditorDocType.name} — Subject Lists` : ""}
-          subtitle="প্রতিটি group-এর জন্য subject dropdown কাস্টমাইজ করুন" size="xl">
+          title={subjectEditorDocType ? `${subjectEditorDocType.name_bn || subjectEditorDocType.name} — ${tr("settings.subjectLists")}` : ""}
+          subtitle={tr("settings.subjectListsDesc")} size="xl">
           {subjectEditorDocType && subjectEditorFields && (() => {
             const info = getConditionalInfo(subjectEditorFields);
             if (!info) return null;
@@ -1130,7 +1130,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                             </button>
                           </span>
                         ))}
-                        {subjects.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো subject নেই</p>}
+                        {subjects.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>{tr("settings.noSubjects")}</p>}
                       </div>
 
                       {/* নতুন subject যোগ করার input */}
@@ -1141,12 +1141,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                           onKeyDown={e => { if (e.key === "Enter") addSubjectToGroup(groupName); }}
                           className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
                           style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                          placeholder={`নতুন subject যোগ করুন (${groupName})...`}
+                          placeholder={`${tr("settings.addSubjectPlaceholder")} (${groupName})...`}
                         />
                         <button onClick={() => addSubjectToGroup(groupName)}
                           className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium"
                           style={{ background: `${t.purple}18`, color: t.purple, border: `1px solid ${t.purple}30` }}>
-                          <Plus size={11} /> যোগ
+                          <Plus size={11} /> {tr("common.add")}
                         </button>
                       </div>
                     </div>
@@ -1156,8 +1156,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   <div className="p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.border}` }}>
                     <p className="text-xs font-semibold mb-2 flex items-center gap-2">
                       <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.amber }} />
-                      Default Subjects
-                      <span className="font-normal" style={{ color: t.muted }}>(group সিলেক্ট না হলে এগুলো দেখাবে)</span>
+                      {tr("settings.defaultSubjects")}
+                      <span className="font-normal" style={{ color: t.muted }}>({tr("settings.defaultSubjectsDesc")})</span>
                     </p>
 
                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -1171,7 +1171,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                           </button>
                         </span>
                       ))}
-                      {defaultList.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>কোনো default subject নেই</p>}
+                      {defaultList.length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>{tr("settings.noDefaultSubjects")}</p>}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1181,12 +1181,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                         onKeyDown={e => { if (e.key === "Enter") addSubjectToDefault(); }}
                         className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
                         style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                        placeholder="নতুন default subject যোগ করুন..."
+                        placeholder={tr("settings.addDefaultSubjectPlaceholder")}
                       />
                       <button onClick={addSubjectToDefault}
                         className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium"
                         style={{ background: `${t.amber}18`, color: t.amber, border: `1px solid ${t.amber}30` }}>
-                        <Plus size={11} /> যোগ
+                        <Plus size={11} /> {tr("common.add")}
                       </button>
                     </div>
                   </div>
@@ -1195,7 +1195,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 {/* ── সংরক্ষণ বাটন ── */}
                 <div className="flex justify-end mt-4">
                   <Button icon={Save} size="sm" onClick={saveSubjectChanges} disabled={savingSubjects}>
-                    {savingSubjects ? "সংরক্ষণ হচ্ছে..." : "পরিবর্তন সংরক্ষণ করুন"}
+                    {savingSubjects ? tr("common.saving") : tr("settings.saveChanges")}
                   </Button>
                 </div>
               </>
@@ -1205,24 +1205,24 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
         {/* ── Doc Type Add/Edit Form Modal ── */}
         <Modal isOpen={showDocTypeForm} onClose={() => setShowDocTypeForm(false)}
-          title={editingDocTypeId ? "ডকুমেন্ট টাইপ সম্পাদনা" : "নতুন ডকুমেন্ট টাইপ যোগ"} size="md">
+          title={editingDocTypeId ? tr("settings.editDocType") : tr("settings.addDocType")} size="md">
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (English) <span className="req-star">*</span></label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.nameEn")} <span className="req-star">*</span></label>
                 <input value={docTypeForm.name} onChange={e => setDocTypeForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Birth Certificate" />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.nameBn")}</label>
                 <input value={docTypeForm.name_bn} onChange={e => setDocTypeForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="জন্ম সনদ" />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.category")}</label>
                 <select value={docTypeForm.category} onChange={e => setDocTypeForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                  <option value="personal">ব্যক্তিগত</option>
-                  <option value="academic">একাডেমিক</option>
-                  <option value="financial">আর্থিক</option>
-                  <option value="other">অন্যান্য</option>
+                  <option value="personal">{tr("settings.catPersonal")}</option>
+                  <option value="academic">{tr("settings.catAcademic")}</option>
+                  <option value="financial">{tr("settings.catFinancial")}</option>
+                  <option value="other">{tr("settings.catOther")}</option>
                 </select>
               </div>
             </div>
@@ -1232,7 +1232,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               <div className="flex items-center justify-between mb-2">
                 <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>Custom Fields ({docTypeFields.length})</label>
                 <button onClick={() => setDocTypeFields(prev => [...prev, { key: "", label: "", label_en: "", type: "text" }])}
-                  className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>+ Field যোগ</button>
+                  className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>+ {tr("settings.addField")}</button>
               </div>
               <div className="space-y-2">
                 {docTypeFields.map((f, i) => (
@@ -1240,7 +1240,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     <input value={f.key} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], key: e.target.value }; setDocTypeFields(u); }}
                       className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="key (e.g. BirthRegNo)" />
                     <input value={f.label} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label: e.target.value }; setDocTypeFields(u); }}
-                      className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="লেবেল (বাংলা)" />
+                      className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder={tr("settings.labelBn")} />
                     <input value={f.label_en} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], label_en: e.target.value }; setDocTypeFields(u); }}
                       className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="Label (English)" />
                     <select value={f.type} onChange={e => { const u = [...docTypeFields]; u[i] = { ...u[i], type: e.target.value }; setDocTypeFields(u); }}
@@ -1254,9 +1254,9 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowDocTypeForm(false)}>বাতিল</Button>
+              <Button variant="ghost" size="xs" icon={X} onClick={() => setShowDocTypeForm(false)}>{tr("common.cancel")}</Button>
               <Button size="xs" icon={Save} onClick={async () => {
-                if (!docTypeForm.name.trim()) { toast.error("নাম দিন"); return; }
+                if (!docTypeForm.name.trim()) { toast.error(tr("settings.enterName")); return; }
                 try {
                   if (editingDocTypeId) {
                     const updated = await api.patch(`/docdata/types/${editingDocTypeId}`, { ...docTypeForm, fields: docTypeFields });
@@ -1265,11 +1265,11 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   } else {
                     const saved = await api.post("/docdata/types", { ...docTypeForm, fields: docTypeFields });
                     setDocTypes(prev => [...prev, saved]);
-                    toast.success(`${docTypeForm.name} — যোগ হয়েছে`);
+                    toast.success(`${docTypeForm.name} — ${tr("success.created")}`);
                   }
                   setShowDocTypeForm(false);
                 } catch (err) { toast.error(err.message); }
-              }}>সংরক্ষণ</Button>
+              }}>{tr("common.save")}</Button>
             </div>
           </div>
         </Modal>
@@ -1281,10 +1281,10 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold flex items-center gap-2"><GitBranch size={14} /> পাইপলাইন ধাপ ও চেকলিস্ট</h3>
-              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>প্রতিটি ধাপে ক্লিক করে চেকলিস্ট আইটেম add/edit/delete করুন</p>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><GitBranch size={14} /> {tr("settings.pipelineStepsChecklist")}</h3>
+              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{tr("settings.pipelineStepsDesc")}</p>
             </div>
-            <Button variant="ghost" size="xs" icon={RotateCcw} onClick={resetToDefaults}>ডিফল্ট রিসেট</Button>
+            <Button variant="ghost" size="xs" icon={RotateCcw} onClick={resetToDefaults}>{tr("settings.resetDefaults")}</Button>
           </div>
           <div className="space-y-1.5">
             {pipelineStatuses.map((s, i) => {
@@ -1308,8 +1308,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                     <p className="text-[10px] truncate" style={{ color: t.muted }}>{conf.hint || "—"}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[10px]" style={{ color: t.textSecondary }}>{itemCount} আইটেম</p>
-                    <p className="text-[9px]" style={{ color: t.muted }}>{reqCount} আবশ্যক</p>
+                    <p className="text-[10px]" style={{ color: t.textSecondary }}>{itemCount} {tr("settings.items")}</p>
+                    <p className="text-[9px]" style={{ color: t.muted }}>{reqCount} {tr("settings.required")}</p>
                   </div>
                   <Edit3 size={13} style={{ color: t.muted }} />
                 </div>
@@ -1320,36 +1320,36 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
         {/* ── ধাপ Edit Modal ── */}
         <Modal isOpen={!!editingStep} onClose={() => setEditingStep(null)}
-          title={editingStep ? `${(() => { const ps = PIPELINE_STATUSES.find(p => p.code === editingStep); return ps?.label || editingStep; })()} — চেকলিস্ট সম্পাদনা` : ""}
-          subtitle={editingStep ? `ধাপ: ${editingStep}` : ""} size="xl">
+          title={editingStep ? `${(() => { const ps = PIPELINE_STATUSES.find(p => p.code === editingStep); return ps?.label || editingStep; })()} — ${tr("settings.editChecklist")}` : ""}
+          subtitle={editingStep ? `${tr("settings.step")}: ${editingStep}` : ""} size="xl">
           {editingStep && (
             <>
               {/* ── Step meta fields ── */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>আইকন (Emoji)</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.iconEmoji")}</label>
                   <input value={editStepIcon} onChange={e => setEditStepIcon(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
                     placeholder="🚶" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরবর্তী ধাপের বাটন টেক্সট</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.nextStepBtnText")}</label>
                   <input value={editStepNextLabel} onChange={e => setEditStepNextLabel(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                    placeholder="পরবর্তী ধাপে যান" />
+                    placeholder={tr("settings.nextStepPlaceholder")} />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধাপের বিবরণ / Hint</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.stepHint")}</label>
                   <input value={editStepHint} onChange={e => setEditStepHint(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                    placeholder="এই ধাপে কী করতে হবে..." />
+                    placeholder={tr("settings.stepHintPlaceholder")} />
                 </div>
               </div>
 
               {/* ── চেকলিস্ট আইটেম তালিকা ── */}
               <div className="mb-3">
                 <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>
-                  চেকলিস্ট আইটেম ({editChecklist.length} টি)
+                  {tr("settings.checklistItems")} ({editChecklist.length} {tr("settings.pcs")})
                 </p>
 
                 <div className="space-y-1">
@@ -1361,8 +1361,8 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                       {/* Required toggle */}
                       <button onClick={() => toggleItemReq(item.id)} className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold transition"
                         style={{ background: item.req ? `${t.rose}15` : `${t.muted}15`, color: item.req ? t.rose : t.muted }}
-                        title={item.req ? "আবশ্যক — ক্লিক করে ঐচ্ছিক করুন" : "ঐচ্ছিক — ক্লিক করে আবশ্যক করুন"}>
-                        {item.req ? "আবশ্যক" : "ঐচ্ছিক"}
+                        title={item.req ? tr("settings.requiredClickOptional") : tr("settings.optionalClickRequired")}>
+                        {item.req ? tr("settings.requiredLabel") : tr("settings.optionalLabel")}
                       </button>
 
                       {/* Item text (inline edit) */}
@@ -1386,16 +1386,16 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                       {editingItemId !== item.id && (
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
                           <button onClick={() => { setEditingItemId(item.id); setEditItemText(item.text); }} className="p-1 rounded transition"
-                            style={{ color: t.cyan }} title="এডিট করুন"><Edit3 size={12} /></button>
+                            style={{ color: t.cyan }} title={tr("common.edit")}><Edit3 size={12} /></button>
                           <button onClick={() => removeChecklistItem(item.id)} className="p-1 rounded transition"
-                            style={{ color: t.rose }} title="মুছে ফেলুন"><Trash2 size={12} /></button>
+                            style={{ color: t.rose }} title={tr("common.delete")}><Trash2 size={12} /></button>
                         </div>
                       )}
                     </div>
                   ))}
 
                   {editChecklist.length === 0 && (
-                    <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো আইটেম নেই — নিচে নতুন আইটেম যোগ করুন</p>
+                    <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("settings.noItems")}</p>
                   )}
                 </div>
               </div>
@@ -1406,18 +1406,18 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 <input value={newItemText} onChange={e => setNewItemText(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") addChecklistItem(); }}
                   className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }}
-                  placeholder="নতুন চেকলিস্ট আইটেম লিখুন..." />
+                  placeholder={tr("settings.newChecklistPlaceholder")} />
                 <button onClick={() => setNewItemReq(!newItemReq)} className="shrink-0 px-2 py-1 rounded text-[9px] font-bold transition"
                   style={{ background: newItemReq ? `${t.rose}15` : `${t.muted}15`, color: newItemReq ? t.rose : t.muted }}>
-                  {newItemReq ? "আবশ্যক" : "ঐচ্ছিক"}
+                  {newItemReq ? tr("settings.requiredLabel") : tr("settings.optionalLabel")}
                 </button>
-                <Button size="xs" onClick={addChecklistItem}>যোগ করুন</Button>
+                <Button size="xs" onClick={addChecklistItem}>{tr("common.add")}</Button>
               </div>
 
               {/* ── Bottom actions ── */}
               <div className="flex items-center justify-between pt-3 mt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-                <Button variant="ghost" size="xs" onClick={() => setEditingStep(null)}>বাতিল</Button>
-                <Button icon={Save} size="xs" onClick={saveStepConfig}>সংরক্ষণ করুন</Button>
+                <Button variant="ghost" size="xs" onClick={() => setEditingStep(null)}>{tr("common.cancel")}</Button>
+                <Button icon={Save} size="xs" onClick={saveStepConfig}>{tr("common.save")}</Button>
               </div>
             </>
           )}
@@ -1428,15 +1428,15 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       {activeTab === "branches" && <div className="space-y-5">
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><Globe size={14} /> ব্রাঞ্চ তালিকা</h3>
-            <Button icon={Plus} size="xs" onClick={() => { setBranchForm(EMPTY_BRANCH); setEditingBranchId(null); setShowBranchForm(true); }}>নতুন ব্রাঞ্চ</Button>
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Globe size={14} /> {tr("settings.branchList")}</h3>
+            <Button icon={Plus} size="xs" onClick={() => { setBranchForm(EMPTY_BRANCH); setEditingBranchId(null); setShowBranchForm(true); }}>{tr("settings.newBranch")}</Button>
           </div>
 
           {/* ── ব্রাঞ্চ ফর্ম — Modal-এ সরানো হয়েছে ── */}
 
           {/* ── ব্রাঞ্চ তালিকা ── */}
           {branches.length === 0 ? (
-            <p className="text-center py-6 text-xs" style={{ color: t.muted }}>কোনো ব্রাঞ্চ নেই — উপরের বাটন থেকে যোগ করুন</p>
+            <p className="text-center py-6 text-xs" style={{ color: t.muted }}>{tr("settings.noBranches")}</p>
           ) : (
             <div className="space-y-3">
               {branches.map(b => (
@@ -1482,61 +1482,60 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
 
         {/* ── সিস্টেম ভ্যারিয়েবল টিপ ── */}
         <Card delay={100}>
-          <h3 className="text-xs font-semibold mb-2" style={{ color: t.cyan }}>💡 Excel-এ ব্রাঞ্চ তথ্য ব্যবহার</h3>
+          <h3 className="text-xs font-semibold mb-2" style={{ color: t.cyan }}>💡 {tr("settings.branchExcelTip")}</h3>
           <p className="text-[10px]" style={{ color: t.muted }}>
-            Excel template-এ <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_address}}"}</span> লিখলে
-            স্টুডেন্টের ব্রাঞ্চের ঠিকানা auto-fill হবে।
-            একইভাবে <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_phone}}"}</span>,
-            <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_manager}}"}</span> ব্যবহার করুন।
+            {tr("settings.branchExcelTipDesc1")} <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_address}}"}</span> {tr("settings.branchExcelTipDesc2")}
+            <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_phone}}"}</span>,
+            <span className="font-mono px-1 rounded" style={{ background: `${t.cyan}15` }}>{"{{sys_branch_manager}}"}</span>
           </p>
         </Card>
 
         {/* ── ব্রাঞ্চ ফর্ম Modal ── */}
         <Modal isOpen={showBranchForm} onClose={() => { setShowBranchForm(false); setEditingBranchId(null); }}
-          title={editingBranchId ? "ব্রাঞ্চ সম্পাদনা" : "নতুন ব্রাঞ্চ যোগ"} size="md">
+          title={editingBranchId ? tr("settings.editBranch") : tr("settings.addBranch")} size="md">
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ নাম (EN) *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.branchNameEn")} *</label>
                 <input value={branchForm.name} onChange={e => setBranchForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Dhaka (HQ)" />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নাম (বাংলা)</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.nameBn")}</label>
                 <input value={branchForm.name_bn} onChange={e => setBranchForm(p => ({ ...p, name_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা (HQ)" />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শহর</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.city")}</label>
                 <input value={branchForm.city} onChange={e => setBranchForm(p => ({ ...p, city: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="ঢাকা" />
               </div>
               <div className="md:col-span-3">
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (EN) — Excel {"{{sys_branch_address}}"}-এ যাবে</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.addressEn")} — Excel {"{{sys_branch_address}}"}</label>
                 <input value={branchForm.address} onChange={e => setBranchForm(p => ({ ...p, address: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="House 12, Road 4, Dhanmondi, Dhaka-1205" />
               </div>
               <div className="md:col-span-3">
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ঠিকানা (বাংলা)</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.addressBn")}</label>
                 <input value={branchForm.address_bn} onChange={e => setBranchForm(p => ({ ...p, address_bn: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="বাড়ি ১২, রোড ৪, ধানমন্ডি, ঢাকা-১২০৫" />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.phone")}</label>
                 <PhoneInput value={branchForm.phone} onChange={v => setBranchForm(p => ({ ...p, phone: v }))} size="sm" />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.email")}</label>
                 <input value={branchForm.email} onChange={e => setBranchForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="dhaka@agency.com" />
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ম্যানেজার</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.manager")}</label>
                 <input value={branchForm.manager} onChange={e => setBranchForm(p => ({ ...p, manager: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Branch Manager নাম" />
               </div>
             </div>
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={branchForm.is_hq} onChange={e => setBranchForm(p => ({ ...p, is_hq: e.target.checked }))} className="rounded" style={{ accentColor: t.cyan }} />
-                <span className="text-xs" style={{ color: t.text }}>প্রধান কার্যালয় (HQ)</span>
+                <span className="text-xs" style={{ color: t.text }}>{tr("settings.headquarters")}</span>
               </label>
               <div className="flex gap-2">
-                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowBranchForm(false); setEditingBranchId(null); }}>বাতিল</Button>
-                <Button size="xs" icon={Save} onClick={saveBranch}>সংরক্ষণ</Button>
+                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowBranchForm(false); setEditingBranchId(null); }}>{tr("common.cancel")}</Button>
+                <Button size="xs" icon={Save} onClick={saveBranch}>{tr("common.save")}</Button>
               </div>
             </div>
           </div>
@@ -1546,15 +1545,15 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       {/* ── নোটিফিকেশন ── */}
       {activeTab === "notifications" && <div className="space-y-5">
         <Card delay={50}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Bell size={14} /> নোটিফিকেশন সেটিংস</h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Bell size={14} /> {tr("settings.notificationSettings")}</h3>
           <div className="space-y-3">
             {[
-              { key: "followUpReminder", label: "Follow-up রিমাইন্ডার", desc: "ভিজিটরের follow-up date হলে নোটিফিকেশন" },
-              { key: "visaExpiry", label: "ভিসা মেয়াদ সতর্কতা", desc: "ভিসা মেয়াদ শেষ হওয়ার ৩০ দিন আগে" },
-              { key: "passportExpiry", label: "পাসপোর্ট মেয়াদ সতর্কতা", desc: "পাসপোর্ট মেয়াদ শেষ হওয়ার ৬০ দিন আগে" },
-              { key: "paymentDue", label: "পেমেন্ট বাকি আছে", desc: "ফি পেমেন্ট due date পার হলে" },
-              { key: "batchStart", label: "ব্যাচ শুরুর তারিখ", desc: "নতুন ব্যাচ শুরু হওয়ার ৭ দিন আগে" },
-              { key: "documentPending", label: "ডকুমেন্ট বাকি আছে", desc: "স্টুডেন্টের ডকুমেন্ট pending থাকলে" },
+              { key: "followUpReminder", label: tr("settings.notifFollowUp"), desc: tr("settings.notifFollowUpDesc") },
+              { key: "visaExpiry", label: tr("settings.notifVisaExpiry"), desc: tr("settings.notifVisaExpiryDesc") },
+              { key: "passportExpiry", label: tr("settings.notifPassportExpiry"), desc: tr("settings.notifPassportExpiryDesc") },
+              { key: "paymentDue", label: tr("settings.notifPaymentDue"), desc: tr("settings.notifPaymentDueDesc") },
+              { key: "batchStart", label: tr("settings.notifBatchStart"), desc: tr("settings.notifBatchStartDesc") },
+              { key: "documentPending", label: tr("settings.notifDocPending"), desc: tr("settings.notifDocPendingDesc") },
             ].map(n => (
               <div key={n.key} className="flex items-center justify-between p-3 rounded-lg" style={{ background: t.inputBg }}>
                 <div>
@@ -1578,31 +1577,31 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2"><Layers size={14} /> Custom Fields</h3>
-            <Button icon={Plus} size="xs" onClick={() => setShowFieldForm(true)}>নতুন Field</Button>
+            <Button icon={Plus} size="xs" onClick={() => setShowFieldForm(true)}>{tr("settings.newField")}</Button>
           </div>
 
           {showFieldForm && (
             <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Field নাম <span className="req-star">*</span></label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.fieldName")} <span className="req-star">*</span></label>
                   <input value={fieldForm.name} onChange={e => setFieldForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="যেমন: Emergency Contact" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ধরন</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.type")}</label>
                   <select value={fieldForm.type} onChange={e => setFieldForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option value="text">Text</option><option value="number">Number</option><option value="date">Date</option><option value="select">Select (Dropdown)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Module</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.module")}</label>
                   <select value={fieldForm.module} onChange={e => setFieldForm(p => ({ ...p, module: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option value="students">Students</option><option value="visitors">Visitors</option><option value="agents">Agents</option>
                   </select>
                 </div>
                 {fieldForm.type === "select" && (
                   <div>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Options (comma separated)</label>
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("settings.optionsCommaSep")}</label>
                     <input value={fieldForm.options} onChange={e => setFieldForm(p => ({ ...p, options: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Option 1, Option 2, Option 3" />
                   </div>
                 )}
@@ -1610,17 +1609,17 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <input type="checkbox" checked={fieldForm.required} onChange={e => setFieldForm(p => ({ ...p, required: e.target.checked }))} />
-                  <span style={{ color: t.textSecondary }}>Required field</span>
+                  <span style={{ color: t.textSecondary }}>{tr("settings.requiredField")}</span>
                 </label>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="xs" icon={X} onClick={() => setShowFieldForm(false)}>বাতিল</Button>
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => setShowFieldForm(false)}>{tr("common.cancel")}</Button>
                   <Button icon={Save} size="xs" onClick={() => {
-                    if (!fieldForm.name.trim()) { toast.error("Field নাম দিন"); return; }
+                    if (!fieldForm.name.trim()) { toast.error(tr("settings.enterFieldName")); return; }
                     setCustomFields(prev => [...prev, { id: `cf-${Date.now()}`, ...fieldForm }]);
                     setShowFieldForm(false);
                     setFieldForm({ name: "", type: "text", module: "students", required: false, options: "" });
-                    toast.success("Custom field যোগ হয়েছে!");
-                  }}>সংরক্ষণ</Button>
+                    toast.success(tr("settings.customFieldAdded"));
+                  }}>{tr("common.save")}</Button>
                 </div>
               </div>
             </div>
@@ -1640,7 +1639,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 </button>
               </div>
             ))}
-            {customFields.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো custom field নেই — উপরে "নতুন Field" বাটন চাপুন</p>}
+            {customFields.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("settings.noCustomFields")}</p>}
           </div>
         </Card>
       </div>}
@@ -1650,15 +1649,15 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold flex items-center gap-2"><Calendar size={14} /> ছুটির তালিকা</h3>
-              <p className="text-[10px] mt-1" style={{ color: t.muted }}>বাংলাদেশের সরকারি ছুটি যোগ করুন — ঈদ, স্বাধীনতা দিবস, ভাষা দিবস ইত্যাদি। ব্যাচের ঘণ্টা হিসাবে এই দিনগুলো স্বয়ংক্রিয়ভাবে বাদ যাবে।</p>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Calendar size={14} /> {tr("settings.holidays")}</h3>
+              <p className="text-[10px] mt-1" style={{ color: t.muted }}>{tr("settings.holidaysDesc")}</p>
             </div>
-            <Button icon={Plus} size="xs" onClick={() => { setHolidayForm(EMPTY_HOLIDAY); setShowHolidayForm(true); }}>নতুন ছুটি</Button>
+            <Button icon={Plus} size="xs" onClick={() => { setHolidayForm(EMPTY_HOLIDAY); setShowHolidayForm(true); }}>{tr("settings.newHoliday")}</Button>
           </div>
 
           {/* ── ছুটি তালিকা ── */}
           {holidays.length === 0 && (
-            <p className="text-xs text-center py-8" style={{ color: t.muted }}>কোনো ছুটি যোগ করা হয়নি — উপরে "নতুন ছুটি" বাটন চাপুন</p>
+            <p className="text-xs text-center py-8" style={{ color: t.muted }}>{tr("settings.noHolidays")}</p>
           )}
           <div className="space-y-2">
             {holidays.map(h => (
@@ -1675,7 +1674,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                         {h.name_bn && h.name && <p className="text-[10px]" style={{ color: t.muted }}>({h.name})</p>}
                         {h.recurring && (
                           <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>
-                            <RefreshCw size={8} /> প্রতিবছর
+                            <RefreshCw size={8} /> {tr("settings.recurring")}
                           </span>
                         )}
                       </div>
@@ -1693,12 +1692,12 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                 {deletingHolidayId === h.id && (
                   <div className="flex items-center gap-3 p-3 mt-1 rounded-xl" style={{ background: `${t.rose}10`, border: `1px solid ${t.rose}30` }}>
                     <div className="flex-1">
-                      <p className="text-xs font-semibold" style={{ color: t.rose }}>মুছে ফেলবেন?</p>
-                      <p className="text-[10px]" style={{ color: t.muted }}>এই কাজ undo করা যাবে না</p>
+                      <p className="text-xs font-semibold" style={{ color: t.rose }}>{tr("settings.confirmDelete")}</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{tr("settings.cannotUndo")}</p>
                     </div>
-                    <button onClick={() => setDeletingHolidayId(null)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+                    <button onClick={() => setDeletingHolidayId(null)} className="text-xs px-2 py-1 rounded-lg" style={{ color: t.muted }}>{tr("common.no")}</button>
                     <button onClick={() => deleteHoliday(h.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                      style={{ background: t.rose, color: "#fff" }}>হ্যাঁ, মুছুন</button>
+                      style={{ background: t.rose, color: "#fff" }}>{tr("settings.yesDelete")}</button>
                   </div>
                 )}
               </div>
@@ -1707,16 +1706,16 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         </Card>
 
         {/* ── নতুন ছুটি ফর্ম — Modal ── */}
-        <Modal isOpen={showHolidayForm} onClose={() => setShowHolidayForm(false)} title="নতুন ছুটি যোগ করুন" size="sm">
+        <Modal isOpen={showHolidayForm} onClose={() => setShowHolidayForm(false)} title={tr("settings.addHoliday")} size="sm">
           <div className="space-y-4">
             {/* তারিখ */}
             <div>
-              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>তারিখ *</label>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>{tr("common.date")} *</label>
               <DateInput value={holidayForm.date} onChange={v => setHolidayForm(prev => ({ ...prev, date: v }))} size="sm" error={!holidayForm.date} />
             </div>
             {/* নাম (English) */}
             <div>
-              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>ছুটির নাম (English) *</label>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>{tr("settings.holidayNameEn")} *</label>
               <input type="text" value={holidayForm.name} placeholder="e.g. Independence Day"
                 onChange={e => setHolidayForm(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full px-3 py-2 rounded-xl text-xs outline-none"
@@ -1724,7 +1723,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             </div>
             {/* নাম (বাংলা) */}
             <div>
-              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>ছুটির নাম (বাংলা)</label>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>{tr("settings.holidayNameBn")}</label>
               <input type="text" value={holidayForm.name_bn} placeholder="যেমন: স্বাধীনতা দিবস"
                 onChange={e => setHolidayForm(prev => ({ ...prev, name_bn: e.target.value }))}
                 className="w-full px-3 py-2 rounded-xl text-xs outline-none"
@@ -1735,13 +1734,13 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
               <input type="checkbox" checked={holidayForm.recurring}
                 onChange={e => setHolidayForm(prev => ({ ...prev, recurring: e.target.checked }))}
                 className="rounded" />
-              <span className="text-xs" style={{ color: t.text }}>প্রতিবছর পুনরাবৃত্তি হবে</span>
-              <span className="text-[10px]" style={{ color: t.muted }}>(যেমন: ভাষা দিবস প্রতি ২১ ফেব্রুয়ারি)</span>
+              <span className="text-xs" style={{ color: t.text }}>{tr("settings.recurringYearly")}</span>
+              <span className="text-[10px]" style={{ color: t.muted }}>({tr("settings.recurringExample")})</span>
             </label>
             {/* Save বাটন */}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="xs" onClick={() => setShowHolidayForm(false)}>বাতিল</Button>
-              <Button icon={Save} size="xs" onClick={saveHoliday}>যোগ করুন</Button>
+              <Button variant="ghost" size="xs" onClick={() => setShowHolidayForm(false)}>{tr("common.cancel")}</Button>
+              <Button icon={Save} size="xs" onClick={saveHoliday}>{tr("common.add")}</Button>
             </div>
           </div>
         </Modal>
@@ -1752,17 +1751,17 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
         <Card delay={50}>
           <div className="flex items-center gap-2 mb-1">
             <Paintbrush size={15} style={{ color: t.cyan }} />
-            <h3 className="text-sm font-semibold" style={{ color: t.text }}>কন্ডিশনাল ফরম্যাটিং</h3>
+            <h3 className="text-sm font-semibold" style={{ color: t.text }}>{tr("settings.conditionalFormat")}</h3>
           </div>
           <p className="text-[10px] mb-5" style={{ color: t.muted }}>
-            স্টুডেন্ট ও ভিজিটর তালিকায় নির্দিষ্ট শর্ত অনুযায়ী সারির ব্যাকগ্রাউন্ড রং পরিবর্তন করুন
+            {tr("settings.conditionalFormatDesc")}
           </p>
 
           <div className="space-y-6">
             {/* ── স্টুডেন্ট কন্ডিশনাল ফরম্যাটিং ── */}
             <div>
               <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: t.text }}>
-                <Users size={13} style={{ color: t.purple }} /> স্টুডেন্ট তালিকা
+                <Users size={13} style={{ color: t.purple }} /> {tr("settings.studentList")}
               </h4>
               <ConditionalFormatRules module="students" fields={STUDENT_FIELDS} />
             </div>
@@ -1770,7 +1769,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             {/* ── ভিজিটর কন্ডিশনাল ফরম্যাটিং ── */}
             <div>
               <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: t.text }}>
-                <Eye size={13} style={{ color: t.amber }} /> ভিজিটর তালিকা
+                <Eye size={13} style={{ color: t.amber }} /> {tr("settings.visitorList")}
               </h4>
               <ConditionalFormatRules module="visitors" fields={VISITOR_FIELDS} />
             </div>
@@ -1781,10 +1780,10 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
       {/* ── ডাটা ব্যাকআপ ── */}
       {activeTab === "backup" && <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card delay={50}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Database size={14} /> ডাটা এক্সপোর্ট</h3>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Database size={14} /> {tr("settings.dataExport")}</h3>
           <div className="space-y-3">
             {[
-              { icon: "📦", label: "Full Backup (JSON)", sub: "সব data — students, visitors, payments সহ", color: t.cyan,
+              { icon: "📦", label: tr("settings.fullBackupJson"), sub: tr("settings.fullBackupJsonDesc"), color: t.cyan,
                 onClick: () => {
                   const allData = { students: students || [], visitors: visitors || [], exportDate: new Date().toISOString() };
                   const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" });
@@ -1795,7 +1794,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   toast.exported("Full Backup");
                 }
               },
-              { icon: "🎓", label: "Students (CSV)", sub: "সব student data", color: t.purple,
+              { icon: "🎓", label: tr("settings.studentsCsv"), sub: tr("settings.studentsCsvDesc"), color: t.purple,
                 onClick: () => {
                   const headers = "ID,Name,Phone,Status,Country,School,Batch";
                   const rows = (students || []).map(s => `${s.id},"${s.name_en}",${s.phone},${s.status},${s.country},${s.school},${s.batch}`);
@@ -1804,7 +1803,7 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
                   toast.exported("Students CSV");
                 }
               },
-              { icon: "🚶", label: "Visitors (CSV)", sub: "সব visitor data", color: t.amber,
+              { icon: "🚶", label: tr("settings.visitorsCsv"), sub: tr("settings.visitorsCsvDesc"), color: t.amber,
                 onClick: () => {
                   const headers = "ID,Name,Phone,Source,Status";
                   const rows = (visitors || []).map(v => `${v.id},"${v.name || v.name_en}",${v.phone},${v.source},${v.status}`);

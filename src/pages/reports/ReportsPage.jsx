@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, DollarSign, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { reports } from "../../lib/api";
@@ -14,6 +15,7 @@ import { reports } from "../../lib/api";
 export default function ReportsPage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeReport, setActiveReport] = useState("funnel");
@@ -44,20 +46,20 @@ export default function ReportsPage() {
   const doExport = () => {
     if (!data) return;
     const rows = (data.pipeline || []).map(p => `"${p.stage}","${p.count}"`);
-    const csv = "পর্যায়,সংখ্যা\n" + rows.join("\n");
+    const csv = `${tr("reports.csvStage")},${tr("reports.csvCount")}\n` + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     Object.assign(document.createElement("a"), {
       href: URL.createObjectURL(blob),
       download: `Analytics_Report_${new Date().toISOString().slice(0, 10)}.csv`,
     }).click();
-    toast.exported(`Analytics Report (${(data.pipeline || []).length} rows)`);
+    toast.exported(tr("reports.exportedMsg", { count: (data.pipeline || []).length }));
   };
 
   // ── লোডিং ──
   if (loading) {
     return (
       <div className="space-y-5 anim-fade">
-        <h2 className="text-xl font-bold">Reports & Analytics</h2>
+        <h2 className="text-xl font-bold">{tr("reports.title")}</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[1,2,3,4].map(i => (
             <Card key={i} delay={i*50}><div className="h-16 animate-pulse rounded-lg" style={{ background: `${t.muted}15` }} /></Card>
@@ -70,8 +72,8 @@ export default function ReportsPage() {
   if (!data) {
     return (
       <div className="space-y-5 anim-fade">
-        <h2 className="text-xl font-bold">Reports & Analytics</h2>
-        <Card><p className="text-xs text-center py-10" style={{ color: t.muted }}>ডাটা লোড করতে সমস্যা হয়েছে</p></Card>
+        <h2 className="text-xl font-bold">{tr("reports.title")}</h2>
+        <Card><p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("errors.loadFailed")}</p></Card>
       </div>
     );
   }
@@ -98,19 +100,19 @@ export default function ReportsPage() {
       {/* হেডার */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">রিপোর্ট ও বিশ্লেষণ</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>পারফরম্যান্স রিপোর্ট ও বিশ্লেষণ</p>
+          <h2 className="text-xl font-bold">{tr("reports.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("reports.subtitle")}</p>
         </div>
-        <Button variant="ghost" icon={Download} size="xs" onClick={doExport}>Export</Button>
+        <Button variant="ghost" icon={Download} size="xs" onClick={doExport}>{tr("common.export")}</Button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Conversion Rate", value: `${kpi.overallConversion || 0}%`, color: t.emerald, icon: TrendingUp },
-          { label: "খরচ/স্টুডেন্ট", value: fmtShort(kpi.costPerStudent), color: t.amber, icon: DollarSign },
-          { label: "পৌঁছেছে (YTD)", value: kpi.totalArrived || 0, color: t.cyan, icon: TrendingUp },
-          { label: "Dropout Rate", value: `${kpi.dropoutRate || 0}%`, color: t.rose, icon: TrendingDown },
+          { label: tr("reports.conversionRate"), value: `${kpi.overallConversion || 0}%`, color: t.emerald, icon: TrendingUp },
+          { label: tr("reports.costPerStudent"), value: fmtShort(kpi.costPerStudent), color: t.amber, icon: DollarSign },
+          { label: tr("reports.arrivedYTD"), value: kpi.totalArrived || 0, color: t.cyan, icon: TrendingUp },
+          { label: tr("reports.dropoutRate"), value: `${kpi.dropoutRate || 0}%`, color: t.rose, icon: TrendingDown },
         ].map((k, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -129,10 +131,10 @@ export default function ReportsPage() {
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "funnel", label: "📊 পাইপলাইন ফানেল" },
-          { key: "source", label: "📡 সোর্স বিশ্লেষণ" },
-          { key: "dropout", label: "📉 Dropout রিপোর্ট" },
-          { key: "country", label: "🌏 দেশ ভিত্তিক" },
+          { key: "funnel", label: `📊 ${tr("reports.tabFunnel")}` },
+          { key: "source", label: `📡 ${tr("reports.tabSource")}` },
+          { key: "dropout", label: `📉 ${tr("reports.tabDropout")}` },
+          { key: "country", label: `🌏 ${tr("reports.tabCountry")}` },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveReport(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200"
@@ -149,7 +151,7 @@ export default function ReportsPage() {
       {/* ═══ Pipeline Funnel ═══ */}
       {activeReport === "funnel" && (
         <Card delay={100}>
-          <h3 className="text-sm font-semibold mb-4">Pipeline Conversion Funnel</h3>
+          <h3 className="text-sm font-semibold mb-4">{tr("reports.funnelTitle")}</h3>
           {funnelData.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={280}>
@@ -163,21 +165,21 @@ export default function ReportsPage() {
               </ResponsiveContainer>
               <div className="flex items-center justify-center gap-6 mt-4 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
                 <div className="text-center">
-                  <p className="text-xs" style={{ color: t.muted }}>Visitor → Enrolled</p>
+                  <p className="text-xs" style={{ color: t.muted }}>{tr("reports.visitorToEnrolled")}</p>
                   <p className="text-lg font-bold" style={{ color: t.amber }}>{convVisitorEnroll}%</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs" style={{ color: t.muted }}>Enrolled → Visa</p>
+                  <p className="text-xs" style={{ color: t.muted }}>{tr("reports.enrolledToVisa")}</p>
                   <p className="text-lg font-bold" style={{ color: t.purple }}>{convEnrollVisa}%</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs" style={{ color: t.muted }}>Overall Conversion</p>
+                  <p className="text-xs" style={{ color: t.muted }}>{tr("reports.overallConversion")}</p>
                   <p className="text-lg font-bold" style={{ color: t.emerald }}>{kpi.overallConversion || 0}%</p>
                 </div>
               </div>
             </>
           ) : (
-            <p className="text-xs text-center py-10" style={{ color: t.muted }}>পর্যাপ্ত ডাটা নেই</p>
+            <p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("reports.insufficientData")}</p>
           )}
         </Card>
       )}
@@ -185,13 +187,13 @@ export default function ReportsPage() {
       {/* ═══ Source Analysis ═══ */}
       {activeReport === "source" && (
         <Card delay={100}>
-          <h3 className="text-sm font-semibold mb-4">Source-wise Conversion</h3>
+          <h3 className="text-sm font-semibold mb-4">{tr("reports.sourceTitle")}</h3>
           {(data.sourceAnalysis || []).length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {["সোর্স", "মোট", "Enrolled", "পৌঁছেছে", "Conversion", "গ্রাফ"].map(h => (
+                    {[tr("reports.colSource"), tr("common.total"), tr("reports.colEnrolled"), tr("reports.colArrived"), tr("reports.colConversion"), tr("reports.colGraph")].map(h => (
                       <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                     ))}
                   </tr>
@@ -217,7 +219,7 @@ export default function ReportsPage() {
               </table>
             </div>
           ) : (
-            <p className="text-xs text-center py-10" style={{ color: t.muted }}>পর্যাপ্ত ডাটা নেই</p>
+            <p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("reports.insufficientData")}</p>
           )}
         </Card>
       )}
@@ -225,7 +227,7 @@ export default function ReportsPage() {
       {/* ═══ Dropout Analysis ═══ */}
       {activeReport === "dropout" && (
         <Card delay={100}>
-          <h3 className="text-sm font-semibold mb-4">Dropout বিশ্লেষণ — কোন ধাপে কতজন ঝরে যাচ্ছে</h3>
+          <h3 className="text-sm font-semibold mb-4">{tr("reports.dropoutTitle")}</h3>
           {(data.dropoutAnalysis || []).length > 0 ? (
             <div className="space-y-3">
               {data.dropoutAnalysis.map((d, i) => (
@@ -234,7 +236,7 @@ export default function ReportsPage() {
                   <div className="flex-1 h-6 rounded-lg overflow-hidden" style={{ background: `${t.muted}15` }}>
                     <div className="h-full rounded-lg flex items-center px-2"
                       style={{ width: `${Math.max(d.pct, 5)}%`, background: d.pct >= 30 ? `${t.rose}60` : `${t.amber}60` }}>
-                      <span className="text-[10px] font-bold whitespace-nowrap">{d.count} জন</span>
+                      <span className="text-[10px] font-bold whitespace-nowrap">{d.count} {tr("reports.persons")}</span>
                     </div>
                   </div>
                   <span className="text-xs font-bold w-10 text-right" style={{ color: d.pct >= 30 ? t.rose : t.amber }}>{d.pct}%</span>
@@ -242,7 +244,7 @@ export default function ReportsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-center py-10" style={{ color: t.muted }}>কোনো dropout রেকর্ড নেই</p>
+            <p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("reports.noDropoutRecords")}</p>
           )}
         </Card>
       )}
@@ -250,7 +252,7 @@ export default function ReportsPage() {
       {/* ═══ Country-wise ═══ */}
       {activeReport === "country" && (
         <Card delay={100}>
-          <h3 className="text-sm font-semibold mb-4">Country-wise Student Distribution</h3>
+          <h3 className="text-sm font-semibold mb-4">{tr("reports.countryTitle")}</h3>
           {(data.countryStats || []).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {data.countryStats.map((c, i) => {
@@ -260,16 +262,16 @@ export default function ReportsPage() {
                   <div key={c.country} className="rounded-xl p-4" style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
                     <p className="text-sm font-bold mb-3">{c.country} {flagMap[c.country] || "🌍"}</p>
                     <div className="space-y-2">
-                      <div className="flex justify-between text-xs"><span style={{ color: t.muted }}>স্টুডেন্ট</span><span className="font-bold" style={{ color }}>{c.students} ({c.pct}%)</span></div>
-                      <div className="flex justify-between text-xs"><span style={{ color: t.muted }}>পৌঁছেছে</span><span className="font-bold">{c.arrived}</span></div>
-                      <div className="flex justify-between text-xs"><span style={{ color: t.muted }}>আনুমানিক আয়</span><span className="font-bold" style={{ color: t.emerald }}>{fmtShort(c.revenue)}</span></div>
+                      <div className="flex justify-between text-xs"><span style={{ color: t.muted }}>{tr("reports.students")}</span><span className="font-bold" style={{ color }}>{c.students} ({c.pct}%)</span></div>
+                      <div className="flex justify-between text-xs"><span style={{ color: t.muted }}>{tr("reports.arrived")}</span><span className="font-bold">{c.arrived}</span></div>
+                      <div className="flex justify-between text-xs"><span style={{ color: t.muted }}>{tr("reports.estimatedRevenue")}</span><span className="font-bold" style={{ color: t.emerald }}>{fmtShort(c.revenue)}</span></div>
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <p className="text-xs text-center py-10" style={{ color: t.muted }}>পর্যাপ্ত ডাটা নেই</p>
+            <p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("reports.insufficientData")}</p>
           )}
         </Card>
       )}

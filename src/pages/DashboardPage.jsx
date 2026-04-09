@@ -103,7 +103,7 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { icon: Eye, label: tr("dashboard.todayVisitors"), value: data.visitors?.today || 0, sub: `${tr("common.thisMonth")}: ${data.visitors?.thisMonth || 0}`, color: t.amber },
-          { icon: UserPlus, label: tr("dashboard.todayEnrolled"), value: data.students?.todayEnrolled || 0, sub: `${tr("common.total")} Active: ${data.students?.active || 0}`, color: t.emerald },
+          { icon: UserPlus, label: tr("dashboard.todayEnrolled"), value: data.students?.todayEnrolled || 0, sub: `${tr("common.total")} ${tr("common.active")}: ${data.students?.active || 0}`, color: t.emerald },
           { icon: DollarSign, label: tr("dashboard.todayIncome"), value: fmtShort(data.revenue?.today || 0), sub: `${tr("common.thisMonth")}: ${fmtShort(data.revenue?.thisMonth || 0)}`, color: t.cyan },
           { icon: Clock, label: tr("dashboard.todayDate"), value: today.toLocaleDateString(locale, { day: "numeric", month: "long" }), sub: today.toLocaleDateString(locale, { weekday: "long" }), color: t.purple },
         ].map((kpi, i) => (
@@ -130,8 +130,8 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
               {(userName || "U").charAt(0)}
             </div>
             <div>
-              <p className="text-sm font-bold">স্বাগতম, {userName || "User"}!</p>
-              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>ভূমিকা: {userRole} • আজকের কাজ ও আপডেট দেখুন</p>
+              <p className="text-sm font-bold">{tr("dashboard.welcome", { name: userName || "User" })}</p>
+              <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{tr("dashboard.roleInfo", { role: userRole })}</p>
             </div>
           </div>
         </Card>
@@ -143,8 +143,8 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
           {[
             { icon: Users, label: tr("dashboard.totalStudents"), value: data.students.total, sub: `Active: ${data.students.active}`, color: t.cyan },
             { icon: DollarSign, label: tr("dashboard.monthlyIncome"), value: fmtShort(data.revenue.thisMonth), sub: `${tr("dashboard.dues")}: ${fmtShort(data.dues)}`, color: t.emerald },
-            { icon: FileText, label: tr("dashboard.docProcessing"), value: data.docInProgress, sub: "ডকুমেন্ট পর্যায়ে আছে", color: t.amber },
-            { icon: Plane, label: tr("dashboard.visaArrived"), value: data.visaGranted, sub: "ভিসা পেয়েছে বা পৌঁছেছে", color: t.purple },
+            { icon: FileText, label: tr("dashboard.docProcessing"), value: data.docInProgress, sub: tr("dashboard.docInProgressSub"), color: t.amber },
+            { icon: Plane, label: tr("dashboard.visaArrived"), value: data.visaGranted, sub: tr("dashboard.visaArrivedSub"), color: t.purple },
           ].map((kpi, i) => (
             <Card key={i} delay={i * 60}>
               <div className="flex items-start justify-between">
@@ -181,12 +181,12 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
                   <YAxis tick={{ fill: t.chartAxisTick, fontSize: 11 }} axisLine={false} tickLine={false}
                     tickFormatter={(v) => v >= 100000 ? `${(v / 100000).toFixed(0)}L` : `${(v / 1000).toFixed(0)}K`} />
                   <Tooltip contentStyle={{ background: t.tooltipBg, border: `1px solid ${t.tooltipBorder}`, borderRadius: 8, fontSize: 12, color: t.text }}
-                    formatter={(v) => [fmt(v), "আয়"]} />
+                    formatter={(v) => [fmt(v), tr("accounts.income")]} />
                   <Area type="monotone" dataKey="amount" stroke={t.cyan} strokeWidth={2} fill="url(#rg)" dot={{ fill: t.cyan, r: 3 }} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-xs text-center py-10" style={{ color: t.muted }}>এখনো কোনো পেমেন্ট রেকর্ড নেই</p>
+              <p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("dashboard.noPayments")}</p>
             )}
           </Card>
         )}
@@ -232,7 +232,7 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-xs text-center py-10" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই</p>
+            <p className="text-xs text-center py-10" style={{ color: t.muted }}>{tr("dashboard.noStudents")}</p>
           )}
         </Card>
 
@@ -259,7 +259,7 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
                 </Badge>
               </div>
             )) : (
-              <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো ভিজিটর নেই</p>
+              <p className="text-xs text-center py-6" style={{ color: t.muted }}>{tr("dashboard.noVisitors")}</p>
             )}
           </div>
         </Card>
@@ -267,7 +267,7 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
         {/* ── Upcoming Tasks ── */}
         {data.upcomingTasks && data.upcomingTasks.length > 0 && (
           <Card className="col-span-12" delay={450}>
-            <h3 className="text-sm font-semibold mb-3">আসন্ন টাস্ক (৭ দিন)</h3>
+            <h3 className="text-sm font-semibold mb-3">{tr("dashboard.upcomingTasks")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {data.upcomingTasks.map((task) => {
                 const isOverdue = new Date(task.due_date) < new Date();
@@ -301,7 +301,7 @@ export default function DashboardPage({ userRole = "admin", userName = "" }) {
             <div className="text-center py-3">
               <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("common.thisMonth")} {tr("accounts.expense")}</p>
               <p className="text-2xl font-bold mt-1" style={{ color: t.rose }}>{fmtShort(data.expenses.thisMonth)}</p>
-              <p className="text-[10px]" style={{ color: t.muted }}>নিট: {fmtShort(data.revenue.thisMonth - data.expenses.thisMonth)}</p>
+              <p className="text-[10px]" style={{ color: t.muted }}>{tr("dashboard.net")}: {fmtShort(data.revenue.thisMonth - data.expenses.thisMonth)}</p>
             </div>
           </Card>
           <Card className="col-span-12 lg:col-span-4" delay={600}>

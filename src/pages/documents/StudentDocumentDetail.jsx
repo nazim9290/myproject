@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Eye, CheckCircle, AlertCircle, Check, Save, Edit3, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
@@ -27,6 +28,7 @@ const computeMismatches = (docsArr) => {
 export default function StudentDocumentDetail({ student, studentDocs, onBack, onUpdate }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [activeTab, setActiveTab] = useState("checklist");
   const [docs, setDocs] = useState(studentDocs.docs);
   const [mismatches, setMismatches] = useState(() => computeMismatches(studentDocs.docs));
@@ -57,8 +59,8 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
     const newMismatches = computeMismatches(newDocs);
     setMismatches(newMismatches);
     setExpandedDoc(null);
-    const mismatchMsg = newMismatches.length > 0 ? ` • ${newMismatches.length}টি অমিল পাওয়া গেছে` : " • সব তথ্য মিলে গেছে ✓";
-    toast.success("ডকুমেন্ট তথ্য সংরক্ষণ হয়েছে" + mismatchMsg);
+    const mismatchMsg = newMismatches.length > 0 ? ` • ${newMismatches.length} ${tr("documents.mismatchFound")}` : ` • ${tr("documents.allDataMatched")}`;
+    toast.success(tr("documents.docDataSaved") + mismatchMsg);
   };
 
   const sf = (docId, key, val) => setDataForms(p => ({ ...p, [docId]: { ...(p[docId] || {}), [key]: val } }));
@@ -71,21 +73,21 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
           style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
           onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
           onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
-          <ArrowLeft size={16} /> <span className="hidden sm:inline">ফিরুন</span>
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">{tr("documents.goBack")}</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold">{student.name_en}</h2>
             <StatusBadge status={student.status} />
           </div>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.id} • {student.school} • ডকুমেন্টস ({verified}/{total} যাচাই — {pct}%)</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{student.id} • {student.school} • {tr("documents.documentsLabel")} ({verified}/{total} {tr("documents.verified")} — {pct}%)</p>
         </div>
       </div>
 
       {/* Progress Bar */}
       <Card delay={50}>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold">সামগ্রিক অগ্রগতি</h3>
+          <h3 className="text-sm font-semibold">{tr("documents.overallProgress")}</h3>
           <span className="text-sm font-bold" style={{ color: pct === 100 ? t.emerald : t.cyan }}>{pct}%</span>
         </div>
         <div className="h-3 rounded-full overflow-hidden" style={{ background: `${t.muted}15` }}>
@@ -93,10 +95,10 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
         </div>
         <div className="flex gap-4 mt-3">
           {[
-            { label: "যাচাইকৃত", count: docs.filter(d => d.status === "verified").length, color: t.emerald },
-            { label: "জমাকৃত", count: docs.filter(d => d.status === "submitted").length, color: t.amber },
-            { label: "সমস্যা", count: docs.filter(d => d.status === "issue").length, color: t.rose },
-            { label: "অনুপস্থিত", count: docs.filter(d => d.status === "not_submitted").length, color: t.muted },
+            { label: tr("documents.statusVerified"), count: docs.filter(d => d.status === "verified").length, color: t.emerald },
+            { label: tr("documents.statusSubmitted"), count: docs.filter(d => d.status === "submitted").length, color: t.amber },
+            { label: tr("documents.statusIssue"), count: docs.filter(d => d.status === "issue").length, color: t.rose },
+            { label: tr("documents.statusMissing"), count: docs.filter(d => d.status === "not_submitted").length, color: t.muted },
           ].map((s) => (
             <div key={s.label} className="flex items-center gap-1.5 text-[11px]">
               <div className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />
@@ -109,8 +111,8 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "checklist", label: "📄 ডকুমেন্ট চেকলিস্ট", count: total },
-          { key: "validation", label: "🔍 ক্রস-ভ্যালিডেশন", count: mismatches.length },
+          { key: "checklist", label: `📄 ${tr("documents.docChecklist")}`, count: total },
+          { key: "validation", label: `🔍 ${tr("documents.crossValidation")}`, count: mismatches.length },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -140,7 +142,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
               <Card key={doc.docId} delay={i * 40} className="!p-4">
                 <div className="flex items-center gap-4">
                   {/* Clickable status icon */}
-                  <button onClick={() => cycleStatus(doc.docId)} title="ক্লিক করে স্ট্যাটাস পরিবর্তন করুন"
+                  <button onClick={() => cycleStatus(doc.docId)} title={tr("documents.clickToChangeStatus")}
                     className="text-xl shrink-0 transition-transform hover:scale-110" style={{ cursor: "pointer" }}>
                     {statusConf.icon}
                   </button>
@@ -148,17 +150,17 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold">{docType?.name || doc.docId}</p>
-                      {hasMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>⚠ অমিল</span>}
-                      {!docType?.base && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>শর্তসাপেক্ষ</span>}
+                      {hasMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: `${t.rose}15`, color: t.rose }}>⚠ {tr("documents.mismatch")}</span>}
+                      {!docType?.base && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>{tr("documents.conditional")}</span>}
                     </div>
                     <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
-                      {docType?.name_en}{doc.uploadDate && ` • আপলোড: ${formatDateDisplay(doc.uploadDate)}`}
+                      {docType?.name_en}{doc.uploadDate && ` • ${tr("documents.uploaded")}: ${formatDateDisplay(doc.uploadDate)}`}
                     </p>
                     {doc.data && Object.keys(doc.data).length > 0 && (
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                         {Object.entries(doc.data).map(([key, val]) => {
                           const mm = mismatches.some(m => m.field === key && m.docs.includes(doc.docId));
-                          const labels = { name_en: "নাম", father_en: "পিতা", mother_en: "মাতা", dob: "জন্ম", permanent_address: "ঠিকানা" };
+                          const labels = { name_en: tr("documents.labelName"), father_en: tr("documents.labelFather"), mother_en: tr("documents.labelMother"), dob: tr("documents.labelDob"), permanent_address: tr("documents.labelAddress") };
                           return (
                             <span key={key} className="text-[10px]" style={{ color: mm ? t.rose : t.textSecondary }}>
                               {mm && "⚠ "}
@@ -174,21 +176,21 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                   <Badge color={statusConf.color} size="xs">{statusConf.label}</Badge>
                   <Button variant="ghost" icon={isExpanded ? X : Edit3} size="xs"
                     onClick={() => setExpandedDoc(isExpanded ? null : doc.docId)}>
-                    {isExpanded ? "" : "ডাটা"}
+                    {isExpanded ? "" : tr("documents.data")}
                   </Button>
                 </div>
 
                 {/* Data entry form */}
                 {isExpanded && (
                   <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-                    <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>ডকুমেন্ট তথ্য এন্ট্রি</p>
+                    <p className="text-[10px] uppercase tracking-wider font-bold mb-2" style={{ color: t.muted }}>{tr("documents.docDataEntry")}</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                       {[
-                        { label: "নাম (EN)", key: "name_en" },
-                        { label: "পিতার নাম (EN)", key: "father_en" },
-                        { label: "মাতার নাম (EN)", key: "mother_en" },
-                        { label: "জন্ম তারিখ", key: "dob", type: "date" },
-                        { label: "স্থায়ী ঠিকানা", key: "permanent_address" },
+                        { label: tr("documents.fieldNameEn"), key: "name_en" },
+                        { label: tr("documents.fieldFatherEn"), key: "father_en" },
+                        { label: tr("documents.fieldMotherEn"), key: "mother_en" },
+                        { label: tr("documents.fieldDob"), key: "dob", type: "date" },
+                        { label: tr("documents.fieldPermanentAddress"), key: "permanent_address" },
                       ].map(f => (
                         <div key={f.key}>
                           <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
@@ -201,8 +203,8 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                       ))}
                     </div>
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="xs" onClick={() => setExpandedDoc(null)}>বাতিল</Button>
-                      <Button icon={Save} size="xs" onClick={() => saveDocData(doc.docId)}>সংরক্ষণ</Button>
+                      <Button variant="ghost" size="xs" onClick={() => setExpandedDoc(null)}>{tr("common.cancel")}</Button>
+                      <Button icon={Save} size="xs" onClick={() => saveDocData(doc.docId)}>{tr("common.save")}</Button>
                     </div>
                   </div>
                 )}
@@ -218,8 +220,8 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
             <Card delay={0}>
               <div className="flex flex-col items-center py-10">
                 <CheckCircle size={40} style={{ color: t.emerald }} strokeWidth={1.2} />
-                <p className="text-sm font-semibold mt-3" style={{ color: t.emerald }}>সব ডকুমেন্টে তথ্য মিলে গেছে!</p>
-                <p className="text-xs mt-1" style={{ color: t.muted }}>কোনো অমিল পাওয়া যায়নি</p>
+                <p className="text-sm font-semibold mt-3" style={{ color: t.emerald }}>{tr("documents.allDocsMatched")}</p>
+                <p className="text-xs mt-1" style={{ color: t.muted }}>{tr("documents.noMismatchFound")}</p>
               </div>
             </Card>
           ) : (
@@ -230,10 +232,10 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-sm font-semibold">
-                        {m.field === "name_en" ? "নাম (English)" : m.field === "father_en" ? "পিতার নাম" : m.field === "mother_en" ? "মাতার নাম" : m.field === "permanent_address" ? "স্থায়ী ঠিকানা" : m.field}
+                        {m.field === "name_en" ? tr("documents.fieldNameEn") : m.field === "father_en" ? tr("documents.fieldFatherEn") : m.field === "mother_en" ? tr("documents.fieldMotherEn") : m.field === "permanent_address" ? tr("documents.fieldPermanentAddress") : m.field}
                       </p>
                       <Badge color={m.severity === "error" ? t.rose : t.amber} size="xs">
-                        {m.severity === "error" ? "সমস্যা" : "সতর্কতা"}
+                        {m.severity === "error" ? tr("documents.statusIssue") : tr("documents.warning")}
                       </Badge>
                     </div>
 
@@ -258,7 +260,7 @@ export default function StudentDocumentDetail({ student, studentDocs, onBack, on
                     </div>
 
                     <p className="text-[10px] mt-2" style={{ color: t.muted }}>
-                      💡 {m.field === "name_en" ? "\"Md.\" এবং \"Mohammad\" একই হতে পারে — ম্যানুয়ালি যাচাই করুন" : m.field === "permanent_address" ? "বানান ভুল থাকতে পারে — \"Kamal\" vs \"Kamol\" চেক করুন" : "দুটি ডকুমেন্ট মিলিয়ে দেখুন"}
+                      💡 {m.field === "name_en" ? tr("documents.hintNameMismatch") : m.field === "permanent_address" ? tr("documents.hintAddressMismatch") : tr("documents.hintGenericMismatch")}
                     </p>
                   </div>
                 </div>

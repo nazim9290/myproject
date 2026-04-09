@@ -89,19 +89,19 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const importFileRef = useState(null)[1];
 
   const SYSTEM_FIELDS = [
-    { key: "", label: "— Skip —" },
-    { key: "name_en", label: "নাম (English)" }, { key: "name_bn", label: "নাম (বাংলা)" },
-    { key: "phone", label: "ফোন" }, { key: "email", label: "ইমেইল" },
-    { key: "dob", label: "জন্ম তারিখ" }, { key: "gender", label: "লিঙ্গ" },
-    { key: "passport_number", label: "পাসপোর্ট" }, { key: "nid", label: "NID" },
-    { key: "father_name", label: "পিতার নাম" }, { key: "mother_name", label: "মাতার নাম" },
-    { key: "permanent_address", label: "স্থায়ী ঠিকানা" }, { key: "current_address", label: "বর্তমান ঠিকানা" },
-    { key: "country", label: "দেশ" }, { key: "school", label: "স্কুল" },
-    { key: "batch", label: "ব্যাচ" }, { key: "branch", label: "ব্রাঞ্চ" },
-    { key: "status", label: "স্ট্যাটাস" }, { key: "source", label: "সোর্স" },
-    { key: "student_type", label: "টাইপ" }, { key: "intake", label: "Intake" },
-    { key: "nationality", label: "জাতীয়তা" }, { key: "blood_group", label: "রক্তের গ্রুপ" },
-    { key: "whatsapp", label: "WhatsApp" }, { key: "visa_type", label: "ভিসার ধরন" },
+    { key: "", label: tr("students.import.skip") },
+    { key: "name_en", label: tr("students.f_fullName") }, { key: "name_bn", label: tr("students.f_nameBn") },
+    { key: "phone", label: tr("students.f_phone") }, { key: "email", label: tr("students.f_email") },
+    { key: "dob", label: tr("students.f_dob") }, { key: "gender", label: tr("students.f_gender") },
+    { key: "passport_number", label: tr("students.f_passport") }, { key: "nid", label: tr("students.f_nid") },
+    { key: "father_name", label: tr("students.f_fatherName") }, { key: "mother_name", label: tr("students.f_motherName") },
+    { key: "permanent_address", label: tr("students.f_permanentAddress") }, { key: "current_address", label: tr("students.f_currentAddress") },
+    { key: "country", label: tr("students.f_country") }, { key: "school", label: tr("students.f_school") },
+    { key: "batch", label: tr("students.f_batch") }, { key: "branch", label: tr("students.f_branch") },
+    { key: "status", label: tr("common.status") }, { key: "source", label: tr("students.f_source") },
+    { key: "student_type", label: tr("students.f_type") }, { key: "intake", label: tr("students.f_intake") },
+    { key: "nationality", label: tr("students.f_nationality") }, { key: "blood_group", label: tr("students.f_bloodGroup") },
+    { key: "whatsapp", label: tr("students.f_whatsapp") }, { key: "visa_type", label: tr("students.f_visaType") },
   ];
 
   // Excel file upload → parse headers
@@ -123,14 +123,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       setImportMapping(autoMap);
       setImportStep("mapping");
     } catch (err) {
-      toast.error("Parse ব্যর্থ: " + err.message);
+      toast.error(tr("students.import.parseFailed") + ": " + err.message);
     }
   };
 
   // Confirm import → send mapped data
   const doImport = async () => {
     const mapped = Object.entries(importMapping).filter(([_, v]) => v);
-    if (mapped.length === 0) { toast.error("কমপক্ষে ১টি column ম্যাপ করুন"); return; }
+    if (mapped.length === 0) { toast.error(tr("students.import.mapAtLeastOne")); return; }
 
     setImporting(true);
     try {
@@ -156,10 +156,10 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       const res = await api.upload("/students/import/mapped", formData2);
       setImportResult(res);
       setImportStep("done");
-      toast.success(res.message || `${res.success} জন import সফল`);
+      toast.success(res.message || tr("students.import.successCount", { count: res.success }));
       if (reloadData) reloadData();
     } catch (err) {
-      toast.error("Import ব্যর্থ: " + err.message);
+      toast.error(tr("students.import.failed") + ": " + err.message);
     }
     setImporting(false);
   };
@@ -205,7 +205,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
       setServerTotal(total);
     } catch (err) {
       console.error("[Students Load]", err);
-      toast.error("স্টুডেন্ট ডাটা লোড করতে সমস্যা হয়েছে");
+      toast.error(tr("students.loadError"));
     }
     setLoading(false);
   }, [page, pageSize, debouncedSearch, filterStatus, filterCountry, filterBranch, filterBatch, filterSchool]);
@@ -223,20 +223,20 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     const ids = [...selectedIds];
     try {
       await Promise.all(ids.map(id => api.patch(`/students/${id}`, { status: bulkStatus })));
-      toast.success(`${ids.length} জন স্টুডেন্টের স্ট্যাটাস পরিবর্তন হয়েছে`);
+      toast.success(tr("students.bulk.statusChanged", { count: ids.length }));
       setSelectedIds(new Set());
       setBulkStatus("");
       fetchStudents(); // সার্ভার থেকে re-fetch
-    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+    } catch (err) { toast.error(err.message || tr("errors.serverError")); }
   };
   const bulkDelete = async () => {
     const ids = [...selectedIds];
     try {
       await Promise.all(ids.map(id => api.del(`/students/${id}`)));
-      toast.success(`${ids.length} জন মুছে ফেলা হয়েছে`);
+      toast.success(tr("students.bulk.deleted", { count: ids.length }));
       setSelectedIds(new Set());
       fetchStudents(); // সার্ভার থেকে re-fetch
-    } catch (err) { toast.error(err.message || "সমস্যা হয়েছে"); }
+    } catch (err) { toast.error(err.message || tr("errors.serverError")); }
   };
 
   const selectedStudent = selectedId ? students.find((s) => s.id === selectedId) : null;
@@ -251,14 +251,14 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         onUpdate={async (updated, skipPatch) => {
           // skipPatch = true হলে শুধু local state update (backend-এ already saved)
           if (!skipPatch) {
-            try { await api.patch(`/students/${updated.id}`, updated); } catch (err) { console.error("[Student Update]", err); toast.error("সার্ভারে আপডেট ব্যর্থ"); }
+            try { await api.patch(`/students/${updated.id}`, updated); } catch (err) { console.error("[Student Update]", err); toast.error(tr("errors.saveFailed")); }
           }
           setStudents(students.map((s) => s.id === updated.id ? { ...s, ...updated } : s));
           if (!skipPatch) toast.updated("Student");
           fetchStudents();
         }}
         onDelete={async (id) => {
-          try { await api.del(`/students/${id}`); } catch (err) { console.error("[Student Delete]", err); toast.error("সার্ভার থেকে মুছতে সমস্যা হয়েছে"); }
+          try { await api.del(`/students/${id}`); } catch (err) { console.error("[Student Delete]", err); toast.error(tr("errors.deleteFailed")); }
           setSelectedId(null);
           toast.deleted("Student");
           fetchStudents(); // সার্ভার থেকে re-fetch
@@ -305,8 +305,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             <div className="absolute right-0 top-8 z-50 rounded-xl shadow-lg min-w-[200px] overflow-hidden"
               style={{ background: t.card, border: `1px solid ${t.border}` }}>
               {[
-                { label: `📋 বর্তমান পেজ (${students.length} জন)`, mode: "page" },
-                { label: `📦 সব স্টুডেন্ট (${serverTotal} জন)`, mode: "all" },
+                { label: `📋 ${tr("students.export.currentPage", { count: students.length })}`, mode: "page" },
+                { label: `📦 ${tr("students.export.allStudents", { count: serverTotal })}`, mode: "all" },
               ].map((opt) => (
                 <button key={opt.label} className="w-full text-left px-4 py-2.5 text-xs transition"
                   style={{ color: t.text }}
@@ -359,8 +359,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         {[
           { l: tr("common.total"), v: serverTotal, c: t.cyan },
           { l: tr("common.active"), v: activeCount, c: t.emerald },
-          { l: "ভিসা / এসেছে", v: visaCount, c: t.purple },
-          { l: "নিজস্ব / পার্টনার", v: `${ownCount} / ${partnerCount}`, c: t.amber },
+          { l: tr("students.visaArrived"), v: visaCount, c: t.purple },
+          { l: tr("students.ownPartner"), v: `${ownCount} / ${partnerCount}`, c: t.amber },
         ].map((s, i) => (
           <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: t.inputBg }}>
             <p className="text-lg font-bold" style={{ color: s.c }}>{s.v}</p>
@@ -381,7 +381,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               // fallback — লোকালে যোগ হবে
             }
             setShowAddForm(false);
-            toast.success(`${newStudent.name_en} — স্টুডেন্ট যোগ হয়েছে!`);
+            toast.success(`${newStudent.name_en} — ${tr("students.addSuccess")}`);
             fetchStudents(); // সার্ভার থেকে re-fetch
           }}
         />
@@ -389,11 +389,11 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
 
       {/* ══════════ EXCEL IMPORT MODAL ══════════ */}
       <Modal isOpen={showImport} onClose={() => setShowImport(false)} title={tr("students.importExcel")} subtitle={
-        importStep === "upload" ? "Step 1: Excel ফাইল আপলোড করুন" :
-        importStep === "mapping" ? `Step 2: Column Mapping — ${importTotal} জন student পাওয়া গেছে` :
-        "Import সম্পন্ন"
+        importStep === "upload" ? tr("students.import.step1") :
+        importStep === "mapping" ? tr("students.import.step2", { count: importTotal }) :
+        tr("students.import.complete")
       } size="xl">
-          {importStep !== "upload" && <div className="mb-4"><button onClick={() => setImportStep(importStep === "done" ? "upload" : importStep === "preview" ? "mapping" : "upload")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: t.inputBg, color: t.text }}><ArrowLeft size={14} /> পেছনে যান</button></div>}
+          {importStep !== "upload" && <div className="mb-4"><button onClick={() => setImportStep(importStep === "done" ? "upload" : importStep === "preview" ? "mapping" : "upload")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: t.inputBg, color: t.text }}><ArrowLeft size={14} /> {tr("students.import.goBack")}</button></div>}
 
           {/* Step 1: Upload */}
           {importStep === "upload" && (
@@ -401,8 +401,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               {/* ── Template Download ── */}
               <div className="mb-4 p-4 rounded-xl flex items-center justify-between" style={{ background: `${t.emerald}08`, border: `1px solid ${t.emerald}20` }}>
                 <div>
-                  <p className="text-xs font-semibold flex items-center gap-2"><Download size={14} style={{ color: t.emerald }} /> Sample Template ডাউনলোড করুন</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>এই ফাইলে সব column header আছে — ডাটা বসিয়ে আপলোড করুন। <span style={{ color: t.rose }}>*</span> চিহ্নিত column বাধ্যতামূলক।</p>
+                  <p className="text-xs font-semibold flex items-center gap-2"><Download size={14} style={{ color: t.emerald }} /> {tr("students.import.downloadTemplate")}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>{tr("students.import.templateHint")} <span style={{ color: t.rose }}>*</span> {tr("students.import.requiredColumns")}</p>
                 </div>
                 <button onClick={async () => {
                   try {
@@ -414,23 +414,23 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                       href: URL.createObjectURL(blob),
                       download: "AgencyBook_Student_Import_Template.xlsx"
                     }).click();
-                    toast.success("Template (.xlsx) ডাউনলোড হয়েছে — ডাটা বসিয়ে আপলোড করুন");
-                  } catch { toast.error("Template download ব্যর্থ"); }
+                    toast.success(tr("students.import.templateDownloaded"));
+                  } catch { toast.error(tr("students.import.templateFailed")); }
                 }}
                 className="px-4 py-2 rounded-lg text-xs font-medium transition shrink-0"
                 style={{ background: t.emerald, color: "#fff" }}>
-                  Template ডাউনলোড (.xlsx)
+                  {tr("students.import.downloadXlsx")}
                 </button>
               </div>
 
               {/* ── File Upload (Drag & Drop) ── */}
               <DropZone accept=".xlsx,.xls" onFile={(file) => handleImportUpload({ target: { files: [file] } })}>
-                Excel ফাইল টেনে আনুন অথবা ক্লিক করুন
+                {tr("students.import.dragDrop")}
               </DropZone>
               <div className="mt-3 p-3 rounded-lg" style={{ background: `${t.cyan}08` }}>
                 <p className="text-[11px]" style={{ color: t.textSecondary }}>
-                  <strong>নিয়ম:</strong> প্রথম row = column header, দ্বিতীয় row থেকে student data।
-                  <span style={{ color: t.rose }}> * </span>চিহ্নিত column (Name, Phone) অবশ্যই থাকতে হবে।
+                  <strong>{tr("students.import.rulesLabel")}</strong> {tr("students.import.rulesText")}
+                  <span style={{ color: t.rose }}> * </span>{tr("students.import.requiredNamePhone")}
                 </p>
               </div>
             </div>
@@ -443,9 +443,9 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>Excel Column</th>
-                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>→ System Field</th>
-                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>Sample Data</th>
+                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("students.import.excelColumn")}</th>
+                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("students.import.systemField")}</th>
+                      <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("students.import.sampleData")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -468,7 +468,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
 
               {/* Preview */}
               <div className="mb-3 p-3 rounded-lg" style={{ background: t.inputBg }}>
-                <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>Data Preview (প্রথম {importPreview.length} জন)</p>
+                <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>{tr("students.import.dataPreview", { count: importPreview.length })}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-[10px]">
                     <thead>
@@ -491,11 +491,10 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
 
               <div className="flex justify-between items-center">
                 <p className="text-xs" style={{ color: t.muted }}>
-                  মোট: <strong style={{ color: t.text }}>{importTotal}</strong> জন •
-                  ম্যাপ: <strong style={{ color: t.emerald }}>{Object.values(importMapping).filter(Boolean).length}</strong> columns
+                  {tr("common.total")}: <strong style={{ color: t.text }}>{importTotal}</strong> • {tr("students.import.mapped")}: <strong style={{ color: t.emerald }}>{Object.values(importMapping).filter(Boolean).length}</strong> columns
                 </p>
                 <Button icon={Check} onClick={doImport} disabled={importing}>
-                  {importing ? "Import হচ্ছে..." : `${importTotal} জন Import করুন`}
+                  {importing ? tr("students.import.importing") : tr("students.import.doImport", { count: importTotal })}
                 </Button>
               </div>
             </div>
@@ -507,11 +506,11 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" style={{ background: `${t.emerald}15` }}>
                 <Check size={32} style={{ color: t.emerald }} />
               </div>
-              <h3 className="text-lg font-bold mb-2">Import সম্পন্ন!</h3>
+              <h3 className="text-lg font-bold mb-2">{tr("students.import.complete")}!</h3>
               <p className="text-sm" style={{ color: t.textSecondary }}>{importResult.message}</p>
               <div className="flex justify-center gap-6 mt-4">
-                <div><p className="text-2xl font-bold" style={{ color: t.emerald }}>{importResult.success}</p><p className="text-[10px]" style={{ color: t.muted }}>সফল</p></div>
-                {importResult.failed > 0 && <div><p className="text-2xl font-bold" style={{ color: t.rose }}>{importResult.failed}</p><p className="text-[10px]" style={{ color: t.muted }}>ব্যর্থ</p></div>}
+                <div><p className="text-2xl font-bold" style={{ color: t.emerald }}>{importResult.success}</p><p className="text-[10px]" style={{ color: t.muted }}>{tr("students.import.succeeded")}</p></div>
+                {importResult.failed > 0 && <div><p className="text-2xl font-bold" style={{ color: t.rose }}>{importResult.failed}</p><p className="text-[10px]" style={{ color: t.muted }}>{tr("students.import.failedCount")}</p></div>}
               </div>
               {importResult.errors?.length > 0 && (
                 <div className="mt-4 text-left">
@@ -523,7 +522,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   ))}
                 </div>
               )}
-              <Button className="mt-6" onClick={() => { setShowImport(false); fetchStudents(); if (reloadData) reloadData(); }}>বন্ধ করুন</Button>
+              <Button className="mt-6" onClick={() => { setShowImport(false); fetchStudents(); if (reloadData) reloadData(); }}>{tr("common.close")}</Button>
             </div>
           )}
       </Modal>
@@ -563,13 +562,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         {/* ── Bulk Action Bar ── */}
         {selectedIds.size > 0 ? (
           <div className="flex items-center gap-3 mb-3 p-2.5 rounded-xl" style={{ background: `${t.cyan}10`, border: `1px solid ${t.cyan}30` }}>
-            <span className="text-xs font-bold" style={{ color: t.cyan }}>{selectedIds.size} জন নির্বাচিত</span>
+            <span className="text-xs font-bold" style={{ color: t.cyan }}>{tr("students.bulk.selected", { count: selectedIds.size })}</span>
             <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}
               className="px-2 py-1 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-              <option value="">স্ট্যাটাস পরিবর্তন...</option>
+              <option value="">{tr("students.bulk.changeStatus")}</option>
               {PIPELINE_STATUSES.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
             </select>
-            {bulkStatus && <Button size="xs" onClick={bulkChangeStatus}>পরিবর্তন করুন</Button>}
+            {bulkStatus && <Button size="xs" onClick={bulkChangeStatus}>{tr("students.bulk.applyChange")}</Button>}
             <Button variant="ghost" size="xs" onClick={() => setShowBulkDeleteConfirm(true)} style={{ color: t.rose }}>{tr("common.delete")}</Button>
             <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>{tr("common.cancel")}</Button>
           </div>
@@ -629,7 +628,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   <td className="py-3 px-3"><StatusBadge status={s.status} /></td>
                   <td className="py-3 px-3"><Badge color={s.type === "own" ? t.cyan : t.amber} size="xs">{s.type}</Badge></td>
                   <td className="py-3 px-3" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => setSelectedId(s.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>👁 বিস্তারিত</button>
+                    <button onClick={() => setSelectedId(s.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>{tr("students.viewDetails")}</button>
                   </td>
                 </tr>
               );})}
@@ -655,8 +654,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         isOpen={showBulkDeleteConfirm}
         onClose={() => setShowBulkDeleteConfirm(false)}
         onConfirm={async () => { setShowBulkDeleteConfirm(false); await bulkDelete(); }}
-        itemName={`${selectedIds.size} জন স্টুডেন্ট`}
-        message={`${selectedIds.size} জন স্টুডেন্ট মুছে ফেলা হবে। এই কাজ undo করা যাবে না।`}
+        itemName={tr("students.bulk.deleteItemName", { count: selectedIds.size })}
+        message={tr("students.bulk.deleteMessage", { count: selectedIds.size })}
       />
     </div>
   );

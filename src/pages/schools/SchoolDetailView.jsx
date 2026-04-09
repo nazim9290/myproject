@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, FileText, Plus, Save, X, Download, Search, Users, AlertTriangle, CheckCircle, Clock, Send } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -14,30 +15,31 @@ import { formatDateDisplay } from "../../components/ui/DateInput";
 const token = () => localStorage.getItem("agencyos_token");
 
 // Interview List-এ available columns — user select/deselect করবে
+// labelKey ব্যবহার করা হয়েছে — component-এর ভিতরে tr() দিয়ে resolve হবে
 const INTERVIEW_COLUMNS = [
-  { key: "no", label: "ক্রমিক" },
-  { key: "family_name", label: "পদবি" },
-  { key: "given_name", label: "নাম" },
-  { key: "full_name", label: "পুরো নাম" },
-  { key: "gender", label: "লিঙ্গ" },
-  { key: "dob_age", label: "জন্ম তারিখ (বয়স)" },
-  { key: "nationality", label: "জাতীয়তা" },
-  { key: "education", label: "শিক্ষাগত যোগ্যতা" },
-  { key: "gpa", label: "জিপিএ" },
-  { key: "jp_level", label: "জেপি লেভেল/স্কোর" },
-  { key: "jp_study_hours", label: "জেপি অধ্যয়ন ঘণ্টা" },
-  { key: "occupation", label: "পেশা" },
-  { key: "past_visa", label: "পূর্ববর্তী ভিসা/ইমিগ্রেশন" },
-  { key: "sponsor", label: "স্পন্সর (আয়)" },
-  { key: "sponsor_relation", label: "স্পন্সর সম্পর্ক" },
-  { key: "passport_no", label: "পাসপোর্ট নং" },
-  { key: "phone", label: "ফোন" },
-  { key: "email", label: "ইমেইল" },
-  { key: "address", label: "ঠিকানা" },
-  { key: "intended_semester", label: "ইনটেক সেমিস্টার" },
-  { key: "coe_applied", label: "COE আবেদন?" },
-  { key: "textbook_lesson", label: "পাঠ্যবইয়ের পাঠ" },
-  { key: "goal", label: "গ্র্যাজুয়েশনের পর লক্ষ্য" },
+  { key: "no", labelKey: "schools.col.serial" },
+  { key: "family_name", labelKey: "schools.col.familyName" },
+  { key: "given_name", labelKey: "schools.col.givenName" },
+  { key: "full_name", labelKey: "schools.col.fullName" },
+  { key: "gender", labelKey: "schools.col.gender" },
+  { key: "dob_age", labelKey: "schools.col.dobAge" },
+  { key: "nationality", labelKey: "schools.col.nationality" },
+  { key: "education", labelKey: "schools.col.education" },
+  { key: "gpa", labelKey: "schools.col.gpa" },
+  { key: "jp_level", labelKey: "schools.col.jpLevel" },
+  { key: "jp_study_hours", labelKey: "schools.col.jpStudyHours" },
+  { key: "occupation", labelKey: "schools.col.occupation" },
+  { key: "past_visa", labelKey: "schools.col.pastVisa" },
+  { key: "sponsor", labelKey: "schools.col.sponsor" },
+  { key: "sponsor_relation", labelKey: "schools.col.sponsorRelation" },
+  { key: "passport_no", labelKey: "schools.col.passportNo" },
+  { key: "phone", labelKey: "common.phone" },
+  { key: "email", labelKey: "common.email" },
+  { key: "address", labelKey: "common.address" },
+  { key: "intended_semester", labelKey: "schools.col.intakeSemester" },
+  { key: "coe_applied", labelKey: "schools.col.coeApplied" },
+  { key: "textbook_lesson", labelKey: "schools.col.textbookLesson" },
+  { key: "goal", labelKey: "schools.col.goal" },
 ];
 
 const DEFAULT_COLS = ["no", "family_name", "given_name", "gender", "dob_age", "education", "gpa", "jp_level", "sponsor", "sponsor_relation"];
@@ -45,6 +47,7 @@ const DEFAULT_COLS = ["no", "family_name", "given_name", "gender", "dob_age", "e
 export default function SchoolDetailView({ school, students, onBack }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [subs, setSubs] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState({ studentId: "", status: "submitted", submissionNo: "", intake: "" });
@@ -56,7 +59,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
   useEffect(() => {
     api.get(`/submissions?school_id=${school.id}`).then(data => {
       if (Array.isArray(data)) setSubs(data);
-    }).catch((err) => { console.error("[Submissions Load]", err); toast.error("সাবমিশন ডাটা লোড করতে সমস্যা হয়েছে"); });
+    }).catch((err) => { console.error("[Submissions Load]", err); toast.error(tr("schools.submissionLoadError")); });
   }, [school.id]);
   const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
@@ -81,44 +84,44 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [showMapping, setShowMapping] = useState(false);
   const [savingMapping, setSavingMapping] = useState(false);
 
-  // Student data fields — dropdown options
+  // Student data fields — dropdown options (tr() দিয়ে localized)
   const STUDENT_FIELDS = [
-    { value: "", label: "— ম্যাপ করুন —" },
-    { value: "no", label: "ক্রমিক (No.)" },
-    { value: "full_name", label: "পুরো নাম" },
-    { value: "family_name", label: "পদবি (Family Name)" },
-    { value: "given_name", label: "নাম (Given Name)" },
-    { value: "name_bn", label: "নাম (বাংলা)" },
-    { value: "gender", label: "লিঙ্গ (Gender)" },
-    { value: "gender_jp", label: "লিঙ্গ (男性/女性)" },
-    { value: "dob", label: "জন্ম তারিখ" },
-    { value: "dob_age", label: "জন্ম তারিখ (বয়স)" },
-    { value: "age", label: "বয়স" },
-    { value: "nationality", label: "জাতীয়তা" },
-    { value: "education", label: "শিক্ষাগত যোগ্যতা" },
+    { value: "", label: tr("schools.field.mapSelect") },
+    { value: "no", label: tr("schools.field.serial") },
+    { value: "full_name", label: tr("schools.field.fullName") },
+    { value: "family_name", label: tr("schools.field.familyName") },
+    { value: "given_name", label: tr("schools.field.givenName") },
+    { value: "name_bn", label: tr("schools.field.nameBn") },
+    { value: "gender", label: tr("schools.field.gender") },
+    { value: "gender_jp", label: tr("schools.field.genderJp") },
+    { value: "dob", label: tr("schools.field.dob") },
+    { value: "dob_age", label: tr("schools.field.dobAge") },
+    { value: "age", label: tr("schools.field.age") },
+    { value: "nationality", label: tr("schools.field.nationality") },
+    { value: "education", label: tr("schools.field.education") },
     { value: "gpa", label: "GPA" },
-    { value: "jp_exam_type", label: "JP পরীক্ষার ধরন (JLPT/NAT)" },
-    { value: "jp_level", label: "JP লেভেল" },
-    { value: "jp_score", label: "JP স্কোর" },
-    { value: "jp_study_hours", label: "JP অধ্যয়ন ঘণ্টা" },
-    { value: "has_jp_cert", label: "JP সনদ আছে?" },
-    { value: "occupation", label: "পেশা" },
-    { value: "passport_no", label: "পাসপোর্ট নম্বর" },
-    { value: "phone", label: "ফোন" },
-    { value: "email", label: "ইমেইল" },
-    { value: "address", label: "ঠিকানা" },
-    { value: "intended_semester", label: "ইনটেক সেমিস্টার" },
-    { value: "sponsor", label: "স্পন্সর" },
-    { value: "sponsor_relation", label: "স্পন্সর সম্পর্ক" },
-    { value: "sponsor_income", label: "স্পন্সর আয়" },
-    { value: "sponsor_contact", label: "স্পন্সর যোগাযোগ" },
-    { value: "coe_applied", label: "COE আবেদন?" },
-    { value: "goal", label: "গ্র্যাজুয়েশনের পর লক্ষ্য" },
-    { value: "goal_jp", label: "লক্ষ্য (জাপানি)" },
-    { value: "past_visa", label: "পূর্ব ভিসা/ইমিগ্রেশন" },
-    { value: "agency_name", label: "এজেন্সির নাম" },
-    { value: "staff_name", label: "স্টাফের নাম" },
-    { value: "today", label: "আজকের তারিখ" },
+    { value: "jp_exam_type", label: tr("schools.field.jpExamType") },
+    { value: "jp_level", label: tr("schools.field.jpLevel") },
+    { value: "jp_score", label: tr("schools.field.jpScore") },
+    { value: "jp_study_hours", label: tr("schools.field.jpStudyHours") },
+    { value: "has_jp_cert", label: tr("schools.field.hasJpCert") },
+    { value: "occupation", label: tr("schools.field.occupation") },
+    { value: "passport_no", label: tr("schools.field.passportNo") },
+    { value: "phone", label: tr("common.phone") },
+    { value: "email", label: tr("common.email") },
+    { value: "address", label: tr("common.address") },
+    { value: "intended_semester", label: tr("schools.field.intakeSemester") },
+    { value: "sponsor", label: tr("schools.field.sponsor") },
+    { value: "sponsor_relation", label: tr("schools.field.sponsorRelation") },
+    { value: "sponsor_income", label: tr("schools.field.sponsorIncome") },
+    { value: "sponsor_contact", label: tr("schools.field.sponsorContact") },
+    { value: "coe_applied", label: tr("schools.field.coeApplied") },
+    { value: "goal", label: tr("schools.field.goal") },
+    { value: "goal_jp", label: tr("schools.field.goalJp") },
+    { value: "past_visa", label: tr("schools.field.pastVisa") },
+    { value: "agency_name", label: tr("schools.field.agencyName") },
+    { value: "staff_name", label: tr("schools.field.staffName") },
+    { value: "today", label: tr("schools.field.todayDate") },
   ];
 
   // Load saved mapping on mount
@@ -131,7 +134,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
             setMappingFormat(data.mapping.format || "row");
             setMappingHeaderRow(data.mapping.header_row || 3);
           }
-        }).catch((err) => { console.error("[Template Load]", err); toast.error("টেমপ্লেট ডাটা লোড করতে সমস্যা হয়েছে"); });
+        }).catch((err) => { console.error("[Template Load]", err); toast.error(tr("schools.templateLoadError")); });
     }
   }, [school.id, school.interview_template]);
 
@@ -139,7 +142,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const handleTemplateUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".xlsx")) { toast.error("শুধু .xlsx ফাইল দিন"); return; }
+    if (!file.name.endsWith(".xlsx")) { toast.error(tr("schools.xlsxOnly")); return; }
     setUploadingTemplate(true);
     try {
       const formData = new FormData();
@@ -148,7 +151,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
         method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "আপলোড ব্যর্থ");
+      if (!res.ok) throw new Error(data.error || tr("schools.uploadFailed"));
       setTemplateName(data.template_name || data.template);
       // Row-wise headers বা column-wise labels — যেটা বেশি
       const headers = (data.row_headers?.length >= data.col_labels?.length) ? data.row_headers : data.col_labels;
@@ -157,7 +160,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
       setMappingFormat(fmt);
       setMappingHeaderRow(data.header_row || 3);
       setShowMapping(true);
-      toast.success(`টেমপ্লেট আপলোড হয়েছে — এখন ম্যাপিং করুন`);
+      toast.success(tr("schools.templateUploaded"));
     } catch (err) { toast.error(err.message); }
     setUploadingTemplate(false);
     e.target.value = "";
@@ -173,7 +176,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
         body: JSON.stringify({ mapping: mappingHeaders, format: mappingFormat, header_row: mappingHeaderRow }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
-      toast.success("ম্যাপিং সেভ হয়েছে");
+      toast.success(tr("schools.mappingSaved"));
       setShowMapping(false);
     } catch (err) { toast.error(err.message); }
     setSavingMapping(false);
@@ -185,9 +188,9 @@ export default function SchoolDetailView({ school, students, onBack }) {
       const res = await fetch(`${API_URL}/schools/${school.id}/interview-template`, {
         method: "DELETE", headers: { Authorization: `Bearer ${token()}` },
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "মুছতে ব্যর্থ"); }
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || tr("errors.deleteFailed")); }
       setTemplateName("");
-      toast.success("টেমপ্লেট মুছে ফেলা হয়েছে — এখন ডিফল্ট ব্যবহার হবে");
+      toast.success(tr("schools.templateDeleted"));
     } catch (err) { toast.error(err.message); }
   };
 
@@ -198,7 +201,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
 
   // Generate interview list
   const generateInterviewList = async () => {
-    if (selectedForInterview.length === 0) { toast.error("কমপক্ষে ১ জন স্টুডেন্ট সিলেক্ট করুন"); return; }
+    if (selectedForInterview.length === 0) { toast.error(tr("schools.selectAtLeastOne")); return; }
     setGenerating(true);
     try {
       const res = await fetch(`${API_URL}/schools/${school.id}/interview-list`, {
@@ -212,21 +215,21 @@ export default function SchoolDetailView({ school, students, onBack }) {
         href: URL.createObjectURL(blob),
         download: `Interview_List_${school.name_en}_${selectedForInterview.length}students.xlsx`
       }).click();
-      toast.exported(`Interview List — ${selectedForInterview.length} জন`);
+      toast.exported(`Interview List — ${selectedForInterview.length}`);
     } catch (err) { toast.error(err.message); }
     setGenerating(false);
   };
 
-  // Status config
+  // Status config — tr() দিয়ে localized
   const STATUS_CONFIG = {
-    submitted: { label: "সাবমিট", color: t.cyan, icon: Send },
-    under_review: { label: "রিভিউ চলছে", color: t.amber, icon: Clock },
-    issues_found: { label: "সমস্যা পাওয়া", color: t.rose, icon: AlertTriangle },
-    resubmitted: { label: "পুনরায় সাবমিট", color: t.purple, icon: Send },
-    accepted: { label: "গৃহীত", color: t.emerald, icon: CheckCircle },
-    interview_scheduled: { label: "ইন্টারভিউ", color: t.amber, icon: Clock },
-    coe_received: { label: "COE পেয়েছে", color: t.emerald, icon: CheckCircle },
-    rejected: { label: "প্রত্যাখ্যাত", color: t.rose, icon: X },
+    submitted: { label: tr("schools.status.submitted"), color: t.cyan, icon: Send },
+    under_review: { label: tr("schools.status.underReview"), color: t.amber, icon: Clock },
+    issues_found: { label: tr("schools.status.issuesFound"), color: t.rose, icon: AlertTriangle },
+    resubmitted: { label: tr("schools.status.resubmitted"), color: t.purple, icon: Send },
+    accepted: { label: tr("schools.status.accepted"), color: t.emerald, icon: CheckCircle },
+    interview_scheduled: { label: tr("schools.status.interviewScheduled"), color: t.amber, icon: Clock },
+    coe_received: { label: tr("schools.status.coeReceived"), color: t.emerald, icon: CheckCircle },
+    rejected: { label: tr("schools.status.rejected"), color: t.rose, icon: X },
   };
 
   // Status change via API
@@ -240,7 +243,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
 
   // Add submission via API
   const addSubmission = async () => {
-    if (!addForm.studentId) { toast.error("স্টুডেন্ট সিলেক্ট করুন"); return; }
+    if (!addForm.studentId) { toast.error(tr("schools.selectStudent")); return; }
     try {
       const saved = await api.post("/submissions", {
         school_id: school.id,
@@ -252,19 +255,19 @@ export default function SchoolDetailView({ school, students, onBack }) {
       setSubs(prev => [saved, ...prev]);
       setShowAddForm(false);
       setAddForm({ studentId: "", status: "submitted", submissionNo: "", intake: "" });
-      toast.success("সাবমিশন যোগ হয়েছে");
+      toast.success(tr("schools.submissionAdded"));
     } catch (err) { toast.error(err.message); }
   };
 
   // Add feedback (recheck issue)
   const addFeedback = async (subId) => {
-    if (!feedbackForm.doc || !feedbackForm.issue) { toast.error("ডকুমেন্ট ও সমস্যা লিখুন"); return; }
+    if (!feedbackForm.doc || !feedbackForm.issue) { toast.error(tr("schools.feedbackRequired")); return; }
     try {
       const updated = await api.post(`/submissions/${subId}/feedback`, feedbackForm);
       setSubs(prev => prev.map(s => s.id === subId ? { ...s, ...updated } : s));
       setShowFeedbackForm(null);
       setFeedbackForm({ doc: "", issue: "", severity: "warning" });
-      toast.success("রিচেক সমস্যা যোগ হয়েছে");
+      toast.success(tr("schools.feedbackAdded"));
     } catch (err) { toast.error(err.message); }
   };
 
@@ -273,7 +276,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
     try {
       const updated = await api.patch(`/submissions/${subId}/feedback/${fbIdx}/resolve`, {});
       setSubs(prev => prev.map(s => s.id === subId ? { ...s, ...updated } : s));
-      toast.success("সমস্যা সমাধান হয়েছে!");
+      toast.success(tr("schools.issueResolved"));
     } catch (err) { toast.error(err.message); }
   };
 
@@ -290,7 +293,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
           style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
           onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
           onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
-          <ArrowLeft size={16} /> <span className="hidden sm:inline">ফিরুন</span>
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">{tr("schools.goBack")}</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -300,7 +303,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{school.name_jp} • {school.city}</p>
         </div>
         <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
-          ইন্টারভিউ তালিকা
+          {tr("schools.interviewList")}
         </Button>
       </div>
 
@@ -308,12 +311,12 @@ export default function SchoolDetailView({ school, students, onBack }) {
       {showInterviewList && (
         <Card delay={0}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold flex items-center gap-2"><Users size={14} /> ইন্টারভিউ স্টুডেন্ট তালিকা — {school.name_en}</h3>
+            <h3 className="text-sm font-bold flex items-center gap-2"><Users size={14} /> {tr("schools.interviewStudentList")} — {school.name_en}</h3>
             <div className="flex items-center gap-2">
               <select value={interviewFormat} onChange={e => setInterviewFormat(e.target.value)}
                 className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                <option value="row">Row-wise (প্রতি স্টুডেন্ট এক row)</option>
-                <option value="column">Column-wise (প্রতি স্টুডেন্ট এক column)</option>
+                <option value="row">{tr("schools.rowWise")}</option>
+                <option value="column">{tr("schools.columnWise")}</option>
               </select>
             </div>
           </div>
@@ -323,25 +326,25 @@ export default function SchoolDetailView({ school, students, onBack }) {
             <FileText size={16} style={{ color: t.cyan }} />
             <div className="flex-1 text-xs">
               {templateName ? (
-                <span>টেমপ্লেট: <strong style={{ color: t.cyan }}>{templateName}</strong> (স্কুল-specific)</span>
+                <span>{tr("schools.template")}: <strong style={{ color: t.cyan }}>{templateName}</strong> ({tr("schools.schoolSpecific")})</span>
               ) : (
-                <span style={{ color: t.muted }}>কোনো কাস্টম টেমপ্লেট নেই — <strong>ডিফল্ট টেমপ্লেট</strong> ব্যবহার হবে</span>
+                <span style={{ color: t.muted }}>{tr("schools.noCustomTemplate")}</span>
               )}
             </div>
             <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition"
               style={{ background: t.cyan, color: "#000" }}>
-              {uploadingTemplate ? "আপলোড হচ্ছে..." : "📎 টেমপ্লেট আপলোড"}
+              {uploadingTemplate ? tr("schools.uploading") : `📎 ${tr("schools.templateUpload")}`}
               <input type="file" accept=".xlsx" onChange={handleTemplateUpload} className="hidden" disabled={uploadingTemplate} />
             </label>
             {templateName && (
               <>
                 <button onClick={() => setShowMapping(!showMapping)} className="px-2 py-1.5 rounded-lg text-xs font-medium transition"
                   style={{ background: `${t.purple}20`, color: t.purple }}>
-                  🔗 ম্যাপিং {showMapping ? "বন্ধ" : "দেখুন"}
+                  🔗 {tr("schools.mapping")} {showMapping ? tr("schools.mappingClose") : tr("schools.mappingView")}
                 </button>
                 <button onClick={handleTemplateDelete} className="px-2 py-1.5 rounded-lg text-xs transition"
                   style={{ background: `${t.rose}20`, color: t.rose }}>
-                  ✕ মুছুন
+                  ✕ {tr("common.delete")}
                 </button>
               </>
             )}
@@ -351,7 +354,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
           {showMapping && mappingHeaders.length > 0 && (
             <div className="mb-4 p-4 rounded-xl" style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}20` }}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-bold" style={{ color: t.purple }}>🔗 ফিল্ড ম্যাপিং — টেমপ্লেটের কোন {mappingFormat === "column" ? "রো" : "কলাম"}-এ কোন ডাটা বসবে</h4>
+                <h4 className="text-xs font-bold" style={{ color: t.purple }}>🔗 {tr("schools.fieldMapping")} — {tr("schools.mappingDesc", { type: mappingFormat === "column" ? tr("schools.row") : tr("schools.column") })}</h4>
                 <div className="flex items-center gap-2">
                   <select value={mappingFormat} onChange={e => setMappingFormat(e.target.value)}
                     className="px-2 py-1 rounded text-[10px] outline-none" style={is}>
@@ -360,7 +363,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                   </select>
                   <button onClick={saveMapping} disabled={savingMapping}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: t.emerald, color: "#000" }}>
-                    {savingMapping ? "সেভ হচ্ছে..." : "💾 ম্যাপিং সেভ"}
+                    {savingMapping ? tr("common.saving") : `💾 ${tr("schools.mappingSave")}`}
                   </button>
                 </div>
               </div>
@@ -382,19 +385,19 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 ))}
               </div>
               <p className="text-[10px] mt-2" style={{ color: t.muted }}>
-                প্রতিটি টেমপ্লেট {mappingFormat === "column" ? "রো" : "কলাম"}-এর পাশে student-এর কোন ফিল্ড বসবে সিলেক্ট করুন। সেভ করলে পরবর্তীতে automatic ব্যবহার হবে।
+                {tr("schools.mappingHint", { type: mappingFormat === "column" ? tr("schools.row") : tr("schools.column") })}
               </p>
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>এজেন্সি নাম</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.agencyName")}</label>
               <input value={agencyName} onChange={e => setAgencyName(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Your Agency Name" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টাফ নাম (লিংকস্টাফ)</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.staffName")}</label>
               <input value={staffName} onChange={e => setStaffName(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="担当者名" />
             </div>
@@ -402,7 +405,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
 
           {/* Column selection */}
           <div className="mb-3">
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কোন কোন column দরকার (click করে select/deselect)</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.columnSelection")}</label>
             <div className="flex flex-wrap gap-1.5">
               {INTERVIEW_COLUMNS.map(col => {
                 const selected = interviewCols.includes(col.key);
@@ -415,7 +418,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                     border: `1px solid ${selected ? t.cyan : t.inputBorder}`,
                     color: selected ? t.cyan : t.muted,
                   }}>
-                    {selected ? "✓ " : ""}{col.label}
+                    {selected ? "✓ " : ""}{tr(col.labelKey)}
                   </button>
                 );
               })}
@@ -426,12 +429,12 @@ export default function SchoolDetailView({ school, students, onBack }) {
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg flex-1" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={14} style={{ color: t.muted }} />
               <input value={interviewSearch} onChange={e => setInterviewSearch(e.target.value)}
-                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }} placeholder="স্টুডেন্ট খুঁজুন..." />
+                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }} placeholder={tr("schools.searchStudentPlaceholder")} />
             </div>
             <button onClick={() => setSelectedForInterview(
               selectedForInterview.length === interviewFiltered.length ? [] : interviewFiltered.map(s => s.id)
             )} className="text-[10px] px-3 py-2 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>
-              {selectedForInterview.length === interviewFiltered.length ? "সব বাদ দিন" : "সব নির্বাচন"}
+              {selectedForInterview.length === interviewFiltered.length ? tr("schools.deselectAll") : tr("common.selectAll")}
             </button>
           </div>
 
@@ -451,9 +454,9 @@ export default function SchoolDetailView({ school, students, onBack }) {
           </div>
 
           <div className="flex justify-between items-center pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-            <p className="text-xs" style={{ color: t.muted }}>সিলেক্টেড: <strong style={{ color: t.text }}>{selectedForInterview.length}</strong> জন</p>
+            <p className="text-xs" style={{ color: t.muted }}>{tr("schools.selected")}: <strong style={{ color: t.text }}>{selectedForInterview.length}</strong></p>
             <Button icon={Download} onClick={generateInterviewList} disabled={generating || !selectedForInterview.length}>
-              {generating ? "তৈরি হচ্ছে..." : `.xlsx ডাউনলোড (${interviewFormat})`}
+              {generating ? tr("schools.generating") : `.xlsx ${tr("common.download")} (${interviewFormat})`}
             </Button>
           </div>
         </Card>
@@ -461,14 +464,14 @@ export default function SchoolDetailView({ school, students, onBack }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Card delay={50}>
-          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: t.muted }}>স্কুল তথ্য</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: t.muted }}>{tr("schools.schoolInfo")}</h4>
           <div className="space-y-2.5">
             {[
-              { label: "ঠিকানা", value: school.address },
-              { label: "যোগাযোগ", value: school.contact },
-              { label: "ওয়েবসাইট", value: school.website },
-              { label: "শোকাই ফি/জন", value: school.shoukai_fee ? `¥${Number(school.shoukai_fee).toLocaleString()}` : "N/A" },
-              { label: "ন্যূনতম JP লেভেল", value: school.min_jp_level || "—" },
+              { label: tr("common.address"), value: school.address },
+              { label: tr("schools.contact"), value: school.contact },
+              { label: tr("schools.website"), value: school.website },
+              { label: tr("schools.shoukaiFeePerStudent"), value: school.shoukai_fee ? `¥${Number(school.shoukai_fee).toLocaleString()}` : "N/A" },
+              { label: tr("schools.minJpLevel"), value: school.min_jp_level || "—" },
             ].map((f) => (
               <div key={f.label} className="flex justify-between text-xs">
                 <span style={{ color: t.muted }}>{f.label}</span>
@@ -479,13 +482,13 @@ export default function SchoolDetailView({ school, students, onBack }) {
         </Card>
 
         <Card delay={100}>
-          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: t.muted }}>পরিসংখ্যান</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: t.muted }}>{tr("schools.statistics")}</h4>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "মোট রেফার", value: school.studentsReferred || schoolStudents.length, color: t.cyan },
-              { label: "পৌঁছেছে", value: school.studentsArrived || 0, color: t.emerald },
-              { label: "সাবমিশন", value: subs.length, color: t.purple },
-              { label: "গৃহীত", value: subs.filter((s) => ["accepted", "forwarded_immigration", "coe_received"].includes(s.status)).length, color: t.emerald },
+              { label: tr("schools.totalReferred"), value: school.studentsReferred || schoolStudents.length, color: t.cyan },
+              { label: tr("schools.arrived"), value: school.studentsArrived || 0, color: t.emerald },
+              { label: tr("schools.submissions"), value: subs.length, color: t.purple },
+              { label: tr("schools.status.accepted"), value: subs.filter((s) => ["accepted", "forwarded_immigration", "coe_received"].includes(s.status)).length, color: t.emerald },
             ].map((s) => (
               <div key={s.label} className="text-center p-3 rounded-xl" style={{ background: `${s.color}08` }}>
                 <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -499,10 +502,10 @@ export default function SchoolDetailView({ school, students, onBack }) {
       {/* ═══ SUBMISSION KPI ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট সাবমিশন", value: totalSubs, color: t.cyan },
-          { label: "গৃহীত", value: acceptedSubs, color: t.emerald },
-          { label: "সমস্যা আছে", value: issuesSubs, color: t.rose },
-          { label: "রিচেক বাকি", value: pendingRechecks, color: t.amber },
+          { label: tr("schools.totalSubmissions"), value: totalSubs, color: t.cyan },
+          { label: tr("schools.status.accepted"), value: acceptedSubs, color: t.emerald },
+          { label: tr("schools.hasIssues"), value: issuesSubs, color: t.rose },
+          { label: tr("schools.recheckPending"), value: pendingRechecks, color: t.amber },
         ].map((kpi, i) => (
           <Card key={i} delay={150 + i * 30}>
             <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
@@ -514,8 +517,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
       {/* ═══ SUBMISSIONS LIST ═══ */}
       <Card delay={250}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold">সাবমিশন ইতিহাস</h3>
-          <Button icon={Plus} size="xs" onClick={() => setShowAddForm(true)}>নতুন সাবমিশন</Button>
+          <h3 className="text-sm font-semibold">{tr("schools.submissionHistory")}</h3>
+          <Button icon={Plus} size="xs" onClick={() => setShowAddForm(true)}>{tr("schools.newSubmission")}</Button>
         </div>
 
         {/* Add form */}
@@ -523,32 +526,32 @@ export default function SchoolDetailView({ school, students, onBack }) {
           <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্টুডেন্ট <span className="req-star">*</span></label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.student")} <span className="req-star">*</span></label>
                 <select value={addForm.studentId} onChange={e => setAddForm(p => ({ ...p, studentId: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                  <option value="">— বাছুন —</option>
+                  <option value="">— {tr("schools.selectOne")} —</option>
                   {(students || []).filter(s => !["VISITOR", "CANCELLED"].includes(s.status)).map(s => <option key={s.id} value={s.id}>{s.name_en}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইনটেক</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.intake")}</label>
                 <select value={addForm.intake} onChange={e => setAddForm(p => ({ ...p, intake: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                   <option value="">—</option><option>April 2026</option><option>July 2026</option><option>October 2026</option><option>January 2027</option>
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সাবমিশন #</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.submissions")} #</label>
                 <input type="number" value={addForm.submissionNo} onChange={e => setAddForm(p => ({ ...p, submissionNo: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="1" />
               </div>
               <div className="flex items-end gap-2">
-                <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>বাতিল</Button>
-                <Button icon={Save} size="xs" onClick={addSubmission}>যোগ</Button>
+                <Button variant="ghost" size="xs" icon={X} onClick={() => setShowAddForm(false)}>{tr("common.cancel")}</Button>
+                <Button icon={Save} size="xs" onClick={addSubmission}>{tr("common.add")}</Button>
               </div>
             </div>
           </div>
         )}
 
         {/* Submissions list */}
-        {subs.length === 0 ? <EmptyState icon={FileText} title="কোনো সাবমিশন নেই" subtitle="উপরে নতুন সাবমিশন যোগ করুন" /> : (
+        {subs.length === 0 ? <EmptyState icon={FileText} title={tr("schools.noSubmissions")} subtitle={tr("schools.addSubmissionHint")} /> : (
           <div className="space-y-3">
             {subs.map(sub => {
               const st = STATUS_CONFIG[sub.status] || STATUS_CONFIG.submitted;
@@ -569,7 +572,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                         <span className="text-[10px] font-mono" style={{ color: t.cyan }}>#{sub.submission_number || 1}</span>
                         {sub.intake && <span className="text-[10px]" style={{ color: t.muted }}>{sub.intake}</span>}
                       </div>
-                      <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(sub.submission_date)}{sub.recheck_count > 0 ? ` • ${sub.recheck_count}x রিচেক` : ""}</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(sub.submission_date)}{sub.recheck_count > 0 ? ` • ${sub.recheck_count}x ${tr("schools.recheck")}` : ""}</p>
                     </div>
 
                     {/* Status dropdown */}
@@ -579,11 +582,11 @@ export default function SchoolDetailView({ school, students, onBack }) {
                       {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select>
 
-                    {unresolvedCount > 0 && <Badge color={t.rose} size="xs">{unresolvedCount} সমস্যা</Badge>}
+                    {unresolvedCount > 0 && <Badge color={t.rose} size="xs">{unresolvedCount} {tr("schools.issues")}</Badge>}
 
                     <button onClick={() => setShowFeedbackForm(showFeedbackForm === sub.id ? null : sub.id)}
                       className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.amber, background: `${t.amber}10` }}>
-                      + সমস্যা
+                      + {tr("schools.issue")}
                     </button>
                   </div>
 
@@ -593,15 +596,15 @@ export default function SchoolDetailView({ school, students, onBack }) {
                       <div className="p-3 rounded-lg" style={{ background: t.inputBg }}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
                           <input value={feedbackForm.doc} onChange={e => setFeedbackForm(p => ({ ...p, doc: e.target.value }))}
-                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="ডকুমেন্ট নাম (যেমন: জন্ম সনদ)" />
+                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder={tr("schools.docNamePlaceholder")} />
                           <input value={feedbackForm.issue} onChange={e => setFeedbackForm(p => ({ ...p, issue: e.target.value }))}
-                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder="সমস্যা কী?" />
+                            className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is} placeholder={tr("schools.issuePlaceholder")} />
                           <div className="flex gap-2">
                             <select value={feedbackForm.severity} onChange={e => setFeedbackForm(p => ({ ...p, severity: e.target.value }))}
                               className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                              <option value="warning">⚠ সতর্কতা</option><option value="error">🔴 ত্রুটি</option>
+                              <option value="warning">⚠ {tr("schools.severityWarning")}</option><option value="error">🔴 {tr("schools.severityError")}</option>
                             </select>
-                            <Button size="xs" onClick={() => addFeedback(sub.id)}>যোগ</Button>
+                            <Button size="xs" onClick={() => addFeedback(sub.id)}>{tr("common.add")}</Button>
                           </div>
                         </div>
                       </div>
@@ -621,7 +624,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                           {!fb.resolved && (
                             <button onClick={() => resolveFeedback(sub.id, fbIdx)}
                               className="text-[10px] px-2 py-0.5 rounded" style={{ color: t.emerald, background: `${t.emerald}10` }}>
-                              সমাধান
+                              {tr("schools.resolve")}
                             </button>
                           )}
                         </div>

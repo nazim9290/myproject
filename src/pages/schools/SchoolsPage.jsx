@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Globe, Users, Plane, AlertTriangle, MapPin, AlertCircle, Plus, Save, X, Search, ChevronRight } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
@@ -29,6 +30,7 @@ const BLANK_SCHOOL = {
 export default function SchoolsPage({ students }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [schools, setSchools] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [activeTab, setActiveTab] = useState("schools");
@@ -78,7 +80,7 @@ export default function SchoolsPage({ students }) {
       setSchoolTotal(total);
     } catch (err) {
       console.error("[Schools Load]", err);
-      toast.error("স্কুল ডাটা লোড করতে সমস্যা হয়েছে");
+      toast.error(tr("schools.loadError"));
     }
     setSchoolLoading(false);
   }, [schoolPage, schoolPageSize, debouncedSchoolSearch]);
@@ -117,7 +119,7 @@ export default function SchoolsPage({ students }) {
   };
 
   const saveSchool = async () => {
-    if (!form.name_en.trim()) { toast.error("স্কুলের নাম দিন"); return; }
+    if (!form.name_en.trim()) { toast.error(tr("schools.nameRequired")); return; }
     const payload = { ...form };
     // Empty string → null for numeric fields (DB rejects "")
     ["shoukai_fee", "tuition_y1", "tuition_y2", "admission_fee"].forEach(k => {
@@ -133,13 +135,13 @@ export default function SchoolsPage({ students }) {
         toast.updated(form.name_en);
       } else {
         await api.post("/schools", payload);
-        toast.success(`${form.name_en} — স্কুল যোগ হয়েছে`);
+        toast.success(`${form.name_en} — ${tr("schools.schoolAdded")}`);
       }
       setShowForm(false);
       setEditingId(null);
       fetchSchools(); // সার্ভার থেকে re-fetch
     } catch (err) {
-      toast.error(err.message || "স্কুল save ব্যর্থ");
+      toast.error(err.message || tr("schools.saveFailed"));
     }
   };
 
@@ -151,18 +153,18 @@ export default function SchoolsPage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">স্কুল</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>স্কুল ডাটাবেস, সাবমিশন ও রিচেক ট্র্যাকিং</p>
+          <h2 className="text-xl font-bold">{tr("schools.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("schools.subtitle")}</p>
         </div>
-        <Button icon={Plus} onClick={openAdd}>স্কুল যোগ করুন</Button>
+        <Button icon={Plus} onClick={openAdd}>{tr("schools.addNew")}</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট স্কুল", value: schoolTotal, color: t.cyan, icon: Globe },
-          { label: "মোট রেফার", value: totalReferred, color: t.purple, icon: Users },
-          { label: "পৌঁছেছে", value: totalArrived, color: t.emerald, icon: Plane },
-          { label: "রিচেক বাকি", value: pendingRecheck, color: t.rose, icon: AlertTriangle },
+          { label: tr("schools.totalSchools"), value: schoolTotal, color: t.cyan, icon: Globe },
+          { label: tr("schools.totalReferred"), value: totalReferred, color: t.purple, icon: Users },
+          { label: tr("schools.arrived"), value: totalArrived, color: t.emerald, icon: Plane },
+          { label: tr("schools.recheckPending"), value: pendingRecheck, color: t.rose, icon: AlertTriangle },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -180,9 +182,9 @@ export default function SchoolsPage({ students }) {
 
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "schools", label: "🏫 স্কুল" },
-          { key: "submissions", label: "📤 সাবমিশন" },
-          { key: "rechecks", label: "🔄 রিচেক লগ" },
+          { key: "schools", label: `🏫 ${tr("schools.title")}` },
+          { key: "submissions", label: `📤 ${tr("schools.submissions")}` },
+          { key: "rechecks", label: `🔄 ${tr("schools.recheckLog")}` },
         ].map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200"
@@ -201,19 +203,19 @@ export default function SchoolsPage({ students }) {
               <Search size={14} style={{ color: t.muted }} />
               <input value={schoolSearch} onChange={e => { setSchoolSearch(e.target.value); setSchoolPage(1); }}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                placeholder="স্কুলের নাম দিয়ে খুঁজুন..." />
+                placeholder={tr("schools.searchSchoolPlaceholder")} />
             </div>
           </div>
 
           {/* ── স্কুল যোগ/সম্পাদনা Modal ── */}
-          <Modal isOpen={!!showForm} onClose={() => { setShowForm(false); setEditingId(null); }} title={editingId ? "স্কুল এডিট করুন" : "নতুন স্কুল যোগ করুন"} size="xl">
+          <Modal isOpen={!!showForm} onClose={() => { setShowForm(false); setEditingId(null); }} title={editingId ? tr("schools.editSchool") : tr("schools.addNewSchool")} size="xl">
               {/* ── Basic Info ── */}
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>মূল তথ্য</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>{tr("schools.basicInfo")}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 {[
-                  { label: "নাম (English)", key: "name_en", required: true },
-                  { label: "নাম (Japanese)", key: "name_jp", placeholder: "東京ギャラクシー日本語学校" },
-                  { label: "শহর", key: "city", placeholder: "Tokyo" },
+                  { label: tr("schools.nameEn"), key: "name_en", required: true },
+                  { label: tr("schools.nameJp"), key: "name_jp", placeholder: "東京ギャラクシー日本語学校" },
+                  { label: tr("schools.city"), key: "city", placeholder: "Tokyo" },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label} {f.required && <span className="req-star">*</span>}</label>
@@ -221,78 +223,78 @@ export default function SchoolsPage({ students }) {
                   </div>
                 ))}
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>দেশ</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.country")}</label>
                   <select value={form.country} onChange={e => sf("country", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option>Japan</option><option>Germany</option><option>Korea</option><option>Canada</option><option>Australia</option><option>UK</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ওয়েবসাইট</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.website")}</label>
                   <input value={form.website || ""} onChange={e => sf("website", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="https://..." />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>কেইয়াকু / ডকুমেন্ট ফোল্ডার</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.docFolder")}</label>
                   <input value={form.gdrive_url || ""} onChange={e => sf("gdrive_url", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Google Drive link..." />
                 </div>
               </div>
 
               {/* ── Contact ── */}
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.purple }}>যোগাযোগ</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.purple }}>{tr("schools.contact")}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>যোগাযোগ ব্যক্তি</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.contactPerson")}</label>
                   <input value={form.contact_person || ""} onChange={e => sf("contact_person", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Tanaka San" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমেইল</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.email")}</label>
                   <input type="email" value={form.contact_email || ""} onChange={e => sf("contact_email", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="info@school.jp" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.phone")}</label>
                   <PhoneInput value={form.contact_phone || ""} onChange={v => sf("contact_phone", v)} size="md" />
                 </div>
               </div>
 
               {/* ── Fees & Requirements ── */}
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.emerald }}>ফি ও শর্তাবলী</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.emerald }}>{tr("schools.feesRequirements")}</p>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শোকাই ফি (¥)</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.shoukaiFee")}</label>
                   <input type="number" value={form.shoukai_fee || ""} onChange={e => sf("shoukai_fee", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="50000" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টিউশন ১ম বছর (¥)</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.tuitionY1")}</label>
                   <input type="number" value={form.tuition_y1 || ""} onChange={e => sf("tuition_y1", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="700000" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টিউশন ২য় বছর (¥)</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.tuitionY2")}</label>
                   <input type="number" value={form.tuition_y2 || ""} onChange={e => sf("tuition_y2", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="650000" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ভর্তি ফি (¥)</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.admissionFee")}</label>
                   <input type="number" value={form.admission_fee || ""} onChange={e => sf("admission_fee", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="50000" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ন্যূনতম JP লেভেল</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.minJpLevel")}</label>
                   <select value={form.min_jp_level || ""} onChange={e => sf("min_jp_level", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option value="">—</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>NAT 5</option><option>NAT 4</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইন্টারভিউ ধরন</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.interviewType")}</label>
                   <select value={form.interview_type || ""} onChange={e => sf("interview_type", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option value="">—</option><option>Online</option><option>In-person</option><option>Written + Online</option><option>None</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ইমিগ্রেশন ব্যুরো</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.immigrationBureau")}</label>
                   <input value={form.immigration_bureau || ""} onChange={e => sf("immigration_bureau", e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Tokyo, Osaka, Fukuoka..." />
                 </div>
                 <div className="flex items-center gap-3 pt-5">
-                  <label className="text-xs" style={{ color: t.muted }}>ডরমিটরি আছে?</label>
+                  <label className="text-xs" style={{ color: t.muted }}>{tr("schools.hasDormitory")}</label>
                   <button onClick={() => sf("has_dormitory", !form.has_dormitory)}
                     className="w-10 h-5 rounded-full transition-all relative"
                     style={{ background: form.has_dormitory ? t.emerald : t.inputBorder }}>
@@ -302,7 +304,7 @@ export default function SchoolsPage({ students }) {
               </div>
 
               {/* ── Intakes (Dynamic) ── */}
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>ইন্টেক ও ডেডলাইন</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>{tr("schools.intakesDeadlines")}</p>
               <div className="mb-4">
                 <div className="flex flex-wrap gap-2 mb-2">
                   {["January", "April", "July", "October"].map(month => {
@@ -337,22 +339,22 @@ export default function SchoolsPage({ students }) {
                           updated[idx] = { ...updated[idx], deadline: v };
                           sf("intakes", updated);
                         }} size="sm" className="flex-1" />
-                        <span className="text-[9px]" style={{ color: t.muted }}>ডেডলাইন</span>
+                        <span className="text-[9px]" style={{ color: t.muted }}>{tr("schools.deadline")}</span>
                       </div>
                     ))}
                   </div>
                 )}
-                {(form.intakes || []).length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>ইন্টেক সিলেক্ট করুন — January, April, July, October</p>}
+                {(form.intakes || []).length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>{tr("schools.selectIntake")}</p>}
               </div>
 
               {/* ── Notes ── */}
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট / মন্তব্য</label>
-                <textarea value={form.notes || ""} onChange={e => sf("notes", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder="বিশেষ তথ্য, শর্ত, চুক্তি ইত্যাদি..." />
+                <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.notesComments")}</label>
+                <textarea value={form.notes || ""} onChange={e => sf("notes", e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={is} placeholder={tr("schools.notesPlaceholder")} />
               </div>
               <div className="flex gap-2 mt-4 justify-end">
-                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
-                <Button icon={Save} size="xs" onClick={saveSchool}>সংরক্ষণ</Button>
+                <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowForm(false); setEditingId(null); }}>{tr("common.cancel")}</Button>
+                <Button icon={Save} size="xs" onClick={saveSchool}>{tr("common.save")}</Button>
               </div>
           </Modal>
 
@@ -380,10 +382,10 @@ export default function SchoolsPage({ students }) {
                         {deleteSchoolId === school.id ? (
                           <div className="flex gap-1 ml-1">
                             <button onClick={async () => {
-                              try { await api.del(`/schools/${school.id}`); toast.success("স্কুল মুছে ফেলা হয়েছে"); fetchSchools(); } catch (err) { toast.error(err.message); }
+                              try { await api.del(`/schools/${school.id}`); toast.success(tr("schools.schoolDeleted")); fetchSchools(); } catch (err) { toast.error(err.message); }
                               setDeleteSchoolId(null);
-                            }} className="text-[9px] px-2 py-0.5 rounded" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
-                            <button onClick={() => setDeleteSchoolId(null)} className="text-[9px] px-1" style={{ color: t.muted }}>না</button>
+                            }} className="text-[9px] px-2 py-0.5 rounded" style={{ background: t.rose, color: "#fff" }}>{tr("common.delete")}</button>
+                            <button onClick={() => setDeleteSchoolId(null)} className="text-[9px] px-1" style={{ color: t.muted }}>{tr("common.no")}</button>
                           </div>
                         ) : (
                           <button onClick={() => setDeleteSchoolId(school.id)} className="p-1 rounded opacity-0 group-hover:opacity-100 transition" style={{ color: t.muted }} title="Delete">🗑️</button>
@@ -426,14 +428,14 @@ export default function SchoolsPage({ students }) {
                     {/* ইন্টেক ও ডরমিটরি */}
                     <div className="flex items-center gap-2 flex-wrap">
                       {intakeMonths && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.amber}15`, color: t.amber }}>📅 {intakeMonths}</span>}
-                      {school.has_dormitory && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.emerald}15`, color: t.emerald }}>🏠 ডরমিটরি</span>}
+                      {school.has_dormitory && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.emerald}15`, color: t.emerald }}>🏠 {tr("schools.dormitory")}</span>}
                     </div>
 
                     {/* ফুটার — রেফার ও পৌঁছেছে */}
                     <div className="flex items-center justify-between pt-3 mt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                       <div className="flex gap-4">
-                        <span className="text-[10px]" style={{ color: t.textSecondary }}>রেফার: <span className="font-bold" style={{ color: t.cyan }}>{school.studentsReferred || 0}</span></span>
-                        <span className="text-[10px]" style={{ color: t.textSecondary }}>পৌঁছেছে: <span className="font-bold" style={{ color: t.emerald }}>{school.studentsArrived || 0}</span></span>
+                        <span className="text-[10px]" style={{ color: t.textSecondary }}>{tr("schools.referred")}: <span className="font-bold" style={{ color: t.cyan }}>{school.studentsReferred || 0}</span></span>
+                        <span className="text-[10px]" style={{ color: t.textSecondary }}>{tr("schools.arrived")}: <span className="font-bold" style={{ color: t.emerald }}>{school.studentsArrived || 0}</span></span>
                       </div>
                       <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />
                     </div>
@@ -445,7 +447,7 @@ export default function SchoolsPage({ students }) {
           </div>
           {/* ── স্কুল পেজিনেশন ── */}
           {schools.length === 0 && !schoolLoading && (
-            <EmptyState icon={Globe} title="কোনো স্কুল পাওয়া যায়নি" subtitle="সার্চ পরিবর্তন করে আবার চেষ্টা করুন" />
+            <EmptyState icon={Globe} title={tr("schools.noSchoolsFound")} subtitle={tr("schools.tryDifferentSearch")} />
           )}
           <Pagination total={schoolTotal} page={schoolPage} pageSize={schoolPageSize}
             onPage={setSchoolPage} onPageSize={setSchoolPageSize} />
@@ -473,7 +475,7 @@ export default function SchoolsPage({ students }) {
                 <Search size={14} style={{ color: t.muted }} />
                 <input value={subSearch} onChange={e => { setSubSearch(e.target.value); setSubPage(1); }}
                   className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                  placeholder="স্টুডেন্ট বা স্কুলের নাম দিয়ে খুঁজুন..." />
+                  placeholder={tr("schools.searchSubPlaceholder")} />
               </div>
             </div>
 
@@ -482,12 +484,12 @@ export default function SchoolsPage({ students }) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      <SortHeader label="স্টুডেন্ট" sortKey="student_name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="স্কুল" sortKey="school_name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="তারিখ" sortKey="submission_date" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("schools.student")} sortKey="student_name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("schools.title")} sortKey="school_name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("common.date")} sortKey="submission_date" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
                       <SortHeader label="#" sortKey="submission_no" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>সমস্যা</th>
+                      <SortHeader label={tr("common.status")} sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("schools.issues")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -501,14 +503,14 @@ export default function SchoolsPage({ students }) {
                           <td className="py-3 px-4 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatDateDisplay(sub.submission_date)}</td>
                           <td className="py-3 px-4"><span className="font-mono font-semibold" style={{ color: t.cyan }}>#{sub.submission_no || sub.id?.slice(0,6)}</span></td>
                           <td className="py-3 px-4"><Badge color={st.color} size="xs">{st.icon} {st.label}</Badge></td>
-                          <td className="py-3 px-4">{(sub.feedback || []).length > 0 ? <Badge color={t.rose} size="xs">{sub.feedback.length} সমস্যা</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
+                          <td className="py-3 px-4">{(sub.feedback || []).length > 0 ? <Badge color={t.rose} size="xs">{sub.feedback.length} {tr("schools.issues")}</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              {subSorted.length === 0 && <EmptyState icon={AlertCircle} title="কোনো সাবমিশন পাওয়া যায়নি" subtitle="সার্চ পরিবর্তন করে আবার চেষ্টা করুন" />}
+              {subSorted.length === 0 && <EmptyState icon={AlertCircle} title={tr("schools.noSubmissionsFound")} subtitle={tr("schools.tryDifferentSearch")} />}
               {subSorted.length > 0 && (
                 <Pagination total={subSorted.length} page={subSafePage} pageSize={subPageSize}
                   onPage={setSubPage} onPageSize={setSubPageSize} />
@@ -536,7 +538,7 @@ export default function SchoolsPage({ students }) {
                 <Search size={14} style={{ color: t.muted }} />
                 <input value={recheckSearch} onChange={e => setRecheckSearch(e.target.value)}
                   className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                  placeholder="স্টুডেন্ট বা স্কুলের নাম দিয়ে খুঁজুন..." />
+                  placeholder={tr("schools.searchSubPlaceholder")} />
               </div>
             </div>
 
@@ -560,7 +562,7 @@ export default function SchoolsPage({ students }) {
                         <div>
                           <p className="text-xs font-semibold" style={{ color: t.rose }}>{fb.doc}</p>
                           <p className="text-[11px] mt-0.5" style={{ color: t.textSecondary }}>{fb.issue}</p>
-                          <p className="text-[9px] mt-1" style={{ color: t.muted }}>তারিখ: {formatDateDisplay(fb.date)}</p>
+                          <p className="text-[9px] mt-1" style={{ color: t.muted }}>{tr("common.date")}: {formatDateDisplay(fb.date)}</p>
                         </div>
                       </div>
                     ))}
@@ -569,7 +571,7 @@ export default function SchoolsPage({ students }) {
               );
             })}
             {recheckItems.length === 0 && (
-              <Card delay={0}><EmptyState icon={AlertCircle} title="কোনো রিচেক বাকি নেই" subtitle="সব ডকুমেন্ট গ্রহণযোগ্য" /></Card>
+              <Card delay={0}><EmptyState icon={AlertCircle} title={tr("schools.noRecheckPending")} subtitle={tr("schools.allDocsAccepted")} /></Card>
             )}
           </div>
         );

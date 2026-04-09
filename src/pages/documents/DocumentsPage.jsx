@@ -109,7 +109,7 @@ export default function DocumentsPage({ students }) {
 
       setFieldValues(newValues);
       const engineLabel = data.engine === "haiku" ? "AI" : "OCR";
-      toast.success(`${engineLabel} — ${filledCount} fields auto-filled (${data.credits_remaining ?? "?"} credits left)`);
+      toast.success(`${engineLabel} — ${filledCount} ${tr("documents.fieldsAutoFilled")} (${data.credits_remaining ?? "?"} ${tr("documents.creditsLeft")})`);
     } catch (err) {
       // NO_CREDITS error handle — popup দেখাও
       if (err.message?.includes("credit")) {
@@ -125,7 +125,7 @@ export default function DocumentsPage({ students }) {
 
   // Load doc types from API
   useEffect(() => {
-    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[DocTypes Load]", err); toast.error("ডকুমেন্ট টাইপ লোড করতে সমস্যা হয়েছে"); });
+    api.get("/docdata/types").then(data => { if (Array.isArray(data)) setDocTypes(data); }).catch((err) => { console.error("[DocTypes Load]", err); toast.error(tr("documents.docTypeLoadError")); });
   }, []);
 
   // Student list
@@ -142,7 +142,7 @@ export default function DocumentsPage({ students }) {
       setStudentDocData(Array.isArray(data) ? data : []);
     } catch {
       setStudentDocData([]);
-      toast.error("ডকুমেন্ট ডাটা লোড করতে সমস্যা হয়েছে");
+      toast.error(tr("documents.docDataLoadError"));
     }
   };
 
@@ -170,11 +170,11 @@ export default function DocumentsPage({ students }) {
         field_data: fieldValues,
         updated_at: saved?.updated_at || null,
       });
-      toast.success(`${activeDocType.name_bn || activeDocType.name} — ডাটা সংরক্ষণ হয়েছে`);
+      toast.success(`${activeDocType.name_bn || activeDocType.name} — ${tr("documents.dataSaved")}`);
       await loadStudentDocs(selectedStudent.id); // refresh — নতুন updated_at পাবে
       setActiveDocType(null); setScanResult(null);
     } catch (err) {
-      const msg = err.message || "সেভ ব্যর্থ";
+      const msg = err.message || tr("documents.saveFailed");
       if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
         toast.error(msg);
       } else {
@@ -277,11 +277,11 @@ export default function DocumentsPage({ students }) {
       setSaving(true);
       try {
         await api.post("/docdata/save", { student_id: selectedStudent.id, doc_type_id: activeDocType.id, field_data: flat, updated_at: saved?.updated_at || null });
-        toast.success(`${activeDocType.name_bn || activeDocType.name} — ডাটা সংরক্ষণ হয়েছে`);
+        toast.success(`${activeDocType.name_bn || activeDocType.name} — ${tr("documents.dataSaved")}`);
         await loadStudentDocs(selectedStudent.id);
         setActiveDocType(null); setScanResult(null);
       } catch (err) {
-        const msg = err.message || "সেভ ব্যর্থ";
+        const msg = err.message || tr("documents.saveFailed");
         if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
           toast.error(msg);
         } else {
@@ -312,7 +312,7 @@ export default function DocumentsPage({ students }) {
               {ocrCredits !== null && ocrCredits >= 5 && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
                   style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                  {ocrCredits} credits
+                  {ocrCredits} {tr("documents.credits")}
                 </span>
               )}
             </div>
@@ -334,8 +334,8 @@ export default function DocumentsPage({ students }) {
                   background: scanResult.confidence === "high" ? `${t.emerald}15` : `${t.amber}15`,
                   color: scanResult.confidence === "high" ? t.emerald : t.amber
                 }}>
-                {scanResult.confidence === "high" ? "High confidence" : "Review needed"}
-                {" — "}{Object.keys(scanResult.extracted_fields || {}).filter(k => k !== "_confidence").length} fields found
+                {scanResult.confidence === "high" ? tr("documents.highConfidence") : tr("documents.reviewNeeded")}
+                {" — "}{Object.keys(scanResult.extracted_fields || {}).filter(k => k !== "_confidence").length} {tr("documents.fieldsFound")}
               </span>
             )}
           </div>
@@ -346,32 +346,32 @@ export default function DocumentsPage({ students }) {
         </div>
 
         {/* ── OCR Credit Popup — credit না থাকলে professional modal ── */}
-        <Modal isOpen={showCreditPopup} onClose={() => setShowCreditPopup(false)} title="AI Document Scanner" size="sm">
+        <Modal isOpen={showCreditPopup} onClose={() => setShowCreditPopup(false)} title={tr("documents.aiDocScanner")} size="sm">
           <div className="text-center space-y-4 py-2">
             <div className="text-4xl">🔍</div>
             <div>
-              <h4 className="text-sm font-bold" style={{ color: t.text }}>Scan Credit Required</h4>
+              <h4 className="text-sm font-bold" style={{ color: t.text }}>{tr("documents.scanCreditRequired")}</h4>
               <p className="text-xs mt-1" style={{ color: t.muted }}>
-                AI-powered document scanning automatically extracts data from your documents and fills in all fields — saving hours of manual work.
+                {tr("documents.scanCreditDesc")}
               </p>
             </div>
             <div className="p-3 rounded-xl" style={{ background: t.inputBg }}>
               <div className="flex justify-between text-xs mb-1">
-                <span style={{ color: t.muted }}>Your balance</span>
-                <span className="font-bold" style={{ color: t.rose }}>{ocrCredits || 0} credits</span>
+                <span style={{ color: t.muted }}>{tr("documents.yourBalance")}</span>
+                <span className="font-bold" style={{ color: t.rose }}>{ocrCredits || 0} {tr("documents.credits")}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span style={{ color: t.muted }}>Per scan cost</span>
-                <span className="font-medium" style={{ color: t.text }}>5 credits</span>
+                <span style={{ color: t.muted }}>{tr("documents.perScanCost")}</span>
+                <span className="font-medium" style={{ color: t.text }}>5 {tr("documents.credits")}</span>
               </div>
             </div>
             <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}20` }}>
-              <p className="text-[10px] font-medium" style={{ color: t.cyan }}>How to get credits?</p>
+              <p className="text-[10px] font-medium" style={{ color: t.cyan }}>{tr("documents.howToGetCredits")}</p>
               <p className="text-[10px] mt-1" style={{ color: t.muted }}>
-                Contact your agency administrator or AgencyBook support to purchase scan credits. Credits never expire.
+                {tr("documents.contactForCredits")}
               </p>
             </div>
-            <Button size="sm" onClick={() => setShowCreditPopup(false)}>Got it</Button>
+            <Button size="sm" onClick={() => setShowCreditPopup(false)}>{tr("documents.gotIt")}</Button>
           </div>
         </Modal>
 
@@ -405,7 +405,7 @@ export default function DocumentsPage({ students }) {
                     {f.type === "select" ? (
                       <select value={fieldValues[f.key] || ""} onChange={e => handleFieldChange(f.key, e.target.value)}
                         className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                        <option value="">— Select —</option>
+                        <option value="">{tr("documents.selectOption")}</option>
                         {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                     ) : (
@@ -424,12 +424,12 @@ export default function DocumentsPage({ students }) {
           <Card delay={100}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">{repeatableField.label_en || repeatableField.label} ({members.length})</h3>
-              <Button size="xs" icon={Plus} onClick={addMember}>Add</Button>
+              <Button size="xs" icon={Plus} onClick={addMember}>{tr("common.add")}</Button>
             </div>
 
             {members.length === 0 && (
               <div className="text-center py-6" style={{ color: t.muted }}>
-                <p className="text-xs">No entries yet — click "Add" above</p>
+                <p className="text-xs">{tr("documents.noEntries")}</p>
               </div>
             )}
 
@@ -451,7 +451,7 @@ export default function DocumentsPage({ students }) {
                         {sf.key === "Relation" ? (
                           <select value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
                             className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                            <option value="">— Select —</option>
+                            <option value="">{tr("documents.selectOption")}</option>
                             {["SELF", "Father", "Mother", "Brother", "Sister", "Spouse", "Son", "Daughter", "Grandfather", "Grandmother", "Uncle", "Aunt", "Other"].map(r => (
                               <option key={r} value={r}>{r}</option>
                             ))}
@@ -467,15 +467,15 @@ export default function DocumentsPage({ students }) {
                                 else updateMember(idx, sf.key, e.target.value);
                               }}
                               className="w-full px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                              <option value="">— Select —</option>
+                              <option value="">{tr("documents.selectOption")}</option>
                               {getSubfieldOptions(sf).map(o => (
                                 <option key={o} value={o}>{o}</option>
                               ))}
-                              {(sf.allow_custom || sf.conditional_options?.allow_custom) && <option value="__custom__">✏️ Other (custom)</option>}
+                              {(sf.allow_custom || sf.conditional_options?.allow_custom) && <option value="__custom__">{tr("documents.otherCustom")}</option>}
                             </select>
                             {(sf.allow_custom || sf.conditional_options?.allow_custom) && !getSubfieldOptions(sf).includes(member[sf.key]) && (
                               <input type="text" value={member[sf.key] || ""} onChange={e => updateMember(idx, sf.key, e.target.value)}
-                                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none mt-1" style={is} placeholder="Type subject name..." />
+                                className="w-full px-2 py-1.5 rounded-lg text-xs outline-none mt-1" style={is} placeholder={tr("documents.typeSubjectName")} />
                             )}
                           </>
                         ) : (
@@ -516,11 +516,11 @@ export default function DocumentsPage({ students }) {
         <Card delay={0}>
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              🔍 Cross-Validation
+              🔍 {tr("documents.crossValidation")}
               {crossValidateData && (
                 crossValidateData.mismatches?.length > 0
-                  ? <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.rose}15`, color: t.rose }}>{crossValidateData.mismatches.length} অমিল</span>
-                  : <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.emerald}15`, color: t.emerald }}>✓ সব মিলেছে</span>
+                  ? <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.rose}15`, color: t.rose }}>{crossValidateData.mismatches.length} {tr("documents.mismatch")}</span>
+                  : <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: `${t.emerald}15`, color: t.emerald }}>✓ {tr("documents.allMatched")}</span>
               )}
             </h3>
             <Button size="xs" variant="ghost" onClick={async () => {
@@ -528,12 +528,12 @@ export default function DocumentsPage({ students }) {
               try {
                 const result = await api.get(`/documents/cross-validate/${selectedStudent.id}`);
                 setCrossValidateData(result);
-                if (result.mismatches?.length === 0) toast.success("সব তথ্য মিলে গেছে ✓");
-              } catch (err) { toast.error("Cross-validation ব্যর্থ"); }
+                if (result.mismatches?.length === 0) toast.success(tr("documents.allDataMatched"));
+              } catch (err) { toast.error(tr("documents.crossValidationFailed")); }
               setCrossValidateLoading(false);
-            }}>{crossValidateLoading ? "চেক হচ্ছে..." : crossValidateData ? "পুনরায় চেক" : "চেক করুন"}</Button>
+            }}>{crossValidateLoading ? tr("documents.checking") : crossValidateData ? tr("documents.recheck") : tr("documents.check")}</Button>
           </div>
-          <p className="text-[10px] mb-2" style={{ color: t.muted }}>Student Profile-এর ডাটা vs ডকুমেন্টে দেয়া ডাটা তুলনা</p>
+          <p className="text-[10px] mb-2" style={{ color: t.muted }}>{tr("documents.crossValidationDesc")}</p>
 
           {/* ── Mismatch list — inline ── */}
           {crossValidateData && crossValidateData.mismatches?.length > 0 && (
@@ -557,7 +557,7 @@ export default function DocumentsPage({ students }) {
                 </div>
               ))}
               <p className="text-[10px] text-center pt-1" style={{ color: t.muted }}>
-                {crossValidateData.matches_count || 0} ফিল্ড মিলেছে • {crossValidateData.total_docs} ডকুমেন্ট চেক হয়েছে
+                {crossValidateData.matches_count || 0} {tr("documents.fieldsMatched")} • {crossValidateData.total_docs} {tr("documents.docsChecked")}
               </p>
             </div>
           )}
@@ -622,7 +622,7 @@ export default function DocumentsPage({ students }) {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">{dt.name}</p>
-                        <p className="text-[9px]" style={{ color: t.muted }}>{dt.category} • {(dt.fields || []).length} fields</p>
+                        <p className="text-[9px]" style={{ color: t.muted }}>{dt.category} • {(dt.fields || []).length} {tr("documents.fieldsLabel")}</p>
                       </div>
                     </div>
                     <Badge color={comp.pct === 100 ? "emerald" : comp.pct > 0 ? "amber" : "gray"} size="xs">
@@ -704,11 +704,11 @@ export default function DocumentsPage({ students }) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      <SortHeader label="Name" sortKey="name_en" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="ID" sortKey="id" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="Batch" sortKey="batch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>Action</th>
+                      <SortHeader label={tr("common.name")} sortKey="name_en" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("documents.idLabel")} sortKey="id" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("documents.batchLabel")} sortKey="batch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("common.status")} sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("common.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -742,7 +742,7 @@ export default function DocumentsPage({ students }) {
                   </tbody>
                 </table>
               </div>
-              {paginated.length === 0 && <p className="text-xs text-center py-6" style={{ color: t.muted }}>কোনো স্টুডেন্ট পাওয়া যায়নি</p>}
+              {paginated.length === 0 && <p className="text-xs text-center py-6" style={{ color: t.muted }}>{tr("documents.noStudentFound")}</p>}
               <Pagination total={sorted.length} page={safePage} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} />
             </>
           );

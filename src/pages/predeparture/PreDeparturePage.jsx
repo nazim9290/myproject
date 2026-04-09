@@ -150,7 +150,7 @@ export default function PreDeparturePage() {
       setKpi(res.kpi || {});
     } catch (err) {
       console.error("Pre-departure load error:", err);
-      toast.error("প্রি-ডিপার্চার ডাটা লোড করতে সমস্যা হয়েছে");
+      toast.error(tr("preDeparture.loadError"));
     }
     setLoading(false);
   };
@@ -191,9 +191,9 @@ export default function PreDeparturePage() {
             style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
           >
             <option value="">{tr("preDeparture.allCountries")}</option>
-            <option value="Japan">🇯🇵 জাপান</option>
-            <option value="Germany">🇩🇪 জার্মানি</option>
-            <option value="Korea">🇰🇷 কোরিয়া</option>
+            <option value="Japan">🇯🇵 {tr("preDeparture.japan")}</option>
+            <option value="Germany">🇩🇪 {tr("preDeparture.germany")}</option>
+            <option value="Korea">🇰🇷 {tr("preDeparture.korea")}</option>
           </select>
         </div>
       </div>
@@ -223,10 +223,10 @@ export default function PreDeparturePage() {
 
       {/* Student List — দেশভিত্তিক steps সহ */}
       {loading ? (
-        <Card><div className="py-10 text-center text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</div></Card>
+        <Card><div className="py-10 text-center text-xs" style={{ color: t.muted }}>{tr("common.loading")}</div></Card>
       ) : filtered.length === 0 ? (
         <Card><div className="py-10 text-center text-xs" style={{ color: t.muted }}>
-          {countryFilter ? `${COUNTRY_CONFIG[countryFilter]?.label || countryFilter} — কোনো স্টুডেন্ট নেই` : "COE+ পর্যায়ে কোনো স্টুডেন্ট নেই"}
+          {countryFilter ? tr("preDeparture.noStudentsCountry", { country: COUNTRY_CONFIG[countryFilter]?.label || countryFilter }) : tr("preDeparture.noStudentsCoe")}
         </div></Card>
       ) : (
         <div className="space-y-3">
@@ -263,8 +263,8 @@ export default function PreDeparturePage() {
                         : st.status === "VISA_APPLIED" ? t.purple
                         : t.amber
                       } size="xs">
-                        {st.status === "VISA_GRANTED" ? "ভিসা পেয়েছে" : st.status === "ARRIVED" ? "পৌঁছেছে"
-                          : st.status === "COMPLETED" ? "সম্পন্ন" : "COE পেয়েছে"}
+                        {st.status === "VISA_GRANTED" ? tr("preDeparture.statusVisaGranted") : st.status === "ARRIVED" ? tr("preDeparture.statusArrived")
+                          : st.status === "COMPLETED" ? tr("preDeparture.statusCompleted") : tr("preDeparture.statusCoeReceived")}
                       </Badge>
                       <DeadlineBadge deadlines={st.deadlines} countrySteps={getStepsForStudent(st)} t={t} />
                     </div>
@@ -389,7 +389,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
   // ── ডিফল্ট টেমপ্লেট দিয়ে ডকুমেন্ট Generate ──
   const generateFromDefault = async (tmpl) => {
     try {
-      toast.success("ডকুমেন্ট তৈরি হচ্ছে...");
+      toast.success(tr("preDeparture.generatingDoc"));
       const tokenVal = localStorage.getItem("agencyos_token");
 
       // Excel টেমপ্লেট — Excel generate endpoint ব্যবহার
@@ -403,13 +403,13 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
             mappings: tmpl.template_data?.mappings || [],
           }),
         });
-        if (!res.ok) throw new Error("Generate ব্যর্থ");
+        if (!res.ok) throw new Error(tr("preDeparture.generateFailed"));
         const blob = await res.blob();
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = `${tmpl.name}_${st.name_en || st.name || st.id}.xlsx`;
         a.click();
-        toast.success(`${tmpl.name} ডাউনলোড হয়েছে`);
+        toast.success(tr("preDeparture.downloaded", { name: tmpl.name }));
       }
       // DocGen টেমপ্লেট — docgen generate endpoint ব্যবহার
       else if (tmpl.category === "docgen" && tmpl.file_url) {
@@ -423,18 +423,18 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
             doc_data: form,
           }),
         });
-        if (!res.ok) throw new Error("Generate ব্যর্থ");
+        if (!res.ok) throw new Error(tr("preDeparture.generateFailed"));
         const blob = await res.blob();
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = `${tmpl.name}_${st.name_en || st.name || st.id}.docx`;
         a.click();
-        toast.success(`${tmpl.name} ডাউনলোড হয়েছে`);
+        toast.success(tr("preDeparture.downloaded", { name: tmpl.name }));
       } else {
-        toast.error("এই টেমপ্লেটের ফাইল পাওয়া যায়নি");
+        toast.error(tr("preDeparture.templateFileNotFound"));
       }
     } catch (err) {
-      toast.error(err.message || "Generate ব্যর্থ");
+      toast.error(err.message || tr("preDeparture.generateFailed"));
     }
   };
 
@@ -467,7 +467,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
     if (!file) return;
     // সর্বোচ্চ 10MB চেক
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("ফাইল সাইজ সর্বোচ্চ 10MB");
+      toast.error(tr("preDeparture.fileSizeLimit"));
       return;
     }
     setUploading(stepKey);
@@ -477,9 +477,9 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
       formData.append("step", stepKey);
       const res = await preDeparture.uploadFile(st.id, formData);
       setFiles(res.files || []);
-      toast.success("ফাইল আপলোড হয়েছে");
+      toast.success(tr("preDeparture.fileUploaded"));
     } catch (err) {
-      toast.error(err.message || "আপলোড ব্যর্থ");
+      toast.error(err.message || tr("preDeparture.uploadFailed"));
     }
     setUploading(null);
   };
@@ -489,9 +489,9 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
     try {
       const res = await preDeparture.deleteFile(st.id, fileId);
       setFiles(res.files || []);
-      toast.success("ফাইল মুছে ফেলা হয়েছে");
+      toast.success(tr("preDeparture.fileDeleted"));
     } catch (err) {
-      toast.error(err.message || "মুছতে সমস্যা হয়েছে");
+      toast.error(err.message || tr("preDeparture.deleteFailed"));
     }
     setDeleteConfirm(null);
   };
@@ -502,9 +502,9 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
     try {
       // pd_updated_at পাঠাও — backend-এ concurrent edit check হবে
       await preDeparture.update(st.id, { ...form, checklists, deadlines, updated_at: st.pd_updated_at || null });
-      toast.success("ডিপার্চার তথ্য সেভ হয়েছে");
+      toast.success(tr("preDeparture.saved"));
     } catch (err) {
-      const msg = err.message || "সেভ করতে সমস্যা হয়েছে";
+      const msg = err.message || tr("errors.saveFailed");
       if (msg.includes("পরিবর্তন করেছে") || msg.includes("CONFLICT")) {
         toast.error(msg);
       } else {
@@ -715,7 +715,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
       {/* Progress Bar — দেশভিত্তিক steps */}
       <Card delay={50}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold">অগ্রগতি</p>
+          <p className="text-xs font-semibold">{tr("preDeparture.progress")}</p>
           <p className="text-sm font-bold" style={{ color: progressPct === 100 ? t.emerald : progressPct >= 50 ? t.amber : t.muted }}>
             {progressPct}% ({completedCount}/{progressSteps.length})
           </p>
@@ -822,7 +822,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
               {(checklists[sec.step] || []).map((item, idx) => (
                 <div key={item.id} className="flex items-center gap-2 py-1 group/item">
                   <label className="flex items-center gap-2 flex-1 cursor-pointer"><input type="checkbox" checked={item.done} onChange={() => toggleCheckItem(sec.step, idx)} className="rounded" /><span className="text-[11px]" style={{ color: item.done ? t.muted : t.text, textDecoration: item.done ? "line-through" : "none" }}>{item.text}</span></label>
-                  <button onClick={() => removeCheckItem(sec.step, idx)} className="text-[10px] opacity-0 group-hover/item:opacity-100 transition-opacity px-1" style={{ color: t.rose }} title="মুছুন">✕</button>
+                  <button onClick={() => removeCheckItem(sec.step, idx)} className="text-[10px] opacity-0 group-hover/item:opacity-100 transition-opacity px-1" style={{ color: t.rose }} title={tr("common.delete")}>✕</button>
                 </div>
               ))}
               <div className="flex items-center gap-2 mt-2">
@@ -851,7 +851,7 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
                         <button onClick={() => generateFromDefault(tmpl)}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-medium"
                           style={{ background: t.cyan, color: "#fff" }}>
-                          <Download size={10} /> ডাউনলোড
+                          <Download size={10} /> {tr("common.download")}
                         </button>
                       ) : (
                         <span className="text-[10px] px-2 py-1 rounded" style={{ color: t.muted, background: `${t.muted}10` }}>
@@ -869,13 +869,13 @@ function DepartureDetail({ student: st, onBack, t, toast }) {
 
       {/* Notes + Save */}
       <Card delay={500}>
-        <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>নোট</label>
+        <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>{tr("common.notes")}</label>
         <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
           className="w-full px-3 py-2 rounded-lg text-xs outline-none h-20 resize-none" style={inputStyle}
-          placeholder="অতিরিক্ত তথ্য..." />
+          placeholder={tr("preDeparture.notesPlaceholder")} />
         <div className="flex justify-end mt-3">
           <Button icon={Save} onClick={handleSave} disabled={saving}>
-            {saving ? "সেভ হচ্ছে..." : "সেভ করুন"}
+            {saving ? tr("common.saving") : tr("common.save")}
           </Button>
         </div>
       </Card>

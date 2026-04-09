@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Users, CheckCircle, Layers, Building2, Save, X, MapPin, Phone, Mail, User, Shield, Pencil, Trash2, Search } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -17,7 +18,7 @@ import { users as usersApi, auth } from "../../lib/api";
  */
 
 const ALL_ROLES = ["owner", "admin", "branch_manager", "counselor", "accountant", "teacher", "viewer"];
-const ROLE_LABELS = { owner: "মালিক", admin: "অ্যাডমিন", branch_manager: "ব্রাঞ্চ ম্যানেজার", counselor: "কাউন্সেলর", accountant: "একাউন্ট্যান্ট", teacher: "শিক্ষক", viewer: "ভিউয়ার" };
+// ROLE_LABELS — component-এর ভেতরে tr() দিয়ে resolve হবে, getRoleLabel() ব্যবহার করো
 
 const MODULES = [
   { key: "dashboard", label: "Dashboard" }, { key: "visitors", label: "Visitors" },
@@ -31,6 +32,15 @@ const EMPTY_USER = { name: "", email: "", phone: "", branch: "", password: "", r
 export default function UserRolePage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
+
+  // ── Role label — tr() দিয়ে dynamic ──
+  const ROLE_LABELS = {
+    owner: tr("users.roleOwner"), admin: tr("users.roleAdmin"),
+    branch_manager: tr("users.roleBranchManager"), counselor: tr("users.roleCounselor"),
+    accountant: tr("users.roleAccountant"), teacher: tr("users.roleTeacher"),
+    viewer: tr("users.roleViewer"),
+  };
 
   // ── Data state ──
   const [usersList, setUsersList] = useState([]);
@@ -62,7 +72,7 @@ export default function UserRolePage() {
       setBranches(Array.isArray(branchData) ? branchData : []);
     } catch (err) {
       console.error("Users load error:", err);
-      toast.error("ইউজার ডাটা লোড করতে সমস্যা হয়েছে");
+      toast.error(tr("users.loadError"));
     }
     setLoading(false);
   };
@@ -71,8 +81,8 @@ export default function UserRolePage() {
 
   // ── User CRUD ──
   const saveUser = async () => {
-    if (!userForm.name.trim() || !userForm.email.trim()) { toast.error("নাম ও ইমেইল দিন"); return; }
-    if (!userForm.password || userForm.password.length < 6) { toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর"); return; }
+    if (!userForm.name.trim() || !userForm.email.trim()) { toast.error(tr("users.nameEmailRequired")); return; }
+    if (!userForm.password || userForm.password.length < 6) { toast.error(tr("users.minPassword6")); return; }
     setSaving(true);
     try {
       await auth.register({
@@ -82,12 +92,12 @@ export default function UserRolePage() {
         role: userForm.role || "counselor",
         branch: userForm.branch || "",
       });
-      toast.success("User যোগ হয়েছে!");
+      toast.success(tr("users.userAdded"));
       setShowUserForm(false);
       setUserForm(EMPTY_USER);
       loadData();
     } catch (err) {
-      toast.error(err.message || "সমস্যা হয়েছে");
+      toast.error(err.message || tr("users.saveFailed"));
     }
     setSaving(false);
   };
@@ -98,7 +108,7 @@ export default function UserRolePage() {
       setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
       toast.updated("Role");
     } catch (err) {
-      toast.error(err.message || "আপডেট করতে সমস্যা");
+      toast.error(err.message || tr("users.updateFailed"));
     }
   };
 
@@ -117,21 +127,21 @@ export default function UserRolePage() {
   const [newPassword, setNewPassword] = useState("");
 
   const resetPassword = async () => {
-    if (newPassword.length < 8) { toast.error("Password কমপক্ষে ৮ অক্ষর"); return; }
+    if (newPassword.length < 8) { toast.error(tr("users.minPassword8")); return; }
     try {
       await usersApi.update(resetPasswordId, { password: newPassword });
-      toast.success("পাসওয়ার্ড রিসেট হয়েছে");
+      toast.success(tr("users.passwordReset"));
       setResetPasswordId(null); setNewPassword("");
-    } catch (err) { toast.error(err.message || "রিসেট ব্যর্থ"); }
+    } catch (err) { toast.error(err.message || tr("users.resetFailed")); }
   };
 
   const deleteUser = async (id) => {
     try {
       await usersApi.remove(id);
       setUsersList(prev => prev.filter(u => u.id !== id));
-      toast.success("User মুছে ফেলা হয়েছে");
+      toast.success(tr("users.userDeleted"));
     } catch (err) {
-      toast.error(err.message || "মুছতে সমস্যা");
+      toast.error(err.message || tr("users.deleteFailed"));
     }
   };
 
@@ -161,9 +171,9 @@ export default function UserRolePage() {
   };
 
   const tabs = [
-    { key: "users", label: "👥 ইউজার" },
-    { key: "branches", label: "🏢 ব্রাঞ্চ" },
-    { key: "permissions", label: "🔐 পারমিশন" },
+    { key: "users", label: `👥 ${tr("users.tabUsers")}` },
+    { key: "branches", label: `🏢 ${tr("users.tabBranches")}` },
+    { key: "permissions", label: `🔐 ${tr("users.tabPermissions")}` },
   ];
 
   // ── ফিল্টার ──
@@ -180,19 +190,19 @@ export default function UserRolePage() {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">ইউজার ও রোল</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>শাখা ব্যবস্থাপনা, ইউজার ও রোল কন্ট্রোল</p>
+          <h2 className="text-xl font-bold">{tr("users.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("users.subtitle")}</p>
         </div>
-        {activeTab === "users" && <Button icon={Plus} onClick={() => setShowUserForm(true)}>নতুন User</Button>}
+        {activeTab === "users" && <Button icon={Plus} onClick={() => setShowUserForm(true)}>{tr("users.addUser")}</Button>}
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট ব্রাঞ্চ", value: branches.length, color: t.cyan, icon: Building2 },
-          { label: "মোট ইউজার", value: usersList.length, color: t.purple, icon: Users },
-          { label: "সক্রিয় ইউজার", value: activeUsers, color: t.emerald, icon: CheckCircle },
-          { label: "মোট রোল", value: ALL_ROLES.length, color: t.amber, icon: Layers },
+          { label: tr("users.totalBranches"), value: branches.length, color: t.cyan, icon: Building2 },
+          { label: tr("users.totalUsers"), value: usersList.length, color: t.purple, icon: Users },
+          { label: tr("users.activeUsers"), value: activeUsers, color: t.emerald, icon: CheckCircle },
+          { label: tr("users.totalRoles"), value: ALL_ROLES.length, color: t.amber, icon: Layers },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -229,17 +239,17 @@ export default function UserRolePage() {
           {showUserForm && (
             <Card delay={0}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold">নতুন System User যোগ করুন</h3>
+                <h3 className="text-sm font-bold">{tr("users.addNewSystemUser")}</h3>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowUserForm(false); setUserForm(EMPTY_USER); }}>বাতিল</Button>
-                  <Button size="xs" icon={Save} onClick={saveUser} disabled={saving}>{saving ? "..." : "সংরক্ষণ"}</Button>
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setShowUserForm(false); setUserForm(EMPTY_USER); }}>{tr("common.cancel")}</Button>
+                  <Button size="xs" icon={Save} onClick={saveUser} disabled={saving}>{saving ? "..." : tr("common.save")}</Button>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  { key: "name", label: "নাম *", ph: "পুরো নাম", icon: User },
-                  { key: "email", label: "ইমেইল *", ph: "user@agency.com", icon: Mail },
-                  { key: "password", label: "পাসওয়ার্ড *", ph: "কমপক্ষে ৬ অক্ষর", type: "password" },
+                  { key: "name", label: `${tr("common.name")} *`, ph: tr("users.fullNamePh"), icon: User },
+                  { key: "email", label: `${tr("common.email")} *`, ph: "user@agency.com", icon: Mail },
+                  { key: "password", label: `${tr("users.password")} *`, ph: tr("users.minChars6Ph"), type: "password" },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
@@ -249,19 +259,19 @@ export default function UserRolePage() {
                   </div>
                 ))}
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ফোন</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.phone")}</label>
                   <PhoneInput value={userForm.phone} onChange={v => setUserForm(p => ({ ...p, phone: v }))} size="md" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Branch</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("users.branch")}</label>
                   <select value={userForm.branch} onChange={e => setUserForm(p => ({ ...p, branch: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="">— নির্বাচন করুন —</option>
+                    <option value="">— {tr("users.selectBranch")} —</option>
                     {branches.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Role</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("users.role")}</label>
                   <select value={userForm.role} onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     {ALL_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
@@ -278,30 +288,30 @@ export default function UserRolePage() {
               <Search size={14} style={{ color: t.muted }} />
               <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                placeholder="নাম, ইমেইল, Branch বা Role দিয়ে খুঁজুন..." autoComplete="off" />
+                placeholder={tr("users.searchPlaceholder")} autoComplete="off" />
             </div>
           </Card>
 
           {/* Users Table */}
           <Card delay={100}>
             {loading ? (
-              <div className="py-10 text-center text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</div>
+              <div className="py-10 text-center text-xs" style={{ color: t.muted }}>{tr("common.loading")}</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="ইমেইল" sortKey="email" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="Role" sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <SortHeader label="Branch" sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>স্ট্যাটাস</th>
-                      <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+                      <SortHeader label={tr("common.name")} sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("common.email")} sortKey="email" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("users.role")} sortKey="role" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <SortHeader label={tr("users.branch")} sortKey="branch" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                      <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("common.status")}</th>
+                      <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("common.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedUsers.length === 0 && (
-                      <tr><td colSpan={6} className="text-center py-8 text-xs" style={{ color: t.muted }}>কোনো ইউজার পাওয়া যায়নি</td></tr>
+                      <tr><td colSpan={6} className="text-center py-8 text-xs" style={{ color: t.muted }}>{tr("users.noUsers")}</td></tr>
                     )}
                     {sortedUsers.map(user => (
                       <tr key={user.id} style={{ borderBottom: `1px solid ${t.border}` }}
@@ -330,7 +340,7 @@ export default function UserRolePage() {
                         <td className="py-3 px-4">
                           <button onClick={() => toggleUserActive(user.id, user.is_active !== false)}>
                             <Badge color={user.is_active !== false ? t.emerald : t.muted} size="xs">
-                              {user.is_active !== false ? "Active" : "Inactive"}
+                              {user.is_active !== false ? tr("common.active") : tr("common.inactive")}
                             </Badge>
                           </button>
                         </td>
@@ -342,13 +352,13 @@ export default function UserRolePage() {
                             <button onClick={() => { setResetPasswordId(resetPasswordId === user.id ? null : user.id); setNewPassword(""); }}
                               className="p-1.5 rounded-lg text-[10px] transition"
                               style={{ color: t.amber }}
-                              title="পাসওয়ার্ড রিসেট">
+                              title={tr("users.resetPassword")}>
                               🔑
                             </button>
                             <button onClick={() => toggleUserActive(user.id, user.is_active)}
                               className="p-1.5 rounded-lg transition"
                               style={{ color: user.is_active !== false ? t.emerald : t.muted }}
-                              title={user.is_active !== false ? "নিষ্ক্রিয় করুন" : "সক্রিয় করুন"}>
+                              title={user.is_active !== false ? tr("users.deactivate") : tr("users.activate")}>
                               {user.is_active !== false ? "✅" : "⏸️"}
                             </button>
                             <button onClick={() => setDeleteTarget(user)} className="p-1.5 rounded-lg transition"
@@ -361,11 +371,11 @@ export default function UserRolePage() {
                           {resetPasswordId === user.id && (
                             <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}30` }}>
                               <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                                placeholder="নতুন পাসওয়ার্ড (৮+ অক্ষর)" className="flex-1 px-2 py-1 rounded text-xs outline-none"
+                                placeholder={tr("users.newPasswordPh")} className="flex-1 px-2 py-1 rounded text-xs outline-none"
                                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
                                 autoComplete="new-password" />
                               <button onClick={resetPassword} className="px-2 py-1 rounded text-xs font-medium"
-                                style={{ background: t.amber, color: "#000" }}>রিসেট</button>
+                                style={{ background: t.amber, color: "#000" }}>{tr("users.reset")}</button>
                               <button onClick={() => setResetPasswordId(null)} className="text-xs" style={{ color: t.muted }}>✕</button>
                             </div>
                           )}
@@ -384,7 +394,7 @@ export default function UserRolePage() {
               return (
                 <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                   <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>
-                    <span className="font-semibold" style={{ color: t.text }}>{user.name}</span> — Role পরিবর্তন:
+                    <span className="font-semibold" style={{ color: t.text }}>{user.name}</span> — {tr("users.changeRole")}:
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {ALL_ROLES.map(role => {
@@ -410,9 +420,9 @@ export default function UserRolePage() {
       {activeTab === "branches" && (
         <>
           {loading ? (
-            <Card><div className="py-10 text-center text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</div></Card>
+            <Card><div className="py-10 text-center text-xs" style={{ color: t.muted }}>{tr("common.loading")}</div></Card>
           ) : branches.length === 0 ? (
-            <Card><div className="py-10 text-center text-xs" style={{ color: t.muted }}>কোনো Branch পাওয়া যায়নি</div></Card>
+            <Card><div className="py-10 text-center text-xs" style={{ color: t.muted }}>{tr("users.noBranches")}</div></Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {branches.map((br, i) => (
@@ -424,21 +434,21 @@ export default function UserRolePage() {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{br.name}</p>
-                      <p className="text-[10px]" style={{ color: t.muted }}>Branch</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{tr("users.branch")}</p>
                     </div>
                   </div>
                   <div className="flex gap-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                     <div className="flex-1 text-center">
                       <p className="text-lg font-bold" style={{ color: t.purple }}>{br.employeeCount || 0}</p>
-                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>কর্মচারী</p>
+                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>{tr("users.employees")}</p>
                     </div>
                     <div className="flex-1 text-center">
                       <p className="text-lg font-bold" style={{ color: t.cyan }}>{br.userCount || 0}</p>
-                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>System User</p>
+                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>{tr("users.systemUser")}</p>
                     </div>
                     <div className="flex-1 text-center">
                       <p className="text-lg font-bold" style={{ color: t.emerald }}>{br.studentCount || 0}</p>
-                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>স্টুডেন্ট</p>
+                      <p className="text-[9px] uppercase" style={{ color: t.muted }}>{tr("users.student")}</p>
                     </div>
                   </div>
                 </Card>
@@ -453,15 +463,15 @@ export default function UserRolePage() {
         <Card delay={100}>
           <div className="flex items-center justify-between mb-1">
             <div>
-              <h3 className="text-sm font-semibold">পারমিশন ম্যাট্রিক্স</h3>
-              <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>R = দেখা, W = লেখা, D = মুছা — ক্লিক করে toggle করুন</p>
+              <h3 className="text-sm font-semibold">{tr("users.permissionMatrix")}</h3>
+              <p className="text-[11px] mt-0.5" style={{ color: t.muted }}>{tr("users.permissionDesc")}</p>
             </div>
             <Button icon={Save} size="xs" onClick={async () => {
               try {
                 // প্রতিটি role-specific user-এর জন্য permissions update
                 // permMatrix → backend-এ agency-level settings হিসেবে save
                 await api.post("/users/permissions", { permissions: permMatrix });
-                toast.success("পারমিশন সংরক্ষণ হয়েছে!");
+                toast.success(tr("users.permissionsSaved"));
               } catch {
                 // Fallback: প্রতিটি user-এর permissions individually update
                 for (const user of usersList) {
@@ -470,9 +480,9 @@ export default function UserRolePage() {
                     try { await usersApi.update(user.id, { permissions: rolePerm }); } catch (err) { console.error("[Permission Update]", err); }
                   }
                 }
-                toast.success("পারমিশন সংরক্ষণ হয়েছে!");
+                toast.success(tr("users.permissionsSaved"));
               }
-            }}>সংরক্ষণ</Button>
+            }}>{tr("common.save")}</Button>
           </div>
           <div className="overflow-x-auto mt-3">
             <table className="w-full text-xs">

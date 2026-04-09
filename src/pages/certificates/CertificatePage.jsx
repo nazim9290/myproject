@@ -20,11 +20,12 @@ import FieldMapperTable, { SYSTEM_FIELDS } from "../../components/ui/FieldMapper
 import { API_URL } from "../../lib/api";
 const token = () => localStorage.getItem("agencyos_token");
 
-const CATEGORIES = [
-  { value: "translation", label: "ট্রান্সলেশন" },
-  { value: "certificate", label: "সার্টিফিকেট" },
-  { value: "letter", label: "চিঠি/পত্র" },
-  { value: "other", label: "অন্যান্য" },
+// CATEGORIES — component-এর ভিতরে tr() দিয়ে label সেট হবে
+const CATEGORY_KEYS = [
+  { value: "translation", labelKey: "certificates.catTranslation" },
+  { value: "certificate", labelKey: "certificates.catCertificate" },
+  { value: "letter", labelKey: "certificates.catLetter" },
+  { value: "other", labelKey: "certificates.catOther" },
 ];
 
 export default function CertificatePage({ students }) {
@@ -33,6 +34,7 @@ export default function CertificatePage({ students }) {
   const { t: tr } = useLanguage();
   const fileRef = useRef(null);
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+  const CATEGORIES = CATEGORY_KEYS.map(c => ({ value: c.value, label: tr(c.labelKey) }));
 
   const [templates, setTemplates] = useState([]);
   const [defaultTemplates, setDefaultTemplates] = useState([]); // সুপার অ্যাডমিনের ডিফল্ট টেমপ্লেট (read-only)
@@ -88,7 +90,7 @@ export default function CertificatePage({ students }) {
     // এজেন্সির নিজস্ব টেমপ্লেট লোড
     api.get("/docgen/templates").then(data => {
       if (Array.isArray(data)) setTemplates(data);
-    }).catch((err) => { console.error("[Templates Load]", err); toast.error("টেমপ্লেট লোড করতে সমস্যা হয়েছে"); }).finally(() => setLoading(false));
+    }).catch((err) => { console.error("[Templates Load]", err); toast.error(tr("certificates.loadError")); }).finally(() => setLoading(false));
 
     // ডিফল্ট টেমপ্লেট লোড — সুপার অ্যাডমিনের আপলোড করা (read-only)
     api.get("/default-templates").then(data => {
@@ -149,13 +151,13 @@ export default function CertificatePage({ students }) {
 
   // ── Upload → detect placeholders → go to mapping ──
   const doUpload = async () => {
-    if (!uploadName.trim()) { toast.error("Template নাম দিন"); return; }
+    if (!uploadName.trim()) { toast.error(tr("certificates.enterName")); return; }
 
     // ডিফল্ট টেমপ্লেট সিলেক্ট করলে — default template-এর file ব্যবহার
     if (templateSource === "default") {
-      if (!selectedDefaultId) { toast.error("একটি ডিফল্ট টেমপ্লেট সিলেক্ট করুন"); return; }
+      if (!selectedDefaultId) { toast.error(tr("certificates.selectDefault")); return; }
       const dt = defaultTemplates.find(t => t.id === selectedDefaultId);
-      if (!dt || !dt.file_url) { toast.error("সিলেক্ট করা টেমপ্লেটে ফাইল নেই"); return; }
+      if (!dt || !dt.file_url) { toast.error(tr("certificates.noFileInTemplate")); return; }
 
       setUploading(true);
       try {
@@ -183,14 +185,14 @@ export default function CertificatePage({ students }) {
         setMappings(autoMap);
         setModifiers({});
         setView("mapping");
-        toast.success(`"${uploadName}" — ডিফল্ট টেমপ্লেট থেকে তৈরি, ${phs.length} টি placeholder`);
+        toast.success(`"${uploadName}" — ${tr("certificates.createdFromDefault", { count: phs.length })}`);
       } catch (err) { toast.error(err.message); }
       setUploading(false);
       return;
     }
 
     // কাস্টম আপলোড
-    if (!uploadFile) { toast.error(".docx ফাইল সিলেক্ট করুন"); return; }
+    if (!uploadFile) { toast.error(tr("certificates.selectDocx")); return; }
     setUploading(true);
     try {
       const formData = new FormData();
@@ -215,7 +217,7 @@ export default function CertificatePage({ students }) {
       setMappings(autoMap);
 
       setView("mapping");
-      toast.success(`"${uploadName}" — ${phs.length} টি placeholder পাওয়া গেছে`);
+      toast.success(`"${uploadName}" — ${tr("certificates.placeholdersFound", { count: phs.length })}`);
     } catch (err) { toast.error(err.message); }
     setUploading(false);
   };
@@ -242,9 +244,9 @@ export default function CertificatePage({ students }) {
         const exists = prev.find(t => t.id === updated.id);
         return exists ? prev.map(t => t.id === updated.id ? updated : t) : [updated, ...prev];
       });
-      toast.success(`${Object.values(mappings).filter(Boolean).length} fields mapping সংরক্ষণ হয়েছে`);
+      toast.success(tr("certificates.mappingSaved", { count: Object.values(mappings).filter(Boolean).length }));
       setView("list");
-    } catch { toast.error("Mapping save ব্যর্থ"); }
+    } catch { toast.error(tr("certificates.mappingSaveFailed")); }
   };
 
   // জন্ম নিবন্ধনের template_type থেকে matching .docx template suggest করো
@@ -283,7 +285,7 @@ export default function CertificatePage({ students }) {
 
   // ── Generate — student profile + document-specific data উভয়ই পাঠায় ──
   const doGenerate = async (format = "docx") => {
-    if (!selectedStudent) { toast.error("একজন স্টুডেন্ট সিলেক্ট করুন"); return; }
+    if (!selectedStudent) { toast.error(tr("certificates.selectStudent")); return; }
     setGenerating(true);
     try {
       const res = await fetch(`${API_URL}/docgen/generate`, {
@@ -309,8 +311,8 @@ export default function CertificatePage({ students }) {
     try {
       await fetch(`${API_URL}/docgen/templates/${tmpl.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token()}` } });
       setTemplates(prev => prev.filter(t => t.id !== tmpl.id));
-      toast.success("Template মুছে ফেলা হয়েছে");
-    } catch { toast.error("Delete ব্যর্থ"); }
+      toast.success(tr("certificates.deleted"));
+    } catch { toast.error(tr("certificates.deleteFailed")); }
     setDeleteConfirmId(null);
   };
 
@@ -323,9 +325,9 @@ export default function CertificatePage({ students }) {
         <button onClick={() => setView("upload")} className="p-2 rounded-xl" style={{ background: t.inputBg }}><ArrowLeft size={18} /></button>
         <div className="flex-1">
           <h2 className="text-xl font-bold">{tr("certificates.fieldMapping")} — {activeTemplate.name}</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>প্রতিটি placeholder-কে সিস্টেম field-এ ম্যাপ করুন • Mapped: {Object.values(mappings).filter(Boolean).length}/{detectedPlaceholders.length}</p>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("certificates.mapEachPlaceholder")} • Mapped: {Object.values(mappings).filter(Boolean).length}/{detectedPlaceholders.length}</p>
         </div>
-        <Button icon={Download} onClick={saveMapping}>সংরক্ষণ ({Object.values(mappings).filter(Boolean).length})</Button>
+        <Button icon={Download} onClick={saveMapping}>{tr("common.save")} ({Object.values(mappings).filter(Boolean).length})</Button>
       </div>
 
       <Card delay={50}>
@@ -340,7 +342,7 @@ export default function CertificatePage({ students }) {
           />
         ) : (
           <div className="text-center py-8">
-            <p className="text-xs" style={{ color: t.muted }}>কোনো {"{{placeholder}}"} পাওয়া যায়নি — Word ফাইলে {"{{name_en}}"} ইত্যাদি লিখুন</p>
+            <p className="text-xs" style={{ color: t.muted }}>{tr("certificates.noPlaceholders")}</p>
           </div>
         )}
       </Card>
@@ -358,7 +360,7 @@ export default function CertificatePage({ students }) {
         <div>
           <h2 className="text-xl font-bold">{tr("certificates.generate")} — {activeTemplate.name}</h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>
-            {generateStep === "student" ? "Step 1: স্টুডেন্ট সিলেক্ট করুন" : "Step 2: ডকুমেন্টের তথ্য পূরণ করুন"}
+            {generateStep === "student" ? tr("certificates.step1SelectStudent") : tr("certificates.step2FillData")}
           </p>
         </div>
       </div>
@@ -369,10 +371,10 @@ export default function CertificatePage({ students }) {
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-[200px]" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={14} style={{ color: t.muted }} />
-              <input value={studentSearch} onChange={e => setStudentSearch(e.target.value)} className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }} placeholder="স্টুডেন্ট খুঁজুন..." />
+              <input value={studentSearch} onChange={e => setStudentSearch(e.target.value)} className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }} placeholder={tr("certificates.searchStudent")} />
             </div>
             <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)} className="px-3 py-2 rounded-xl text-xs outline-none" style={is}>
-              <option value="all">সব ব্যাচ</option>
+              <option value="all">{tr("certificates.allBatches")}</option>
               {batchList.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
@@ -391,7 +393,7 @@ export default function CertificatePage({ students }) {
           </div>
           <div className="flex justify-end mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
             <Button onClick={async () => {
-              if (!selectedStudent) { toast.error("স্টুডেন্ট সিলেক্ট করুন"); return; }
+              if (!selectedStudent) { toast.error(tr("certificates.selectStudent")); return; }
 
               // 1. Student profile data
               const stu = eligibleStudents.find(s => s.id === selectedStudent) || {};
@@ -432,7 +434,7 @@ export default function CertificatePage({ students }) {
 
               setDocData(prefill);
               setGenerateStep("fill");
-            }} disabled={!selectedStudent}>পরবর্তী →</Button>
+            }} disabled={!selectedStudent}>{tr("certificates.next")}</Button>
           </div>
         </Card>
       )}
@@ -442,10 +444,10 @@ export default function CertificatePage({ students }) {
         <Card delay={50}>
           <div className="mb-4 p-3 rounded-lg" style={{ background: `${t.purple}08`, border: `1px solid ${t.purple}15` }}>
             <p className="text-xs">
-              <strong>স্টুডেন্ট:</strong> {eligibleStudents.find(s => s.id === selectedStudent)?.name_en} ({selectedStudent})
+              <strong>{tr("certificates.studentLabel")}:</strong> {eligibleStudents.find(s => s.id === selectedStudent)?.name_en} ({selectedStudent})
             </p>
             <p className="text-[10px] mt-1" style={{ color: t.muted }}>
-              ডকুমেন্টের তথ্য পূরণ করুন — student profile থেকে match থাকলে auto-fill হয়েছে, প্রয়োজনে পরিবর্তন করুন
+              {tr("certificates.fillDataHint")}
             </p>
           </div>
 
@@ -460,19 +462,19 @@ export default function CertificatePage({ students }) {
                 style={{ background: `${t.amber}08`, border: `1px solid ${t.amber}20` }}>
                 <div>
                   <p className="text-xs font-medium" style={{ color: t.amber }}>
-                    সাজেশন: "{birthType}" টাইপের জন্য "{suggested.name}" টেমপ্লেট পাওয়া গেছে
+                    {tr("certificates.suggestion", { type: birthType, name: suggested.name })}
                   </p>
                   <p className="text-[10px] mt-0.5" style={{ color: t.muted }}>
-                    এই টেমপ্লেটে switch করলে আরও সঠিক output পাবেন
+                    {tr("certificates.switchHint")}
                   </p>
                 </div>
                 <button onClick={() => {
                   setActiveTemplate(suggested);
-                  toast.success(`"${suggested.name}" টেমপ্লেটে switch হয়েছে`);
+                  toast.success(tr("certificates.switchedTo", { name: suggested.name }));
                 }}
                 className="px-3 py-1.5 rounded-lg text-[10px] font-medium shrink-0 ml-3"
                 style={{ background: t.amber, color: "#fff" }}>
-                  Switch করুন
+                  {tr("certificates.switchBtn")}
                 </button>
               </div>
             );
@@ -492,7 +494,7 @@ export default function CertificatePage({ students }) {
                   onChange={e => setDocData(prev => ({ ...prev, [p.key]: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                   style={is}
-                  placeholder={`${p.key} এর মান লিখুন...`}
+                  placeholder={tr("certificates.enterValue", { field: p.key })}
                 />
               </div>
             ))}
@@ -502,7 +504,7 @@ export default function CertificatePage({ students }) {
           <div className="mt-3 p-3 rounded-lg" style={{ background: `${t.emerald}08`, border: `1px solid ${t.emerald}15` }}>
             <div className="flex items-center justify-between">
               <p className="text-[10px]" style={{ color: t.textSecondary }}>
-                এই data Documents মডিউলে save করুন — পরে আবার ব্যবহার করা যাবে
+                {tr("certificates.saveToDocsHint")}
               </p>
               <button onClick={async () => {
                 // Find matching doc type from template name
@@ -511,7 +513,7 @@ export default function CertificatePage({ students }) {
                   (dt.name_bn && activeTemplate.name.includes(dt.name_bn))
                 );
                 if (!matchType) {
-                  toast.error("এই template-র জন্য কোনো Document Type পাওয়া যায়নি — Administration-এ যোগ করুন");
+                  toast.error(tr("certificates.noDocType"));
                   return;
                 }
                 try {
@@ -520,11 +522,11 @@ export default function CertificatePage({ students }) {
                     doc_type_id: matchType.id,
                     field_data: docData,
                   });
-                  toast.success(`${matchType.name_bn || matchType.name} — data সংরক্ষণ হয়েছে`);
+                  toast.success(tr("certificates.dataSaved", { name: matchType.name_bn || matchType.name }));
                 } catch (err) { toast.error(err.message); }
               }}
               className="px-3 py-1.5 rounded-lg text-[10px] font-medium" style={{ background: t.emerald, color: "#fff" }}>
-                Documents-এ Save
+                {tr("certificates.saveToDocs")}
               </button>
             </div>
           </div>
@@ -535,10 +537,10 @@ export default function CertificatePage({ students }) {
             </p>
             <div className="flex gap-2">
               <Button variant="ghost" icon={Download} onClick={() => doGenerate("docx")} disabled={generating}>
-                {generating ? "তৈরি হচ্ছে..." : ".docx ডাউনলোড"}
+                {generating ? tr("certificates.generating") : tr("certificates.downloadWord")}
               </Button>
               <Button icon={Download} onClick={() => doGenerate("pdf")} disabled={generating}>
-                .pdf ডাউনলোড
+                {tr("certificates.downloadPdf")}
               </Button>
             </div>
           </div>
@@ -560,10 +562,10 @@ export default function CertificatePage({ students }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট Template", value: templates.length, color: t.cyan },
-          { label: "ট্রান্সলেশন", value: templates.filter(x => x.category === "translation").length, color: t.amber },
-          { label: "সার্টিফিকেট", value: templates.filter(x => x.category === "certificate").length, color: t.emerald },
-          { label: "মোট স্টুডেন্ট", value: eligibleStudents.length, color: t.rose },
+          { label: tr("certificates.totalTemplates"), value: templates.length, color: t.cyan },
+          { label: tr("certificates.catTranslation"), value: templates.filter(x => x.category === "translation").length, color: t.amber },
+          { label: tr("certificates.catCertificate"), value: templates.filter(x => x.category === "certificate").length, color: t.emerald },
+          { label: tr("certificates.totalStudents"), value: eligibleStudents.length, color: t.rose },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{kpi.label}</p>
@@ -574,12 +576,12 @@ export default function CertificatePage({ students }) {
 
       {templates.length === 0 && !loading && (
         <Card delay={100}>
-          <h3 className="text-sm font-semibold mb-3">কিভাবে কাজ করে?</h3>
+          <h3 className="text-sm font-semibold mb-3">{tr("certificates.howItWorks")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { step: "১", title: "Template তৈরি", desc: "Word (.docx) ফাইলে {{name_en}}, {{dob}} ইত্যাদি placeholder লিখুন", color: t.cyan },
-              { step: "২", title: "আপলোড", desc: "Template আপলোড করুন — সিস্টেম অটো {{}} detect করবে", color: t.purple },
-              { step: "৩", title: "Generate", desc: "স্টুডেন্ট সিলেক্ট → .docx বা .pdf ডাউনলোড", color: t.emerald },
+              { step: "১", title: tr("certificates.howStep1Title"), desc: tr("certificates.howStep1Desc"), color: t.cyan },
+              { step: "২", title: tr("certificates.howStep2Title"), desc: tr("certificates.howStep2Desc"), color: t.purple },
+              { step: "৩", title: tr("certificates.howStep3Title"), desc: tr("certificates.howStep3Desc"), color: t.emerald },
             ].map(s => (
               <div key={s.step} className="p-4 rounded-xl" style={{ background: `${s.color}08`, border: `1px solid ${s.color}15` }}>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-2" style={{ background: `${s.color}20`, color: s.color }}>{s.step}</div>
@@ -633,9 +635,9 @@ export default function CertificatePage({ students }) {
                 }} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.purple }}
                 onMouseEnter={e => e.currentTarget.style.background = `${t.purple}15`}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                Mapping
+                {tr("certificates.mapping")}
               </button>
-              <Button size="xs" icon={Download} onClick={() => { setActiveTemplate(tmpl); setSelectedStudent(""); setStudentSearch(""); setFilterBatch("all"); setView("generate"); }}>Generate</Button>
+              <Button size="xs" icon={Download} onClick={() => { setActiveTemplate(tmpl); setSelectedStudent(""); setStudentSearch(""); setFilterBatch("all"); setView("generate"); }}>{tr("certificates.generate")}</Button>
               <button onClick={() => setDeleteConfirmId(tmpl.id)} className="p-1.5 rounded-lg" style={{ color: t.muted }}
                 onMouseEnter={e => e.currentTarget.style.color = t.rose} onMouseLeave={e => e.currentTarget.style.color = t.muted}>
                 <Trash2 size={14} />
@@ -652,11 +654,11 @@ export default function CertificatePage({ students }) {
         {/* নাম + ক্যাটাগরি */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম *</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("certificates.templateName")} *</label>
             <input value={uploadName} onChange={e => setUploadName(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="Birth Certificate Translation" />
           </div>
           <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্যাটাগরি</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("certificates.category")}</label>
             <select value={uploadCategory} onChange={e => setUploadCategory(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}>
               {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
@@ -664,26 +666,26 @@ export default function CertificatePage({ students }) {
         </div>
 
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বিবরণ (Description)</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("certificates.description")}</label>
           <input value={uploadDesc} onChange={e => setUploadDesc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is} placeholder="e.g. Paurashava format birth certificate for Japan visa" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Linked Document Type</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("certificates.linkedDocType")}</label>
             <select value={linkedDocType} onChange={e => setLinkedDocType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={is}>
               <option value="">— None —</option>
               {docTypes.map(dt => <option key={dt.id} value={dt.name}>{dt.name_bn || dt.name}</option>)}
             </select>
           </div>
           <div>
-            <p className="text-[10px] mt-6" style={{ color: t.muted }}>Link করলে generate-এ ঐ doc type-র data auto-fill হবে</p>
+            <p className="text-[10px] mt-6" style={{ color: t.muted }}>{tr("certificates.linkedDocHint")}</p>
           </div>
         </div>
 
         {/* Template Source — ডিফল্ট or কাস্টম */}
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}>Template Source</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: t.muted }}>{tr("certificates.templateSource")}</label>
           <div className="flex gap-2 mb-3">
             <button onClick={() => { setTemplateSource("default"); setUploadFile(null); }}
               className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all"
@@ -701,7 +703,7 @@ export default function CertificatePage({ students }) {
           {templateSource === "default" && (
             <div className="space-y-2">
               {defaultTemplates.length === 0 && (
-                <p className="text-[10px] text-center py-4" style={{ color: t.muted }}>কোনো ডিফল্ট টেমপ্লেট নেই — Super Admin আপলোড করেনি</p>
+                <p className="text-[10px] text-center py-4" style={{ color: t.muted }}>{tr("certificates.noDefaultTemplates")}</p>
               )}
               {defaultTemplates.map(dt => (
                 <button key={dt.id} onClick={() => {
@@ -738,11 +740,11 @@ export default function CertificatePage({ students }) {
                 <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
                   <input ref={fileRef} type="file" accept=".docx" onChange={e => setUploadFile(e.target.files[0])} className="hidden" />
                   <FileText size={24} style={{ color: t.cyan }} />
-                  <div><p className="text-xs font-semibold">{uploadFile.name}</p><p className="text-[10px]" style={{ color: t.muted }}>ক্লিক করে পরিবর্তন</p></div>
+                  <div><p className="text-xs font-semibold">{uploadFile.name}</p><p className="text-[10px]" style={{ color: t.muted }}>{tr("certificates.clickToChange")}</p></div>
                 </div>
               ) : (
                 <DropZone accept=".docx" onFile={(file) => setUploadFile(file)}>
-                  .docx টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
+                  {tr("certificates.dropzoneText")}
                 </DropZone>
               )}
             </div>
@@ -750,24 +752,24 @@ export default function CertificatePage({ students }) {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setView("list")}>বাতিল</Button>
+          <Button variant="ghost" onClick={() => setView("list")}>{tr("common.cancel")}</Button>
           <Button icon={Upload} onClick={doUpload} disabled={uploading || (templateSource === "default" && !selectedDefaultId) || (templateSource === "custom" && !uploadFile)}>
-            {uploading ? "তৈরি হচ্ছে..." : "তৈরি করুন"}
+            {uploading ? tr("certificates.creating") : tr("certificates.create")}
           </Button>
         </div>
       </div>
     </Modal>
 
     {/* Delete Confirmation Modal */}
-    <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Delete Template" size="sm">
+    <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title={tr("certificates.deleteTemplate")} size="sm">
       <div className="text-center py-4">
         <AlertTriangle size={40} className="mx-auto mb-3" style={{ color: t.rose }} />
-        <p className="text-sm font-semibold mb-1">এই template মুছে ফেলতে চান?</p>
-        <p className="text-[10px] mb-4" style={{ color: t.muted }}>এই কাজ undo করা যাবে না</p>
+        <p className="text-sm font-semibold mb-1">{tr("certificates.deleteConfirm")}</p>
+        <p className="text-[10px] mb-4" style={{ color: t.muted }}>{tr("certificates.deleteWarning")}</p>
         <div className="flex justify-center gap-2">
-          <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 rounded-lg text-xs" style={{ color: t.muted }}>বাতিল</button>
+          <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 rounded-lg text-xs" style={{ color: t.muted }}>{tr("common.cancel")}</button>
           <button onClick={() => { const tmpl = templates.find(t => t.id === deleteConfirmId); if (tmpl) deleteTemplate(tmpl); }}
-            className="px-4 py-2 rounded-lg text-xs font-medium" style={{ background: t.rose, color: "#fff" }}>হ্যাঁ, মুছুন</button>
+            className="px-4 py-2 rounded-lg text-xs font-medium" style={{ background: t.rose, color: "#fff" }}>{tr("certificates.yesDelete")}</button>
         </div>
       </div>
     </Modal>
