@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GraduationCap, Phone, Lock, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useTheme, getGlobalStyles } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { API_URL } from "../../lib/api";
 
 /**
@@ -10,6 +11,7 @@ import { API_URL } from "../../lib/api";
  */
 export default function StudentLoginPage({ onLogin, onBackToStaff }) {
   const t = useTheme();
+  const { t: tr } = useLanguage();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
   // API_URL — centralized import থেকে আসে
 
   const handleLogin = async () => {
-    if (!phone.trim() || !password.trim()) { setError("ফোন নম্বর ও পাসওয়ার্ড দিন"); return; }
+    if (!phone.trim() || !password.trim()) { setError(tr("portal.loginPhonePwRequired")); return; }
     setLoading(true);
     setError("");
     try {
@@ -28,7 +30,7 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
         body: JSON.stringify({ phone: phone.trim(), password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "লগইন ব্যর্থ");
+      if (!res.ok) throw new Error(data.error || tr("portal.loginFailed"));
 
       // Token ও user info save
       localStorage.setItem("agencyos_student_token", data.token);
@@ -56,8 +58,8 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
               style={{ background: `linear-gradient(135deg, ${t.emerald}, ${t.cyan})` }}>
               <GraduationCap size={28} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">স্টুডেন্ট পোর্টাল</h1>
-            <p className="text-xs mt-1" style={{ color: t.muted }}>আপনার তথ্য পূরণ ও অগ্রগতি দেখুন</p>
+            <h1 className="text-xl font-bold tracking-tight">{tr("portal.studentPortal")}</h1>
+            <p className="text-xs mt-1" style={{ color: t.muted }}>{tr("portal.loginSubtitle")}</p>
           </div>
 
           {/* ফর্ম */}
@@ -70,7 +72,7 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
             )}
 
             <div>
-              <label className="text-[10px] uppercase tracking-wider mb-1.5 block" style={{ color: t.muted }}>ফোন নম্বর</label>
+              <label className="text-[10px] uppercase tracking-wider mb-1.5 block" style={{ color: t.muted }}>{tr("portal.phoneNumber")}</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
                 <Phone size={14} style={{ color: t.muted }} />
                 <input value={phone} onChange={e => { setPhone(e.target.value); setError(""); }}
@@ -80,7 +82,7 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
             </div>
 
             <div>
-              <label className="text-[10px] uppercase tracking-wider mb-1.5 block" style={{ color: t.muted }}>পাসওয়ার্ড</label>
+              <label className="text-[10px] uppercase tracking-wider mb-1.5 block" style={{ color: t.muted }}>{tr("portal.password")}</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
                 <Lock size={14} style={{ color: t.muted }} />
                 <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(""); }}
@@ -92,7 +94,7 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
             <button onClick={handleLogin} disabled={loading}
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
               style={{ background: `linear-gradient(135deg, ${t.emerald}, ${t.cyan})` }}>
-              {loading ? "লগইন হচ্ছে..." : "লগইন করুন"}
+              {loading ? tr("portal.loggingIn") : tr("portal.login")}
             </button>
           </div>
 
@@ -102,11 +104,11 @@ export default function StudentLoginPage({ onLogin, onBackToStaff }) {
             style={{ color: t.muted }}
             onMouseEnter={e => e.currentTarget.style.color = t.cyan}
             onMouseLeave={e => e.currentTarget.style.color = t.muted}>
-            <ArrowLeft size={12} /> স্টাফ লগইন
+            <ArrowLeft size={12} /> {tr("portal.staffLogin")}
           </button>
 
           <p className="text-center text-[10px] mt-4" style={{ color: t.muted }}>
-            পোর্টাল অ্যাক্সেস পেতে আপনার এজেন্সিতে যোগাযোগ করুন
+            {tr("portal.contactAgencyForAccess")}
           </p>
         </div>
       </div>

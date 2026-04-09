@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Eye, Search, ChevronRight, Check, Clock, User, FileText, DollarSign, Shield, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -15,6 +16,7 @@ import { api } from "../../hooks/useAPI";
 export default function AdminPortalPreview({ students = [] }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [selectedId, setSelectedId] = useState(null);
   const [searchQ, setSearchQ] = useState("");
   const [portalStudents, setPortalStudents] = useState([]);
@@ -49,12 +51,12 @@ export default function AdminPortalPreview({ students = [] }) {
           style={{ background: `${t.amber}10`, border: `1px solid ${t.amber}25` }}>
           <Eye size={16} style={{ color: t.amber }} />
           <div className="flex-1">
-            <p className="text-xs font-semibold" style={{ color: t.amber }}>অ্যাডমিন প্রিভিউ মোড</p>
+            <p className="text-xs font-semibold" style={{ color: t.amber }}>{tr("portal.adminPreviewMode")}</p>
             <p className="text-[10px]" style={{ color: t.muted }}>
-              আপনি দেখছেন <strong style={{ color: t.text }}>{selected.name_en}</strong> স্টুডেন্ট পোর্টালে কী দেখে
+              {tr("portal.adminPreviewDesc", { name: selected.name_en })}
             </p>
           </div>
-          <Button variant="ghost" size="xs" onClick={() => setSelectedId(null)}>ফিরে যান</Button>
+          <Button variant="ghost" size="xs" onClick={() => setSelectedId(null)}>{tr("portal.goBack")}</Button>
         </div>
 
         {/* Student header */}
@@ -64,7 +66,7 @@ export default function AdminPortalPreview({ students = [] }) {
             {(selected.name_en || "S").charAt(0)}
           </div>
           <div>
-            <h2 className="text-xl font-bold">স্বাগতম, {selected.name_bn || selected.name_en}!</h2>
+            <h2 className="text-xl font-bold">{tr("portal.welcome", { name: selected.name_bn || selected.name_en })}</h2>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>
               {selected.id} • {selected.school || "—"} • {selected.batch || "—"}
             </p>
@@ -80,7 +82,7 @@ export default function AdminPortalPreview({ students = [] }) {
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold">
-                বর্তমান অবস্থা: <span style={{ color: statusInfo?.color || t.cyan }}>{statusInfo?.label || selected.status}</span>
+                {tr("portal.currentStatus")}: <span style={{ color: statusInfo?.color || t.cyan }}>{statusInfo?.label || selected.status}</span>
               </p>
             </div>
             <StatusBadge status={selected.status} />
@@ -93,20 +95,20 @@ export default function AdminPortalPreview({ students = [] }) {
             <Shield size={16} style={{ color: selected.portal_access ? t.emerald : t.muted }} />
             <div className="flex-1">
               <p className="text-xs font-semibold">
-                পোর্টাল অ্যাক্সেস: {" "}
+                {tr("portal.portalAccess")}: {" "}
                 <span style={{ color: selected.portal_access ? t.emerald : t.rose }}>
-                  {selected.portal_access ? "✅ চালু" : "❌ বন্ধ"}
+                  {selected.portal_access ? `✅ ${tr("common.active")}` : `❌ ${tr("common.inactive")}`}
                 </span>
               </p>
               {selected.portal_access && (
                 <p className="text-[10px]" style={{ color: t.muted }}>
-                  লগইন: ফোন {selected.phone} + পাসওয়ার্ড
+                  {tr("portal.loginInfo", { phone: selected.phone })}
                 </p>
               )}
             </div>
             {!selected.portal_access && (
               <p className="text-[10px] px-2 py-1 rounded" style={{ background: `${t.rose}10`, color: t.rose }}>
-                Students → Detail → পোর্টাল চালু করুন
+                {tr("portal.enablePortalHint")}
               </p>
             )}
           </div>
@@ -115,28 +117,28 @@ export default function AdminPortalPreview({ students = [] }) {
         {/* Student data preview — যা পূরণ করেছে */}
         <Card delay={100}>
           <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <FileText size={14} style={{ color: t.cyan }} /> স্টুডেন্টের দেওয়া তথ্য
+            <FileText size={14} style={{ color: t.cyan }} /> {tr("portal.studentData")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              { label: "নাম (English)", value: selected.name_en },
-              { label: "নাম (বাংলা)", value: selected.name_bn },
-              { label: "ফোন", value: selected.phone },
+              { label: tr("portal.nameEn"), value: selected.name_en },
+              { label: tr("portal.nameBn"), value: selected.name_bn },
+              { label: tr("common.phone"), value: selected.phone },
               { label: "WhatsApp", value: selected.whatsapp },
-              { label: "ইমেইল", value: selected.email },
-              { label: "জন্ম তারিখ", value: selected.dob },
-              { label: "লিঙ্গ", value: selected.gender },
-              { label: "রক্তের গ্রুপ", value: selected.blood_group },
-              { label: "জাতীয়তা", value: selected.nationality },
+              { label: tr("common.email"), value: selected.email },
+              { label: tr("portal.dob"), value: selected.dob },
+              { label: tr("portal.gender"), value: selected.gender },
+              { label: tr("portal.bloodGroup"), value: selected.blood_group },
+              { label: tr("portal.nationality"), value: selected.nationality },
               { label: "NID", value: selected.nid },
-              { label: "পাসপোর্ট নম্বর", value: selected.passport_number || selected.passport },
-              { label: "পাসপোর্ট মেয়াদ", value: selected.passport_expiry },
-              { label: "স্থায়ী ঠিকানা", value: selected.permanent_address },
-              { label: "বর্তমান ঠিকানা", value: selected.current_address },
-              { label: "পিতার নাম", value: selected.father_name },
-              { label: "পিতার নাম (EN)", value: selected.father_name_en },
-              { label: "মাতার নাম", value: selected.mother_name },
-              { label: "মাতার নাম (EN)", value: selected.mother_name_en },
+              { label: tr("portal.passportNo"), value: selected.passport_number || selected.passport },
+              { label: tr("portal.passportExpiry"), value: selected.passport_expiry },
+              { label: tr("portal.permanentAddress"), value: selected.permanent_address },
+              { label: tr("portal.currentAddress"), value: selected.current_address },
+              { label: tr("portal.fatherName"), value: selected.father_name },
+              { label: tr("portal.fatherNameEn"), value: selected.father_name_en },
+              { label: tr("portal.motherName"), value: selected.mother_name },
+              { label: tr("portal.motherNameEn"), value: selected.mother_name_en },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: t.inputBg }}>
                 <span className="text-[10px] w-28 shrink-0 uppercase tracking-wider" style={{ color: t.muted }}>{item.label}</span>
@@ -156,7 +158,7 @@ export default function AdminPortalPreview({ students = [] }) {
         {/* Fee summary */}
         <Card delay={150}>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <DollarSign size={14} style={{ color: t.emerald }} /> পেমেন্ট সারাংশ
+            <DollarSign size={14} style={{ color: t.emerald }} /> {tr("portal.paymentSummary")}
           </h3>
           {feeItems.length > 0 ? (
             <>
@@ -169,13 +171,13 @@ export default function AdminPortalPreview({ students = [] }) {
                 ))}
               </div>
               <div className="flex justify-between pt-3 mt-3 text-xs" style={{ borderTop: `1px solid ${t.border}` }}>
-                <span>মোট: <strong>৳{totalDue.toLocaleString("en-IN")}</strong></span>
-                <span>পরিশোধিত: <strong style={{ color: t.emerald }}>৳{totalPaid.toLocaleString("en-IN")}</strong></span>
-                <span>বাকি: <strong style={{ color: (totalDue - totalPaid) > 0 ? t.rose : t.emerald }}>৳{(totalDue - totalPaid).toLocaleString("en-IN")}</strong></span>
+                <span>{tr("common.total")}: <strong>৳{totalDue.toLocaleString("en-IN")}</strong></span>
+                <span>{tr("portal.totalPaid")}: <strong style={{ color: t.emerald }}>৳{totalPaid.toLocaleString("en-IN")}</strong></span>
+                <span>{tr("common.balance")}: <strong style={{ color: (totalDue - totalPaid) > 0 ? t.rose : t.emerald }}>৳{(totalDue - totalPaid).toLocaleString("en-IN")}</strong></span>
               </div>
             </>
           ) : (
-            <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ফি রেকর্ড নেই</p>
+            <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("portal.noFeeRecord")}</p>
           )}
         </Card>
       </div>
@@ -188,13 +190,13 @@ export default function AdminPortalPreview({ students = [] }) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Eye size={20} style={{ color: t.cyan }} /> স্টুডেন্ট পোর্টাল Preview
+            <Eye size={20} style={{ color: t.cyan }} /> {tr("portal.previewTitle")}
           </h2>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>
-            যেকোনো স্টুডেন্ট সিলেক্ট করে দেখুন পোর্টালে সে কী দেখছে
+            {tr("portal.previewSubtitle")}
           </p>
         </div>
-        <Badge color={t.cyan}>{students.length} জন স্টুডেন্ট</Badge>
+        <Badge color={t.cyan}>{tr("portal.studentCount", { count: students.length })}</Badge>
       </div>
 
       {/* Search */}
@@ -203,7 +205,7 @@ export default function AdminPortalPreview({ students = [] }) {
         <Search size={14} style={{ color: t.muted }} />
         <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
           className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-          placeholder="স্টুডেন্ট খুঁজুন — নাম, ফোন, ID..." />
+          placeholder={tr("portal.searchPlaceholder")} />
       </div>
 
       {/* Student list */}
@@ -211,7 +213,7 @@ export default function AdminPortalPreview({ students = [] }) {
         <div className="space-y-1">
           {filtered.length === 0 && (
             <p className="text-xs text-center py-8" style={{ color: t.muted }}>
-              {students.length === 0 ? "কোনো স্টুডেন্ট নেই — প্রথমে Students পেজে যোগ করুন" : "কোনো ফলাফল নেই"}
+              {students.length === 0 ? tr("portal.noStudents") : tr("portal.noResults")}
             </p>
           )}
           {filtered.map((s, i) => (
@@ -230,9 +232,9 @@ export default function AdminPortalPreview({ students = [] }) {
               </div>
               <StatusBadge status={s.status} />
               {s.portal_access ? (
-                <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.emerald}15`, color: t.emerald }}>পোর্টাল চালু</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.emerald}15`, color: t.emerald }}>{tr("portal.portalOn")}</span>
               ) : (
-                <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.muted}15`, color: t.muted }}>পোর্টাল বন্ধ</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${t.muted}15`, color: t.muted }}>{tr("portal.portalOff")}</span>
               )}
               <ChevronRight size={14} style={{ color: t.muted }} />
             </button>

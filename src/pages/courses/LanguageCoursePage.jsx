@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Layers, Users, CheckCircle, Star, BookOpen, Calendar, User, ChevronRight, Save, X, Clock } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -14,8 +15,8 @@ import BatchDetailView from "./BatchDetailView";
 // সপ্তাহের দিনগুলোর label — checkbox-এ ব্যবহার হয়
 // ═══════════════════════════════════════════════════════
 const WEEKDAYS = [
-  { key: "Sun", label: "রবি" }, { key: "Mon", label: "সোম" }, { key: "Tue", label: "মঙ্গল" },
-  { key: "Wed", label: "বুধ" }, { key: "Thu", label: "বৃহঃ" }, { key: "Fri", label: "শুক্র" }, { key: "Sat", label: "শনি" },
+  { key: "Sun", labelKey: "courses.daySun" }, { key: "Mon", labelKey: "courses.dayMon" }, { key: "Tue", labelKey: "courses.dayTue" },
+  { key: "Wed", labelKey: "courses.dayWed" }, { key: "Thu", labelKey: "courses.dayThu" }, { key: "Fri", labelKey: "courses.dayFri" }, { key: "Sat", labelKey: "courses.daySat" },
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -45,6 +46,7 @@ const TIME_SLOTS = [
 
 function NewBatchForm({ onSave, onCancel }) {
   const t = useTheme();
+  const { t: tr } = useLanguage();
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   // ── Users (শিক্ষক) ও Branches API থেকে load ──
@@ -72,8 +74,8 @@ function NewBatchForm({ onSave, onCancel }) {
 
   const save = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "ব্যাচের নাম দিন";
-    if (!form.startDate) e.startDate = "শুরুর তারিখ দিন";
+    if (!form.name.trim()) e.name = tr("courses.errBatchName");
+    if (!form.startDate) e.startDate = tr("courses.errStartDate");
     setErr(e);
     if (Object.keys(e).length) return;
     onSave({
@@ -96,54 +98,54 @@ function NewBatchForm({ onSave, onCancel }) {
   return (
     <Card delay={0}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold">নতুন ব্যাচ তৈরি করুন</h3>
+        <h3 className="text-sm font-bold">{tr("courses.createNewBatch")}</h3>
         <div className="flex gap-2">
-          <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>বাতিল</Button>
-          <Button icon={Save} size="xs" onClick={save}>ব্যাচ সংরক্ষণ</Button>
+          <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>{tr("common.cancel")}</Button>
+          <Button icon={Save} size="xs" onClick={save}>{tr("courses.saveBatch")}</Button>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্যাচের নাম <span className="req-star">*</span></label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.batchName")} <span className="req-star">*</span></label>
           <input value={form.name} onChange={e => set("name", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ ...is, borderColor: err.name ? t.rose : t.inputBorder }} placeholder="Batch April 2026..." />
           {err.name && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.name}</p>}
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>দেশ</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.country")}</label>
           <select value={form.country} onChange={e => set("country", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
             <option>Japan</option><option>Germany</option><option>Korea</option>
           </select>
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেভেল</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.level")}</label>
           <select value={form.level} onChange={e => set("level", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
             <option>N5</option><option>N5→N4</option><option>N4</option><option>N4→N3</option><option>A1</option><option>A1→A2</option><option>A2</option>
           </select>
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শুরুর তারিখ <span className="req-star">*</span></label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.startDate")} <span className="req-star">*</span></label>
           <DateInput value={form.startDate} onChange={v => set("startDate", v)} size="md" error={!!err.startDate} />
           {err.startDate && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{err.startDate}</p>}
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শেষের তারিখ</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.endDate")}</label>
           <DateInput value={form.endDate} onChange={v => set("endDate", v)} size="md" />
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সর্বোচ্চ স্টুডেন্ট</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.maxStudents")}</label>
           <input type="number" value={form.capacity} onChange={e => set("capacity", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="20" />
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>শিক্ষক</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.teacher")}</label>
           <select value={form.teacher} onChange={e => set("teacher", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-            <option value="">— শিক্ষক নির্বাচন —</option>
+            <option value="">{tr("courses.selectTeacher")}</option>
             {staffList.map(u => <option key={u.id} value={u.name}>{u.name} ({u.role})</option>)}
           </select>
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ব্রাঞ্চ</label>
+          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.branch")}</label>
           <select value={form.branch} onChange={e => set("branch", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-            <option value="">— ব্রাঞ্চ নির্বাচন —</option>
+            <option value="">{tr("courses.selectBranch")}</option>
             {branchesList.map(b => <option key={b.id} value={b.name}>{b.name}{b.city ? ` (${b.city})` : ""}</option>)}
           </select>
         </div>
@@ -152,14 +154,14 @@ function NewBatchForm({ onSave, onCancel }) {
         <div className="md:col-span-3 mt-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
           <div className="flex items-center gap-2 mb-3">
             <Clock size={14} style={{ color: t.cyan }} />
-            <p className="text-xs font-semibold">ক্লাস শিডিউল</p>
+            <p className="text-xs font-semibold">{tr("courses.classSchedule")}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* ক্লাসের দিন — multi-select checkboxes */}
             <div className="md:col-span-2">
-              <label className="text-[10px] uppercase tracking-wider block mb-1.5" style={{ color: t.muted }}>ক্লাসের দিন</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1.5" style={{ color: t.muted }}>{tr("courses.classDays")}</label>
               <div className="flex flex-wrap gap-2">
-                {WEEKDAYS.map(({ key, label }) => {
+                {WEEKDAYS.map(({ key, labelKey }) => {
                   const active = form.class_days.includes(key);
                   return (
                     <button key={key} type="button" onClick={() => toggleDay(key)}
@@ -169,7 +171,7 @@ function NewBatchForm({ onSave, onCancel }) {
                         border: `1px solid ${active ? t.cyan : t.inputBorder}`,
                         color: active ? t.cyan : t.muted,
                       }}>
-                      {label}
+                      {tr(labelKey)}
                     </button>
                   );
                 })}
@@ -177,17 +179,17 @@ function NewBatchForm({ onSave, onCancel }) {
             </div>
             {/* প্রতিদিন ঘণ্টা */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>প্রতিদিন ঘণ্টা</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.hoursPerDay")}</label>
               <input type="number" value={form.class_hours_per_day} step="0.5" min="0.5" max="12"
                 onChange={e => set("class_hours_per_day", Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} />
             </div>
             {/* ক্লাসের সময় */}
             <div className="md:col-span-2">
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ক্লাসের সময়</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.classTime")}</label>
               <select value={form.class_time} onChange={e => set("class_time", e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                <option value="">— সময় নির্বাচন —</option>
+                <option value="">{tr("courses.selectTime")}</option>
                 {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
@@ -197,15 +199,15 @@ function NewBatchForm({ onSave, onCancel }) {
           {(form.class_days.length > 0 && form.startDate && form.endDate) && (
             <div className="grid grid-cols-3 gap-2 p-3 rounded-lg mt-3" style={{ background: t.inputBg }}>
               <div>
-                <p className="text-[10px]" style={{ color: t.muted }}>সাপ্তাহিক ঘণ্টা</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>{tr("courses.weeklyHours")}</p>
                 <p className="text-sm font-bold" style={{ color: t.cyan }}>{preview.weeklyHours}</p>
               </div>
               <div>
-                <p className="text-[10px]" style={{ color: t.muted }}>মোট ক্লাস</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>{tr("courses.totalClasses")}</p>
                 <p className="text-sm font-bold" style={{ color: t.emerald }}>{preview.totalClasses}</p>
               </div>
               <div>
-                <p className="text-[10px]" style={{ color: t.muted }}>মোট ঘণ্টা</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>{tr("courses.totalHours")}</p>
                 <p className="text-sm font-bold" style={{ color: t.purple }}>{preview.totalHours}</p>
               </div>
             </div>
@@ -218,6 +220,7 @@ function NewBatchForm({ onSave, onCancel }) {
 
 export default function LanguageCoursePage({ students }) {
   const t = useTheme();
+  const { t: tr } = useLanguage();
   const toast = useToast();
   // ── ব্যাচ তালিকা: API থেকে load ──
   const [batches, setBatches] = useState([]);
@@ -240,7 +243,7 @@ export default function LanguageCoursePage({ students }) {
   useEffect(() => {
     batchesApi.list().then(data => {
       if (Array.isArray(data)) setBatches(data);
-    }).catch((err) => { console.error("[Batches Load]", err); toast.error("ব্যাচ ডাটা লোড করতে সমস্যা হয়েছে"); });
+    }).catch((err) => { console.error("[Batches Load]", err); toast.error(tr("courses.batchLoadError")); });
   }, []);
 
   if (selectedBatch) {
@@ -257,18 +260,18 @@ export default function LanguageCoursePage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">ভাষা কোর্স</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>ব্যাচ, অ্যাটেনডেন্স, পরীক্ষা ও ফলাফল</p>
+          <h2 className="text-xl font-bold">{tr("courses.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("courses.subtitle")}</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowNewBatch(true)}>নতুন ব্যাচ</Button>
+        <Button icon={Plus} onClick={() => setShowNewBatch(true)}>{tr("courses.newBatch")}</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট ব্যাচ", value: batches.length, color: t.cyan, icon: Layers },
-          { label: "মোট স্টুডেন্ট", value: totalStudents, color: t.purple, icon: Users },
-          { label: "গড় উপস্থিতি", value: `${avgAttendance}%`, color: avgAttendance >= 80 ? t.emerald : t.amber, icon: CheckCircle },
-          { label: "পরীক্ষায় পাস", value: passedExam, color: t.emerald, icon: Star },
+          { label: tr("courses.totalBatches"), value: batches.length, color: t.cyan, icon: Layers },
+          { label: tr("courses.totalStudents"), value: totalStudents, color: t.purple, icon: Users },
+          { label: tr("courses.avgAttendance"), value: `${avgAttendance}%`, color: avgAttendance >= 80 ? t.emerald : t.amber, icon: CheckCircle },
+          { label: tr("courses.examPassed"), value: passedExam, color: t.emerald, icon: Star },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -306,9 +309,9 @@ export default function LanguageCoursePage({ students }) {
               });
               setBatches(prev => [...prev, saved]);
               setShowNewBatch(false);
-              toast.success(`${newBatch.name} — ব্যাচ তৈরি হয়েছে!`);
+              toast.success(`${newBatch.name} — ${tr("courses.batchCreated")}`);
             } catch (err) {
-              toast.error(err.message || "ব্যাচ তৈরি ব্যর্থ");
+              toast.error(err.message || tr("courses.batchCreateFailed"));
             }
           }}
         />
@@ -319,37 +322,37 @@ export default function LanguageCoursePage({ students }) {
         <div className="flex flex-wrap gap-2 items-center">
           <select value={batchFilter.teacher} onChange={e => setBatchFilter(p => ({ ...p, teacher: e.target.value }))}
             className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
-            <option value="">সব শিক্ষক</option>
+            <option value="">{tr("courses.allTeachers")}</option>
             {[...new Set(batches.map(b => b.teacher).filter(Boolean))].map(t => <option key={t} value={t}>{t}</option>)}
           </select>
           <select value={batchFilter.level} onChange={e => setBatchFilter(p => ({ ...p, level: e.target.value }))}
             className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
-            <option value="">সব লেভেল</option>
+            <option value="">{tr("courses.allLevels")}</option>
             {[...new Set(batches.map(b => b.level).filter(Boolean))].map(l => <option key={l} value={l}>{l}</option>)}
           </select>
           <select value={batchFilter.branch} onChange={e => setBatchFilter(p => ({ ...p, branch: e.target.value }))}
             className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
-            <option value="">সব ব্রাঞ্চ</option>
+            <option value="">{tr("courses.allBranches")}</option>
             {[...new Set(batches.map(b => b.branch).filter(Boolean))].map(br => <option key={br} value={br}>{br}</option>)}
           </select>
           <select value={batchFilter.class_time} onChange={e => setBatchFilter(p => ({ ...p, class_time: e.target.value }))}
             className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
-            <option value="">সব সময়</option>
+            <option value="">{tr("courses.allTimes")}</option>
             {[...new Set(batches.map(b => b.class_time).filter(Boolean))].map(ct => <option key={ct} value={ct}>{ct}</option>)}
           </select>
           <select value={batchFilter.status} onChange={e => setBatchFilter(p => ({ ...p, status: e.target.value }))}
             className="px-2.5 py-1.5 rounded-xl text-xs outline-none" style={is}>
-            <option value="">সব স্ট্যাটাস</option>
-            <option value="active">সক্রিয়</option>
-            <option value="completed">সম্পন্ন</option>
-            <option value="upcoming">আসন্ন</option>
+            <option value="">{tr("courses.allStatuses")}</option>
+            <option value="active">{tr("courses.statusActive")}</option>
+            <option value="completed">{tr("courses.statusCompleted")}</option>
+            <option value="upcoming">{tr("courses.statusUpcoming")}</option>
           </select>
           {Object.values(batchFilter).some(v => v) && (
             <button onClick={() => setBatchFilter({ teacher: "", level: "", branch: "", class_time: "", status: "" })}
               className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.rose, background: `${t.rose}10` }}>✕ Clear</button>
           )}
           <span className="text-[10px] ml-auto" style={{ color: t.muted }}>
-            {filteredBatches.length}/{batches.length} ব্যাচ
+            {filteredBatches.length}/{batches.length} {tr("courses.batchCount")}
           </span>
         </div>
       </Card>
@@ -377,13 +380,13 @@ export default function LanguageCoursePage({ students }) {
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     {[
-                      { icon: Users, text: `${enrollCount}/${batch.capacity || 20} শিক্ষার্থী` },
+                      { icon: Users, text: `${enrollCount}/${batch.capacity || 20} ${tr("courses.learners")}` },
                       { icon: BookOpen, text: batch.level || "—" },
                       { icon: Calendar, text: formatDateDisplay(batch.start_date || batch.startDate) },
                       { icon: User, text: batch.teacher || "—" },
                       // ক্লাস শিডিউল — সময় ও সাপ্তাহিক ঘণ্টা
                       ...(batch.class_time ? [{ icon: Clock, text: batch.class_time }] : []),
-                      ...(wHours > 0 ? [{ icon: Clock, text: `${wHours} ঘণ্টা/সপ্তাহ` }] : []),
+                      ...(wHours > 0 ? [{ icon: Clock, text: `${wHours} ${tr("courses.hoursPerWeek")}` }] : []),
                     ].map((item, j) => (
                       <div key={j} className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
                         <item.icon size={12} /> {item.text}
@@ -392,10 +395,10 @@ export default function LanguageCoursePage({ students }) {
                   </div>
                   <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                     <div className="flex gap-3">
-                      <span className="text-[10px]" style={{ color: t.textSecondary }}>শিক্ষার্থী: <span className="font-bold" style={{ color: t.cyan }}>{enrollCount}</span></span>
-                      <span className="text-[10px]" style={{ color: t.textSecondary }}>পাস: <span className="font-bold" style={{ color: bPassed > 0 ? t.emerald : t.muted }}>{bPassed}</span></span>
+                      <span className="text-[10px]" style={{ color: t.textSecondary }}>{tr("courses.learners")}: <span className="font-bold" style={{ color: t.cyan }}>{enrollCount}</span></span>
+                      <span className="text-[10px]" style={{ color: t.textSecondary }}>{tr("courses.pass")}: <span className="font-bold" style={{ color: bPassed > 0 ? t.emerald : t.muted }}>{bPassed}</span></span>
                       {batch.class_days && batch.class_days.length > 0 && (
-                        <span className="text-[10px]" style={{ color: t.textSecondary }}>ক্লাস: <span className="font-bold">{batch.class_days.join(", ")}</span></span>
+                        <span className="text-[10px]" style={{ color: t.textSecondary }}>{tr("courses.classLabel")}: <span className="font-bold">{batch.class_days.join(", ")}</span></span>
                       )}
                     </div>
                     <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />

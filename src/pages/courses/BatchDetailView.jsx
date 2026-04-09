@@ -3,6 +3,7 @@ import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search, Edit3, Chevro
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -11,10 +12,11 @@ import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { batches as batchesApi } from "../../lib/api";
 
 const ATT_STATUS = ["P", "A", "L"]; // Present / Absent / Late
-const ATT_LABEL = { P: "উপস্থিত", A: "অনুপস্থিত", L: "দেরিতে" };
+const ATT_LABEL_KEYS = { P: "courses.attPresent", A: "courses.attAbsent", L: "courses.attLate" };
 
 export default function BatchDetailView({ batch, students: allStudents = [], onBack, activeTab, setActiveTab }) {
   const t = useTheme();
+  const { t: tr } = useLanguage();
   const toast = useToast();
   const attColor = { P: t.emerald, A: t.rose, L: t.amber };
 
@@ -70,7 +72,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         }
       } catch (err) {
         console.error("Batch detail load error:", err);
-        toast.error("ব্যাচ ডাটা লোড করতে সমস্যা হয়েছে");
+        toast.error(tr("courses.batchLoadError"));
       }
     })();
   }, [batch.id]);
@@ -88,9 +90,9 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       setBStudents(prev => [...prev, { studentId: s.id, name: s.name_en, attendance: 0, lastTest: null, jlptStatus: "Preparing", examType: null, jlptLevel: null, jlptScore: null }]);
       setShowEnroll(false);
       setEnrollSearch("");
-      toast.success(`${s.name_en} — ব্যাচে যোগ হয়েছে`);
+      toast.success(`${s.name_en} — ${tr("courses.enrolledSuccess")}`);
     } catch (err) {
-      toast.error(err.message || "যোগ করতে সমস্যা হয়েছে");
+      toast.error(err.message || tr("courses.enrollFailed"));
     }
   };
 
@@ -122,7 +124,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         }
       } catch (err) {
         console.error("[Attendance Load Error]", err);
-        toast.error("উপস্থিতি ডাটা লোড করতে সমস্যা হয়েছে");
+        toast.error(tr("courses.attLoadError"));
       }
     })();
   }, [attDate, bStudents.length]);
@@ -135,10 +137,10 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     try {
       const { api: apiHook } = await import("../../hooks/useAPI");
       await apiHook.post("/attendance/save", { date: attDate, batch_id: batch.id, records });
-      toast.success(`${attDate} — উপস্থিতি সংরক্ষণ হয়েছে`);
+      toast.success(`${attDate} — ${tr("courses.attSaved")}`);
     } catch (err) {
       console.error("[Attendance Save Error]", err);
-      toast.error("সংরক্ষণ ব্যর্থ: " + (err.message || ""));
+      toast.error(`${tr("courses.saveFailed")}: ${err.message || ""}`);
     }
   };
 
@@ -165,12 +167,12 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
 
   const addExtraBatchStudents = (batchId) => {
     // অন্য ব্যাচ থেকে students যোগ করতে API call দরকার — ভবিষ্যতে implement
-    toast.info("অন্য ব্যাচ থেকে যোগ করা শীঘ্রই আসছে");
+    toast.info(tr("courses.otherBatchComingSoon"));
   };
 
   // ক্লাস টেস্ট সংরক্ষণ — নতুন অথবা edit
   const saveTest = async () => {
-    if (!testForm.testName.trim()) { toast.error("টেস্টের নাম দিন"); return; }
+    if (!testForm.testName.trim()) { toast.error(tr("courses.errTestName")); return; }
     const tm = parseInt(testForm.totalMarks) || 100;
     const allScored = testStudentList.filter(s => testScores[s.studentId]);
     const scoreVals = allScored.map(s => parseInt(testScores[s.studentId]) || 0);
@@ -192,7 +194,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           avgScore: avg, scores: Object.keys(scoreMap).length > 0 ? scoreMap : testScores,
         } : t));
         setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
-        toast.success("ক্লাস টেস্ট আপডেট হয়েছে");
+        toast.success(tr("courses.testUpdated"));
       } else {
         // ── নতুন টেস্ট ──
         const dbTest = await apiHook.post(`/batches/${batch.id}/tests`, {
@@ -207,11 +209,11 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         };
         setBTests(prev => [...prev, newTest]);
         setBStudents(prev => prev.map(s => ({ ...s, lastTest: parseInt(testScores[s.studentId]) || s.lastTest })));
-        toast.success(`ক্লাস টেস্ট যোগ হয়েছে (${allScored.length} জনের রেজাল্ট)`);
+        toast.success(`${tr("courses.testAdded")} (${allScored.length} ${tr("courses.personsResult")})`);
       }
     } catch (err) {
       console.error("[Class Test Save]", err);
-      toast.error("ক্লাস টেস্ট সার্ভারে সেভ ব্যর্থ");
+      toast.error(tr("courses.testSaveFailed"));
     }
     // ফর্ম রিসেট
     setTestForm({ testName: "", date: today, totalMarks: 100 });
@@ -266,8 +268,8 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         if (!u) return s;
         return { ...s, examType: examForm.examType, jlptLevel: examForm.level, jlptScore: parseInt(u.score) || null, jlptStatus: u.result };
       }));
-      toast.success("পরীক্ষার ফলাফল সংরক্ষণ হয়েছে");
-    } catch (err) { console.error("[Exam Result Save]", err); toast.error("পরীক্ষার ফলাফল সার্ভারে সেভ ব্যর্থ"); }
+      toast.success(tr("courses.examResultSaved"));
+    } catch (err) { console.error("[Exam Result Save]", err); toast.error(tr("courses.examResultSaveFailed")); }
     setExamUpdates({});
     setShowExamForm(false);
   };
@@ -283,7 +285,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
           onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
           onMouseLeave={e => e.currentTarget.style.background = t.inputBg}>
-          <ArrowLeft size={16} /> <span className="hidden sm:inline">ফিরুন</span>
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">{tr("courses.goBack")}</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -301,11 +303,11 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {/* KPI — স্টুডেন্ট সংখ্যা + শিডিউল ঘণ্টা */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "স্টুডেন্ট", value: bStudents.length, color: t.cyan },
-          { label: "গড় উপস্থিতি", value: `${avgAtt}%`, color: avgAtt >= 80 ? t.emerald : t.amber },
-          { label: "পাস", value: bStudents.filter(s => s.jlptStatus === "Passed").length, color: t.emerald },
-          { label: "প্রস্তুতি", value: bStudents.filter(s => s.jlptStatus === "Preparing").length, color: t.purple },
-          { label: "ক্লাস টেস্ট", value: bTests.length, color: t.amber },
+          { label: tr("courses.student"), value: bStudents.length, color: t.cyan },
+          { label: tr("courses.avgAttendance"), value: `${avgAtt}%`, color: avgAtt >= 80 ? t.emerald : t.amber },
+          { label: tr("courses.pass"), value: bStudents.filter(s => s.jlptStatus === "Passed").length, color: t.emerald },
+          { label: tr("courses.preparing"), value: bStudents.filter(s => s.jlptStatus === "Preparing").length, color: t.purple },
+          { label: tr("courses.classTest"), value: bTests.length, color: t.amber },
         ].map((s, i) => (
           <Card key={i} delay={i * 40}>
             <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{s.label}</p>
@@ -320,31 +322,31 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
             {batch.class_days && batch.class_days.length > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>ক্লাসের দিন</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("courses.classDays")}</p>
                 <p className="text-xs font-semibold mt-1">{batch.class_days.join(", ")}</p>
               </div>
             )}
             {batch.class_time && (
               <div>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>ক্লাসের সময়</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("courses.classTime")}</p>
                 <p className="text-xs font-semibold mt-1">{batch.class_time}</p>
               </div>
             )}
             {batch.weekly_hours > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>সাপ্তাহিক ঘণ্টা</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("courses.weeklyHours")}</p>
                 <p className="text-lg font-bold mt-1" style={{ color: t.cyan }}>{batch.weekly_hours}</p>
               </div>
             )}
             {batch.total_classes > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>মোট ক্লাস</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("courses.totalClasses")}</p>
                 <p className="text-lg font-bold mt-1" style={{ color: t.emerald }}>{batch.total_classes}</p>
               </div>
             )}
             {batch.total_hours > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>মোট ঘণ্টা</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("courses.totalHours")}</p>
                 <p className="text-lg font-bold mt-1" style={{ color: t.purple }}>{batch.total_hours}</p>
               </div>
             )}
@@ -355,10 +357,10 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: t.inputBg }}>
         {[
-          { key: "students", label: "👨‍🎓 স্টুডেন্ট", count: bStudents.length },
-          { key: "attendance", label: "📅 উপস্থিতি", count: null },
-          { key: "tests", label: "📝 ক্লাস টেস্ট", count: bTests.length },
-          { key: "exams", label: "🏆 JLPT/NAT", count: bStudents.filter(s => s.jlptStatus === "Passed").length },
+          { key: "students", label: `👨‍🎓 ${tr("courses.student")}`, count: bStudents.length },
+          { key: "attendance", label: `📅 ${tr("courses.attendance")}`, count: null },
+          { key: "tests", label: `📝 ${tr("courses.classTest")}`, count: bTests.length },
+          { key: "exams", label: `🏆 ${tr("courses.jlptNat")}`, count: bStudents.filter(s => s.jlptStatus === "Passed").length },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all"
@@ -372,18 +374,18 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {activeTab === "students" && (
         <Card delay={100}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold" style={{ color: t.textSecondary }}>{bStudents.length} জন স্টুডেন্ট</p>
-            <Button icon={Plus} size="xs" onClick={() => setShowEnroll(v => !v)}>স্টুডেন্ট যোগ করুন</Button>
+            <p className="text-xs font-semibold" style={{ color: t.textSecondary }}>{bStudents.length} {tr("courses.personsStudent")}</p>
+            <Button icon={Plus} size="xs" onClick={() => setShowEnroll(v => !v)}>{tr("courses.addStudent")}</Button>
           </div>
 
           {showEnroll && (
             <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <div className="flex items-center gap-2 mb-3 px-3 py-1.5 rounded-lg" style={{ background: t.card, border: `1px solid ${t.border}` }}>
                 <Search size={13} style={{ color: t.muted }} />
-                <input value={enrollSearch} onChange={e => setEnrollSearch(e.target.value)} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder="স্টুডেন্ট খুঁজুন..." autoFocus />
+                <input value={enrollSearch} onChange={e => setEnrollSearch(e.target.value)} className="flex-1 bg-transparent text-xs outline-none" style={{ color: t.text }} placeholder={tr("courses.searchStudent")} autoFocus />
               </div>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {enrollablStudents.length === 0 && <p className="text-xs text-center py-3" style={{ color: t.muted }}>কোনো স্টুডেন্ট পাওয়া যায়নি</p>}
+                {enrollablStudents.length === 0 && <p className="text-xs text-center py-3" style={{ color: t.muted }}>{tr("courses.noStudentFound")}</p>}
                 {enrollablStudents.map(s => (
                   <button key={s.id} onClick={() => enroll(s)}
                     className="w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition"
@@ -399,16 +401,16 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   </button>
                 ))}
               </div>
-              <button onClick={() => setShowEnroll(false)} className="mt-2 text-[10px] w-full text-center" style={{ color: t.muted }}>বন্ধ করুন</button>
+              <button onClick={() => setShowEnroll(false)} className="mt-2 text-[10px] w-full text-center" style={{ color: t.muted }}>{tr("common.close")}</button>
             </div>
           )}
 
-          {bStudents.length === 0 ? <EmptyState icon={Users} title="এই ব্যাচে কোনো স্টুডেন্ট নেই" subtitle="উপরের বাটন থেকে স্টুডেন্ট যোগ করুন" /> : (
+          {bStudents.length === 0 ? <EmptyState icon={Users} title={tr("courses.noStudentInBatch")} subtitle={tr("courses.addStudentHint")} /> : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {["স্টুডেন্ট","উপস্থিতি","শেষ টেস্ট","পরীক্ষা","লেভেল","স্কোর","স্ট্যাটাস"].map(h => (
+                    {[tr("courses.student"),tr("courses.attendance"),tr("courses.lastTest"),tr("courses.exam"),tr("courses.level"),tr("courses.score"),tr("common.status")].map(h => (
                       <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                     ))}
                   </tr>
@@ -442,7 +444,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                         <td className="py-3 px-3" style={{ color: t.textSecondary }}>{bs.examType || "—"}</td>
                         <td className="py-3 px-3">{bs.jlptLevel ? <Badge color={t.purple} size="xs">{bs.jlptLevel}</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
                         <td className="py-3 px-3 font-mono">{bs.jlptScore ?? "—"}</td>
-                        <td className="py-3 px-3"><Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? "পাস ✓" : bs.jlptStatus === "Preparing" ? "প্রস্তুতি" : bs.jlptStatus === "Dropped" ? "বাদ" : "শুরু হয়নি"}</Badge></td>
+                        <td className="py-3 px-3"><Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? tr("courses.passed") : bs.jlptStatus === "Preparing" ? tr("courses.preparing") : bs.jlptStatus === "Dropped" ? tr("courses.dropped") : tr("courses.notStarted")}</Badge></td>
                       </tr>
                     );
                   })}
@@ -457,17 +459,17 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {activeTab === "attendance" && (
         <Card delay={100}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold">দৈনিক উপস্থিতি</h3>
+            <h3 className="text-sm font-bold">{tr("courses.dailyAttendance")}</h3>
             <div className="flex items-center gap-3">
               <DateInput value={attDate} onChange={v => setAttDate(v)} size="sm" />
-              <Button icon={Save} size="xs" onClick={saveAttendance}>সংরক্ষণ</Button>
+              <Button icon={Save} size="xs" onClick={saveAttendance}>{tr("common.save")}</Button>
             </div>
           </div>
-          {bStudents.length === 0 ? <EmptyState icon={Users} title="কোনো স্টুডেন্ট নেই" /> : (
+          {bStudents.length === 0 ? <EmptyState icon={Users} title={tr("courses.noStudents")} /> : (
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold" style={{ color: t.muted }}>
-                <span className="flex-1">স্টুডেন্ট</span>
-                {["P","A","L"].map(s => <span key={s} className="w-16 text-center" style={{ color: attColor[s] }}>{ATT_LABEL[s]}</span>)}
+                <span className="flex-1">{tr("courses.student")}</span>
+                {["P","A","L"].map(s => <span key={s} className="w-16 text-center" style={{ color: attColor[s] }}>{tr(ATT_LABEL_KEYS[s])}</span>)}
               </div>
               {bStudents.map(bs => {
                 const cur = attState[bs.studentId] || "P";
@@ -484,7 +486,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                       <button key={s} onClick={() => setAttState(p => ({ ...p, [bs.studentId]: s }))}
                         className="w-16 py-1.5 rounded-lg text-[10px] font-bold transition"
                         style={{ background: cur === s ? attColor[s] : `${attColor[s]}15`, color: cur === s ? "#fff" : attColor[s] }}>
-                        {ATT_LABEL[s]}
+                        {tr(ATT_LABEL_KEYS[s])}
                       </button>
                     ))}
                   </div>
@@ -499,35 +501,35 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {activeTab === "tests" && (
         <Card delay={100}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">ক্লাস টেস্ট ফলাফল</h3>
+            <h3 className="text-sm font-semibold">{tr("courses.classTestResults")}</h3>
             <Button icon={showAddTest ? X : Plus} size="xs" onClick={() => { setShowAddTest(v => !v); if (showAddTest) { setEditingTest(null); setTestForm({ testName: "", date: today, totalMarks: 100 }); setTestScores({}); } }}>
-              {showAddTest ? "বাতিল" : "নতুন টেস্ট"}
+              {showAddTest ? tr("common.cancel") : tr("courses.newTest")}
             </Button>
           </div>
 
           {/* ── টেস্ট যোগ / সম্পাদনা ফর্ম ── */}
           {showAddTest && (
             <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
-              <p className="text-xs font-semibold mb-3">{editingTest ? "📝 টেস্ট সম্পাদনা করুন" : "📝 নতুন টেস্ট যোগ করুন"}</p>
+              <p className="text-xs font-semibold mb-3">{editingTest ? `📝 ${tr("courses.editTest")}` : `📝 ${tr("courses.addNewTest")}`}</p>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>টেস্টের নাম <span style={{ color: t.rose }}>*</span></label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.testName")} <span style={{ color: t.rose }}>*</span></label>
                   <input value={testForm.testName} onChange={e => setTestForm(p => ({ ...p, testName: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="Weekly Test 1..." />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>তারিখ</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.date")}</label>
                   <DateInput value={testForm.date} onChange={v => setTestForm(p => ({ ...p, date: v }))} size="sm" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>সর্বোচ্চ নম্বর</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.maxMarks")}</label>
                   <input type="number" min="1" max="1000" value={testForm.totalMarks} onChange={e => setTestForm(p => ({ ...p, totalMarks: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="100" />
                 </div>
               </div>
 
               {/* ── স্টুডেন্ট লিস্ট — নম্বর ইনপুট ── */}
-              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>প্রতি স্টুডেন্টের নম্বর (/{parseInt(testForm.totalMarks) || 100})</p>
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>{tr("courses.perStudentMarks")} (/{parseInt(testForm.totalMarks) || 100})</p>
               <div className="space-y-2 mb-3">
                 {testStudentList.map(bs => (
                   <div key={bs.studentId} className="flex items-center gap-3">
@@ -545,13 +547,13 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                 ))}
               </div>
               <div className="flex justify-end">
-                <Button icon={Save} size="xs" onClick={saveTest}>{editingTest ? "আপডেট করুন" : "সংরক্ষণ করুন"}</Button>
+                <Button icon={Save} size="xs" onClick={saveTest}>{editingTest ? tr("courses.update") : tr("common.save")}</Button>
               </div>
             </div>
           )}
 
           {/* ── টেস্ট তালিকা — প্রতিটি expandable ── */}
-          {bTests.length === 0 && !showAddTest && <EmptyState icon={FileText} title="কোনো ক্লাস টেস্ট নেই" subtitle="উপরের বাটন থেকে নতুন টেস্ট যোগ করুন" />}
+          {bTests.length === 0 && !showAddTest && <EmptyState icon={FileText} title={tr("courses.noClassTest")} subtitle={tr("courses.addTestHint")} />}
           <div className="space-y-2">
             {bTests.map((test, i) => {
               const tm = test.totalMarks || 100;
@@ -567,13 +569,13 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                     <div className="h-9 w-9 rounded-xl flex items-center justify-center text-sm shrink-0" style={{ background: `${t.purple}15` }}>📝</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">{test.testName}</p>
-                      <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(test.date)} • সর্বোচ্চ: {tm} • {scoreEntries.length} জন</p>
+                      <p className="text-[10px]" style={{ color: t.muted }}>{formatDateDisplay(test.date)} • {tr("courses.max")}: {tm} • {scoreEntries.length} {tr("courses.persons")}</p>
                     </div>
                     <div className="text-right mr-2">
                       <p className="text-lg font-bold" style={{ color: test.avgScore >= tm * 0.7 ? t.emerald : test.avgScore >= tm * 0.4 ? t.amber : t.rose }}>{test.avgScore}</p>
-                      <p className="text-[9px]" style={{ color: t.muted }}>গড় /{tm}</p>
+                      <p className="text-[9px]" style={{ color: t.muted }}>{tr("courses.avg")} /{tm}</p>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); startEditTest(test); }} className="p-1.5 rounded-lg transition" title="সম্পাদনা"
+                    <button onClick={(e) => { e.stopPropagation(); startEditTest(test); }} className="p-1.5 rounded-lg transition" title={tr("common.edit")}
                       style={{ color: t.muted }} onMouseEnter={e => { e.currentTarget.style.color = t.cyan; }}
                       onMouseLeave={e => { e.currentTarget.style.color = t.muted; }}>
                       <Edit3 size={13} />
@@ -585,7 +587,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   {isExpanded && (
                     <div className="px-3 pb-3" style={{ borderTop: `1px solid ${t.border}` }}>
                       <div className="space-y-1.5 mt-2">
-                        {scoreEntries.length === 0 && <p className="text-xs text-center py-2" style={{ color: t.muted }}>কোনো স্কোর নেই</p>}
+                        {scoreEntries.length === 0 && <p className="text-xs text-center py-2" style={{ color: t.muted }}>{tr("courses.noScores")}</p>}
                         {scoreEntries.map(([sid, score]) => {
                           const st = bStudents.find(s => s.studentId === sid);
                           const sc = parseInt(score) || 0;
@@ -622,14 +624,14 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           {/* ── চার্ট — একাধিক টেস্ট থাকলে ── */}
           {bTests.length > 1 && (
             <div className="mt-4">
-              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>স্কোর ট্রেন্ড</p>
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>{tr("courses.scoreTrend")}</p>
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={bTests}>
                   <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} />
                   <XAxis dataKey="testName" tick={{ fill: t.chartAxisTick, fontSize: 9 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: t.chartAxisTick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, Math.max(...bTests.map(t => t.totalMarks || 100))]} />
                   <Tooltip contentStyle={{ background: t.tooltipBg, border: `1px solid ${t.tooltipBorder}`, borderRadius: 8, fontSize: 12, color: t.text }} />
-                  <Bar dataKey="avgScore" fill={t.cyan} radius={[6,6,0,0]} barSize={32} name="গড় স্কোর" />
+                  <Bar dataKey="avgScore" fill={t.cyan} radius={[6,6,0,0]} barSize={32} name={tr("courses.avgScore")} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -641,7 +643,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {activeTab === "exams" && (
         <Card delay={100}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">জেএলপিটি / এনএটি / জেপিটি ফলাফল</h3>
+            <h3 className="text-sm font-semibold">{tr("courses.examResults")}</h3>
             <Button icon={showExamForm ? X : Plus} size="xs" onClick={() => {
               if (!showExamForm) {
                 // বিদ্যমান exam data pre-fill করো
@@ -658,7 +660,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
               }
               setShowExamForm(v => !v);
             }}>
-              {showExamForm ? "বাতিল" : "ফলাফল এন্ট্রি / আপডেট"}
+              {showExamForm ? tr("common.cancel") : tr("courses.resultEntryUpdate")}
             </Button>
           </div>
 
@@ -666,41 +668,41 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             <div className="mb-4 p-3 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরীক্ষার ধরন</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.examType")}</label>
                   <select value={examForm.examType} onChange={e => setExamForm(p => ({ ...p, examType: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
                     {["JLPT","JFT","NAT","JPT","JLCT","TopJ","Other"].map(x => <option key={x}>{x}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেভেল</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.level")}</label>
                   <select value={examForm.level} onChange={e => setExamForm(p => ({ ...p, level: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
                     {["N5","N4","N3","N2","N1","A2","B1","A","B","C","Other"].map(x => <option key={x}>{x}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>পরীক্ষার তারিখ</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.examDate")}</label>
                   <DateInput value={examForm.date} onChange={v => setExamForm(p => ({ ...p, date: v }))} size="sm" />
                 </div>
               </div>
-              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>প্রতি স্টুডেন্টের স্কোর ও ফলাফল</p>
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: t.muted }}>{tr("courses.perStudentScoreResult")}</p>
               <div className="space-y-2 mb-3">
                 {bStudents.map(bs => (
                   <div key={bs.studentId} className="flex items-center gap-3">
                     <span className="text-xs flex-1">{bs.name}</span>
-                    <input type="number" placeholder="স্কোর" value={examUpdates[bs.studentId]?.score || ""} onChange={e => setExamUpdates(p => ({ ...p, [bs.studentId]: { ...p[bs.studentId], score: e.target.value } }))}
+                    <input type="number" placeholder={tr("courses.score")} value={examUpdates[bs.studentId]?.score || ""} onChange={e => setExamUpdates(p => ({ ...p, [bs.studentId]: { ...p[bs.studentId], score: e.target.value } }))}
                       className="w-20 px-2 py-1.5 rounded-lg text-xs text-center outline-none" style={is} />
                     <select value={examUpdates[bs.studentId]?.result || "Preparing"} onChange={e => setExamUpdates(p => ({ ...p, [bs.studentId]: { ...p[bs.studentId], result: e.target.value } }))}
                       className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
-                      <option value="Passed">পাস</option>
-                      <option value="Failed">ফেল</option>
-                      <option value="Preparing">প্রস্তুতি</option>
-                      <option value="Not Taken">দেয়নি</option>
+                      <option value="Passed">{tr("courses.pass")}</option>
+                      <option value="Failed">{tr("courses.failed")}</option>
+                      <option value="Preparing">{tr("courses.preparing")}</option>
+                      <option value="Not Taken">{tr("courses.notTaken")}</option>
                     </select>
                   </div>
                 ))}
               </div>
               <div className="flex justify-end">
-                <Button icon={Save} size="xs" onClick={saveExamResults}>ফলাফল সংরক্ষণ</Button>
+                <Button icon={Save} size="xs" onClick={saveExamResults}>{tr("courses.saveResults")}</Button>
               </div>
             </div>
           )}
@@ -716,10 +718,10 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                     {bs.jlptStatus === "Passed" ? "✓" : bs.jlptStatus === "Preparing" ? "⏳" : "—"}
                   </div>
                   <div className="flex-1"><p className="text-xs font-medium">{bs.name}</p><p className="text-[10px]" style={{ color: t.muted }}>{bs.studentId}</p></div>
-                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>পরীক্ষা</p><p className="text-xs font-semibold">{bs.examType || "—"}</p></div>
-                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>লেভেল</p><p className="text-xs font-semibold">{bs.jlptLevel || "—"}</p></div>
-                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>স্কোর</p><p className="text-xs font-bold" style={{ color: bs.jlptScore >= 120 ? t.emerald : bs.jlptScore ? t.amber : t.muted }}>{bs.jlptScore ?? "—"}</p></div>
-                  <Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? "পাস ✓" : bs.jlptStatus === "Preparing" ? "প্রস্তুতি" : bs.jlptStatus === "Dropped" ? "বাদ" : "শুরু হয়নি"}</Badge>
+                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>{tr("courses.exam")}</p><p className="text-xs font-semibold">{bs.examType || "—"}</p></div>
+                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>{tr("courses.level")}</p><p className="text-xs font-semibold">{bs.jlptLevel || "—"}</p></div>
+                  <div className="text-center"><p className="text-[9px] uppercase" style={{ color: t.muted }}>{tr("courses.score")}</p><p className="text-xs font-bold" style={{ color: bs.jlptScore >= 120 ? t.emerald : bs.jlptScore ? t.amber : t.muted }}>{bs.jlptScore ?? "—"}</p></div>
+                  <Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? tr("courses.passed") : bs.jlptStatus === "Preparing" ? tr("courses.preparing") : bs.jlptStatus === "Dropped" ? tr("courses.dropped") : tr("courses.notStarted")}</Badge>
                 </div>
               );
             })}

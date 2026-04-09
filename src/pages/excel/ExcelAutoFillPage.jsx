@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Plus, FileText, CheckCircle, AlertTriangle, ArrowLeft, Download, Check, Upload, X, Save, Search, Settings, Trash2, Eye } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -20,6 +21,7 @@ const ALL_FIELDS = SYSTEM_FIELDS.flatMap(g => g.fields);
 export default function ExcelAutoFillPage({ students }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const fileRef = useRef(null);
 
   // States
@@ -87,16 +89,16 @@ export default function ExcelAutoFillPage({ students }) {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.name.match(/\.xlsx?$/i)) { toast.error("শুধু .xlsx ফাইল আপলোড করুন"); return; }
+    if (!file.name.match(/\.xlsx?$/i)) { toast.error(tr("excel.onlyXlsx")); return; }
     if (file.name.endsWith(".xls") && !file.name.endsWith(".xlsx")) {
-      toast.error("⚠️ .xls ফরম্যাট সাপোর্ট করে না — Excel-এ খুলে Save As → .xlsx করুন");
+      toast.error(tr("excel.xlsNotSupported"));
       return;
     }
     setUploadFile(file);
   };
 
   const doUpload = async () => {
-    if (!uploadSchool) { toast.error("স্কুল সিলেক্ট করুন — স্কুল ছাড়া রিজুইমি হবে না"); return; }
+    if (!uploadSchool) { toast.error(tr("excel.selectSchoolErr")); return; }
 
     // Try API upload first
     if (uploadFile && token()) {
@@ -120,9 +122,9 @@ export default function ExcelAutoFillPage({ students }) {
         setParsedCells(phs);
 
         setView("mapping");
-        toast.success(`"${uploadSchool}" — ${phs.length} টি {{placeholder}} পাওয়া গেছে`);
+        toast.success(`"${uploadSchool}" — ${phs.length} ${tr("excel.placeholdersFound")}`);
       } catch (err) {
-        toast.error(err.message || "আপলোড ব্যর্থ");
+        toast.error(err.message || tr("excel.uploadFailed"));
       } finally {
         setUploading(false);
       }
@@ -148,7 +150,7 @@ export default function ExcelAutoFillPage({ students }) {
     setActiveTemplate(newTmpl);
     setMappings([]);
     setView("mapping");
-    toast.success("ম্যানুয়াল mapping শুরু করুন");
+    toast.success(tr("excel.manualMappingStart"));
   };
 
   // Auto-detect field from Japanese/Bengali/English label
@@ -185,7 +187,7 @@ export default function ExcelAutoFillPage({ students }) {
   };
 
   const addManualMapping = () => {
-    if (!manualCell.cell || !manualCell.label) { toast.error("Cell ও Label দিন"); return; }
+    if (!manualCell.cell || !manualCell.label) { toast.error(tr("excel.cellLabelRequired")); return; }
     setMappings([...mappings, { ...manualCell }]);
     setManualCell({ cell: "", label: "", field: "" });
   };
@@ -194,7 +196,7 @@ export default function ExcelAutoFillPage({ students }) {
 
   const saveMapping = async () => {
     const mapped = mappings.filter(m => m.field);
-    if (mapped.length === 0) { toast.error("কমপক্ষে ১টি field map করুন"); return; }
+    if (mapped.length === 0) { toast.error(tr("excel.mapAtLeastOne")); return; }
 
     // Modifier যুক্ত করে save — field + modifier merge
     const mappingsWithMod = mappings.map(m => ({
@@ -232,7 +234,7 @@ export default function ExcelAutoFillPage({ students }) {
       return [...prev, updated];
     });
 
-    toast.success(`${mapped.length} fields mapping সংরক্ষণ হয়েছে`);
+    toast.success(`${mapped.length} ${tr("excel.mappingSaved")}`);
     setView("list");
   };
 
@@ -240,7 +242,7 @@ export default function ExcelAutoFillPage({ students }) {
   // STEP 3: GENERATE
   // ================================================================
   const doGenerate = async () => {
-    if (selectedStudents.length === 0) { toast.error("কমপক্ষে ১ জন স্টুডেন্ট সিলেক্ট করুন"); return; }
+    if (selectedStudents.length === 0) { toast.error(tr("excel.selectAtLeastOne")); return; }
 
     const tmpl = activeTemplate;
     const name = tmpl.school_name || tmpl.schoolName;
@@ -267,11 +269,11 @@ export default function ExcelAutoFillPage({ students }) {
           // Small delay between downloads so browser doesn't block
           if (selectedStudents.length > 1) await new Promise(r => setTimeout(r, 500));
         }
-        toast.exported(`${name} — ${downloaded} জনের Resume ডাউনলোড হয়েছে`);
+        toast.exported(`${name} — ${downloaded} ${tr("excel.resumeDownloaded")}`);
         setGenerating(false);
         return;
       } catch (err) {
-        toast.error("API: " + err.message + " — CSV fallback ব্যবহার হচ্ছে");
+        toast.error("API: " + err.message + " — " + tr("excel.csvFallback"));
         setGenerating(false);
       }
     }
@@ -302,9 +304,9 @@ export default function ExcelAutoFillPage({ students }) {
         if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
       }
       setTemplates(prev => prev.filter(t => t.id !== tmpl.id));
-      toast.success(`"${tmpl.school_name || tmpl.schoolName}" — Template ও ফাইল ডাটাবেস থেকে মুছে ফেলা হয়েছে`);
+      toast.success(`"${tmpl.school_name || tmpl.schoolName}" — ${tr("excel.templateDeleted")}`);
     } catch (err) {
-      toast.error("Delete ব্যর্থ: " + err.message);
+      toast.error(tr("excel.deleteFailed") + ": " + err.message);
     }
     setDeleteConfirmId(null);
   };
@@ -321,56 +323,55 @@ export default function ExcelAutoFillPage({ students }) {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h2 className="text-xl font-bold">Excel Template আপলোড</h2>
-            <p className="text-xs mt-0.5" style={{ color: t.muted }}>স্কুলের Excel ফরম আপলোড করুন → অটো cell detect → field mapping</p>
+            <h2 className="text-xl font-bold">{tr("excel.uploadTitle")}</h2>
+            <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("excel.uploadSubtitle")}</p>
           </div>
         </div>
 
         <Card delay={50}>
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুল সিলেক্ট করুন <span className="req-star">*</span></label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("excel.selectSchool")} <span className="req-star">*</span></label>
               <select value={uploadSchool} onChange={e => setUploadSchool(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ ...is, borderColor: !uploadSchool ? t.rose + "40" : t.inputBorder }}>
-                <option value="">— স্কুল সিলেক্ট করুন —</option>
+                <option value="">— {tr("excel.selectSchool")} —</option>
                 {schoolsList.map(s => <option key={s.id} value={s.name_en}>{s.name_en}{s.name_jp ? ` (${s.name_jp})` : ""}</option>)}
               </select>
-              {!uploadSchool && <p className="text-[10px] mt-1" style={{ color: t.rose }}>স্কুল ছাড়া রিজুইমি তৈরি হবে না</p>}
+              {!uploadSchool && <p className="text-[10px] mt-1" style={{ color: t.rose }}>{tr("excel.schoolRequired")}</p>}
             </div>
 
             {/* File Upload Area */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Excel ফাইল (.xlsx)</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("excel.excelFile")}</label>
               {uploadFile ? (
                 <div onClick={() => fileRef.current?.click()} className="flex items-center gap-3 p-4 rounded-xl cursor-pointer" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}30` }}>
                   <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={handleFileSelect} className="hidden" />
                   <FileText size={24} style={{ color: t.cyan }} />
                   <div>
                     <p className="text-xs font-semibold">{uploadFile.name}</p>
-                    <p className="text-[10px]" style={{ color: t.muted }}>{(uploadFile.size / 1024).toFixed(1)} KB — ক্লিক করে পরিবর্তন</p>
+                    <p className="text-[10px]" style={{ color: t.muted }}>{(uploadFile.size / 1024).toFixed(1)} KB — {tr("excel.clickToChange")}</p>
                   </div>
                 </div>
               ) : (
                 <DropZone accept=".xlsx,.xls" onFile={(file) => handleFileSelect({ target: { files: [file] } })}>
-                  Excel টেমপ্লেট টেনে আনুন অথবা ক্লিক করুন
+                  {tr("excel.dropzone")}
                 </DropZone>
               )}
             </div>
 
             <div className="p-3 rounded-xl" style={{ background: `${t.cyan}08`, border: `1px solid ${t.cyan}15` }}>
               <p className="text-[11px]" style={{ color: t.textSecondary }}>
-                <strong>কিভাবে কাজ করে:</strong> Excel template-এ যেখানে student data বসাতে চান সেখানে <code style={{ color: t.cyan }}>{"{{name_en}}"}</code>, <code style={{ color: t.cyan }}>{"{{dob}}"}</code>, <code style={{ color: t.cyan }}>{"{{passport_number}}"}</code> ইত্যাদি লিখুন।
-                আপলোড করলে সিস্টেম শুধু <code style={{ color: t.cyan }}>{"{{}}"}</code> cells detect করবে।
+                <strong>{tr("excel.howItWorks")}:</strong> {tr("excel.howItWorksDesc")}
               </p>
               <p className="text-[10px] mt-2" style={{ color: t.muted }}>
-                উদাহরণ: <code>{"{{name_en}}"}</code> → Mohammad Rahim, <code>{"{{dob}}"}</code> → 1998-03-12, <code>{"{{father_name}}"}</code> → আব্দুল করিম
+                {tr("excel.example")}: <code>{"{{name_en}}"}</code> → Mohammad Rahim, <code>{"{{dob}}"}</code> → 1998-03-12, <code>{"{{father_name}}"}</code> → Abdul Karim
               </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-              <Button variant="ghost" onClick={() => { setView("list"); setUploadFile(null); setUploadSchool(""); }}>বাতিল</Button>
+              <Button variant="ghost" onClick={() => { setView("list"); setUploadFile(null); setUploadSchool(""); }}>{tr("common.cancel")}</Button>
               <Button icon={Upload} onClick={doUpload} disabled={uploading}>
-                {uploading ? "আপলোড হচ্ছে..." : "আপলোড ও Cell Detect"}
+                {uploading ? tr("excel.uploading") : tr("excel.uploadAndDetect")}
               </Button>
             </div>
           </div>
@@ -392,12 +393,12 @@ export default function ExcelAutoFillPage({ students }) {
             <ArrowLeft size={18} />
           </button>
           <div className="flex-1">
-            <h2 className="text-xl font-bold">Field Mapping — {activeTemplate.school_name || activeTemplate.schoolName}</h2>
+            <h2 className="text-xl font-bold">{tr("excel.fieldMapping")} — {activeTemplate.school_name || activeTemplate.schoolName}</h2>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>
-              প্রতিটি Excel cell-এর জন্য সিস্টেম field সিলেক্ট করুন • Mapped: {mappedCount}/{mappings.length}
+              {tr("excel.mappingSubtitle")} • Mapped: {mappedCount}/{mappings.length}
             </p>
           </div>
-          <Button icon={Save} onClick={saveMapping}>সংরক্ষণ ({mappedCount})</Button>
+          <Button icon={Save} onClick={saveMapping}>{tr("excel.saveMapping")} ({mappedCount})</Button>
         </div>
 
         {/* Mapping Table */}
@@ -464,7 +465,7 @@ export default function ExcelAutoFillPage({ students }) {
             <div className="flex-1 min-w-[120px]">
               <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Label</label>
               <input value={manualCell.label} onChange={e => setManualCell({ ...manualCell, label: e.target.value })}
-                className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder="Excel-এ যা লেখা (e.g. 氏名, নাম)" />
+                className="w-full px-2 py-1.5 rounded text-xs outline-none" style={is} placeholder={tr("excel.labelPlaceholder")} />
             </div>
             <div className="flex-1">
               <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Field</label>
@@ -510,9 +511,9 @@ export default function ExcelAutoFillPage({ students }) {
             <ArrowLeft size={18} />
           </button>
           <div className="flex-1">
-            <h2 className="text-xl font-bold">Resume Generate — {activeTemplate.school_name || activeTemplate.schoolName}</h2>
+            <h2 className="text-xl font-bold">{tr("excel.resumeGenerate")} — {activeTemplate.school_name || activeTemplate.schoolName}</h2>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>
-              {(activeTemplate.mappings || []).filter(m => m.field).length} fields mapped • স্টুডেন্ট সিলেক্ট করুন → ডাউনলোড
+              {(activeTemplate.mappings || []).filter(m => m.field).length} fields mapped • {tr("excel.selectAndDownload")}
             </p>
           </div>
         </div>
@@ -524,12 +525,12 @@ export default function ExcelAutoFillPage({ students }) {
               <Search size={14} style={{ color: t.muted }} />
               <input value={studentSearch} onChange={e => setStudentSearch(e.target.value)}
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-                placeholder="স্টুডেন্ট খুঁজুন..." />
+                placeholder={tr("excel.searchStudents")} />
             </div>
             <select value={filterBatch} onChange={e => { setFilterBatch(e.target.value); setSelectedStudents([]); }}
               className="px-3 py-2 rounded-xl text-xs outline-none"
               style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
-              <option value="all">সব ব্যাচ</option>
+              <option value="all">{tr("excel.allBatches")}</option>
               {batchList.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
             <Button variant="ghost" size="xs" onClick={() => setSelectedStudents(
@@ -560,14 +561,14 @@ export default function ExcelAutoFillPage({ students }) {
               );
             })}
             {filteredStudents.length === 0 && (
-              <p className="text-center py-6 text-xs" style={{ color: t.muted }}>কোনো স্টুডেন্ট পাওয়া যায়নি</p>
+              <p className="text-center py-6 text-xs" style={{ color: t.muted }}>{tr("excel.noStudentsFound")}</p>
             )}
           </div>
 
           {/* Generate Button */}
           <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
             <p className="text-xs" style={{ color: t.muted }}>
-              সিলেক্টেড: <span className="font-bold" style={{ color: t.cyan }}>{selectedStudents.length}</span> জন
+              {tr("excel.selected")}: <span className="font-bold" style={{ color: t.cyan }}>{selectedStudents.length}</span> {tr("excel.person")}
             </p>
             <Button icon={Download} onClick={doGenerate} disabled={generating}>
               {generating ? "Generating..." : `Generate ${selectedStudents.length > 0 ? `(${selectedStudents.length})` : ""}`}
@@ -599,21 +600,21 @@ export default function ExcelAutoFillPage({ students }) {
     <div className="space-y-5 anim-fade">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">Resume Builder (রিজুইমি তৈরি)</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>স্কুলের Excel ফরম্যাটে স্টুডেন্ট ডেটা অটো বসান</p>
+          <h2 className="text-xl font-bold">{tr("excel.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("excel.subtitle")}</p>
         </div>
         <Button icon={Upload} onClick={() => { setView("upload"); setUploadSchool(""); setUploadFile(null); }}>
-          Template আপলোড
+          {tr("excel.templateUpload")}
         </Button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "মোট Template", value: templates.length, color: t.cyan, icon: FileText },
-          { label: "Fully Mapped", value: templates.filter(e => (e.mappedFields || e.mapped_fields || 0) >= (e.totalFields || e.total_fields || 1)).length, color: t.emerald, icon: CheckCircle },
-          { label: "Needs Mapping", value: templates.filter(e => (e.mappedFields || e.mapped_fields || 0) < (e.totalFields || e.total_fields || 1)).length, color: t.amber, icon: AlertTriangle },
-          { label: "মোট স্টুডেন্ট", value: eligibleStudents.length, color: t.purple, icon: FileText },
+          { label: tr("excel.totalTemplates"), value: templates.length, color: t.cyan, icon: FileText },
+          { label: tr("excel.fullyMapped"), value: templates.filter(e => (e.mappedFields || e.mapped_fields || 0) >= (e.totalFields || e.total_fields || 1)).length, color: t.emerald, icon: CheckCircle },
+          { label: tr("excel.needsMapping"), value: templates.filter(e => (e.mappedFields || e.mapped_fields || 0) < (e.totalFields || e.total_fields || 1)).length, color: t.amber, icon: AlertTriangle },
+          { label: tr("excel.totalStudents"), value: eligibleStudents.length, color: t.purple, icon: FileText },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -632,12 +633,12 @@ export default function ExcelAutoFillPage({ students }) {
       {/* How it works */}
       {templates.length === 0 && (
         <Card delay={200}>
-          <h3 className="text-sm font-bold mb-3">কিভাবে কাজ করে?</h3>
+          <h3 className="text-sm font-bold mb-3">{tr("excel.howItWorksTitle")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { step: "১", title: "Template আপলোড", desc: "স্কুলের Excel ফরম (.xlsx) আপলোড করুন। সিস্টেম অটো সব cell ও label detect করবে।", color: t.cyan },
-              { step: "২", title: "Field Mapping", desc: "প্রতিটি Excel cell-এর জন্য সিস্টেম field সিলেক্ট করুন। e.g. 氏名 → name_en, 生年月日 → dob", color: t.amber },
-              { step: "৩", title: "Generate", desc: "স্টুডেন্ট সিলেক্ট করুন → ডাউনলোড। সিস্টেম অটো ডেটা বসিয়ে Excel ফাইল তৈরি করবে।", color: t.emerald },
+              { step: "১", title: tr("excel.step1Title"), desc: tr("excel.step1Desc"), color: t.cyan },
+              { step: "২", title: tr("excel.step2Title"), desc: tr("excel.step2Desc"), color: t.amber },
+              { step: "৩", title: tr("excel.step3Title"), desc: tr("excel.step3Desc"), color: t.emerald },
             ].map((s, i) => (
               <div key={i} className="p-4 rounded-xl" style={{ background: `${s.color}08`, border: `1px solid ${s.color}15` }}>
                 <div className="h-8 w-8 rounded-lg flex items-center justify-center text-sm font-black mb-2" style={{ background: `${s.color}20`, color: s.color }}>{s.step}</div>
@@ -692,7 +693,7 @@ export default function ExcelAutoFillPage({ students }) {
                   }}>Mapping</Button>
                   <Button size="xs" icon={Download} onClick={() => {
                     if ((tmpl.mappings || []).filter(m => m.field).length === 0) {
-                      toast.error("আগে mapping করুন");
+                      toast.error(tr("excel.doMappingFirst"));
                       return;
                     }
                     setActiveTemplate(tmpl);
@@ -702,8 +703,8 @@ export default function ExcelAutoFillPage({ students }) {
                   }}>Generate</Button>
                   {deleteConfirmId === tmpl.id ? (
                     <div className="flex items-center gap-1">
-                      <button onClick={() => deleteTemplate(tmpl)} className="text-[10px] px-2 py-1 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>মুছুন</button>
-                      <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.muted }}>না</button>
+                      <button onClick={() => deleteTemplate(tmpl)} className="text-[10px] px-2 py-1 rounded-lg font-medium" style={{ background: t.rose, color: "#fff" }}>{tr("common.delete")}</button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.muted }}>{tr("common.no")}</button>
                     </div>
                   ) : (
                     <button onClick={() => setDeleteConfirmId(tmpl.id)} className="p-1.5 rounded-lg transition"

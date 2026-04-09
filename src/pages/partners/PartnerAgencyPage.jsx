@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Plus, Briefcase, Users, TrendingUp, Clock, Search, X, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -17,16 +18,17 @@ import { partners as partnersApi } from "../../lib/api";
  * API থেকে real data — CRUD
  */
 
-// সার্ভিস label mapping
-const SERVICE_LABELS = {
-  doc_processing: "ডক প্রসেসিং", visa_processing: "ভিসা প্রসেসিং",
-  translation: "অনুবাদ", school_selection: "স্কুল সিলেকশন",
-  interview_prep: "ইন্টারভিউ প্রস্তুতি", full_package: "ফুল প্যাকেজ",
-};
-
 export default function PartnerAgencyPage() {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
+
+  // সার্ভিস label mapping — tr() ব্যবহার করে i18n সাপোর্ট
+  const SERVICE_LABELS = {
+    doc_processing: tr("partners.svcDocProcessing"), visa_processing: tr("partners.svcVisaProcessing"),
+    translation: tr("partners.svcTranslation"), school_selection: tr("partners.svcSchoolSelection"),
+    interview_prep: tr("partners.svcInterviewPrep"), full_package: tr("partners.svcFullPackage"),
+  };
 
   // ── Data state ──
   const [partnersList, setPartnersList] = useState([]);
@@ -80,21 +82,21 @@ export default function PartnerAgencyPage() {
 
   // ── partner save (create/edit) ──
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error("নাম দিন"); return; }
+    if (!form.name.trim()) { toast.error(tr("partners.errName")); return; }
     const payload = { ...form, commission_rate: Number(form.commission_rate) || 0 };
     try {
       if (editingId) {
         await partnersApi.update(editingId, payload);
-        toast.updated("পার্টনার");
+        toast.updated(tr("partners.partnerLabel"));
       } else {
         await partnersApi.create(payload);
-        toast.success("নতুন পার্টনার যোগ হয়েছে");
+        toast.success(tr("partners.addedSuccess"));
       }
       setShowForm(false); setEditingId(null);
       setForm({ name: "", contact_person: "", phone: "", email: "", address: "", services: [], commission_rate: "", notes: "" });
       loadData();
     } catch (err) {
-      toast.error(err.message || "সমস্যা হয়েছে");
+      toast.error(err.message || tr("partners.saveFailed"));
     }
   };
 
@@ -102,10 +104,10 @@ export default function PartnerAgencyPage() {
   const handleDelete = async (id) => {
     try {
       await partnersApi.remove(id);
-      toast.success("পার্টনার মুছে ফেলা হয়েছে");
+      toast.success(tr("partners.deletedSuccess"));
       setDeleteTarget(null);
       loadData();
-    } catch (err) { toast.error(err.message || "মুছতে ব্যর্থ"); }
+    } catch (err) { toast.error(err.message || tr("partners.deleteFailed")); }
   };
 
   // ── Edit open ──
@@ -132,19 +134,19 @@ export default function PartnerAgencyPage() {
       {/* হেডার */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold">পার্টনার এজেন্সি (B2B)</h2>
-          <p className="text-xs mt-0.5" style={{ color: t.muted }}>অন্য এজেন্সির স্টুডেন্ট প্রসেসিং</p>
+          <h2 className="text-xl font-bold">{tr("partners.title")}</h2>
+          <p className="text-xs mt-0.5" style={{ color: t.muted }}>{tr("partners.subtitle")}</p>
         </div>
-        <Button icon={Plus} onClick={() => setShowForm(true)}>নতুন পার্টনার</Button>
+        <Button icon={Plus} onClick={() => setShowForm(true)}>{tr("partners.addNew")}</Button>
       </div>
 
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "সক্রিয় পার্টনার", value: partnersList.filter(p => p.status === "active").length, color: t.cyan, icon: Briefcase },
-          { label: "মোট স্টুডেন্ট", value: totalStudents, color: t.purple, icon: Users },
-          { label: "আয়", value: `৳${totalRevenue > 1000 ? (totalRevenue / 1000).toFixed(0) + "K" : totalRevenue}`, color: t.emerald, icon: TrendingUp },
-          { label: "বকেয়া", value: `৳${totalDue > 1000 ? (totalDue / 1000).toFixed(0) + "K" : totalDue}`, color: totalDue > 0 ? t.rose : t.emerald, icon: Clock },
+          { label: tr("partners.activePartners"), value: partnersList.filter(p => p.status === "active").length, color: t.cyan, icon: Briefcase },
+          { label: tr("partners.totalStudents"), value: totalStudents, color: t.purple, icon: Users },
+          { label: tr("partners.revenue"), value: `৳${totalRevenue > 1000 ? (totalRevenue / 1000).toFixed(0) + "K" : totalRevenue}`, color: t.emerald, icon: TrendingUp },
+          { label: tr("partners.due"), value: `৳${totalDue > 1000 ? (totalDue / 1000).toFixed(0) + "K" : totalDue}`, color: totalDue > 0 ? t.rose : t.emerald, icon: Clock },
         ].map((kpi, i) => (
           <Card key={i} delay={i * 50}>
             <div className="flex items-center justify-between">
@@ -164,16 +166,16 @@ export default function PartnerAgencyPage() {
       {showForm && (
         <Card delay={50}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">{editingId ? "পার্টনার সম্পাদনা" : "নতুন পার্টনার এজেন্সি যোগ"}</h3>
+            <h3 className="text-sm font-semibold">{editingId ? tr("partners.editPartner") : tr("partners.addTitle")}</h3>
             <button onClick={() => setShowForm(false)}><X size={16} style={{ color: t.muted }} /></button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              { key: "name", label: "এজেন্সির নাম *", ph: "নাম লিখুন" },
-              { key: "contact_person", label: "যোগাযোগ ব্যক্তি", ph: "নাম" },
-              { key: "email", label: "ইমেইল", ph: "email@example.com" },
-              { key: "address", label: "ঠিকানা", ph: "ঠিকানা" },
-              { key: "commission_rate", label: "কমিশন %", ph: "10" },
+              { key: "name", label: tr("partners.agencyName"), ph: tr("partners.namePlaceholder") },
+              { key: "contact_person", label: tr("partners.contactPerson"), ph: tr("partners.contactPlaceholder") },
+              { key: "email", label: tr("partners.emailLabel"), ph: "email@example.com" },
+              { key: "address", label: tr("partners.addressLabel"), ph: tr("partners.addressPlaceholder") },
+              { key: "commission_rate", label: tr("partners.commissionRate"), ph: "10" },
             ].map(f => (
               <div key={f.key}>
                 <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>{f.label}</label>
@@ -184,20 +186,20 @@ export default function PartnerAgencyPage() {
               </div>
             ))}
             <div>
-              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>ফোন</label>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>{tr("partners.phoneLbl")}</label>
               <PhoneInput value={form.phone} onChange={v => setForm(p => ({ ...p, phone: v }))} size="sm" />
             </div>
             <div className="md:col-span-2">
-              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>নোট</label>
+              <label className="text-[10px] font-medium mb-1 block" style={{ color: t.muted }}>{tr("partners.notesLabel")}</label>
               <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none h-16 resize-none"
                 style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
-                placeholder="অতিরিক্ত তথ্য..." />
+                placeholder={tr("partners.notesPlaceholder")} />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="ghost" size="xs" onClick={() => { setShowForm(false); setEditingId(null); }}>বাতিল</Button>
-            <Button size="xs" onClick={handleSave}>সেভ করুন</Button>
+            <Button variant="ghost" size="xs" onClick={() => { setShowForm(false); setEditingId(null); }}>{tr("common.cancel")}</Button>
+            <Button size="xs" onClick={handleSave}>{tr("common.save")}</Button>
           </div>
         </Card>
       )}
@@ -210,30 +212,30 @@ export default function PartnerAgencyPage() {
             <Search size={14} style={{ color: t.muted }} />
             <input value={searchQ} onChange={e => { setSearchQ(e.target.value); setPage(1); }}
               className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
-              placeholder="নাম, যোগাযোগ, ফোন দিয়ে খুঁজুন..." />
+              placeholder={tr("partners.searchPlaceholder")} />
           </div>
         </div>
 
         {loading ? (
-          <div className="py-10 text-center text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</div>
+          <div className="py-10 text-center text-xs" style={{ color: t.muted }}>{tr("common.loading")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  <SortHeader label="নাম" sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <SortHeader label="যোগাযোগ" sortKey="contact_person" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>ফোন</th>
-                  <SortHeader label="স্টুডেন্ট" sortKey="studentCount" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <SortHeader label="আয়" sortKey="revenue" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <SortHeader label="বকেয়া" sortKey="due" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <SortHeader label="স্ট্যাটাস" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                  <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>অ্যাকশন</th>
+                  <SortHeader label={tr("common.name")} sortKey="name" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label={tr("partners.contactPerson")} sortKey="contact_person" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <th className="text-left py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("common.phone")}</th>
+                  <SortHeader label={tr("partners.studentHeader")} sortKey="studentCount" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label={tr("partners.revenue")} sortKey="revenue" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label={tr("partners.due")} sortKey="due" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <SortHeader label={tr("partners.statusHeader")} sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+                  <th className="text-right py-3 px-4 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("partners.actionHeader")}</th>
                 </tr>
               </thead>
               <tbody>
                 {paginated.length === 0 && (
-                  <tr><td colSpan={7} className="py-8 text-center text-xs" style={{ color: t.muted }}>কোনো পার্টনার পাওয়া যায়নি</td></tr>
+                  <tr><td colSpan={7} className="py-8 text-center text-xs" style={{ color: t.muted }}>{tr("partners.noPartners")}</td></tr>
                 )}
                 {paginated.map(p => (
                   <React.Fragment key={p.id}>
@@ -253,19 +255,19 @@ export default function PartnerAgencyPage() {
                     </td>
                     <td className="py-3 px-4">
                       <Badge color={p.status === "active" ? t.emerald : t.muted} size="xs">
-                        {p.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                        {p.status === "active" ? tr("partners.active") : tr("partners.inactive")}
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
                           onMouseEnter={e => e.currentTarget.style.color = t.cyan}
-                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title="সম্পাদনা">
+                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title={tr("common.edit")}>
                           <Edit3 size={14} />
                         </button>
                         <button onClick={() => setDeleteTarget(p)} className="p-1.5 rounded-lg transition" style={{ color: t.muted }}
                           onMouseEnter={e => e.currentTarget.style.color = t.rose}
-                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title="মুছুন">
+                          onMouseLeave={e => e.currentTarget.style.color = t.muted} title={tr("common.delete")}>
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -276,10 +278,10 @@ export default function PartnerAgencyPage() {
                     <tr><td colSpan={8} style={{ background: t.inputBg }}>
                       <div className="px-6 py-3">
                         <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.muted }}>
-                          {p.name}-এর স্টুডেন্ট ({expandedStudents.length})
+                          {p.name}{tr("partners.studentsOf")} ({expandedStudents.length})
                         </p>
                         {expandedStudents.length === 0 ? (
-                          <p className="text-xs py-2" style={{ color: t.muted }}>কোনো স্টুডেন্ট নেই — Student Profile → Destination Info → Type = "partner" → Partner Agency সিলেক্ট করুন</p>
+                          <p className="text-xs py-2" style={{ color: t.muted }}>{tr("partners.noStudents")}</p>
                         ) : (
                           <div className="space-y-1.5">
                             {expandedStudents.map(ps => (
@@ -288,10 +290,10 @@ export default function PartnerAgencyPage() {
                                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                                 <span className="font-medium flex-1">{ps.students?.name_en || ps.student_name || "—"}</span>
                                 <span style={{ color: t.muted }}>{ps.student_id || ""}</span>
-                                <span className="font-mono" style={{ color: t.emerald }}>ফি: {fmt(ps.fee)}</span>
-                                <span className="font-mono" style={{ color: ps.paid >= ps.fee ? t.emerald : t.amber }}>পেমেন্ট: {fmt(ps.paid)}</span>
+                                <span className="font-mono" style={{ color: t.emerald }}>{tr("partners.fee")}: {fmt(ps.fee)}</span>
+                                <span className="font-mono" style={{ color: ps.paid >= ps.fee ? t.emerald : t.amber }}>{tr("partners.payment")}: {fmt(ps.paid)}</span>
                                 <Badge color={ps.paid >= ps.fee ? t.emerald : (ps.paid > 0 ? t.amber : t.rose)} size="xs">
-                                  {ps.paid >= ps.fee ? "পরিশোধিত" : ps.paid > 0 ? "আংশিক" : "বকেয়া"}
+                                  {ps.paid >= ps.fee ? tr("partners.paidFull") : ps.paid > 0 ? tr("partners.partial") : tr("partners.due")}
                                 </Badge>
                               </div>
                             ))}

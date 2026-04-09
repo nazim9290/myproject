@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Save, LogOut, ChevronDown, ChevronRight, Check, Lock, User, FileText, DollarSign, Clock, Upload, Eye, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -16,6 +17,7 @@ import { formatDateDisplay } from "../../components/ui/DateInput";
 export default function StudentPortalPage({ studentUser, studentToken, onLogout }) {
   const t = useTheme();
   const toast = useToast();
+  const { t: tr } = useLanguage();
   const [profile, setProfile] = useState(null);
   const [formConfig, setFormConfig] = useState([]);
   const [fees, setFees] = useState({ items: [], payments: [], totalDue: 0, totalPaid: 0, balance: 0 });
@@ -62,7 +64,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
         if (feesRes.ok) setFees(f);
         if (paymentsRes.ok && Array.isArray(pay)) setPayments(pay);
         if (docsRes.ok && Array.isArray(docs)) setDocuments(docs);
-      } catch (err) { console.error("[Portal Load]", err); toast.error("ডাটা লোড করতে সমস্যা হয়েছে"); }
+      } catch (err) { console.error("[Portal Load]", err); toast.error(tr("portal.loadError")); }
       setLoading(false);
     };
     load();
@@ -79,19 +81,19 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
       if (res.ok) {
         setProfile(data);
         setEditData({ ...data });
-        toast.success("তথ্য সংরক্ষিত হয়েছে");
+        toast.success(tr("portal.dataSaved"));
       } else {
-        toast.error(data.error || "সংরক্ষণ ব্যর্থ");
+        toast.error(data.error || tr("portal.saveFailed"));
       }
-    } catch { toast.error("সার্ভারে সমস্যা"); }
+    } catch { toast.error(tr("portal.serverError")); }
     setSaving(false);
   };
 
   // ── পাসওয়ার্ড পরিবর্তন ──
   const changePassword = async () => {
-    if (!pwForm.current || !pwForm.new) { toast.error("পুরানো ও নতুন পাসওয়ার্ড দিন"); return; }
-    if (pwForm.new.length < 6) { toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষর"); return; }
-    if (pwForm.new !== pwForm.confirm) { toast.error("নতুন পাসওয়ার্ড মিলছে না"); return; }
+    if (!pwForm.current || !pwForm.new) { toast.error(tr("portal.oldNewPwRequired")); return; }
+    if (pwForm.new.length < 6) { toast.error(tr("portal.pwMinLength")); return; }
+    if (pwForm.new !== pwForm.confirm) { toast.error(tr("portal.pwMismatch")); return; }
     try {
       const res = await fetch(`${API_URL}/student-portal/change-password`, {
         method: "POST", headers,
@@ -99,19 +101,19 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("পাসওয়ার্ড পরিবর্তন হয়েছে");
+        toast.success(tr("portal.pwChanged"));
         setShowPasswordForm(false);
         setPwForm({ current: "", new: "", confirm: "" });
       } else {
-        toast.error(data.error || "পরিবর্তন ব্যর্থ");
+        toast.error(data.error || tr("portal.changeFailed"));
       }
-    } catch { toast.error("সার্ভারে সমস্যা"); }
+    } catch { toast.error(tr("portal.serverError")); }
   };
 
   // ── ডকুমেন্ট আপলোড ──
   const handleDocUpload = async () => {
-    if (!selectedFile) { toast.error("ফাইল নির্বাচন করুন"); return; }
-    if (!docForm.doc_type) { toast.error("ডকুমেন্ট টাইপ নির্বাচন করুন"); return; }
+    if (!selectedFile) { toast.error(tr("portal.selectFile")); return; }
+    if (!docForm.doc_type) { toast.error(tr("portal.selectDocType")); return; }
 
     setUploading(true);
     try {
@@ -132,50 +134,50 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
         setDocForm({ doc_type: "", label: "", notes: "" });
         setSelectedFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
-        toast.success("ডকুমেন্ট আপলোড হয়েছে");
+        toast.success(tr("portal.docUploaded"));
       } else {
-        toast.error(data.error || "আপলোড ব্যর্থ");
+        toast.error(data.error || tr("portal.uploadFailed"));
       }
-    } catch { toast.error("সার্ভারে সমস্যা"); }
+    } catch { toast.error(tr("portal.serverError")); }
     setUploading(false);
   };
 
   // ── ডকুমেন্ট স্ট্যাটাস config ──
   const DOC_STATUS_MAP = {
-    pending: { label: "পেন্ডিং", color: "amber", icon: AlertCircle },
-    approved: { label: "অনুমোদিত", color: "emerald", icon: CheckCircle },
-    rejected: { label: "প্রত্যাখ্যাত", color: "rose", icon: XCircle },
-    verified: { label: "যাচাইকৃত", color: "emerald", icon: CheckCircle },
-    not_submitted: { label: "জমা হয়নি", color: "muted", icon: AlertCircle },
+    pending: { label: tr("portal.docPending"), color: "amber", icon: AlertCircle },
+    approved: { label: tr("portal.docApproved"), color: "emerald", icon: CheckCircle },
+    rejected: { label: tr("portal.docRejected"), color: "rose", icon: XCircle },
+    verified: { label: tr("portal.docVerified"), color: "emerald", icon: CheckCircle },
+    not_submitted: { label: tr("portal.docNotSubmitted"), color: "muted", icon: AlertCircle },
   };
 
   // ── ডকুমেন্ট টাইপ options ──
   const DOC_TYPE_OPTIONS = [
-    { value: "passport", label: "পাসপোর্ট কপি" },
-    { value: "nid", label: "NID / জন্ম সনদ" },
-    { value: "photo", label: "ছবি (ফটো)" },
-    { value: "ssc_certificate", label: "SSC সার্টিফিকেট" },
-    { value: "hsc_certificate", label: "HSC সার্টিফিকেট" },
-    { value: "degree_certificate", label: "ডিগ্রি সার্টিফিকেট" },
-    { value: "transcript", label: "ট্রান্সক্রিপ্ট" },
-    { value: "jp_certificate", label: "জাপানি ভাষা সার্টিফিকেট" },
-    { value: "bank_statement", label: "ব্যাংক স্টেটমেন্ট" },
-    { value: "bank_solvency", label: "ব্যাংক সলভেন্সি" },
-    { value: "sponsor_letter", label: "স্পনসর লেটার" },
-    { value: "medical", label: "মেডিকেল রিপোর্ট" },
-    { value: "police_clearance", label: "পুলিশ ক্লিয়ারেন্স" },
-    { value: "other", label: "অন্যান্য" },
+    { value: "passport", label: tr("portal.docPassport") },
+    { value: "nid", label: tr("portal.docNid") },
+    { value: "photo", label: tr("portal.docPhoto") },
+    { value: "ssc_certificate", label: tr("portal.docSsc") },
+    { value: "hsc_certificate", label: tr("portal.docHsc") },
+    { value: "degree_certificate", label: tr("portal.docDegree") },
+    { value: "transcript", label: tr("portal.docTranscript") },
+    { value: "jp_certificate", label: tr("portal.docJpCert") },
+    { value: "bank_statement", label: tr("portal.docBankStatement") },
+    { value: "bank_solvency", label: tr("portal.docBankSolvency") },
+    { value: "sponsor_letter", label: tr("portal.docSponsorLetter") },
+    { value: "medical", label: tr("portal.docMedical") },
+    { value: "police_clearance", label: tr("portal.docPoliceClearance") },
+    { value: "other", label: tr("portal.docOther") },
   ];
 
   // ── পেমেন্ট ক্যাটাগরি বাংলা label ──
   const PAYMENT_CAT_BN = {
-    enrollment_fee: "ভর্তি ফি",
-    course_fee: "কোর্স ফি",
-    doc_processing: "ডকুমেন্ট প্রসেসিং",
-    visa_fee: "ভিসা ফি",
-    service_charge: "সার্ভিস চার্জ",
-    shokai_fee: "শোকাই ফি",
-    other_income: "অন্যান্য",
+    enrollment_fee: tr("portal.catEnrollment"),
+    course_fee: tr("portal.catCourse"),
+    doc_processing: tr("portal.catDocProcessing"),
+    visa_fee: tr("portal.catVisa"),
+    service_charge: tr("portal.catService"),
+    shokai_fee: tr("portal.catShokai"),
+    other_income: tr("portal.catOther"),
   };
 
   // ── ফর্ম ইনপুট render ──
@@ -187,7 +189,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
       return (
         <select value={val} onChange={e => setEditData(p => ({ ...p, [field.key]: e.target.value }))}
           className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-          <option value="">-- নির্বাচন করুন --</option>
+          <option value="">-- {tr("portal.selectOption")} --</option>
           {(field.options || []).map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       );
@@ -214,7 +216,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
             style={{ background: `linear-gradient(135deg, ${t.emerald}, ${t.cyan})` }}>
             <span className="text-white font-bold text-sm">S</span>
           </div>
-          <p className="text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</p>
+          <p className="text-xs" style={{ color: t.muted }}>{tr("common.loading")}</p>
         </div>
       </div>
     );
@@ -223,8 +225,8 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
   if (!profile) {
     return (
       <div className="text-center py-20">
-        <p className="text-sm" style={{ color: t.muted }}>প্রোফাইল লোড ব্যর্থ — আবার লগইন করুন</p>
-        <button onClick={onLogout} className="mt-3 px-4 py-2 rounded-lg text-xs" style={{ background: t.inputBg, color: t.cyan }}>লগআউট</button>
+        <p className="text-sm" style={{ color: t.muted }}>{tr("portal.profileLoadFailed")}</p>
+        <button onClick={onLogout} className="mt-3 px-4 py-2 rounded-lg text-xs" style={{ background: t.inputBg, color: t.cyan }}>{tr("portal.logout")}</button>
       </div>
     );
   }
@@ -241,15 +243,15 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
             {(profile.name_en || "S").charAt(0)}
           </div>
           <div>
-            <h2 className="text-xl font-bold">স্বাগতম, {profile.name_bn || profile.name_en}!</h2>
+            <h2 className="text-xl font-bold">{tr("portal.welcome", { name: profile.name_bn || profile.name_en })}</h2>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>
               {profile.id} • {profile.school || "—"} • {profile.batch || "—"}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="xs" icon={Lock} onClick={() => setShowPasswordForm(!showPasswordForm)}>পাসওয়ার্ড</Button>
-          <Button variant="ghost" size="xs" icon={LogOut} onClick={onLogout}>লগআউট</Button>
+          <Button variant="ghost" size="xs" icon={Lock} onClick={() => setShowPasswordForm(!showPasswordForm)}>{tr("portal.password")}</Button>
+          <Button variant="ghost" size="xs" icon={LogOut} onClick={onLogout}>{tr("portal.logout")}</Button>
         </div>
       </div>
 
@@ -262,10 +264,10 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold">
-              বর্তমান অবস্থা: <span style={{ color: statusInfo?.color || t.cyan }}>{statusInfo?.label || profile.status}</span>
+              {tr("portal.currentStatus")}: <span style={{ color: statusInfo?.color || t.cyan }}>{statusInfo?.label || profile.status}</span>
             </p>
             <p className="text-xs mt-0.5" style={{ color: t.muted }}>
-              নিচের ফর্মগুলো পূরণ করুন — আপনার এজেন্সি নির্দেশনা দিবে
+              {tr("portal.fillFormsBelow")}
             </p>
           </div>
           <StatusBadge status={profile.status} />
@@ -275,27 +277,27 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
       {/* ── পাসওয়ার্ড পরিবর্তন ── */}
       {showPasswordForm && (
         <Card delay={0}>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Lock size={14} /> পাসওয়ার্ড পরিবর্তন</h3>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Lock size={14} /> {tr("portal.changePassword")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>বর্তমান পাসওয়ার্ড</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("portal.currentPassword")}</label>
               <input type="password" value={pwForm.current} onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} autoComplete="current-password" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নতুন পাসওয়ার্ড</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("portal.newPassword")}</label>
               <input type="password" value={pwForm.new} onChange={e => setPwForm(p => ({ ...p, new: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} autoComplete="new-password" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নিশ্চিত করুন</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("portal.confirmPassword")}</label>
               <input type="password" value={pwForm.confirm} onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} autoComplete="new-password" />
             </div>
           </div>
           <div className="flex gap-2 mt-3">
-            <Button size="xs" onClick={changePassword}>পরিবর্তন করুন</Button>
-            <Button size="xs" variant="ghost" onClick={() => setShowPasswordForm(false)}>বাতিল</Button>
+            <Button size="xs" onClick={changePassword}>{tr("portal.changeBtn")}</Button>
+            <Button size="xs" variant="ghost" onClick={() => setShowPasswordForm(false)}>{tr("common.cancel")}</Button>
           </div>
         </Card>
       )}
@@ -305,10 +307,10 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <FileText size={14} style={{ color: t.cyan }} /> আপনার তথ্য পূরণ করুন
+              <FileText size={14} style={{ color: t.cyan }} /> {tr("portal.fillYourData")}
             </h3>
             <Button icon={Save} size="xs" onClick={saveData} disabled={saving}>
-              {saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ করুন"}
+              {saving ? tr("common.saving") : tr("common.save")}
             </Button>
           </div>
 
@@ -334,7 +336,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
                   <div className="flex-1">
                     <p className="text-sm font-semibold">{section.section_label_bn || section.section_label}</p>
                     <p className="text-[10px]" style={{ color: t.muted }}>
-                      {fields.length > 0 ? `${filledCount}/${fields.length} পূরণ হয়েছে` : "ডাটা ইনপুট"}
+                      {fields.length > 0 ? tr("portal.filledCount", { filled: filledCount, total: fields.length }) : tr("portal.dataInput")}
                     </p>
                   </div>
                   {fields.length > 0 && (
@@ -342,12 +344,12 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
                       {filledCount === fields.length && fields.length > 0 ? (
                         <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
                           style={{ background: `${t.emerald}15`, color: t.emerald }}>
-                          <Check size={10} /> সম্পন্ন
+                          <Check size={10} /> {tr("portal.completed")}
                         </span>
                       ) : (
                         <span className="text-[10px] px-2 py-0.5 rounded-full"
                           style={{ background: `${t.amber}15`, color: t.amber }}>
-                          অসম্পূর্ণ
+                          {tr("portal.incomplete")}
                         </span>
                       )}
                     </div>
@@ -371,7 +373,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
 
                 {isOpen && fields.length === 0 && (
                   <p className="text-xs mt-4 pt-3 text-center" style={{ color: t.muted, borderTop: `1px solid ${t.border}` }}>
-                    এই সেকশনের ফর্ম এজেন্সি কনফিগার করবে
+                    {tr("portal.sectionNotConfigured")}
                   </p>
                 )}
               </Card>
@@ -381,7 +383,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
       ) : (
         <Card delay={100}>
           <p className="text-xs text-center py-6" style={{ color: t.muted }}>
-            এজেন্সি এখনো ফর্ম কনফিগার করেনি — পরে আবার দেখুন
+            {tr("portal.noFormConfig")}
           </p>
         </Card>
       )}
@@ -389,7 +391,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
       {/* ── ফি সারাংশ ── */}
       <Card delay={200}>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <DollarSign size={14} style={{ color: t.emerald }} /> পেমেন্ট সারাংশ
+          <DollarSign size={14} style={{ color: t.emerald }} /> {tr("portal.paymentSummary")}
         </h3>
         {fees.items.length > 0 ? (
           <>
@@ -404,35 +406,35 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
             {/* ── সারসংক্ষেপ — মোট / পরিশোধিত / বাকি ── */}
             <div className="grid grid-cols-3 gap-3 pt-3 mt-3" style={{ borderTop: `1px solid ${t.border}` }}>
               <div className="text-center p-2.5 rounded-lg" style={{ background: t.inputBg }}>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>মোট ফি</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>{tr("portal.totalFee")}</p>
                 <p className="text-sm font-bold mt-1 font-mono">৳{fees.totalDue.toLocaleString("en-IN")}</p>
               </div>
               <div className="text-center p-2.5 rounded-lg" style={{ background: `${t.emerald}08` }}>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.emerald }}>পরিশোধিত</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: t.emerald }}>{tr("portal.totalPaid")}</p>
                 <p className="text-sm font-bold mt-1 font-mono" style={{ color: t.emerald }}>৳{fees.totalPaid.toLocaleString("en-IN")}</p>
               </div>
               <div className="text-center p-2.5 rounded-lg" style={{ background: fees.balance > 0 ? `${t.rose}08` : `${t.emerald}08` }}>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: fees.balance > 0 ? t.rose : t.emerald }}>বাকি</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: fees.balance > 0 ? t.rose : t.emerald }}>{tr("common.balance")}</p>
                 <p className="text-sm font-bold mt-1 font-mono" style={{ color: fees.balance > 0 ? t.rose : t.emerald }}>৳{fees.balance.toLocaleString("en-IN")}</p>
               </div>
             </div>
           </>
         ) : (
-          <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ফি রেকর্ড নেই</p>
+          <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("portal.noFeeRecord")}</p>
         )}
       </Card>
 
       {/* ── পেমেন্ট ইতিহাস (বিস্তারিত টেবিল) ── */}
       <Card delay={250}>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Clock size={14} style={{ color: t.cyan }} /> পেমেন্ট ইতিহাস
+          <Clock size={14} style={{ color: t.cyan }} /> {tr("portal.paymentHistory")}
         </h3>
         {payments.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["তারিখ", "ক্যাটাগরি", "বিবরণ", "পরিমাণ", "পদ্ধতি", "রশিদ", "নোট"].map(h => (
+                  {[tr("common.date"), tr("common.category"), tr("common.description"), tr("common.amount"), tr("portal.method"), tr("portal.receipt"), tr("common.notes")].map(h => (
                     <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                   ))}
                 </tr>
@@ -461,52 +463,52 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
             </table>
             {/* ── মোট পরিশোধিত row ── */}
             <div className="flex justify-end pt-2 mt-1 px-3" style={{ borderTop: `1px solid ${t.border}` }}>
-              <span className="text-xs" style={{ color: t.muted }}>মোট পরিশোধিত:&nbsp;</span>
+              <span className="text-xs" style={{ color: t.muted }}>{tr("portal.totalPaid")}:&nbsp;</span>
               <span className="text-xs font-bold font-mono" style={{ color: t.emerald }}>
                 ৳{payments.reduce((s, p) => s + (p.amount || p.paid_amount || 0), 0).toLocaleString("en-IN")}
               </span>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো পেমেন্ট রেকর্ড নেই</p>
+          <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("portal.noPaymentRecord")}</p>
         )}
       </Card>
 
       {/* ── ডকুমেন্ট সেকশন ── */}
       <Card delay={300}>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <FileText size={14} style={{ color: t.purple }} /> ডকুমেন্ট
+          <FileText size={14} style={{ color: t.purple }} /> {tr("portal.documents")}
         </h3>
 
         {/* ── আপলোড ফর্ম ── */}
         <div className="p-4 rounded-xl mb-4" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
           <p className="text-xs font-semibold mb-3 flex items-center gap-2">
-            <Upload size={12} style={{ color: t.purple }} /> নতুন ডকুমেন্ট আপলোড করুন
+            <Upload size={12} style={{ color: t.purple }} /> {tr("portal.uploadNewDoc")}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* ডকুমেন্ট টাইপ */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ডকুমেন্ট টাইপ <span style={{ color: t.rose }}>*</span></label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("portal.docType")} <span style={{ color: t.rose }}>*</span></label>
               <select value={docForm.doc_type} onChange={e => setDocForm(p => ({ ...p, doc_type: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                 style={{ background: t.card, border: `1px solid ${!docForm.doc_type && selectedFile ? t.rose : t.inputBorder}`, color: t.text }}>
-                <option value="">-- নির্বাচন করুন --</option>
+                <option value="">-- {tr("portal.selectOption")} --</option>
                 {DOC_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             {/* লেবেল (ঐচ্ছিক) */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>লেবেল / শিরোনাম</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("portal.labelTitle")}</label>
               <input type="text" value={docForm.label} onChange={e => setDocForm(p => ({ ...p, label: e.target.value }))}
-                placeholder="যেমন: পাসপোর্ট পেজ ১"
+                placeholder={tr("portal.labelPlaceholder")}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                 style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }} />
             </div>
             {/* নোট */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>নোট</label>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("common.notes")}</label>
               <input type="text" value={docForm.notes} onChange={e => setDocForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder="অতিরিক্ত তথ্য..."
+                placeholder={tr("portal.additionalInfo")}
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                 style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }} />
             </div>
@@ -522,16 +524,16 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
                 style={{ background: t.card, border: `1px solid ${t.inputBorder}`, color: t.text }} />
               {selectedFile && (
                 <p className="text-[10px] mt-1" style={{ color: t.muted }}>
-                  নির্বাচিত: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(0)} KB)
+                  {tr("portal.selectedFile", { name: selectedFile.name, size: (selectedFile.size / 1024).toFixed(0) })}
                 </p>
               )}
             </div>
             <Button icon={Upload} size="xs" onClick={handleDocUpload} disabled={uploading}>
-              {uploading ? "আপলোড হচ্ছে..." : "আপলোড"}
+              {uploading ? tr("portal.uploading") : tr("common.upload")}
             </Button>
           </div>
           <p className="text-[10px] mt-2" style={{ color: t.muted }}>
-            সমর্থিত ফরম্যাট: JPG, PNG, WEBP, PDF, DOC, DOCX • সর্বোচ্চ 5MB
+            {tr("portal.supportedFormats")}
           </p>
         </div>
 
@@ -541,7 +543,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                  {["টাইপ", "লেবেল", "তারিখ", "স্ট্যাটাস", "নোট", "ফাইল"].map(h => (
+                  {[tr("common.type"), tr("portal.label"), tr("common.date"), tr("common.status"), tr("common.notes"), tr("portal.file")].map(h => (
                     <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                   ))}
                 </tr>
@@ -570,7 +572,7 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
                           <a href={doc.gdrive_url || doc.file_url} target="_blank" rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg"
                             style={{ background: `${t.cyan}12`, color: t.cyan }}>
-                            <Eye size={10} /> দেখুন
+                            <Eye size={10} /> {tr("portal.view")}
                           </a>
                         ) : (
                           <span style={{ color: t.muted }}>—</span>
@@ -582,17 +584,17 @@ export default function StudentPortalPage({ studentUser, studentToken, onLogout 
               </tbody>
             </table>
             <p className="text-[10px] text-right pt-2 px-3" style={{ color: t.muted }}>
-              মোট {documents.length}টি ডকুমেন্ট
+              {tr("portal.totalDocs", { count: documents.length })}
             </p>
           </div>
         ) : (
-          <p className="text-xs text-center py-4" style={{ color: t.muted }}>কোনো ডকুমেন্ট জমা হয়নি</p>
+          <p className="text-xs text-center py-4" style={{ color: t.muted }}>{tr("portal.noDocSubmitted")}</p>
         )}
       </Card>
 
       {/* ── যোগাযোগ ── */}
       <div className="p-4 rounded-xl text-center" style={{ background: `${t.cyan}06`, border: `1px solid ${t.cyan}15` }}>
-        <p className="text-xs" style={{ color: t.cyan }}>সমস্যা হলে আপনার এজেন্সিতে যোগাযোগ করুন</p>
+        <p className="text-xs" style={{ color: t.cyan }}>{tr("portal.contactSupport")}</p>
       </div>
     </div>
   );

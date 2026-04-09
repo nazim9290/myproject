@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { GraduationCap, Mail, Lock, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { useTheme, getGlobalStyles } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function LoginPage({ onLogin, onStudentLogin }) {
   const t = useTheme();
+  const { t: tr } = useLanguage();
   const { login: authLogin } = useAuth();
   // ── Remember Me — base64 encode করে localStorage-এ রাখা (plaintext নয়) ──
   const remembered = (() => {
@@ -25,12 +27,12 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
     const logoutReason = localStorage.getItem("agencyos_logout_reason");
     if (logoutReason) {
       localStorage.removeItem("agencyos_logout_reason");
-      setError(logoutReason === "idle" ? "নিষ্ক্রিয়তার কারণে অটো লগআউট হয়েছে — আবার লগইন করুন" : "সেশন মেয়াদ শেষ — আবার লগইন করুন");
+      setError(logoutReason === "idle" ? tr("login.idleLogout") : tr("login.sessionExpired"));
     }
   }, []);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) { setError("ইমেইল ও পাসওয়ার্ড দিন"); return; }
+    if (!email.trim() || !password.trim()) { setError(tr("login.enterCredentials")); return; }
     setLoading(true);
     setError("");
     try {
@@ -44,7 +46,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
       }
       onLogin(user);
     } catch (err) {
-      setError(err.message || "লগইন ব্যর্থ হয়েছে");
+      setError(err.message || tr("login.failed"));
     } finally {
       setLoading(false);
     }
@@ -103,14 +105,14 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               </div>
             )}
             <div>
-              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">ইমেইল</label>
+              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">{tr("common.email")}</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 focus-within:border-cyan-500/30 transition">
                 <Mail size={14} className="opacity-30" />
                 <input value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="your@email.com" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">পাসওয়ার্ড</label>
+              <label className="text-[10px] uppercase tracking-wider opacity-40 mb-1.5 block">{tr("login.password")}</label>
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 focus-within:border-cyan-500/30 transition">
                 <Lock size={14} className="opacity-30" />
                 <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} className="flex-1 bg-transparent text-sm outline-none" placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
@@ -123,7 +125,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}
                 className="w-3.5 h-3.5 rounded accent-cyan-500" style={{ accentColor: t.cyan }} />
-              <span className="text-xs" style={{ color: t.muted }}>আমাকে মনে রাখুন</span>
+              <span className="text-xs" style={{ color: t.muted }}>{tr("login.rememberMe")}</span>
             </label>
 
             <button
@@ -132,7 +134,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 disabled:opacity-50"
               style={{ background: `linear-gradient(135deg, ${t.cyan}, ${t.purple})` }}
             >
-              {loading ? "লগইন হচ্ছে..." : "লগইন"}
+              {loading ? tr("login.loggingIn") : tr("login.login")}
             </button>
           </div>
 
@@ -142,7 +144,7 @@ export default function LoginPage({ onLogin, onStudentLogin }) {
               style={{ borderColor: `${t.emerald}40`, color: t.emerald, background: `${t.emerald}08` }}
               onMouseEnter={e => e.currentTarget.style.background = `${t.emerald}15`}
               onMouseLeave={e => e.currentTarget.style.background = `${t.emerald}08`}>
-              🎓 স্টুডেন্ট পোর্টাল লগইন
+              🎓 {tr("login.studentPortal")}
             </button>
           )}
           {/* Platform branding */}
