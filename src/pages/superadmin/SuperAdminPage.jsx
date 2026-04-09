@@ -9,7 +9,10 @@ import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import PhoneInput from "../../components/ui/PhoneInput";
 import { API_URL } from "../../lib/api";
-import FieldMapperTable from "../../components/ui/FieldMapper";
+import FieldMapperTable, { SYSTEM_FIELDS } from "../../components/ui/FieldMapper";
+
+// AI Resume Builder — system fields flat list
+const SYSTEM_FIELDS_FLAT = SYSTEM_FIELDS.flatMap(g => g.fields);
 import { formatDateDisplay } from "../../components/ui/DateInput";
 
 /**
@@ -354,6 +357,7 @@ export default function SuperAdminPage() {
           { key: "templates", label: tr("superAdmin.tabTemplates"), icon: "📄" },
           { key: "settings", label: tr("superAdmin.tabSettings"), icon: "⚙️" },
           { key: "analytics", label: tr("superAdmin.tabAnalytics"), icon: "📊" },
+          { key: "ai-resume", label: "AI Resume Builder", icon: "🤖" },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
@@ -1214,6 +1218,260 @@ export default function SuperAdminPage() {
         </div>
       </Card>
       </>}
+
+      {/* ══ TAB: AI RESUME BUILDER — Excel template-এ AI দিয়ে placeholder বসানো ══ */}
+      {activeTab === "ai-resume" && <AIResumeBuilder t={t} toast={toast} token={token} API_URL={API_URL} />}
+
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════
+// AIResumeBuilder — Super Admin only AI placeholder tool
+// Raw Excel upload → Claude Haiku analysis → review → save
+// ════════════════════════════════════════════════════════
+function AIResumeBuilder({ t, toast, token, API_URL }) {
+  const { t: tr } = useLanguage();
+
+  const [file, setFile] = useState(null);
+  const [schoolName, setSchoolName] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [engine, setEngine] = useState("");
+  const [inserting, setInserting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const fileRef = React.useRef(null);
+  const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+  const confColor = { high: t.emerald, medium: t.amber, low: t.rose };
+
+  // ── Excel upload → AI analyze ──
+  const doAnalyze = async () => {
+    if (!file) { toast.error("Excel ফাইল আপলোড করুন"); return; }
+    if (!schoolName.trim()) { toast.error("স্কুলের নাম দিন"); return; }
+    setAnalyzing(true);
+    setSuggestions([]);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("school_name", schoolName);
+      const res = await fetch(`${API_URL}/excel/ai-analyze`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSuggestions((data.suggestions || []).map(s => ({ ...s, approved: s.confidence !== "low" })));
+      setStats(data.stats);
+      setEngine(data.engine || "claude-haiku");
+      toast.success(`AI: ${data.stats?.total || 0} fields detected`);
+    } catch (err) {
+      toast.error("AI Analysis: " + (err.message || "ব্যর্থ"));
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // ── Approved suggestions → insert placeholders → download ──
+  const doInsert = async () => {
+    const approved = suggestions.filter(s => s.approved && s.field);
+    if (!approved.length) { toast.error("কমপক্ষে ১টি field approve করুন"); return; }
+    setInserting(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("school_name", schoolName);
+      form.append("suggestions", JSON.stringify(approved));
+      const res = await fetch(`${API_URL}/excel/ai-insert-placeholders`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setDone(true);
+      toast.success(`${approved.length} placeholders inserted — template saved!`);
+    } catch (err) {
+      toast.error(err.message || "Insert ব্যর্থ");
+    } finally {
+      setInserting(false);
+    }
+  };
+
+  // ── Reset ──
+  const reset = () => {
+    setFile(null); setSchoolName(""); setSuggestions([]); setStats(null); setEngine(""); setDone(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const approvedCount = suggestions.filter(s => s.approved).length;
+
+  return (
+    <div className="space-y-4">
+      {/* ── Step 1: Upload ── */}
+      <Card delay={50}>
+        <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+          🤖 AI Resume Placeholder Builder
+          <span className="text-[10px] font-normal px-2 py-0.5 rounded-full" style={{ background: `${t.purple}15`, color: t.purple }}>Super Admin Only</span>
+        </h3>
+        <p className="text-xs mb-4" style={{ color: t.muted }}>
+          Raw Excel template (placeholder ছাড়া) আপলোড করুন → AI সব cell analyze করে appropriate placeholder suggest করবে → Review করে Save করুন
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুলের নাম *</label>
+            <input value={schoolName} onChange={e => setSchoolName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}
+              placeholder="e.g. Tokyo Galaxy, Osaka YMCA" />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Excel ফাইল (.xlsx) *</label>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls"
+              onChange={e => setFile(e.target.files?.[0] || null)}
+              className="w-full text-xs px-3 py-2 rounded-lg outline-none" style={is} />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button onClick={doAnalyze} disabled={analyzing || !file || !schoolName.trim()}
+            style={{ background: `linear-gradient(135deg, ${t.purple}, ${t.cyan})` }}>
+            {analyzing ? "🤖 Analyzing..." : "🤖 AI Analyze"}
+          </Button>
+          {suggestions.length > 0 && (
+            <Button variant="ghost" size="xs" onClick={reset}>🔄 Reset</Button>
+          )}
+          {done && (
+            <span className="text-xs flex items-center gap-1" style={{ color: t.emerald }}>
+              <Check size={14} /> Template saved with placeholders!
+            </span>
+          )}
+        </div>
+
+        {/* Stats */}
+        {stats && (
+          <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <span className="text-xs" style={{ color: t.muted }}>
+              Total: <strong style={{ color: t.cyan }}>{stats.total}</strong>
+            </span>
+            <span className="text-xs" style={{ color: t.muted }}>
+              High: <strong style={{ color: t.emerald }}>{stats.high}</strong>
+            </span>
+            <span className="text-xs" style={{ color: t.muted }}>
+              Medium: <strong style={{ color: t.amber }}>{stats.medium}</strong>
+            </span>
+            <span className="text-xs" style={{ color: t.muted }}>
+              Low: <strong style={{ color: t.rose }}>{stats.low}</strong>
+            </span>
+            {engine && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full ml-auto" style={{ background: `${t.purple}15`, color: t.purple }}>
+                {engine}
+              </span>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* ── Step 2: Review Suggestions ── */}
+      {suggestions.length > 0 && (
+        <Card delay={80}>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold">AI Suggestions — Review & Approve</h4>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSuggestions(prev => prev.map(s => ({ ...s, approved: true })))}
+                className="text-[10px] px-2 py-1 rounded-lg" style={{ background: `${t.emerald}15`, color: t.emerald }}>✓ All</button>
+              <button onClick={() => setSuggestions(prev => prev.map(s => ({ ...s, approved: s.confidence === "high" })))}
+                className="text-[10px] px-2 py-1 rounded-lg" style={{ background: `${t.cyan}15`, color: t.cyan }}>✓ High Only</button>
+              <button onClick={() => setSuggestions(prev => prev.map(s => ({ ...s, approved: false })))}
+                className="text-[10px] px-2 py-1 rounded-lg" style={{ background: `${t.muted}15`, color: t.muted }}>✗ None</button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                  {["", "Sheet", "Cell", "System Field", "Confidence", "Reasoning"].map(h => (
+                    <th key={h} className="text-left py-2.5 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {suggestions.map((s, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${t.border}`, opacity: s.approved ? 1 : 0.4 }}
+                    onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <td className="py-2 px-3">
+                      <input type="checkbox" checked={!!s.approved}
+                        onChange={() => setSuggestions(prev => prev.map((x, j) => j === i ? { ...x, approved: !x.approved } : x))}
+                        style={{ accentColor: t.cyan }} />
+                    </td>
+                    <td className="py-2 px-3">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}10`, color: t.purple }}>{s.sheet || "—"}</span>
+                    </td>
+                    <td className="py-2 px-3 font-mono font-bold" style={{ color: t.cyan }}>{s.cellRef}</td>
+                    <td className="py-2 px-3" style={{ minWidth: 180 }}>
+                      <select value={s.field || ""} onChange={e => setSuggestions(prev => prev.map((x, j) => j === i ? { ...x, field: e.target.value, approved: !!e.target.value } : x))}
+                        className="px-2 py-1 rounded text-xs outline-none" style={is}>
+                        <option value="">— Select —</option>
+                        {SYSTEM_FIELDS_FLAT.map(f => (
+                          <option key={f.key} value={f.key}>{f.key} ({f.label})</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-2 px-3">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: `${confColor[s.confidence] || t.muted}15`, color: confColor[s.confidence] || t.muted }}>
+                        {s.confidence}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-[10px] max-w-[250px] truncate" style={{ color: t.muted }} title={s.reasoning}>
+                      {s.reasoning || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Insert button */}
+          <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
+            <p className="text-xs" style={{ color: t.muted }}>
+              Approved: <strong style={{ color: t.cyan }}>{approvedCount}</strong> / {suggestions.length}
+            </p>
+            <Button onClick={doInsert} disabled={inserting || approvedCount === 0}
+              style={{ background: `linear-gradient(135deg, ${t.emerald}, ${t.cyan})` }}>
+              {inserting ? "Inserting..." : `✅ Insert ${approvedCount} Placeholders & Save`}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* How it works */}
+      {suggestions.length === 0 && !analyzing && (
+        <Card delay={100}>
+          <h4 className="text-sm font-semibold mb-3">কিভাবে কাজ করে?</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { step: "১", title: "Raw Excel আপলোড", desc: "স্কুলের original Excel ফরম (.xlsx) আপলোড করুন — কোনো placeholder লাগবে না", color: t.cyan },
+              { step: "২", title: "AI Analysis", desc: "Claude AI সব cell analyze করে — Japanese/Bengali/English label detect করে সঠিক field suggest করবে", color: t.purple },
+              { step: "৩", title: "Review & Save", desc: "AI-র suggestion review করুন, edit করুন, approve করুন — template save হবে placeholder সহ", color: t.emerald },
+            ].map((s, i) => (
+              <div key={i} className="p-4 rounded-xl" style={{ background: `${s.color}08`, border: `1px solid ${s.color}15` }}>
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center text-sm font-black mb-2"
+                  style={{ background: `${s.color}20`, color: s.color }}>{s.step}</div>
+                <p className="text-xs font-bold mb-1">{s.title}</p>
+                <p className="text-[10px]" style={{ color: t.muted }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] mt-3 text-center" style={{ color: t.muted }}>
+            💡 Cost: প্রতি template ~$0.002 (Claude Haiku) • Merged cells ও multi-sheet সাপোর্ট করে
+          </p>
+        </Card>
+      )}
     </div>
   );
 }
