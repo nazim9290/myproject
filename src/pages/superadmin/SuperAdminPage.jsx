@@ -1249,7 +1249,8 @@ function AIResumeBuilder({ t, toast, token, API_URL }) {
   // ── Excel upload → AI analyze ──
   const doAnalyze = async () => {
     if (!file) { toast.error("Excel ফাইল আপলোড করুন"); return; }
-    if (!schoolName.trim()) { toast.error("স্কুলের নাম দিন"); return; }
+    // School name optional — filename থেকে auto detect
+    if (!schoolName.trim()) setSchoolName(file.name.replace(/\.xlsx?$/i, "").replace(/[_-]/g, " "));
     setAnalyzing(true);
     setSuggestions([]);
     try {
@@ -1322,7 +1323,7 @@ function AIResumeBuilder({ t, toast, token, API_URL }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>স্কুলের নাম *</label>
+            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Template নাম <span className="normal-case" style={{ color: t.muted }}>(optional — ফাইল নাম থেকে নেবে)</span></label>
             <input value={schoolName} onChange={e => setSchoolName(e.target.value)}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}
               placeholder="e.g. Tokyo Galaxy, Osaka YMCA" />
