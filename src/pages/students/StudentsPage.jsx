@@ -156,13 +156,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const { t: tr } = useLanguage();
   const [selectedId, setSelectedId] = useState(null);
 
-  // ── টেবিল কলাম কাস্টমাইজেশন — localStorage থেকে load ──
+  // ── টেবিল কলাম কাস্টমাইজেশন — API থেকে load, পরিবর্তনে API-তে save ──
   const [visibleColKeys, setVisibleColKeys] = useState(() => {
+    // প্রথমে localStorage থেকে instant load (API আসতে সময় লাগতে পারে)
     try {
       const saved = localStorage.getItem(LS_COL_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // validate — শুধু valid key রাখো
         const validKeys = TABLE_COLUMN_DEFS.map(c => c.key);
         const filtered = parsed.filter(k => validKeys.includes(k));
         if (filtered.length > 0) return filtered;
@@ -171,10 +171,30 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     return [...DEFAULT_VISIBLE_KEYS];
   });
 
-  // ── কলাম পরিবর্তন হলে localStorage-এ সেভ ──
+  // ── Mount-এ API থেকে ইউজারের preferences load ──
+  useEffect(() => {
+    api.get("/users/me/preferences").then(prefs => {
+      if (prefs?.students_columns?.length > 0) {
+        const validKeys = TABLE_COLUMN_DEFS.map(c => c.key);
+        const filtered = prefs.students_columns.filter(k => validKeys.includes(k));
+        if (filtered.length > 0) {
+          setVisibleColKeys(filtered);
+          try { localStorage.setItem(LS_COL_KEY, JSON.stringify(filtered)); } catch { /* ignore */ }
+        }
+      }
+    }).catch(() => { /* fallback: localStorage-এর data ব্যবহার হবে */ });
+  }, []);
+
+  // ── কলাম পরিবর্তন হলে API + localStorage দুইটাতেই সেভ ──
+  const colSaveTimer = useRef(null);
   const handleColChange = (keys) => {
     setVisibleColKeys(keys);
     try { localStorage.setItem(LS_COL_KEY, JSON.stringify(keys)); } catch { /* ignore */ }
+    // debounce — দ্রুত পরিবর্তনে বারবার API call এড়ানো
+    if (colSaveTimer.current) clearTimeout(colSaveTimer.current);
+    colSaveTimer.current = setTimeout(() => {
+      api.patch("/users/me/preferences", { students_columns: keys }).catch(() => {});
+    }, 800);
   };
 
   // ── TABLE_COLUMN_DEFS থেকে label resolve (i18n) — ColumnCustomizer-এ পাঠানোর জন্য ──
