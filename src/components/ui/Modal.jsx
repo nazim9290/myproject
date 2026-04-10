@@ -16,11 +16,25 @@ const SIZES = {
   full: "max-w-6xl",
 };
 
-export default function Modal({ isOpen, onClose, title, subtitle, size = "md", children }) {
+/**
+ * @param {boolean} preventClose — true হলে বাইরে ক্লিক বা ESC-এ সরাসরি বন্ধ হবে না,
+ *   onClose-এ dirty check confirmation দেখানো যাবে
+ */
+export default function Modal({ isOpen, onClose, title, subtitle, size = "md", preventClose = false, children }) {
   const t = useTheme();
   const overlayRef = useRef(null);
   /* ─── প্রতিটি Modal ইনস্ট্যান্সের জন্য ইউনিক ID ─── */
   const modalId = useId();
+
+  // ── guarded close — preventClose হলে confirmation দেখাও ──
+  const guardedClose = () => {
+    if (preventClose) {
+      // unsaved changes আছে — ইউজারকে জিজ্ঞাসা করো
+      const yes = window.confirm("পরিবর্তন সেভ হয়নি। বন্ধ করতে চান?");
+      if (!yes) return;
+    }
+    onClose();
+  };
 
   /* ─── Escape কী দিয়ে বন্ধ + body scroll বন্ধ ─── */
   /* শুধুমাত্র সবচেয়ে উপরের (topmost) modal ESC-এ বন্ধ হবে */
@@ -30,7 +44,7 @@ export default function Modal({ isOpen, onClose, title, subtitle, size = "md", c
       if (e.key === "Escape") {
         const allModals = document.querySelectorAll("[data-modal]");
         if (allModals.length > 0 && allModals[allModals.length - 1]?.getAttribute("data-modal") === modalId) {
-          onClose();
+          guardedClose();
         }
       }
     };
@@ -42,7 +56,7 @@ export default function Modal({ isOpen, onClose, title, subtitle, size = "md", c
       const remaining = document.querySelectorAll("[data-modal]");
       if (remaining.length === 0) document.body.style.overflow = "";
     };
-  }, [isOpen, onClose, modalId]);
+  }, [isOpen, onClose, modalId, preventClose]);
 
   /* ─── বন্ধ থাকলে কিছু রেন্ডার করবে না ─── */
   if (!isOpen) return null;
@@ -51,7 +65,7 @@ export default function Modal({ isOpen, onClose, title, subtitle, size = "md", c
     <div
       ref={overlayRef}
       data-modal={modalId}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      onClick={(e) => { if (e.target === overlayRef.current) guardedClose(); }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
         background: "rgba(0,0,0,0.6)",
@@ -81,7 +95,7 @@ export default function Modal({ isOpen, onClose, title, subtitle, size = "md", c
               )}
             </div>
             <button
-              onClick={onClose}
+              onClick={guardedClose}
               className="p-1.5 rounded-lg transition-colors"
               style={{ color: t.muted }}
               onMouseEnter={(e) => (e.currentTarget.style.background = `${t.rose}15`)}

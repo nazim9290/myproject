@@ -47,6 +47,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   // ── প্রোফাইল সেকশন-ভিত্তিক Edit স্টেট ──
   const [editSection, setEditSection] = useState(null); // "personal" | "passport" | "destination" | "internal" | null
   const [sectionForm, setSectionForm] = useState({});
+  const [sectionFormOriginal, setSectionFormOriginal] = useState({}); // dirty check-এর জন্য
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [aiGenerateConfirm, setAiGenerateConfirm] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -556,8 +557,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       });
     }
     setSectionForm(formData);
+    setSectionFormOriginal(formData); // dirty check-এর জন্য original রাখো
     setEditSection(section);
   };
+
+  // ── form dirty check — কোনো field পরিবর্তন হয়েছে কিনা ──
+  const isFormDirty = editSection && JSON.stringify(sectionForm) !== JSON.stringify(sectionFormOriginal);
 
   return (
     <div className="space-y-5 anim-fade">
@@ -2033,7 +2038,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       {/* ── সেকশন-ভিত্তিক Profile Edit Modal (md size) ── */}
       <Modal isOpen={!!editSection} onClose={() => setEditSection(null)}
         title={SECTION_TITLES[editSection] || tr("common.edit")}
-        subtitle={`${student.name_en} — ${student.id}`} size="md">
+        subtitle={`${student.name_en} — ${student.id}`} size="md"
+        preventClose={isFormDirty}>
         <div className="space-y-3">
           {/* Dynamic fields — editSection অনুযায়ী render */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
