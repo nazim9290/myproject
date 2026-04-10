@@ -1820,16 +1820,40 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   <p className="text-xs font-medium py-1">{sponsor.tin || "—"}</p>
                 </div>
               </div>
-              {/* ── Year / Income / Tax — পাশাপাশি paired ── */}
-              <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-2" style={{ borderTop: `1px solid ${t.border}` }}>
-                <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Year</p>
-                <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Annual Income</p>
-                <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Tax Paid</p>
-                {["y1","y2","y3"].map(y => (<>
-                  <p key={`yr${y}`} className="text-xs font-medium py-1">{sponsor[`income_year_${y.slice(1)}`] || (y === "y1" ? "১ম বছর" : y === "y2" ? "২য় বছর" : "৩য় বছর")}</p>
-                  <p key={`inc${y}`} className="text-xs font-medium py-1">{sponsor[`annual_income_${y}`] ? `৳${Number(sponsor[`annual_income_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
-                  <p key={`tax${y}`} className="text-xs font-medium py-1">{sponsor[`tax_${y}`] ? `৳${Number(sponsor[`tax_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
-                </>))}
+              {/* ── Assessment Year / Income Source / Income / Tax — ৪ কলাম ── */}
+              <div className="overflow-x-auto pt-2" style={{ borderTop: `1px solid ${t.border}` }}>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="text-left py-1.5 px-2 text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Sl</th>
+                      <th className="text-left py-1.5 px-2 text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Assessment Year</th>
+                      <th className="text-left py-1.5 px-2 text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Income Source</th>
+                      <th className="text-right py-1.5 px-2 text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Annual Income</th>
+                      <th className="text-right py-1.5 px-2 text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Tax Paid</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[1,2,3].map(n => {
+                      const y = `y${n}`;
+                      const year = sponsor[`income_year_${n}`];
+                      const income = sponsor[`annual_income_${y}`];
+                      const tax = sponsor[`tax_${y}`];
+                      if (!year && !income && !tax) return null;
+                      return (
+                        <tr key={n} style={{ borderTop: `1px solid ${t.border}` }}>
+                          <td className="py-1.5 px-2" style={{ color: t.muted }}>0{n}</td>
+                          <td className="py-1.5 px-2 font-medium">{year || "—"}</td>
+                          <td className="py-1.5 px-2">{sponsor[`income_source_${n}`] || "Business Income"}</td>
+                          <td className="py-1.5 px-2 text-right font-medium">{income ? `৳${Number(income).toLocaleString("en-IN")}` : "—"}</td>
+                          <td className="py-1.5 px-2 text-right">{tax ? `৳${Number(tax).toLocaleString("en-IN")}` : "—"}</td>
+                        </tr>
+                      );
+                    })}
+                    {![1,2,3].some(n => sponsor[`income_year_${n}`] || sponsor[`annual_income_y${n}`] || sponsor[`tax_y${n}`]) && (
+                      <tr><td colSpan={5} className="py-3 text-center" style={{ color: t.muted }}>No tax records — Edit to add</td></tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </Card>
@@ -1905,41 +1929,49 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 ))}
                 {/* ── Tax fields ── */}
                 {sponsorEditSection === "tax" && <>
-                  <div className="md:col-span-2">
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>TIN</label>
+                  <div className="md:col-span-3">
+                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>e-TIN Number</label>
                     <input value={sponsorForm.tin || ""} onChange={e => setSponsorForm(p => ({ ...p, tin: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}
+                      placeholder="e-TIN: 479441839749/C-260" />
                   </div>
-                  {/* ── Year / Income / Tax — পাশাপাশি paired ── */}
+                  {/* ── ৩ বছরের Income + Tax — প্রতিটি row: Year | Source | Income | Tax ── */}
                   {[1, 2, 3].map(n => {
                     const y = `y${n}`;
-                    const label = n === 1 ? "১ম" : n === 2 ? "২য়" : "৩য়";
+                    const label = n === 1 ? "01" : n === 2 ? "02" : "03";
                     const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
                     const currentYear = new Date().getFullYear();
+                    // Fiscal year options: 2024-2025, 2023-2024, ... ১০ বছর
+                    const fiscalYears = Array.from({ length: 10 }, (_, i) => `${currentYear - i}-${currentYear - i + 1}`);
                     return (<>
-                      {/* Year selector */}
-                      <div key={`yr${n}`} className="md:col-span-2">
-                        <p className="text-[10px] uppercase tracking-wider font-bold mt-2 mb-1" style={{ color: t.cyan }}>{label} বছর</p>
+                      <div key={`hd${n}`} className="md:col-span-3 mt-1" style={{ borderTop: n > 1 ? `1px solid ${t.border}` : "none" }}>
+                        <p className="text-[10px] uppercase tracking-wider font-bold pt-1" style={{ color: t.cyan }}>SL {label}</p>
                       </div>
-                      <div key={`yrs${n}`}>
-                        <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Year</label>
+                      <div key={`yr${n}`}>
+                        <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Assessment Year</label>
                         <select value={sponsorForm[`income_year_${n}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`income_year_${n}`]: e.target.value }))}
                           className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
-                          <option value="">Select Year</option>
-                          {Array.from({ length: 10 }, (_, i) => currentYear - i).map(yr => (
-                            <option key={yr} value={yr}>{yr}</option>
-                          ))}
+                          <option value="">Select</option>
+                          {fiscalYears.map(fy => <option key={fy} value={fy}>{fy}</option>)}
                         </select>
                       </div>
+                      <div key={`src${n}`}>
+                        <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Income Source</label>
+                        <select value={sponsorForm[`income_source_${n}`] || "Business Income"} onChange={e => setSponsorForm(p => ({ ...p, [`income_source_${n}`]: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                          {["Business Income", "Salary Income", "Agriculture Income", "Rental Income", "Other Income"].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div key={`empty${n}`}></div>
                       <div key={`inc${n}`}>
                         <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Annual Income (৳)</label>
                         <input type="number" value={sponsorForm[`annual_income_${y}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`annual_income_${y}`]: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="0" />
+                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="25,04,424" />
                       </div>
                       <div key={`tax${n}`}>
                         <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Tax Paid (৳)</label>
                         <input type="number" value={sponsorForm[`tax_${y}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`tax_${y}`]: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="0" />
+                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="4,08,606" />
                       </div>
                     </>);
                   })}
