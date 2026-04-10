@@ -39,6 +39,10 @@ async function request(path, options = {}) {
   // Header তৈরি — token থাকলে Authorization যোগ
   const headers = { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers };
 
+  // Super Admin agency switch — localStorage-এ switch ID থাকলে header-এ পাঠাও
+  const switchAgencyId = localStorage.getItem("agencyos_switch_agency_id");
+  if (switchAgencyId) headers["X-Switch-Agency"] = switchAgencyId;
+
   // FormData না হলে JSON Content-Type বসাও
   if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
 

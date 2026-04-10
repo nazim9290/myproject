@@ -858,6 +858,19 @@ function AppShell({ isDark, setIsDark }) {
             currentUser={currentUser}
           />
 
+          {/* ── Super Admin Agency Switch Banner ── */}
+          {localStorage.getItem("agencyos_switch_agency_id") && (
+            <div className="flex items-center justify-between px-4 py-2" style={{ background: `${t.amber}20`, borderBottom: `1px solid ${t.amber}40` }}>
+              <p className="text-xs font-semibold" style={{ color: t.amber }}>
+                🔄 Viewing as: <strong>{localStorage.getItem("agencyos_switch_agency_name") || "Other Agency"}</strong>
+              </p>
+              <button onClick={() => { localStorage.removeItem("agencyos_switch_agency_id"); localStorage.removeItem("agencyos_switch_agency_name"); window.location.reload(); }}
+                className="text-[10px] px-3 py-1 rounded-lg font-medium" style={{ background: t.amber, color: "#000" }}>
+                ✕ Exit Agency View
+              </button>
+            </div>
+          )}
+
           <main className="flex-1 overflow-y-auto p-4 lg:p-6">
             <PageRenderer
               activePage={activePage}

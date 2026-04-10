@@ -50,11 +50,15 @@ async function request(path, options = {}) {
   const isWrite = ["POST", "PATCH", "PUT", "DELETE"].includes(method);
   if (isWrite) console.log(`%c[API ${method}]%c ${path}`, "color:#a855f7;font-weight:bold", "color:#94a3b8");
 
+  // Super Admin agency switch header
+  const switchAgencyId = localStorage.getItem("agencyos_switch_agency_id");
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(switchAgencyId ? { "X-Switch-Agency": switchAgencyId } : {}),
       ...options.headers,
     },
   });
