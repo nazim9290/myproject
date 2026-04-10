@@ -128,8 +128,7 @@ const EXPORT_COLUMNS = [
 const TABLE_COLUMN_DEFS = [
   // Basic
   { key: "id", label: "ID", group: "Basic" },
-  { key: "name_en", label: "Name (EN)", group: "Basic" },
-  { key: "name_bn", label: "Name (BN)", group: "Basic" },
+  { key: "name_en", label: "Name", group: "Basic" },
   { key: "name_katakana", label: "Name (カタカナ)", group: "Basic" },
   { key: "phone", label: "Phone", group: "Basic" },
   { key: "whatsapp", label: "WhatsApp", group: "Basic" },
@@ -872,7 +871,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                               </div>
                               <div>
                                 <span className="font-medium block">{s.name_en}</span>
-                                {s.name_bn && <span className="text-[9px] block" style={{ color: t.muted }}>{s.name_bn}</span>}
+                                {s.name_katakana && <span className="text-[9px] block" style={{ color: t.muted }}>{s.name_katakana}</span>}
                               </div>
                             </div>
                           </td>
