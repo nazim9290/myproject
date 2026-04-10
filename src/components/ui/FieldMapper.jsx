@@ -47,31 +47,34 @@ const SYSTEM_FIELDS = [
     { key: "family2_name", label: "সদস্য ২ নাম" }, { key: "family2_relation", label: "সদস্য ২ সম্পর্ক" }, { key: "family2_dob", label: "সদস্য ২ জন্ম" }, { key: "family2_occupation", label: "সদস্য ২ পেশা" }, { key: "family2_address", label: "সদস্য ২ ঠিকানা" },
     { key: "family3_name", label: "সদস্য ৩ নাম" }, { key: "family3_relation", label: "সদস্য ৩ সম্পর্ক" }, { key: "family3_dob", label: "সদস্য ৩ জন্ম" }, { key: "family3_occupation", label: "সদস্য ৩ পেশা" }, { key: "family3_address", label: "সদস্য ৩ ঠিকানা" },
   ]},
-  { group: "শিক্ষা (SSC/HSC/Honours)", color: "amber", source: "Student → Profile → Education", fields: [
+  { group: "শিক্ষা", color: "amber", source: "Student → Profile → Education (Level + School Type)", fields: [
+    // ── SSC / HSC / Honours ──
     { key: "edu_ssc_school", label: "SSC স্কুল" }, { key: "edu_ssc_year", label: "SSC সন" }, { key: "edu_ssc_board", label: "SSC বোর্ড" }, { key: "edu_ssc_gpa", label: "SSC GPA" }, { key: "edu_ssc_subject", label: "SSC বিভাগ" },
     { key: "edu_ssc_address", label: "SSC ঠিকানা" }, { key: "edu_ssc_entrance", label: "SSC ভর্তি সন" },
     { key: "edu_hsc_school", label: "HSC কলেজ" }, { key: "edu_hsc_year", label: "HSC সন" }, { key: "edu_hsc_board", label: "HSC বোর্ড" }, { key: "edu_hsc_gpa", label: "HSC GPA" }, { key: "edu_hsc_subject", label: "HSC বিভাগ" },
     { key: "edu_hsc_address", label: "HSC ঠিকানা" }, { key: "edu_hsc_entrance", label: "HSC ভর্তি সন" },
     { key: "edu_honours_school", label: "Honours বিশ্ববিদ্যালয়" }, { key: "edu_honours_year", label: "Honours সন" }, { key: "edu_honours_gpa", label: "Honours GPA" }, { key: "edu_honours_subject", label: "Honours বিষয়" },
     { key: "edu_honours_address", label: "Honours ঠিকানা" }, { key: "edu_honours_entrance", label: "Honours ভর্তি সন" },
-  ]},
-  { group: "শিক্ষা (日本語履歴書)", color: "amber", source: "Student → Profile → Education (School Type select)", fields: [
-    { key: "edu_elementary_school", label: "প্রাথমিক (小学校)" }, { key: "edu_elementary_address", label: "প্রাথমিক ঠিকানা" },
-    { key: "edu_elementary_entrance", label: "প্রাথমিক ভর্তি" }, { key: "edu_elementary_entrance:year", label: "ভর্তি → Year" }, { key: "edu_elementary_entrance:month", label: "ভর্তি → Month" },
-    { key: "edu_elementary_graduation", label: "প্রাথমিক পাশ" }, { key: "edu_elementary_graduation:year", label: "পাশ → Year" }, { key: "edu_elementary_graduation:month", label: "পাশ → Month" },
-    { key: "edu_elementary_years", label: "বছর সংখ্যা (auto)" },
-    { key: "edu_junior_school", label: "জুনিয়র হাই (中学校)" }, { key: "edu_junior_address", label: "জুনিয়র ঠিকানা" },
-    { key: "edu_junior_entrance", label: "জুনিয়র ভর্তি" }, { key: "edu_junior_entrance:year", label: "ভর্তি → Year" }, { key: "edu_junior_entrance:month", label: "ভর্তি → Month" },
-    { key: "edu_junior_graduation", label: "জুনিয়র পাশ" }, { key: "edu_junior_graduation:year", label: "পাশ → Year" }, { key: "edu_junior_graduation:month", label: "পাশ → Month" },
-    { key: "edu_junior_years", label: "বছর সংখ্যা (auto)" },
-    { key: "edu_highSchool_school", label: "হাই স্কুল (高等学校)" }, { key: "edu_highSchool_address", label: "হাই স্কুল ঠিকানা" },
-    { key: "edu_highSchool_entrance", label: "হাই স্কুল ভর্তি" }, { key: "edu_highSchool_entrance:year", label: "ভর্তি → Year" }, { key: "edu_highSchool_entrance:month", label: "ভর্তি → Month" },
-    { key: "edu_highSchool_graduation", label: "হাই স্কুল পাশ" }, { key: "edu_highSchool_graduation:year", label: "পাশ → Year" }, { key: "edu_highSchool_graduation:month", label: "পাশ → Month" },
-    { key: "edu_highSchool_years", label: "বছর সংখ্যা (auto)" },
-    { key: "edu_technical_school", label: "টেকনিক্যাল (専門学校)" }, { key: "edu_technical_address", label: "ঠিকানা" },
-    { key: "edu_technical_entrance", label: "ভর্তি" }, { key: "edu_technical_graduation", label: "পাশ" },
-    { key: "edu_university_school", label: "বিশ্ববিদ্যালয় (大学)" }, { key: "edu_university_address", label: "ঠিকানা" },
-    { key: "edu_university_entrance", label: "ভর্তি" }, { key: "edu_university_graduation", label: "পাশ" },
+    // ── Elementary 小学校 ──
+    { key: "edu_elementary_school", label: "প্রাথমিক (小学校) স্কুল" }, { key: "edu_elementary_address", label: "প্রাথমিক ঠিকানা" },
+    { key: "edu_elementary_entrance", label: "প্রাথমিক ভর্তি" }, { key: "edu_elementary_entrance:year", label: "প্রাথমিক ভর্তি → Year" }, { key: "edu_elementary_entrance:month", label: "প্রাথমিক ভর্তি → Month" },
+    { key: "edu_elementary_graduation", label: "প্রাথমিক পাশ" }, { key: "edu_elementary_graduation:year", label: "প্রাথমিক পাশ → Year" }, { key: "edu_elementary_graduation:month", label: "প্রাথমিক পাশ → Month" },
+    { key: "edu_elementary_years", label: "প্রাথমিক বছর সংখ্যা (auto)" },
+    // ── Junior High 中学校 ──
+    { key: "edu_junior_school", label: "জুনিয়র হাই (中学校) স্কুল" }, { key: "edu_junior_address", label: "জুনিয়র ঠিকানা" },
+    { key: "edu_junior_entrance", label: "জুনিয়র ভর্তি" }, { key: "edu_junior_entrance:year", label: "জুনিয়র ভর্তি → Year" }, { key: "edu_junior_entrance:month", label: "জুনিয়র ভর্তি → Month" },
+    { key: "edu_junior_graduation", label: "জুনিয়র পাশ" }, { key: "edu_junior_graduation:year", label: "জুনিয়র পাশ → Year" }, { key: "edu_junior_graduation:month", label: "জুনিয়র পাশ → Month" },
+    { key: "edu_junior_years", label: "জুনিয়র বছর সংখ্যা (auto)" },
+    // ── High School 高等学校 ──
+    { key: "edu_highSchool_school", label: "হাই স্কুল (高等学校) স্কুল" }, { key: "edu_highSchool_address", label: "হাই স্কুল ঠিকানা" },
+    { key: "edu_highSchool_entrance", label: "হাই স্কুল ভর্তি" }, { key: "edu_highSchool_entrance:year", label: "হাই স্কুল ভর্তি → Year" }, { key: "edu_highSchool_entrance:month", label: "হাই স্কুল ভর্তি → Month" },
+    { key: "edu_highSchool_graduation", label: "হাই স্কুল পাশ" }, { key: "edu_highSchool_graduation:year", label: "হাই স্কুল পাশ → Year" }, { key: "edu_highSchool_graduation:month", label: "হাই স্কুল পাশ → Month" },
+    { key: "edu_highSchool_years", label: "হাই স্কুল বছর সংখ্যা (auto)" },
+    // ── Technical / University ──
+    { key: "edu_technical_school", label: "টেকনিক্যাল (専門学校)" }, { key: "edu_technical_address", label: "টেকনিক্যাল ঠিকানা" },
+    { key: "edu_technical_entrance", label: "টেকনিক্যাল ভর্তি" }, { key: "edu_technical_graduation", label: "টেকনিক্যাল পাশ" },
+    { key: "edu_university_school", label: "বিশ্ববিদ্যালয় (大学)" }, { key: "edu_university_address", label: "বিশ্ববিদ্যালয় ঠিকানা" },
+    { key: "edu_university_entrance", label: "বিশ্ববিদ্যালয় ভর্তি" }, { key: "edu_university_graduation", label: "বিশ্ববিদ্যালয় পাশ" },
   ]},
   { group: "জাপানি ভাষা পরীক্ষা", color: "rose", source: "Student → Profile → JP Exams", fields: [
     { key: "jp_exam_type", label: "পরীক্ষার ধরন" }, { key: "jp_level", label: "লেভেল" },
