@@ -14,6 +14,13 @@ import { SYSTEM_FIELDS, FieldPicker } from "../../components/ui/FieldMapper";
 import { API_URL as API } from "../../lib/api";
 import { formatDateDisplay } from "../../components/ui/DateInput";
 const token = () => localStorage.getItem("agencyos_token");
+// Auth headers — token + Super Admin agency switch
+const authHeaders = () => {
+  const h = { Authorization: `Bearer ${token()}` };
+  const sw = localStorage.getItem("agencyos_switch_agency_id");
+  if (sw) h["X-Switch-Agency"] = sw;
+  return h;
+};
 
 // সব group-এর সব fields flatten করে একটি flat list — manual mapping dropdown-এ ব্যবহার হয়
 const ALL_FIELDS = SYSTEM_FIELDS.flatMap(g => g.fields);
@@ -35,7 +42,7 @@ export default function ExcelAutoFillPage({ students }) {
         const tk = token();
         if (!tk) { setLoading(false); return; }
         const res = await fetch(`${API}/excel/templates`, {
-          headers: { Authorization: `Bearer ${tk}` },
+          headers: authHeaders(),
         });
         if (res.ok) {
           const data = await res.json();
@@ -52,7 +59,7 @@ export default function ExcelAutoFillPage({ students }) {
   // Schools list for dropdown
   const [schoolsList, setSchoolsList] = useState([]);
   useEffect(() => {
-    fetch(`${API}/schools?limit=500`, { headers: { Authorization: `Bearer ${token()}` } })
+    fetch(`${API}/schools?limit=500`, { headers: authHeaders() })
       .then(r => r.json()).then(res => {
         const list = Array.isArray(res) ? res : res?.data || [];
         setSchoolsList(list);
@@ -109,7 +116,7 @@ export default function ExcelAutoFillPage({ students }) {
         form.append("school_name", uploadSchool);
         const res = await fetch(`${API}/excel/upload-template`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token()}` },
+          headers: authHeaders(),
           body: form,
         });
         const data = await res.json();
@@ -209,7 +216,7 @@ export default function ExcelAutoFillPage({ students }) {
       try {
         const res = await fetch(`${API}/excel/templates/${activeTemplate.id}/mapping`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({ mappings: mappingsWithMod }),
         });
         if (!res.ok) throw new Error("API error");
@@ -255,7 +262,7 @@ export default function ExcelAutoFillPage({ students }) {
         for (const sid of selectedStudents) {
           const res = await fetch(`${API}/excel/generate-single`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+            headers: { "Content-Type": "application/json", ...authHeaders() },
             body: JSON.stringify({ template_id: tmpl.id, student_id: sid }),
           });
           if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
@@ -299,7 +306,7 @@ export default function ExcelAutoFillPage({ students }) {
       if (tmpl.id && token() && !tmpl.id.startsWith("tmpl-")) {
         const res = await fetch(`${API}/excel/templates/${tmpl.id}`, {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token()}` },
+          headers: authHeaders(),
         });
         if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
       }
