@@ -272,20 +272,51 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
   const [importResult, setImportResult] = useState(null);
   const importFileRef = useState(null)[1];
 
+  // ── Import mapping dropdown — সব student ফিল্ড ──
   const SYSTEM_FIELDS = [
     { key: "", label: tr("students.import.skip") },
-    { key: "name_en", label: tr("students.f_fullName") }, { key: "name_bn", label: tr("students.f_nameBn") },
-    { key: "phone", label: tr("students.f_phone") }, { key: "email", label: tr("students.f_email") },
-    { key: "dob", label: tr("students.f_dob") }, { key: "gender", label: tr("students.f_gender") },
-    { key: "passport_number", label: tr("students.f_passport") }, { key: "nid", label: tr("students.f_nid") },
-    { key: "father_name", label: tr("students.f_fatherName") }, { key: "mother_name", label: tr("students.f_motherName") },
-    { key: "permanent_address", label: tr("students.f_permanentAddress") }, { key: "current_address", label: tr("students.f_currentAddress") },
-    { key: "country", label: tr("students.f_country") }, { key: "school", label: tr("students.f_school") },
-    { key: "batch", label: tr("students.f_batch") }, { key: "branch", label: tr("students.f_branch") },
-    { key: "status", label: tr("common.status") }, { key: "source", label: tr("students.f_source") },
-    { key: "student_type", label: tr("students.f_type") }, { key: "intake", label: tr("students.f_intake") },
-    { key: "nationality", label: tr("students.f_nationality") }, { key: "blood_group", label: tr("students.f_bloodGroup") },
-    { key: "whatsapp", label: tr("students.f_whatsapp") }, { key: "visa_type", label: tr("students.f_visaType") },
+    // Personal
+    { key: "name_en", label: tr("students.f_fullName") },
+    { key: "name_katakana", label: tr("students.f_nameKatakana") },
+    { key: "phone", label: tr("students.f_phone") },
+    { key: "whatsapp", label: tr("students.f_whatsapp") },
+    { key: "email", label: tr("students.f_email") },
+    { key: "dob", label: tr("students.f_dob") },
+    { key: "gender", label: tr("students.f_gender") },
+    { key: "marital_status", label: tr("students.f_maritalStatus") },
+    { key: "nationality", label: tr("students.f_nationality") },
+    { key: "blood_group", label: tr("students.f_bloodGroup") },
+    { key: "birth_place", label: tr("students.f_birthPlace") },
+    { key: "occupation", label: tr("students.f_occupation") },
+    // Passport & NID
+    { key: "nid", label: tr("students.f_nid") },
+    { key: "passport_number", label: tr("students.f_passport") },
+    { key: "passport_issue", label: tr("students.f_passportIssue") },
+    { key: "passport_expiry", label: tr("students.f_passportExpiry") },
+    // Address
+    { key: "permanent_address", label: tr("students.f_permanentAddress") },
+    { key: "current_address", label: tr("students.f_currentAddress") },
+    // Family
+    { key: "father_name", label: tr("students.f_fatherName") },
+    { key: "mother_name", label: tr("students.f_motherName") },
+    { key: "spouse_name", label: "Spouse Name" },
+    { key: "emergency_contact", label: tr("students.f_emergencyContact") },
+    { key: "emergency_phone", label: tr("students.f_emergencyPhone") },
+    // Destination & Status
+    { key: "country", label: tr("students.f_country") },
+    { key: "school", label: tr("students.f_school") },
+    { key: "batch", label: tr("students.f_batch") },
+    { key: "intake", label: tr("students.f_intake") },
+    { key: "visa_type", label: tr("students.f_visaType") },
+    { key: "student_type", label: tr("students.f_type") },
+    { key: "branch", label: tr("students.f_branch") },
+    { key: "source", label: tr("students.f_source") },
+    { key: "counselor", label: tr("students.f_counselor") },
+    { key: "status", label: tr("common.status") },
+    // Study Plan
+    { key: "reason_for_study", label: tr("students.f_reasonStudy") },
+    { key: "future_plan", label: "Future Plan" },
+    { key: "study_subject", label: "Study Subject" },
   ];
 
   // Excel file upload → parse headers
