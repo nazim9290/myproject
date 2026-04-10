@@ -84,6 +84,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         if (Array.isArray(data.student_family)) setFamilyMembers(data.student_family);
         if (Array.isArray(data.work_experience)) setWorkExperience(data.work_experience);
         if (Array.isArray(data.jp_study)) setJpStudy(data.jp_study);
+        // ── Sponsor data — DB থেকে load (decrypt হয়ে আসে) ──
+        if (data.sponsor) { setSponsor(data.sponsor); setSponsorForm(data.sponsor); }
       }
     }).catch(() => {});
   }, [student.id]);
