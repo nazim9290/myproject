@@ -543,6 +543,9 @@ export default function SettingsPage({ isDark, setIsDark, students, visitors, st
             {[
               { label: tr("settings.agencyName"), value: agencyName, onChange: setAgencyName, placeholder: "Your Agency Name" },
               { label: tr("settings.branch"), value: branch, onChange: setBranch, placeholder: "Branch Name" },
+              { label: tr("common.phone"), value: agencyPhone, onChange: setAgencyPhone, placeholder: "01XXXXXXXXX" },
+              { label: tr("common.email"), value: agencyEmail, onChange: setAgencyEmail, placeholder: "agency@example.com" },
+              { label: tr("common.address"), value: agencyAddress, onChange: setAgencyAddress, placeholder: "Office address" },
             ].map((f) => (
               <div key={f.label}>
                 <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
