@@ -227,7 +227,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const [showStepCard, setShowStepCard] = useState(false);
 
   // ── Sponsor state ──
-  const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", address: "", nid: "", dob: "", company_name: "", company_phone: "", company_address: "", trade_license_no: "", work_address: "", tin: "", annual_income_y1: "", annual_income_y2: "", annual_income_y3: "", tax_y1: "", tax_y2: "", tax_y3: "", banks: [], tuition_jpy: "", living_jpy_monthly: "", payment_method: "Bank Transfer", exchange_rate: "", statement: "", payment_to_student: false, payment_to_school: true, sign_date: "" };
+  const BLANK_SPONSOR = { name: "", relationship: "Father", phone: "", present_address: "", permanent_address: "", nid: "", dob: "", father_name: "", mother_name: "", company_name: "", company_phone: "", company_address: "", trade_license_no: "", work_address: "", tin: "", income_year_1: "", annual_income_y1: "", tax_y1: "", income_year_2: "", annual_income_y2: "", tax_y2: "", income_year_3: "", annual_income_y3: "", tax_y3: "", statement: "", address: "" };
   const [sponsor, setSponsor] = useState(student.sponsor || BLANK_SPONSOR);
   const [sponsorForm, setSponsorForm] = useState(student.sponsor || BLANK_SPONSOR);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
@@ -1772,11 +1772,14 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 { label: tr("students.f_dob"), key: "dob", isDate: true },
                 { label: tr("common.phone"), key: "phone", isPhone: true },
                 { label: "NID", key: "nid" },
-                { label: tr("common.address"), key: "address" },
+                { label: "Father Name", key: "father_name" },
+                { label: "Mother Name", key: "mother_name" },
+                { label: "Present Address", key: "present_address" },
+                { label: "Permanent Address", key: "permanent_address" },
               ].map(f => (
                 <div key={f.key}>
                   <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{f.label}</label>
-                  <p className="text-xs font-medium py-1">{f.isPhone ? formatPhoneDisplay(sponsor[f.key]) : f.isDate ? formatDateDisplay(sponsor[f.key]) : (sponsor[f.key] || "—")}</p>
+                  <p className="text-xs font-medium py-1">{f.isPhone ? formatPhoneDisplay(sponsor[f.key]) : f.isDate ? formatDateDisplay(sponsor[f.key]) : (sponsor[f.key] || sponsor[f.key === "present_address" ? "address" : ""] || "—")}</p>
                 </div>
               ))}
             </div>
@@ -1810,23 +1813,24 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: t.amber }}>🧾 {tr("students.sponsor_taxInfo")}</p>
               <button onClick={() => openSponsorSection("tax")} className="text-[10px] flex items-center gap-1" style={{ color: t.rose }}><Edit3 size={11} /> {tr("common.edit")}</button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-2">
-              <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>TIN</label>
-                <p className="text-xs font-medium py-1">{sponsor.tin || "—"}</p>
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>TIN</label>
+                  <p className="text-xs font-medium py-1">{sponsor.tin || "—"}</p>
+                </div>
               </div>
-              {["y1","y2","y3"].map(y => (
-                <div key={y}>
-                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("students.sponsor_annualIncome")} ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
-                  <p className="text-xs font-medium py-1">{sponsor[`annual_income_${y}`] ? `৳${Number(sponsor[`annual_income_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
-                </div>
-              ))}
-              {["y1","y2","y3"].map(y => (
-                <div key={`t${y}`}>
-                  <label className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("students.sponsor_taxPaid")} ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
-                  <p className="text-xs font-medium py-1">{sponsor[`tax_${y}`] ? `৳${Number(sponsor[`tax_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
-                </div>
-              ))}
+              {/* ── Year / Income / Tax — পাশাপাশি paired ── */}
+              <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-2" style={{ borderTop: `1px solid ${t.border}` }}>
+                <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Year</p>
+                <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Annual Income</p>
+                <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: t.muted }}>Tax Paid</p>
+                {["y1","y2","y3"].map(y => (<>
+                  <p key={`yr${y}`} className="text-xs font-medium py-1">{sponsor[`income_year_${y.slice(1)}`] || (y === "y1" ? "১ম বছর" : y === "y2" ? "২য় বছর" : "৩য় বছর")}</p>
+                  <p key={`inc${y}`} className="text-xs font-medium py-1">{sponsor[`annual_income_${y}`] ? `৳${Number(sponsor[`annual_income_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
+                  <p key={`tax${y}`} className="text-xs font-medium py-1">{sponsor[`tax_${y}`] ? `৳${Number(sponsor[`tax_${y}`]).toLocaleString("en-IN")}` : "—"}</p>
+                </>))}
+              </div>
             </div>
           </Card>
 
@@ -1849,9 +1853,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
               sponsorEditSection === "tax" ? tr("students.sponsor_taxInfo") :
               sponsorEditSection === "statement" ? "Sponsor Statement" : ""
             }`}
-            subtitle={`${student.name_en} — ${sponsor.name || tr("students.newSponsor")}`} size="md">
+            subtitle={`${student.name_en} — ${sponsor.name || tr("students.newSponsor")}`} size={sponsorEditSection === "tax" ? "lg" : "md"}>
             <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className={`grid grid-cols-1 ${sponsorEditSection === "tax" ? "md:grid-cols-3" : "md:grid-cols-2"} gap-3`}>
                 {/* ── Basic fields ── */}
                 {sponsorEditSection === "basic" && [
                   { key: "name", label: tr("common.name") },
@@ -1859,7 +1863,10 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                   { key: "dob", label: tr("students.f_dob"), type: "date" },
                   { key: "phone", label: tr("common.phone"), type: "phone" },
                   { key: "nid", label: "NID" },
-                  { key: "address", label: tr("common.address"), span: 2 },
+                  { key: "father_name", label: "Father Name" },
+                  { key: "mother_name", label: "Mother Name" },
+                  { key: "present_address", label: "Present Address", span: 2 },
+                  { key: "permanent_address", label: "Permanent Address", span: 2 },
                 ].map(f => (
                   <div key={f.key} className={f.span === 2 ? "md:col-span-2" : ""}>
                     <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
@@ -1903,20 +1910,39 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                     <input value={sponsorForm.tin || ""} onChange={e => setSponsorForm(p => ({ ...p, tin: e.target.value }))}
                       className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
                   </div>
-                  {["y1", "y2", "y3"].map(y => (
-                    <div key={y}>
-                      <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("students.sponsor_annualIncome")} ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
-                      <input type="number" value={sponsorForm[`annual_income_${y}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`annual_income_${y}`]: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                    </div>
-                  ))}
-                  {["y1", "y2", "y3"].map(y => (
-                    <div key={`t${y}`}>
-                      <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("students.sponsor_taxPaid")} ({y === "y1" ? "১ম" : y === "y2" ? "২য়" : "৩য়"})</label>
-                      <input type="number" value={sponsorForm[`tax_${y}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`tax_${y}`]: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                    </div>
-                  ))}
+                  {/* ── Year / Income / Tax — পাশাপাশি paired ── */}
+                  {[1, 2, 3].map(n => {
+                    const y = `y${n}`;
+                    const label = n === 1 ? "১ম" : n === 2 ? "২য়" : "৩য়";
+                    const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
+                    const currentYear = new Date().getFullYear();
+                    return (<>
+                      {/* Year selector */}
+                      <div key={`yr${n}`} className="md:col-span-2">
+                        <p className="text-[10px] uppercase tracking-wider font-bold mt-2 mb-1" style={{ color: t.cyan }}>{label} বছর</p>
+                      </div>
+                      <div key={`yrs${n}`}>
+                        <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Year</label>
+                        <select value={sponsorForm[`income_year_${n}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`income_year_${n}`]: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is}>
+                          <option value="">Select Year</option>
+                          {Array.from({ length: 10 }, (_, i) => currentYear - i).map(yr => (
+                            <option key={yr} value={yr}>{yr}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div key={`inc${n}`}>
+                        <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Annual Income (৳)</label>
+                        <input type="number" value={sponsorForm[`annual_income_${y}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`annual_income_${y}`]: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="0" />
+                      </div>
+                      <div key={`tax${n}`}>
+                        <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>Tax Paid (৳)</label>
+                        <input type="number" value={sponsorForm[`tax_${y}`] || ""} onChange={e => setSponsorForm(p => ({ ...p, [`tax_${y}`]: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={is} placeholder="0" />
+                      </div>
+                    </>);
+                  })}
                 </>}
                 {/* ── Sponsor Statement ── */}
                 {sponsorEditSection === "statement" && <>
