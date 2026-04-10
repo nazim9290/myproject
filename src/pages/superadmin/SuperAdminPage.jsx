@@ -48,7 +48,7 @@ export default function SuperAdminPage() {
   const [switchConfirmId, setSwitchConfirmId] = useState(null);
 
   const [form, setForm] = useState({
-    name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "",
+    name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "", prefix: "",
     plan: "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: false,
   });
 
@@ -171,7 +171,7 @@ export default function SuperAdminPage() {
       if (!res.ok) { toast.error(data.error || tr("superAdmin.createFailed")); return; }
       toast.success(`${form.name} — ${tr("superAdmin.agencyCreated")}`);
       setShowCreateForm(false);
-      setForm({ name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "", plan: "free", admin_name: "", admin_email: "", admin_password: "", dedicated: false });
+      setForm({ name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "", prefix: "", plan: "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: false });
       loadData();
     } catch { toast.error(tr("superAdmin.serverError")); }
   };
@@ -1018,6 +1018,27 @@ export default function SuperAdminPage() {
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("superAdmin.email")}</label>
               <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="info@agency.com" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("superAdmin.address")}</label>
+              <input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Office address..." />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>ID Prefix <span className="text-[9px] normal-case" style={{ color: t.muted }}>(auto or custom)</span></label>
+              <input value={form.prefix} onChange={e => setForm(p => ({ ...p, prefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5) }))} className="w-full px-3 py-2 rounded-lg text-sm outline-none font-mono" style={is} placeholder={(() => {
+                const words = (form.name || "").replace(/[^\x20-\x7E]/g, "").trim().split(/[\s\-_&]+/).filter(w => w.length > 0);
+                return words.length >= 3 ? words.map(w => w[0]).join("").toUpperCase().slice(0, 4)
+                  : words.length === 2 ? (words[0].slice(0, 2) + words[1][0]).toUpperCase()
+                  : (words[0] || "").slice(0, 3).toUpperCase() || "ABC";
+              })()} />
+              <p className="text-[10px] mt-1" style={{ color: t.muted }}>
+                Student ID: <span className="font-mono" style={{ color: t.cyan }}>{form.prefix || (() => {
+                  const words = (form.name || "").replace(/[^\x20-\x7E]/g, "").trim().split(/[\s\-_&]+/).filter(w => w.length > 0);
+                  return words.length >= 3 ? words.map(w => w[0]).join("").toUpperCase().slice(0, 4)
+                    : words.length === 2 ? (words[0].slice(0, 2) + words[1][0]).toUpperCase()
+                    : (words[0] || "").slice(0, 3).toUpperCase() || "?";
+                })()}-S-2026-001</span>
+              </p>
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("superAdmin.plan")}</label>
