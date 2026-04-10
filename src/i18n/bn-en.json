@@ -48,7 +48,10 @@
     "selectAll": "সব Select",
     "noneSelected": "কিছু select হয়নি",
     "refreshPage": "Page refresh করুন",
-    "conflictError": "এই data অন্য কেউ change করেছে — refresh করুন"
+    "conflictError": "এই data অন্য কেউ change করেছে — refresh করুন",
+    "deleteConfirmTitle": "Delete Confirmation",
+    "deleteConfirmMessage": "এই কাজ undo করা যাবে না।",
+    "yesDelete": "Yes, Delete"
   },
   "nav": {
     "dashboard": "Dashboard",

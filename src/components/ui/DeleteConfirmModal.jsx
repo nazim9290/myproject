@@ -4,33 +4,27 @@
 
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Modal from "./Modal";
 import Button from "./Button";
 
 /**
- * ডিলিট কনফার্ম মোডাল কম্পোনেন্ট
- * @param {boolean} isOpen — মোডাল খোলা/বন্ধ স্টেট
- * @param {function} onClose — মোডাল বন্ধ করার ফাংশন
- * @param {function} onConfirm — ডিলিট নিশ্চিত করলে কল হবে
- * @param {string} title — মোডাল টাইটেল (ডিফল্ট: "ডিলিট নিশ্চিতকরণ")
- * @param {string} message — সতর্কতা বার্তা (ডিফল্ট: "এই কাজ undo করা যাবে না।")
- * @param {string} itemName — যে আইটেম ডিলিট হবে তার নাম (ঐচ্ছিক)
- * @param {boolean} loading — ডিলিট প্রসেসিং চলছে কিনা
+ * ডিলিট কনফার্ম মোডাল কম্পোনেন্ট — i18n সাপোর্ট
  */
 export default function DeleteConfirmModal({
   isOpen,
   onClose,
   onConfirm,
-  title = "ডিলিট নিশ্চিতকরণ",
-  message = "এই কাজ undo করা যাবে না।",
+  title,
+  message,
   itemName,
   loading = false,
 }) {
-  /* ─── থিম কালার ─── */
   const t = useTheme();
+  const { t: tr } = useLanguage();
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title={title || tr("common.deleteConfirmTitle")} size="sm">
       <div className="flex flex-col items-center text-center py-2">
 
         {/* ─── সতর্কতা আইকন (লাল বৃত্তের মধ্যে) ─── */}
@@ -50,7 +44,7 @@ export default function DeleteConfirmModal({
 
         {/* ─── সতর্কতা বার্তা ─── */}
         <p className="text-xs mb-5" style={{ color: t.muted }}>
-          {message}
+          {message || tr("common.deleteConfirmMessage")}
         </p>
 
         {/* ─── অ্যাকশন বাটন — বাতিল ও ডিলিট ─── */}
@@ -62,21 +56,19 @@ export default function DeleteConfirmModal({
             onClick={onClose}
             className="flex-1 justify-center"
           >
-            বাতিল
+            {tr("common.cancel")}
           </Button>
 
-          {/* ডিলিট বাটন — লাল ব্যাকগ্রাউন্ড */}
           <button
             onClick={onConfirm}
             disabled={loading}
             className="flex-1 inline-flex items-center justify-center gap-1.5 font-medium rounded-xl text-xs px-3.5 py-2 transition-all duration-200 hover:opacity-90 disabled:opacity-50"
             style={{ background: t.rose, color: "#fff" }}
           >
-            {/* লোডিং স্পিনার বা ডিলিট টেক্সট ─── */}
             {loading ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              "হ্যাঁ, মুছুন"
+              tr("common.yesDelete")
             )}
           </button>
         </div>

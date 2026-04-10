@@ -48,7 +48,10 @@
     "selectAll": "সব বাছাই",
     "noneSelected": "কিছু বাছাই হয়নি",
     "refreshPage": "পেজ রিলোড করুন",
-    "conflictError": "এই তথ্য অন্য কেউ পরিবর্তন করেছে — পেজ রিলোড করুন"
+    "conflictError": "এই তথ্য অন্য কেউ পরিবর্তন করেছে — পেজ রিলোড করুন",
+    "deleteConfirmTitle": "ডিলিট নিশ্চিতকরণ",
+    "deleteConfirmMessage": "এই কাজ undo করা যাবে না।",
+    "yesDelete": "হ্যাঁ, মুছুন"
   },
   "nav": {
     "dashboard": "ড্যাশবোর্ড",

@@ -48,7 +48,10 @@
     "selectAll": "Select All",
     "noneSelected": "None selected",
     "refreshPage": "Refresh page",
-    "conflictError": "This data was modified by someone else — please refresh"
+    "conflictError": "This data was modified by someone else — please refresh",
+    "deleteConfirmTitle": "Delete Confirmation",
+    "deleteConfirmMessage": "This action cannot be undone.",
+    "yesDelete": "Yes, Delete"
   },
   "nav": {
     "dashboard": "Dashboard",
