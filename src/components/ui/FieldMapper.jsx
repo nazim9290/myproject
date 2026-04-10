@@ -15,8 +15,8 @@ import { useTheme } from "../../context/ThemeContext";
 // DocGen, SuperAdmin, ExcelAutoFill — সবাই এই list reference করে
 // ═══════════════════════════════════════════════════════
 const SYSTEM_FIELDS = [
-  // ব্যক্তিগত তথ্য — নাম, জন্ম তারিখ, লিঙ্গ, ফোন, WhatsApp, ইমেইল, জন্মস্থান, পেশা
-  { group: "ব্যক্তিগত", color: "cyan", fields: [
+  // ব্যক্তিগত তথ্য
+  { group: "ব্যক্তিগত", color: "cyan", source: "Student → Profile → Personal Info", fields: [
     { key: "name_en", label: "নাম (Full English)" },
     { key: "name_en:first", label: "নাম → First Name" },
     { key: "name_en:last", label: "নাম → Last Name" },
@@ -40,8 +40,8 @@ const SYSTEM_FIELDS = [
     { key: "birth_place", label: "জন্মস্থান" },
     { key: "occupation", label: "পেশা" },
   ]},
-  // পাসপোর্ট / NID তথ্য — নম্বর, ইস্যু ও মেয়াদ + year/month/day sub-parts
-  { group: "পাসপোর্ট / NID", color: "amber", fields: [
+  // পাসপোর্ট / NID
+  { group: "পাসপোর্ট / NID", color: "amber", source: "Student → Profile → Passport & Family", fields: [
     { key: "nid", label: "NID নম্বর" },
     { key: "passport_number", label: "পাসপোর্ট নম্বর" },
     { key: "passport_issue", label: "পাসপোর্ট ইস্যু (Full)" },
@@ -53,13 +53,11 @@ const SYSTEM_FIELDS = [
     { key: "passport_expiry:month", label: "পাসপোর্ট মেয়াদ → Month" },
     { key: "passport_expiry:day", label: "পাসপোর্ট মেয়াদ → Day" },
   ]},
-  // ঠিকানা — স্থায়ী ও বর্তমান
-  { group: "ঠিকানা", color: "emerald", fields: [
+  { group: "ঠিকানা", color: "emerald", source: "Student → Profile → Personal Info", fields: [
     { key: "permanent_address", label: "স্থায়ী ঠিকানা" },
     { key: "current_address", label: "বর্তমান ঠিকানা" },
   ]},
-  // পারিবারিক তথ্য — পিতা/মাতার নাম, জন্ম তারিখ (+ year/month/day), পেশা
-  { group: "পরিবার", color: "purple", fields: [
+  { group: "পরিবার", color: "purple", source: "Student → Profile → Family Members (Add)", fields: [
     { key: "father_name", label: "পিতার নাম (বাংলা)" },
     { key: "father_name_en", label: "পিতার নাম (EN)" },
     { key: "mother_name", label: "মাতার নাম (বাংলা)" },
@@ -75,8 +73,7 @@ const SYSTEM_FIELDS = [
     { key: "mother_dob:day", label: "মাতার জন্ম → Day" },
     { key: "mother_occupation", label: "মাতার পেশা" },
   ]},
-  // শিক্ষাগত তথ্য — SSC/HSC/Honours + Elementary/Junior/High (入学願書 format)
-  { group: "শিক্ষা", color: "amber", fields: [
+  { group: "শিক্ষা", color: "amber", source: "Student → Profile → Education (Level + School Type)", fields: [
     // SSC / HSC / Honours — existing
     { key: "edu_ssc_school", label: "SSC স্কুল" },
     { key: "edu_ssc_year", label: "SSC সন" },
@@ -108,16 +105,14 @@ const SYSTEM_FIELDS = [
     { key: "edu_high_entrance", label: "উচ্চ বিদ্যালয় → ভর্তি সন" },
     { key: "edu_high_graduation", label: "উচ্চ বিদ্যালয় → পাশ সন" },
   ]},
-  // জাপানি ভাষা — JLPT/NAT পরীক্ষার ধরন, লেভেল, স্কোর, ফলাফল, তারিখ
-  { group: "জাপানি ভাষা", color: "rose", fields: [
+  { group: "জাপানি ভাষা", color: "rose", source: "Student → Profile → JP Exams", fields: [
     { key: "jp_exam_type", label: "পরীক্ষার ধরন" },
     { key: "jp_level", label: "লেভেল" },
     { key: "jp_score", label: "স্কোর" },
     { key: "jp_result", label: "ফলাফল" },
     { key: "jp_exam_date", label: "পরীক্ষার তারিখ" },
   ]},
-  // কর্ম অভিজ্ঞতা — 職歴 (Vocational experience for 入学願書)
-  { group: "কর্ম অভিজ্ঞতা", color: "emerald", fields: [
+  { group: "কর্ম অভিজ্ঞতা", color: "emerald", source: "Student → Profile → Work Experience", fields: [
     { key: "work_company", label: "কোম্পানি নাম" },
     { key: "work_address", label: "কোম্পানি ঠিকানা" },
     { key: "work_start", label: "শুরু তারিখ" },
@@ -130,16 +125,14 @@ const SYSTEM_FIELDS = [
     { key: "work2_end", label: "২য় শেষ তারিখ" },
     { key: "work2_position", label: "২য় পদবি" },
   ]},
-  // জাপানি ভাষা শিক্ষা ইতিহাস — 日本語学習歴 (入学願書)
-  { group: "জাপানি শিক্ষা ইতিহাস", color: "purple", fields: [
+  { group: "জাপানি শিক্ষা ইতিহাস", color: "purple", source: "Auto: Agency নাম + Batch dates | Manual: JP Study Add", fields: [
     { key: "jp_study_institution", label: "প্রতিষ্ঠান" },
     { key: "jp_study_address", label: "প্রতিষ্ঠান ঠিকানা" },
     { key: "jp_study_from", label: "শুরু তারিখ" },
     { key: "jp_study_to", label: "শেষ তারিখ" },
     { key: "jp_study_hours", label: "মোট ঘণ্টা" },
   ]},
-  // স্পন্সর/গ্যারান্টর — নাম, ফোন, ঠিকানা, সম্পর্ক, আয়/ট্যাক্স (৩ বছর) + 経費支弁書 fields
-  { group: "স্পন্সর", color: "rose", fields: [
+  { group: "স্পন্সর", color: "rose", source: "Student → Sponsor Tab", fields: [
     { key: "sponsor_name", label: "স্পন্সরের নাম" },
     { key: "sponsor_name_en", label: "স্পন্সর নাম (EN)" },
     { key: "sponsor_relationship", label: "সম্পর্ক" },
@@ -164,14 +157,12 @@ const SYSTEM_FIELDS = [
     { key: "sponsor_company_phone", label: "কোম্পানি ফোন" },
     { key: "sponsor_company_address", label: "কোম্পানি ঠিকানা" },
   ]},
-  // জাপান ফাইন্যান্স — টিউশন, জীবনযাত্রা খরচ, বিনিময় হার
-  { group: "জাপান ফাইন্যান্স", color: "amber", fields: [
+  { group: "জাপান ফাইন্যান্স", color: "amber", source: "Student → Sponsor Tab → Japan Expense", fields: [
     { key: "tuition_jpy", label: "Tuition First Year (JPY)" },
     { key: "monthly_living", label: "Monthly Living (JPY)" },
     { key: "exchange_rate", label: "Exchange Rate" },
   ]},
-  // গন্তব্য — দেশ, ভিসা, Intake, স্টুডেন্ট টাইপ
-  { group: "গন্তব্য", color: "cyan", fields: [
+  { group: "গন্তব্য", color: "cyan", source: "Student → Profile → Destination Info", fields: [
     { key: "country", label: "দেশ" },
     { key: "school", label: "School" },
     { key: "batch", label: "Batch" },
@@ -197,14 +188,12 @@ const SYSTEM_FIELDS = [
     { key: "family3_occupation", label: "সদস্য ৩ পেশা" },
     { key: "family3_address", label: "সদস্য ৩ ঠিকানা" },
   ]},
-  // পড়াশোনার পরিকল্পনা — 入学願書: কেন পড়তে চাও, ভবিষ্যৎ পরিকল্পনা, বিষয়
-  { group: "পড়াশোনার পরিকল্পনা", color: "cyan", fields: [
+  { group: "পড়াশোনার পরিকল্পনা", color: "cyan", source: "Student → Profile → Purpose of Study", fields: [
     { key: "reason_for_study", label: "পড়ার কারণ" },
     { key: "future_plan", label: "ভবিষ্যৎ পরিকল্পনা" },
     { key: "study_subject", label: "পড়ার বিষয়" },
   ]},
-  // সিস্টেম ভ্যারিয়েবল — এজেন্সি, ব্রাঞ্চ, তারিখ, স্কুল, ব্যাচ তথ্য
-  { group: "সিস্টেম ভ্যারিয়েবল", color: "muted", fields: [
+  { group: "সিস্টেম ভ্যারিয়েবল", color: "muted", source: "Auto: Settings / Batch / School থেকে", fields: [
     { key: "sys_agency_name", label: "এজেন্সি নাম" },
     { key: "sys_agency_name_bn", label: "এজেন্সি নাম (বাংলা)" },
     { key: "sys_agency_address", label: "এজেন্সি ঠিকানা" },
@@ -338,7 +327,8 @@ export function FieldPicker({ placeholderKey, selectedField, selectedModifier, o
                   <button onClick={() => setExpandedGroup(expandedGroup === g.group ? null : g.group)}
                     className="w-full px-3 py-2 text-left text-[10px] font-semibold"
                     style={{ background: `${color}06`, borderBottom: `1px solid ${t.border}`, color }}>
-                    {expandedGroup === g.group ? "▼" : "▶"} {g.group} ({g.fields.length})
+                    <span>{expandedGroup === g.group ? "▼" : "▶"} {g.group} ({g.fields.length})</span>
+                    {g.source && <span className="block text-[8px] font-normal mt-0.5" style={{ color: t.muted }}>📍 {g.source}</span>}
                   </button>
                   {expandedGroup === g.group && g.fields.map(f => (
                     <button key={f.key} onClick={() => { onFieldChange(placeholderKey, f.key); setOpen(false); }}
