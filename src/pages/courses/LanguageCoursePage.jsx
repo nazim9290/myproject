@@ -59,9 +59,12 @@ function NewBatchForm({ onSave, onCancel, initialData }) {
     api.get("/branches").then(d => { if (Array.isArray(d)) setBranchesList(d); }).catch(() => {});
   }, []);
 
+  // ISO timestamp → YYYY-MM-DD normalize (DB থেকে "2026-04-01T15:00:00.000Z" আসতে পারে)
+  const toDate = (v) => v ? (v.length > 10 ? v.slice(0, 10) : v) : "";
+
   const [form, setForm] = useState({
     name: initialData?.name || "", country: initialData?.country || "Japan", level: initialData?.level || "N5", branch: initialData?.branch || "",
-    startDate: initialData?.start_date || initialData?.startDate || "", endDate: initialData?.end_date || initialData?.endDate || "",
+    startDate: toDate(initialData?.start_date || initialData?.startDate), endDate: toDate(initialData?.end_date || initialData?.endDate),
     capacity: String(initialData?.capacity || "20"),
     schedule: initialData?.schedule || "", teacher: initialData?.teacher || "",
     class_days: initialData?.class_days || [],
@@ -336,8 +339,8 @@ export default function LanguageCoursePage({ students }) {
               name: newBatch.name,
               country: newBatch.country || "Japan",
               level: newBatch.level || "N5",
-              start_date: newBatch.startDate || newBatch.start_date,
-              end_date: newBatch.endDate || newBatch.end_date,
+              start_date: (newBatch.startDate || newBatch.start_date || "").slice(0, 10),
+              end_date: (newBatch.endDate || newBatch.end_date || "").slice(0, 10),
               capacity: newBatch.capacity || 20,
               schedule: newBatch.schedule || "",
               teacher: newBatch.teacher || "",
