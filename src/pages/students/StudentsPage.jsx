@@ -662,6 +662,33 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
               {PIPELINE_STATUSES.map(s => { const lbl = tr(`pipeline.${s.code}`); return <option key={s.code} value={s.code}>{lbl !== `pipeline.${s.code}` ? lbl : s.label}</option>; })}
             </select>
             {bulkStatus && <Button size="xs" onClick={bulkChangeStatus}>{tr("students.bulk.applyChange")}</Button>}
+            <Button variant="ghost" size="xs" icon={Download} onClick={() => {
+              const sel = students.filter(s => selectedIds.has(s.id));
+              const flattened = sel.map(s => {
+                const f = { ...s };
+                const edu = s.student_education || s.education || [];
+                const ssc = edu.find(e => /ssc/i.test(e.level || "")) || {};
+                const hsc = edu.find(e => /hsc|alim|diploma/i.test(e.level || "")) || {};
+                const honours = edu.find(e => /hon|bach|degree/i.test(e.level || "")) || {};
+                f.edu_ssc_school = ssc.school_name || ""; f.edu_ssc_year = ssc.passing_year || ssc.year || ""; f.edu_ssc_board = ssc.board || ""; f.edu_ssc_gpa = ssc.gpa || ""; f.edu_ssc_subject = ssc.subject_group || "";
+                f.edu_hsc_school = hsc.school_name || ""; f.edu_hsc_year = hsc.passing_year || hsc.year || ""; f.edu_hsc_board = hsc.board || ""; f.edu_hsc_gpa = hsc.gpa || ""; f.edu_hsc_subject = hsc.subject_group || "";
+                f.edu_honours_school = honours.school_name || ""; f.edu_honours_year = honours.passing_year || ""; f.edu_honours_gpa = honours.gpa || ""; f.edu_honours_subject = honours.subject_group || "";
+                const jp = (s.student_jp_exams || [])[0] || {};
+                f.jp_exam_type = jp.exam_type || ""; f.jp_level = jp.level || ""; f.jp_score = jp.score || ""; f.jp_result = jp.result || ""; f.jp_exam_date = jp.exam_date || "";
+                const fam = s.student_family || [];
+                const father = fam.find(m => m.relation === "father") || {}; const mother = fam.find(m => m.relation === "mother") || {};
+                f.father_name_en = f.father_name_en || f.father_en || father.name || ""; f.mother_name_en = f.mother_name_en || f.mother_en || mother.name || "";
+                f.father_dob = father.dob || ""; f.mother_dob = mother.dob || ""; f.father_occupation = father.occupation || ""; f.mother_occupation = mother.occupation || "";
+                const sp = (s.sponsors || [])[0] || {};
+                f.sponsor_name = sp.name || ""; f.sponsor_relationship = sp.relationship || ""; f.sponsor_phone = sp.phone || "";
+                f.sponsor_address = sp.address || ""; f.sponsor_company = sp.company_name || "";
+                f.sponsor_income_y1 = sp.annual_income_y1 || ""; f.sponsor_income_y2 = sp.annual_income_y2 || ""; f.sponsor_income_y3 = sp.annual_income_y3 || "";
+                f.passport_number = f.passport_number || f.passport || ""; f.created = f.created_at?.slice?.(0, 10) || f.created || "";
+                return f;
+              });
+              setExportModalData(flattened);
+              setShowExportModal(true);
+            }}>{tr("common.export")} ({selectedIds.size})</Button>
             <Button variant="ghost" size="xs" onClick={() => setShowBulkDeleteConfirm(true)} style={{ color: t.rose }}>{tr("common.delete")}</Button>
             <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>{tr("common.cancel")}</Button>
           </div>
