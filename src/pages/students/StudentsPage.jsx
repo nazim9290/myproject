@@ -101,11 +101,23 @@ const EXPORT_COLUMNS = [
   { key: "sponsor_name", label: "Sponsor Name", group: "Sponsor" },
   { key: "sponsor_relationship", label: "Sponsor Relation", group: "Sponsor" },
   { key: "sponsor_phone", label: "Sponsor Phone", group: "Sponsor" },
-  { key: "sponsor_address", label: "Sponsor Address", group: "Sponsor" },
+  { key: "sponsor_dob", label: "Sponsor DOB", group: "Sponsor" },
+  { key: "sponsor_nid", label: "Sponsor NID", group: "Sponsor" },
+  { key: "sponsor_father_name", label: "Sponsor Father", group: "Sponsor" },
+  { key: "sponsor_mother_name", label: "Sponsor Mother", group: "Sponsor" },
+  { key: "sponsor_present_address", label: "Sponsor Present Address", group: "Sponsor" },
+  { key: "sponsor_permanent_address", label: "Sponsor Permanent Address", group: "Sponsor" },
   { key: "sponsor_company", label: "Sponsor Company", group: "Sponsor" },
+  { key: "sponsor_tin", label: "Sponsor TIN", group: "Sponsor" },
+  { key: "sponsor_income_year_1", label: "Assessment Year 1", group: "Sponsor" },
   { key: "sponsor_income_y1", label: "Income Y1", group: "Sponsor" },
+  { key: "sponsor_tax_y1", label: "Tax Paid Y1", group: "Sponsor" },
+  { key: "sponsor_income_year_2", label: "Assessment Year 2", group: "Sponsor" },
   { key: "sponsor_income_y2", label: "Income Y2", group: "Sponsor" },
+  { key: "sponsor_tax_y2", label: "Tax Paid Y2", group: "Sponsor" },
+  { key: "sponsor_income_year_3", label: "Assessment Year 3", group: "Sponsor" },
   { key: "sponsor_income_y3", label: "Income Y3", group: "Sponsor" },
+  { key: "sponsor_tax_y3", label: "Tax Paid Y3", group: "Sponsor" },
   // Destination & Status
   { key: "country", label: "Country", group: "Destination" },
   { key: "school", label: "School", group: "Destination" },
@@ -578,8 +590,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                       // Sponsor flatten
                       const sp = (s.sponsors || [])[0] || {};
                       f.sponsor_name = sp.name || sp.name_en || ""; f.sponsor_relationship = sp.relationship || ""; f.sponsor_phone = sp.phone || "";
-                      f.sponsor_address = sp.address || ""; f.sponsor_company = sp.company_name || "";
-                      f.sponsor_income_y1 = sp.annual_income_y1 || ""; f.sponsor_income_y2 = sp.annual_income_y2 || ""; f.sponsor_income_y3 = sp.annual_income_y3 || "";
+                      f.sponsor_dob = sp.dob || ""; f.sponsor_nid = sp.nid || "";
+                      f.sponsor_father_name = sp.father_name || ""; f.sponsor_mother_name = sp.mother_name || "";
+                      f.sponsor_present_address = sp.present_address || sp.address || ""; f.sponsor_permanent_address = sp.permanent_address || "";
+                      f.sponsor_company = sp.company_name || ""; f.sponsor_tin = sp.tin || "";
+                      f.sponsor_income_year_1 = sp.income_year_1 || ""; f.sponsor_income_y1 = sp.annual_income_y1 || ""; f.sponsor_tax_y1 = sp.tax_y1 || "";
+                      f.sponsor_income_year_2 = sp.income_year_2 || ""; f.sponsor_income_y2 = sp.annual_income_y2 || ""; f.sponsor_tax_y2 = sp.tax_y2 || "";
+                      f.sponsor_income_year_3 = sp.income_year_3 || ""; f.sponsor_income_y3 = sp.annual_income_y3 || ""; f.sponsor_tax_y3 = sp.tax_y3 || "";
                       // Alias
                       f.passport_number = f.passport_number || f.passport || "";
                       f.created = f.created_at?.slice?.(0, 10) || f.created || "";
