@@ -106,7 +106,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   // ── JP Study History state ──
   const [jpStudy, setJpStudy] = useState([]);
   const [showJpStudyForm, setShowJpStudyForm] = useState(false);
-  const [jpStudyForm, setJpStudyForm] = useState({ institution: "", period: "", hours: "", level: "", description: "" });
+  const [editingJpStudyId, setEditingJpStudyId] = useState(null);
+  const [jpStudyForm, setJpStudyForm] = useState({ institution: "", address: "", period_from: "", period_to: "", total_hours: "" });
 
   const saveEducation = async () => {
     try {
@@ -170,12 +171,21 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const saveJpStudy = async () => {
     if (!jpStudyForm.institution.trim()) { toast.error(tr("students.institutionRequired")); return; }
     try {
-      const saved = await api.post(`/students/${student.id}/jp-study`, jpStudyForm);
-      setJpStudy(prev => [...prev, saved || { id: `js-${Date.now()}`, ...jpStudyForm }]);
+      if (editingJpStudyId) {
+        // ── Edit mode — existing JP Study আপডেট ──
+        const saved = await api.patch(`/students/${student.id}/jp-study/${editingJpStudyId}`, jpStudyForm);
+        setJpStudy(prev => prev.map(j => j.id === editingJpStudyId ? { ...j, ...jpStudyForm, ...saved } : j));
+        toast.updated("JP Study");
+      } else {
+        // ── Create mode — নতুন JP Study তৈরি ──
+        const saved = await api.post(`/students/${student.id}/jp-study`, jpStudyForm);
+        setJpStudy(prev => [...prev, saved || { id: `js-${Date.now()}`, ...jpStudyForm }]);
+        toast.success(tr("success.created"));
+      }
       setShowJpStudyForm(false);
-      setJpStudyForm({ institution: "", period: "", hours: "", level: "", description: "" });
+      setEditingJpStudyId(null);
+      setJpStudyForm({ institution: "", address: "", period_from: "", period_to: "", total_hours: "" });
       logActivity(`${tr("students.jpStudyHistory")} — ${jpStudyForm.institution}`, "edit");
-      toast.success(tr("success.created"));
     } catch (err) { toast.error(err.message || tr("errors.saveFailed")); }
   };
 
@@ -1357,29 +1367,33 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <BookOpen size={12} /> {tr("students.jpStudyHistory")}
               </h4>
               <Button variant="ghost" icon={Plus} size="xs" onClick={() => {
+                setEditingJpStudyId(null);
+                setJpStudyForm({ institution: "", address: "", period_from: "", period_to: "", total_hours: "" });
                 setShowJpStudyForm(true);
-                setJpStudyForm({ institution: "", period: "", hours: "", level: "", description: "" });
               }}>{tr("common.add")}</Button>
             </div>
 
-            {/* JP Study History যোগ করার Modal */}
-            <Modal isOpen={showJpStudyForm} onClose={() => setShowJpStudyForm(false)} title={tr("students.addJpStudy")} size="md">
+            {/* JP Study History যোগ/edit করার Modal */}
+            <Modal isOpen={showJpStudyForm} onClose={() => { setShowJpStudyForm(false); setEditingJpStudyId(null); }}
+              title={editingJpStudyId ? `${tr("common.edit")} — ${tr("students.jpStudyHistory")}` : tr("students.addJpStudy")} size="md">
               <div className="space-y-3">
-                {[
-                  { key: "institution", label: tr("students.jpStudy_institution"), type: "text" },
-                  { key: "period", label: tr("students.jpStudy_period"), type: "text" },
-                  { key: "hours", label: tr("students.jpStudy_hours"), type: "text" },
-                  { key: "level", label: tr("students.jp_level"), type: "text" },
-                  { key: "description", label: tr("common.description"), type: "text" },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
-                    <input type="text" value={jpStudyForm[f.key] || ""} onChange={e => setJpStudyForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
-                  </div>
-                ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { key: "institution", label: tr("students.jpStudy_institution"), span: 2 },
+                    { key: "address", label: tr("common.address"), span: 2 },
+                    { key: "period_from", label: "Period From (YYYY-MM-DD)", span: 1 },
+                    { key: "period_to", label: "Period To (YYYY-MM-DD)", span: 1 },
+                    { key: "total_hours", label: tr("students.jpStudy_hours"), span: 1 },
+                  ].map(f => (
+                    <div key={f.key} className={f.span === 2 ? "md:col-span-2" : ""}>
+                      <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{f.label}</label>
+                      <input type="text" value={jpStudyForm[f.key] || ""} onChange={e => setJpStudyForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+                    </div>
+                  ))}
+                </div>
                 <div className="flex justify-end gap-2 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
-                  <Button variant="ghost" size="sm" onClick={() => setShowJpStudyForm(false)}>{tr("common.cancel")}</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setShowJpStudyForm(false); setEditingJpStudyId(null); }}>{tr("common.cancel")}</Button>
                   <Button size="sm" icon={Save} onClick={saveJpStudy}>{tr("common.save")}</Button>
                 </div>
               </div>
@@ -1390,7 +1404,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                      {[tr("students.jpStudy_institution"), tr("students.jpStudy_period"), tr("students.jpStudy_hours"), tr("students.jp_level"), tr("common.description"), ""].map(h => (
+                      {[tr("students.jpStudy_institution"), tr("common.address"), "Period From", "Period To", tr("students.jpStudy_hours"), ""].map(h => (
                         <th key={h} className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                       ))}
                     </tr>
@@ -1401,11 +1415,16 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
                         onMouseEnter={ev => ev.currentTarget.style.background = t.hoverBg}
                         onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}>
                         <td className="py-2 px-3 font-medium">{js.institution || "—"}</td>
-                        <td className="py-2 px-3">{js.period || "—"}</td>
-                        <td className="py-2 px-3">{js.hours || "—"}</td>
-                        <td className="py-2 px-3">{js.level || "—"}</td>
-                        <td className="py-2 px-3" style={{ color: t.muted }}>{js.description || "—"}</td>
-                        <td className="py-2 px-3">
+                        <td className="py-2 px-3">{js.address || "—"}</td>
+                        <td className="py-2 px-3">{js.period_from || "—"}</td>
+                        <td className="py-2 px-3">{js.period_to || "—"}</td>
+                        <td className="py-2 px-3">{js.total_hours || "—"}</td>
+                        <td className="py-2 px-3 flex gap-1">
+                          <button onClick={() => {
+                            setEditingJpStudyId(js.id);
+                            setJpStudyForm({ institution: js.institution || "", address: js.address || "", period_from: js.period_from || "", period_to: js.period_to || "", total_hours: js.total_hours || "" });
+                            setShowJpStudyForm(true);
+                          }} className="text-[9px] px-1.5 py-0.5 rounded" style={{ color: t.cyan, background: `${t.cyan}10` }}>✏️</button>
                           <button onClick={() => deleteJpStudy(js.id)}
                             className="text-[9px] px-1 py-0.5 rounded opacity-50 hover:opacity-100" style={{ color: t.rose }}>🗑</button>
                         </td>
