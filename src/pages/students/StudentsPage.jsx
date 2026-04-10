@@ -698,13 +698,6 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         <select value={filterSchool} onChange={e => { setFilterSchool(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${filterSchool !== "All" ? t.emerald : t.inputBorder}`, color: filterSchool !== "All" ? t.emerald : t.text }}>
           {schools.map(s => <option key={s} value={s}>{s === "All" ? `${tr("common.all")} ${tr("students.school")}` : s}</option>)}
         </select>
-        {/* ── কলাম কাস্টমাইজার — filter bar-এর শেষে ── */}
-        <ColumnCustomizer
-          columns={tableColumnsWithLabel}
-          visibleKeys={visibleColKeys}
-          onChange={handleColChange}
-          defaultKeys={DEFAULT_VISIBLE_KEYS}
-        />
       </div>
 
       {/* ── টেবিল বিশ্লেষণ — কুইক স্ট্যাটস, গ্রুপ বাই, শর্তভিত্তিক ফর্ম্যাটিং ── */}
@@ -757,9 +750,18 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
             <Button variant="ghost" size="xs" onClick={() => setSelectedIds(new Set())}>{tr("common.cancel")}</Button>
           </div>
         ) : (
-          <p className="text-xs font-medium mb-3" style={{ color: t.textSecondary }}>
-            {tr("common.total")}: {serverTotal} {tr("students.title")}{loading && ` — ${tr("common.loading")}`}
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium" style={{ color: t.textSecondary }}>
+              {tr("common.total")}: {serverTotal} {tr("students.title")}{loading && ` — ${tr("common.loading")}`}
+            </p>
+            {/* ── কলাম কাস্টমাইজার — টেবিলের ঠিক উপরে ── */}
+            <ColumnCustomizer
+              columns={tableColumnsWithLabel}
+              visibleKeys={visibleColKeys}
+              onChange={handleColChange}
+              defaultKeys={DEFAULT_VISIBLE_KEYS}
+            />
+          </div>
         )}
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
