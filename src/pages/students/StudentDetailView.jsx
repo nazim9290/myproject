@@ -334,11 +334,11 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       // শুধু ঐ সেকশনের fields পাঠাও — updated_at সহ concurrent edit check
       const res = await api.patch(`/students/${student.id}`, { ...sectionForm, updated_at: student.updated_at });
       // সফল হলে — নতুন updated_at সহ student আপডেট করো
+      // skipPatch=true — backend-এ ইতিমধ্যে save হয়ে গেছে, আবার PATCH করার দরকার নেই
       const updatedStudent = { ...student, ...sectionForm, updated_at: res?.updated_at || new Date().toISOString() };
-      onUpdate(updatedStudent);
+      onUpdate(updatedStudent, true);
       setEditSection(null);
       logActivity(tr("success.updated"), "edit");
-      toast.updated("Student");
     } catch (err) {
       const msg = err.message || tr("errors.saveFailed");
       // Conflict error — অন্য কেউ এর মধ্যে পরিবর্তন করেছে
