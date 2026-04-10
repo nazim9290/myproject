@@ -124,31 +124,79 @@ const EXPORT_COLUMNS = [
   { key: "study_subject", label: "Study Subject", group: "Study Plan" },
 ];
 
-// ── টেবিলে দেখানো যায় এমন সব কলাম — key, i18n label key, sortable ──
-// render ফাংশন component-এর ভেতরে তৈরি হবে (theme/badge দরকার)
+// ── টেবিলে দেখানো যায় এমন সব কলাম — EXPORT_COLUMNS-এর সব ফিল্ড ──
 const TABLE_COLUMN_DEFS = [
-  { key: "id", labelKey: "ID", sortable: true },
-  { key: "name_en", labelKey: "common.name", sortable: true },
-  { key: "phone", labelKey: "common.phone", sortable: true },
-  { key: "branch", labelKey: "students.branch", sortable: true },
-  { key: "country", labelKey: "students.country", sortable: true },
-  { key: "school", labelKey: "students.school", sortable: true },
-  { key: "batch", labelKey: "students.batch", sortable: true },
-  { key: "status", labelKey: "common.status", sortable: true },
-  { key: "type", labelKey: "common.type", sortable: true },
-  { key: "email", labelKey: "common.email", sortable: true },
-  { key: "dob", labelKey: "students.f_dob", sortable: true },
-  { key: "gender", labelKey: "students.f_gender", sortable: true },
-  { key: "passport_number", labelKey: "students.f_passport", sortable: true },
-  { key: "counselor", labelKey: "students.f_counselor", sortable: true },
-  { key: "source", labelKey: "students.f_source", sortable: true },
-  { key: "visa_type", labelKey: "students.f_visaType", sortable: true },
-  { key: "intake", labelKey: "students.f_intake", sortable: true },
-  { key: "created", labelKey: "common.date", sortable: true },
+  // Basic
+  { key: "id", label: "ID", group: "Basic" },
+  { key: "name_en", label: "Name (EN)", group: "Basic" },
+  { key: "name_bn", label: "Name (BN)", group: "Basic" },
+  { key: "name_katakana", label: "Name (カタカナ)", group: "Basic" },
+  { key: "phone", label: "Phone", group: "Basic" },
+  { key: "whatsapp", label: "WhatsApp", group: "Basic" },
+  { key: "email", label: "Email", group: "Basic" },
+  { key: "dob", label: "DOB", group: "Basic" },
+  { key: "gender", label: "Gender", group: "Basic" },
+  { key: "marital_status", label: "Marital Status", group: "Basic" },
+  { key: "nationality", label: "Nationality", group: "Basic" },
+  { key: "blood_group", label: "Blood Group", group: "Basic" },
+  { key: "birth_place", label: "Place of Birth", group: "Basic" },
+  { key: "occupation", label: "Occupation", group: "Basic" },
+  // Passport & NID
+  { key: "nid", label: "NID", group: "Passport" },
+  { key: "passport_number", label: "Passport No", group: "Passport" },
+  { key: "passport_issue", label: "Passport Issue", group: "Passport" },
+  { key: "passport_expiry", label: "Passport Expiry", group: "Passport" },
+  // Address
+  { key: "permanent_address", label: "Permanent Address", group: "Address" },
+  { key: "current_address", label: "Current Address", group: "Address" },
+  // Family
+  { key: "father_name_en", label: "Father Name", group: "Family" },
+  { key: "mother_name_en", label: "Mother Name", group: "Family" },
+  { key: "father_dob", label: "Father DOB", group: "Family" },
+  { key: "mother_dob", label: "Mother DOB", group: "Family" },
+  { key: "father_occupation", label: "Father Occupation", group: "Family" },
+  { key: "mother_occupation", label: "Mother Occupation", group: "Family" },
+  { key: "spouse_name", label: "Spouse Name", group: "Family" },
+  { key: "emergency_contact", label: "Emergency Contact", group: "Family" },
+  { key: "emergency_phone", label: "Emergency Phone", group: "Family" },
+  // Education
+  { key: "edu_ssc_school", label: "SSC School", group: "Education" },
+  { key: "edu_ssc_year", label: "SSC Year", group: "Education" },
+  { key: "edu_ssc_gpa", label: "SSC GPA", group: "Education" },
+  { key: "edu_hsc_school", label: "HSC School", group: "Education" },
+  { key: "edu_hsc_year", label: "HSC Year", group: "Education" },
+  { key: "edu_hsc_gpa", label: "HSC GPA", group: "Education" },
+  { key: "edu_honours_school", label: "Honours School", group: "Education" },
+  { key: "edu_honours_year", label: "Honours Year", group: "Education" },
+  { key: "edu_honours_gpa", label: "Honours GPA", group: "Education" },
+  // JP Exam
+  { key: "jp_exam_type", label: "JP Exam Type", group: "JP Exam" },
+  { key: "jp_level", label: "JP Level", group: "JP Exam" },
+  { key: "jp_score", label: "JP Score", group: "JP Exam" },
+  { key: "jp_result", label: "JP Result", group: "JP Exam" },
+  { key: "jp_exam_date", label: "JP Exam Date", group: "JP Exam" },
+  // Sponsor
+  { key: "sponsor_name", label: "Sponsor Name", group: "Sponsor" },
+  { key: "sponsor_relationship", label: "Sponsor Relation", group: "Sponsor" },
+  { key: "sponsor_phone", label: "Sponsor Phone", group: "Sponsor" },
+  { key: "sponsor_address", label: "Sponsor Address", group: "Sponsor" },
+  { key: "sponsor_company", label: "Sponsor Company", group: "Sponsor" },
+  // Destination & Status
+  { key: "country", label: "Country", group: "Destination" },
+  { key: "school", label: "School", group: "Destination" },
+  { key: "batch", label: "Batch", group: "Destination" },
+  { key: "intake", label: "Intake", group: "Destination" },
+  { key: "visa_type", label: "Visa Type", group: "Destination" },
+  { key: "student_type", label: "Type", group: "Destination" },
+  { key: "status", label: "Status", group: "Status" },
+  { key: "branch", label: "Branch", group: "Status" },
+  { key: "source", label: "Source", group: "Status" },
+  { key: "counselor", label: "Counselor", group: "Status" },
+  { key: "created", label: "Created", group: "Status" },
 ];
 
 // ── ডিফল্ট দৃশ্যমান কলাম — প্রথমবার বা reset করলে এই তালিকা ──
-const DEFAULT_VISIBLE_KEYS = ["id", "name_en", "phone", "branch", "country", "school", "batch", "status", "type"];
+const DEFAULT_VISIBLE_KEYS = ["id", "name_en", "phone", "branch", "country", "school", "batch", "status", "student_type"];
 
 export default function StudentsPage({ students, setStudents, reloadData, stepConfigs, setActivePage }) {
   const t = useTheme();
@@ -197,11 +245,8 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
     }, 800);
   };
 
-  // ── TABLE_COLUMN_DEFS থেকে label resolve (i18n) — ColumnCustomizer-এ পাঠানোর জন্য ──
-  const tableColumnsWithLabel = TABLE_COLUMN_DEFS.map(c => ({
-    ...c,
-    label: c.labelKey === "ID" ? "ID" : tr(c.labelKey),
-  }));
+  // ── TABLE_COLUMN_DEFS-ই সরাসরি ColumnCustomizer-এ পাঠানো হবে (label ইতিমধ্যে আছে) ──
+  const tableColumnsWithLabel = TABLE_COLUMN_DEFS;
 
   // ── Server-side pagination ও search state ──
   const [searchQ, setSearchQ] = useState("");
@@ -794,8 +839,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                 {visibleColKeys.map(key => {
                   const def = TABLE_COLUMN_DEFS.find(c => c.key === key);
                   if (!def) return null;
-                  const label = def.labelKey === "ID" ? "ID" : tr(def.labelKey);
-                  return <SortHeader key={key} label={label} sortKey={key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />;
+                  return <SortHeader key={key} label={def.label} sortKey={key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />;
                 })}
                 <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("common.actions")}</th>
               </tr>
@@ -815,6 +859,7 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   </td>
                   {/* ── ডায়নামিক কলাম সেল — visibleColKeys অনুযায়ী রেন্ডার ── */}
                   {visibleColKeys.map(key => {
+                    // ── বিশেষ রেন্ডার — Badge, avatar, phone format ──
                     switch (key) {
                       case "id":
                         return <td key={key} className="py-3 px-3 font-mono text-[10px]" style={{ color: t.muted }}>{s.id}</td>;
@@ -832,39 +877,28 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                             </div>
                           </td>
                         );
-                      case "phone":
-                        return <td key={key} className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatPhoneDisplay(s.phone)}</td>;
+                      case "phone": case "whatsapp": case "emergency_phone": case "sponsor_phone":
+                        return <td key={key} className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatPhoneDisplay(s[key])}</td>;
                       case "branch":
                         return <td key={key} className="py-3 px-3"><Badge color={t.purple} size="xs">{s.branch || "—"}</Badge></td>;
                       case "country":
                         return <td key={key} className="py-3 px-3"><Badge color={s.country === "Japan" ? t.rose : s.country === "Germany" ? t.amber : t.emerald} size="xs">{s.country || "—"}</Badge></td>;
-                      case "school":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.school || "—"}</td>;
-                      case "batch":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.batch || "—"}</td>;
                       case "status":
                         return <td key={key} className="py-3 px-3"><StatusBadge status={s.status} /></td>;
-                      case "type":
-                        return <td key={key} className="py-3 px-3"><Badge color={s.type === "own" ? t.cyan : t.amber} size="xs">{s.type || "—"}</Badge></td>;
-                      case "email":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.email || "—"}</td>;
-                      case "dob":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.dob || "—"}</td>;
-                      case "gender":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.gender || "—"}</td>;
-                      case "passport_number":
-                        return <td key={key} className="py-3 px-3 font-mono text-[10px]" style={{ color: t.textSecondary }}>{s.passport_number || s.passport || "—"}</td>;
-                      case "counselor":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.counselor || "—"}</td>;
-                      case "source":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.source || "—"}</td>;
+                      case "student_type":
+                        return <td key={key} className="py-3 px-3"><Badge color={s.student_type === "own" || s.type === "own" ? t.cyan : t.amber} size="xs">{s.student_type || s.type || "—"}</Badge></td>;
                       case "visa_type":
                         return <td key={key} className="py-3 px-3"><Badge color={t.amber} size="xs">{s.visa_type || "—"}</Badge></td>;
-                      case "intake":
-                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.intake || "—"}</td>;
+                      case "jp_level":
+                        return <td key={key} className="py-3 px-3"><Badge color={t.rose} size="xs">{s.jp_level || "—"}</Badge></td>;
+                      case "jp_result":
+                        return <td key={key} className="py-3 px-3"><Badge color={s.jp_result === "合格" || s.jp_result === "Pass" ? t.emerald : t.muted} size="xs">{s.jp_result || "—"}</Badge></td>;
+                      case "passport_number": case "nid":
+                        return <td key={key} className="py-3 px-3 font-mono text-[10px]" style={{ color: t.textSecondary }}>{s[key] || s.passport || "—"}</td>;
                       case "created":
                         return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.muted }}>{s.created_at?.slice?.(0, 10) || s.created || "—"}</td>;
                       default:
+                        // ── সাধারণ text cell — সব বাকি কলামের জন্য ──
                         return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s[key] || "—"}</td>;
                     }
                   })}
