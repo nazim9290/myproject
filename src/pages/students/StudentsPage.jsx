@@ -37,24 +37,87 @@ const INSIGHT_FIELDS = [
 ];
 
 // ── এক্সপোর্ট মডালে দেখানো কলামগুলো — সব student ফিল্ড ──
+// ── সব student export columns — grouped ──
 const EXPORT_COLUMNS = [
-  { key: "id", label: "ID" },
-  { key: "name_en", label: "Name (EN)" },
-  { key: "name_bn", label: "Name (BN)" },
-  { key: "phone", label: "Phone" },
-  { key: "whatsapp", label: "WhatsApp" },
-  { key: "email", label: "Email" },
-  { key: "dob", label: "DOB" },
-  { key: "gender", label: "Gender" },
-  { key: "passport_number", label: "Passport" },
-  { key: "country", label: "Country" },
-  { key: "school", label: "School" },
-  { key: "batch", label: "Batch" },
-  { key: "status", label: "Status" },
-  { key: "branch", label: "Branch" },
-  { key: "source", label: "Source" },
-  { key: "counselor", label: "Counselor" },
-  { key: "created", label: "Created" },
+  // Basic
+  { key: "id", label: "ID", group: "Basic" },
+  { key: "name_en", label: "Name (EN)", group: "Basic" },
+  { key: "name_bn", label: "Name (BN)", group: "Basic" },
+  { key: "name_katakana", label: "Name (カタカナ)", group: "Basic" },
+  { key: "phone", label: "Phone", group: "Basic" },
+  { key: "whatsapp", label: "WhatsApp", group: "Basic" },
+  { key: "email", label: "Email", group: "Basic" },
+  { key: "dob", label: "DOB", group: "Basic" },
+  { key: "gender", label: "Gender", group: "Basic" },
+  { key: "marital_status", label: "Marital Status", group: "Basic" },
+  { key: "nationality", label: "Nationality", group: "Basic" },
+  { key: "blood_group", label: "Blood Group", group: "Basic" },
+  { key: "birth_place", label: "Place of Birth", group: "Basic" },
+  { key: "occupation", label: "Occupation", group: "Basic" },
+  // Passport & NID
+  { key: "nid", label: "NID", group: "Passport" },
+  { key: "passport_number", label: "Passport No", group: "Passport" },
+  { key: "passport_issue", label: "Passport Issue", group: "Passport" },
+  { key: "passport_expiry", label: "Passport Expiry", group: "Passport" },
+  // Address
+  { key: "permanent_address", label: "Permanent Address", group: "Address" },
+  { key: "current_address", label: "Current Address", group: "Address" },
+  // Family
+  { key: "father_name_en", label: "Father Name", group: "Family" },
+  { key: "mother_name_en", label: "Mother Name", group: "Family" },
+  { key: "father_dob", label: "Father DOB", group: "Family" },
+  { key: "mother_dob", label: "Mother DOB", group: "Family" },
+  { key: "father_occupation", label: "Father Occupation", group: "Family" },
+  { key: "mother_occupation", label: "Mother Occupation", group: "Family" },
+  { key: "spouse_name", label: "Spouse Name", group: "Family" },
+  { key: "emergency_contact", label: "Emergency Contact", group: "Family" },
+  { key: "emergency_phone", label: "Emergency Phone", group: "Family" },
+  // Education
+  { key: "edu_ssc_school", label: "SSC School", group: "Education" },
+  { key: "edu_ssc_year", label: "SSC Year", group: "Education" },
+  { key: "edu_ssc_board", label: "SSC Board", group: "Education" },
+  { key: "edu_ssc_gpa", label: "SSC GPA", group: "Education" },
+  { key: "edu_ssc_subject", label: "SSC Subject", group: "Education" },
+  { key: "edu_hsc_school", label: "HSC School", group: "Education" },
+  { key: "edu_hsc_year", label: "HSC Year", group: "Education" },
+  { key: "edu_hsc_board", label: "HSC Board", group: "Education" },
+  { key: "edu_hsc_gpa", label: "HSC GPA", group: "Education" },
+  { key: "edu_hsc_subject", label: "HSC Subject", group: "Education" },
+  { key: "edu_honours_school", label: "Honours/Degree School", group: "Education" },
+  { key: "edu_honours_year", label: "Honours Year", group: "Education" },
+  { key: "edu_honours_gpa", label: "Honours GPA", group: "Education" },
+  { key: "edu_honours_subject", label: "Honours Subject", group: "Education" },
+  // JP Exam
+  { key: "jp_exam_type", label: "JP Exam Type", group: "JP Exam" },
+  { key: "jp_level", label: "JP Level", group: "JP Exam" },
+  { key: "jp_score", label: "JP Score", group: "JP Exam" },
+  { key: "jp_result", label: "JP Result", group: "JP Exam" },
+  { key: "jp_exam_date", label: "JP Exam Date", group: "JP Exam" },
+  // Sponsor
+  { key: "sponsor_name", label: "Sponsor Name", group: "Sponsor" },
+  { key: "sponsor_relationship", label: "Sponsor Relation", group: "Sponsor" },
+  { key: "sponsor_phone", label: "Sponsor Phone", group: "Sponsor" },
+  { key: "sponsor_address", label: "Sponsor Address", group: "Sponsor" },
+  { key: "sponsor_company", label: "Sponsor Company", group: "Sponsor" },
+  { key: "sponsor_income_y1", label: "Income Y1", group: "Sponsor" },
+  { key: "sponsor_income_y2", label: "Income Y2", group: "Sponsor" },
+  { key: "sponsor_income_y3", label: "Income Y3", group: "Sponsor" },
+  // Destination & Status
+  { key: "country", label: "Country", group: "Destination" },
+  { key: "school", label: "School", group: "Destination" },
+  { key: "batch", label: "Batch", group: "Destination" },
+  { key: "intake", label: "Intake", group: "Destination" },
+  { key: "visa_type", label: "Visa Type", group: "Destination" },
+  { key: "student_type", label: "Type", group: "Destination" },
+  { key: "status", label: "Status", group: "Status" },
+  { key: "branch", label: "Branch", group: "Status" },
+  { key: "source", label: "Source", group: "Status" },
+  { key: "counselor", label: "Counselor", group: "Status" },
+  { key: "created", label: "Created", group: "Status" },
+  // Study Plan
+  { key: "reason_for_study", label: "Reason for Study", group: "Study Plan" },
+  { key: "future_plan", label: "Future Plan", group: "Study Plan" },
+  { key: "study_subject", label: "Study Subject", group: "Study Plan" },
 ];
 
 export default function StudentsPage({ students, setStudents, reloadData, stepConfigs, setActivePage }) {
@@ -339,8 +402,38 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                         exportData = allData;
                       } catch { exportData = students; }
                     }
-                    // ExportModal ওপেন — কলাম সিলেক্ট করে CSV ডাউনলোড
-                    setExportModalData(exportData);
+                    // ExportModal ওপেন — data flatten করে কলাম সিলেক্ট
+                    const flattened = exportData.map(s => {
+                      const f = { ...s };
+                      // Education flatten
+                      const edu = s.student_education || s.education || [];
+                      const ssc = edu.find(e => /ssc/i.test(e.level || "")) || {};
+                      const hsc = edu.find(e => /hsc|alim|diploma/i.test(e.level || "")) || {};
+                      const honours = edu.find(e => /hon|bach|degree/i.test(e.level || "")) || {};
+                      f.edu_ssc_school = ssc.school_name || ""; f.edu_ssc_year = ssc.passing_year || ssc.year || ""; f.edu_ssc_board = ssc.board || ""; f.edu_ssc_gpa = ssc.gpa || ""; f.edu_ssc_subject = ssc.subject_group || ssc.group_name || "";
+                      f.edu_hsc_school = hsc.school_name || ""; f.edu_hsc_year = hsc.passing_year || hsc.year || ""; f.edu_hsc_board = hsc.board || ""; f.edu_hsc_gpa = hsc.gpa || ""; f.edu_hsc_subject = hsc.subject_group || hsc.group_name || "";
+                      f.edu_honours_school = honours.school_name || ""; f.edu_honours_year = honours.passing_year || honours.year || ""; f.edu_honours_gpa = honours.gpa || ""; f.edu_honours_subject = honours.subject_group || honours.group_name || "";
+                      // JP Exam flatten
+                      const jp = (s.student_jp_exams || [])[0] || {};
+                      f.jp_exam_type = jp.exam_type || ""; f.jp_level = jp.level || ""; f.jp_score = jp.score || ""; f.jp_result = jp.result || ""; f.jp_exam_date = jp.exam_date || "";
+                      // Family flatten
+                      const fam = s.student_family || [];
+                      const father = fam.find(m => m.relation === "father") || {};
+                      const mother = fam.find(m => m.relation === "mother") || {};
+                      f.father_name_en = f.father_name_en || f.father_en || father.name || ""; f.mother_name_en = f.mother_name_en || f.mother_en || mother.name || "";
+                      f.father_dob = father.dob || ""; f.mother_dob = mother.dob || "";
+                      f.father_occupation = father.occupation || ""; f.mother_occupation = mother.occupation || "";
+                      // Sponsor flatten
+                      const sp = (s.sponsors || [])[0] || {};
+                      f.sponsor_name = sp.name || sp.name_en || ""; f.sponsor_relationship = sp.relationship || ""; f.sponsor_phone = sp.phone || "";
+                      f.sponsor_address = sp.address || ""; f.sponsor_company = sp.company_name || "";
+                      f.sponsor_income_y1 = sp.annual_income_y1 || ""; f.sponsor_income_y2 = sp.annual_income_y2 || ""; f.sponsor_income_y3 = sp.annual_income_y3 || "";
+                      // Alias
+                      f.passport_number = f.passport_number || f.passport || "";
+                      f.created = f.created_at?.slice?.(0, 10) || f.created || "";
+                      return f;
+                    });
+                    setExportModalData(flattened);
                     setShowExportModal(true);
                     setShowExportMenu(false);
                   }}>
