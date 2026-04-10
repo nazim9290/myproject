@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Layers, Users, CheckCircle, Star, BookOpen, Calendar, User, ChevronRight, Save, X, Clock } from "lucide-react";
+import { Plus, Layers, Users, CheckCircle, Star, BookOpen, Calendar, User, ChevronRight, Save, X, Clock, Edit3, Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -10,6 +10,7 @@ import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { batches as batchesApi } from "../../lib/api";
 import { api } from "../../hooks/useAPI";
 import BatchDetailView from "./BatchDetailView";
+import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 
 // ═══════════════════════════════════════════════════════
 // সপ্তাহের দিনগুলোর label — checkbox-এ ব্যবহার হয়
@@ -44,9 +45,10 @@ const TIME_SLOTS = [
   "18:00 - 20:00", "19:00 - 21:00",
 ];
 
-function NewBatchForm({ onSave, onCancel }) {
+function NewBatchForm({ onSave, onCancel, initialData }) {
   const t = useTheme();
   const { t: tr } = useLanguage();
+  const isEdit = !!initialData;
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
   // ── Users (শিক্ষক) ও Branches API থেকে load ──
@@ -58,13 +60,14 @@ function NewBatchForm({ onSave, onCancel }) {
   }, []);
 
   const [form, setForm] = useState({
-    name: "", country: "Japan", level: "N5", branch: "",
-    startDate: "", endDate: "", capacity: "20",
-    schedule: "", teacher: "",
-    // ── ক্লাস শিডিউল fields ──
-    class_days: [],            // সপ্তাহে কোন দিন ক্লাস
-    class_hours_per_day: 2,    // প্রতি ক্লাস কত ঘণ্টা
-    class_time: "",            // ক্লাসের সময় (text)
+    name: initialData?.name || "", country: initialData?.country || "Japan", level: initialData?.level || "N5", branch: initialData?.branch || "",
+    startDate: initialData?.start_date || initialData?.startDate || "", endDate: initialData?.end_date || initialData?.endDate || "",
+    capacity: String(initialData?.capacity || "20"),
+    schedule: initialData?.schedule || "", teacher: initialData?.teacher || "",
+    class_days: initialData?.class_days || [],
+    class_hours_per_day: initialData?.class_hours_per_day || 2,
+    class_time: initialData?.class_time || "",
+    status: initialData?.status || "active",
   });
   const [err, setErr] = useState({});
   const set = (k, v) => { setForm(prev => ({ ...prev, [k]: v })); if (err[k]) setErr(prev => ({ ...prev, [k]: null })); };
@@ -98,10 +101,10 @@ function NewBatchForm({ onSave, onCancel }) {
   return (
     <Card delay={0}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold">{tr("courses.createNewBatch")}</h3>
+        <h3 className="text-sm font-bold">{isEdit ? `${tr("common.edit")} — ${initialData.name}` : tr("courses.createNewBatch")}</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>{tr("common.cancel")}</Button>
-          <Button icon={Save} size="xs" onClick={save}>{tr("courses.saveBatch")}</Button>
+          <Button icon={Save} size="xs" onClick={save}>{isEdit ? tr("common.save") : tr("courses.saveBatch")}</Button>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -227,6 +230,9 @@ export default function LanguageCoursePage({ students }) {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [activeTab, setActiveTab] = useState("students");
   const [showNewBatch, setShowNewBatch] = useState(false);
+  const [editingBatch, setEditingBatch] = useState(null); // edit mode — batch object
+  const [deleteBatch, setDeleteBatch] = useState(null); // delete confirm — batch object
+  const [actionLoading, setActionLoading] = useState(false);
   const [batchFilter, setBatchFilter] = useState({ teacher: "", level: "", branch: "", class_time: "", status: "" });
 
   // ── ফিল্টার করা ব্যাচ — dropdown অনুযায়ী ──
@@ -245,6 +251,40 @@ export default function LanguageCoursePage({ students }) {
       if (Array.isArray(data)) setBatches(data);
     }).catch((err) => { console.error("[Batches Load]", err); toast.error(tr("courses.batchLoadError")); });
   }, []);
+
+  // ── ব্যাচ আপডেট ──
+  const handleUpdateBatch = async (updatedData) => {
+    setActionLoading(true);
+    const lid = toast.loading(tr("common.saving") || "Saving...");
+    try {
+      const saved = await batchesApi.update(editingBatch.id, updatedData);
+      setBatches(prev => prev.map(b => b.id === editingBatch.id ? { ...b, ...saved } : b));
+      setEditingBatch(null);
+      setShowNewBatch(false);
+      toast.dismiss(lid);
+      toast.updated(tr("courses.batchCount"));
+    } catch (err) {
+      toast.dismiss(lid);
+      toast.error(err.message || tr("courses.saveFailed"));
+    } finally { setActionLoading(false); }
+  };
+
+  // ── ব্যাচ ডিলিট ──
+  const handleDeleteBatch = async () => {
+    if (!deleteBatch) return;
+    setActionLoading(true);
+    const lid = toast.loading(`${deleteBatch.name} — deleting...`);
+    try {
+      await api.del(`/batches/${deleteBatch.id}`);
+      setBatches(prev => prev.filter(b => b.id !== deleteBatch.id));
+      toast.dismiss(lid);
+      toast.deleted(deleteBatch.name);
+      setDeleteBatch(null);
+    } catch (err) {
+      toast.dismiss(lid);
+      toast.error(err.message || "Delete failed");
+    } finally { setActionLoading(false); }
+  };
 
   if (selectedBatch) {
     const live = batches.find(b => b.id === selectedBatch.id) || selectedBatch;
@@ -289,29 +329,37 @@ export default function LanguageCoursePage({ students }) {
 
       {showNewBatch && (
         <NewBatchForm
-          onCancel={() => setShowNewBatch(false)}
+          initialData={editingBatch}
+          onCancel={() => { setShowNewBatch(false); setEditingBatch(null); }}
           onSave={async (newBatch) => {
-            try {
-              const saved = await batchesApi.create({
-                name: newBatch.name,
-                country: newBatch.country || "Japan",
-                level: newBatch.level || "N5",
-                start_date: newBatch.startDate || newBatch.start_date,
-                end_date: newBatch.endDate || newBatch.end_date,
-                capacity: newBatch.capacity || 20,
-                schedule: newBatch.schedule || "",
-                teacher: newBatch.teacher || "",
-                status: "active",
-                // ── ক্লাস শিডিউল — নতুন fields ──
-                class_days: newBatch.class_days || [],
-                class_hours_per_day: newBatch.class_hours_per_day || 2,
-                class_time: newBatch.class_time || "",
-              });
-              setBatches(prev => [...prev, saved]);
-              setShowNewBatch(false);
-              toast.success(`${newBatch.name} — ${tr("courses.batchCreated")}`);
-            } catch (err) {
-              toast.error(err.message || tr("courses.batchCreateFailed"));
+            const payload = {
+              name: newBatch.name,
+              country: newBatch.country || "Japan",
+              level: newBatch.level || "N5",
+              start_date: newBatch.startDate || newBatch.start_date,
+              end_date: newBatch.endDate || newBatch.end_date,
+              capacity: newBatch.capacity || 20,
+              schedule: newBatch.schedule || "",
+              teacher: newBatch.teacher || "",
+              status: newBatch.status || "active",
+              class_days: newBatch.class_days || [],
+              class_hours_per_day: newBatch.class_hours_per_day || 2,
+              class_time: newBatch.class_time || "",
+              branch: newBatch.branch || "",
+            };
+            if (editingBatch) {
+              // ── Update mode ──
+              handleUpdateBatch(payload);
+            } else {
+              // ── Create mode ──
+              try {
+                const saved = await batchesApi.create(payload);
+                setBatches(prev => [...prev, saved]);
+                setShowNewBatch(false);
+                toast.success(`${newBatch.name} — ${tr("courses.batchCreated")}`);
+              } catch (err) {
+                toast.error(err.message || tr("courses.batchCreateFailed"));
+              }
             }
           }}
         />
@@ -401,7 +449,19 @@ export default function LanguageCoursePage({ students }) {
                         <span className="text-[10px]" style={{ color: t.textSecondary }}>{tr("courses.classLabel")}: <span className="font-bold">{batch.class_days.join(", ")}</span></span>
                       )}
                     </div>
-                    <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />
+                    <div className="flex items-center gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); setEditingBatch(batch); setShowNewBatch(true); }}
+                        className="p-1.5 rounded-lg transition opacity-0 group-hover:opacity-100" style={{ color: t.cyan }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}15`}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        title={tr("common.edit")}><Edit3 size={13} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteBatch(batch); }}
+                        className="p-1.5 rounded-lg transition opacity-0 group-hover:opacity-100" style={{ color: t.rose }}
+                        onMouseEnter={e => e.currentTarget.style.background = `${t.rose}15`}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        title={tr("common.delete")}><Trash2 size={13} /></button>
+                      <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" style={{ color: t.muted }} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -409,6 +469,15 @@ export default function LanguageCoursePage({ students }) {
           );
         })}
       </div>
+
+      {/* ── ডিলিট কনফার্ম মোডাল ── */}
+      <DeleteConfirmModal
+        isOpen={!!deleteBatch}
+        onClose={() => setDeleteBatch(null)}
+        onConfirm={handleDeleteBatch}
+        itemName={deleteBatch?.name || ""}
+        loading={actionLoading}
+      />
     </div>
   );
 }
