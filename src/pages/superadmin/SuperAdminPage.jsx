@@ -46,6 +46,7 @@ export default function SuperAdminPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [detailAgency, setDetailAgency] = useState(null);
   const [switchConfirmId, setSwitchConfirmId] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null); // "create" | "delete:id" | "update:id" | null
 
   const [form, setForm] = useState({
     name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "", prefix: "",
@@ -163,37 +164,49 @@ export default function SuperAdminPage() {
     if (!form.admin_email.trim()) { toast.error(tr("superAdmin.errAdminEmail")); return; }
     if (!form.admin_password || form.admin_password.length < 6) { toast.error(tr("superAdmin.errAdminPassword")); return; }
 
+    setActionLoading("create");
+    const lid = toast.loading(`${form.name} — তৈরি হচ্ছে...`);
     try {
       const res = await fetch(`${API_URL}/super-admin/agencies`, {
         method: "POST", headers, body: JSON.stringify(form),
       });
       const data = await res.json();
+      toast.dismiss(lid);
       if (!res.ok) { toast.error(data.error || tr("superAdmin.createFailed")); return; }
       toast.success(`${form.name} — ${tr("superAdmin.agencyCreated")}`);
       setShowCreateForm(false);
       setForm({ name: "", name_bn: "", subdomain: "", phone: "", email: "", address: "", prefix: "", plan: "standard", admin_name: "", admin_email: "", admin_password: "", dedicated: false });
       loadData();
-    } catch { toast.error(tr("superAdmin.serverError")); }
+    } catch { toast.dismiss(lid); toast.error(tr("superAdmin.serverError")); }
+    finally { setActionLoading(null); }
   };
 
   // ── Agency update ──
   const updateAgency = async (id, updates) => {
+    setActionLoading(`update:${id}`);
+    const lid = toast.loading("আপডেট হচ্ছে...");
     try {
       const res = await fetch(`${API_URL}/super-admin/agencies/${id}`, {
         method: "PATCH", headers, body: JSON.stringify(updates),
       });
+      toast.dismiss(lid);
       if (res.ok) { toast.success(tr("success.updated")); loadData(); setEditingId(null); }
       else { const d = await res.json(); toast.error(d.error || tr("errors.saveFailed")); }
-    } catch { toast.error(tr("superAdmin.serverError")); }
+    } catch { toast.dismiss(lid); toast.error(tr("superAdmin.serverError")); }
+    finally { setActionLoading(null); }
   };
 
   // ── Agency delete ──
   const deleteAgency = async (id) => {
+    setActionLoading(`delete:${id}`);
+    const lid = toast.loading("ডিলিট হচ্ছে — সব ডাটা মুছছে...");
     try {
       const res = await fetch(`${API_URL}/super-admin/agencies/${id}`, { method: "DELETE", headers });
+      toast.dismiss(lid);
       if (res.ok) { toast.success(tr("success.deleted")); loadData(); setDeleteConfirmId(null); }
       else { const d = await res.json(); toast.error(d.error || tr("errors.saveFailed")); }
-    } catch { toast.error(tr("superAdmin.serverError")); }
+    } catch { toast.dismiss(lid); toast.error(tr("superAdmin.serverError")); }
+    finally { setActionLoading(null); }
   };
 
   // ── এজেন্সিতে সুইচ করুন — agency_id localStorage-এ save + reload ──
@@ -1077,7 +1090,9 @@ export default function SuperAdminPage() {
 
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setShowCreateForm(false)}>{tr("common.cancel")}</Button>
-            <Button icon={Save} onClick={createAgency}>{tr("superAdmin.createAgencyBtn")}</Button>
+            <Button icon={Save} onClick={createAgency} disabled={actionLoading === "create"}>
+              {actionLoading === "create" ? "⏳ Creating..." : tr("superAdmin.createAgencyBtn")}
+            </Button>
           </div>
         </Card>
       )}
@@ -1172,7 +1187,10 @@ export default function SuperAdminPage() {
                           )}
                           {deleteConfirmId === agency.id ? (
                             <div className="flex gap-1">
-                              <button onClick={() => deleteAgency(agency.id)} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: t.rose }}>{tr("common.delete")}</button>
+                              <button onClick={() => deleteAgency(agency.id)} disabled={actionLoading === `delete:${agency.id}`}
+                                className="px-2 py-0.5 rounded text-[10px] text-white disabled:opacity-50" style={{ background: t.rose }}>
+                                {actionLoading === `delete:${agency.id}` ? "⏳ Deleting..." : tr("common.delete")}
+                              </button>
                               <button onClick={() => setDeleteConfirmId(null)} className="px-2 py-0.5 rounded text-[10px]" style={{ color: t.muted }}>{tr("superAdmin.no")}</button>
                             </div>
                           ) : (
