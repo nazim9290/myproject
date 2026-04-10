@@ -51,7 +51,11 @@
     "conflictError": "এই তথ্য অন্য কেউ পরিবর্তন করেছে — পেজ রিলোড করুন",
     "deleteConfirmTitle": "ডিলিট নিশ্চিতকরণ",
     "deleteConfirmMessage": "এই কাজ undo করা যাবে না।",
-    "yesDelete": "হ্যাঁ, মুছুন"
+    "yesDelete": "হ্যাঁ, মুছুন",
+    "columns": "কলাম",
+    "columnSettings": "কলাম সেটিংস",
+    "resetDefault": "ডিফল্ট",
+    "dragToReorder": "টেনে ক্রম পরিবর্তন করুন"
   },
   "nav": {
     "dashboard": "ড্যাশবোর্ড",

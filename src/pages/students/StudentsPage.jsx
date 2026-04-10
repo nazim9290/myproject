@@ -19,8 +19,12 @@ import ExportModal from "../../components/ui/ExportModal";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import { getRowStyle } from "../../lib/conditionalFormat";
 import TableInsights from "../../components/ui/TableInsights";
+import ColumnCustomizer from "../../components/ui/ColumnCustomizer";
 import { api } from "../../hooks/useAPI";
 import { API_URL } from "../../lib/api";
+
+// ── localStorage key — টেবিল কলাম কনফিগারেশন persist ──
+const LS_COL_KEY = "agencybook_students_columns";
 
 // ── TableInsights-এ ব্যবহৃত গ্রুপিং ও রুলের ফিল্ডসমূহ ──
 const INSIGHT_FIELDS = [
@@ -120,11 +124,64 @@ const EXPORT_COLUMNS = [
   { key: "study_subject", label: "Study Subject", group: "Study Plan" },
 ];
 
+// ── টেবিলে দেখানো যায় এমন সব কলাম — key, i18n label key, sortable ──
+// render ফাংশন component-এর ভেতরে তৈরি হবে (theme/badge দরকার)
+const TABLE_COLUMN_DEFS = [
+  { key: "id", labelKey: "ID", sortable: true },
+  { key: "name_en", labelKey: "common.name", sortable: true },
+  { key: "phone", labelKey: "common.phone", sortable: true },
+  { key: "branch", labelKey: "students.branch", sortable: true },
+  { key: "country", labelKey: "students.country", sortable: true },
+  { key: "school", labelKey: "students.school", sortable: true },
+  { key: "batch", labelKey: "students.batch", sortable: true },
+  { key: "status", labelKey: "common.status", sortable: true },
+  { key: "type", labelKey: "common.type", sortable: true },
+  { key: "email", labelKey: "common.email", sortable: true },
+  { key: "dob", labelKey: "students.f_dob", sortable: true },
+  { key: "gender", labelKey: "students.f_gender", sortable: true },
+  { key: "passport_number", labelKey: "students.f_passport", sortable: true },
+  { key: "counselor", labelKey: "students.f_counselor", sortable: true },
+  { key: "source", labelKey: "students.f_source", sortable: true },
+  { key: "visa_type", labelKey: "students.f_visaType", sortable: true },
+  { key: "intake", labelKey: "students.f_intake", sortable: true },
+  { key: "created", labelKey: "common.date", sortable: true },
+];
+
+// ── ডিফল্ট দৃশ্যমান কলাম — প্রথমবার বা reset করলে এই তালিকা ──
+const DEFAULT_VISIBLE_KEYS = ["id", "name_en", "phone", "branch", "country", "school", "batch", "status", "type"];
+
 export default function StudentsPage({ students, setStudents, reloadData, stepConfigs, setActivePage }) {
   const t = useTheme();
   const toast = useToast();
   const { t: tr } = useLanguage();
   const [selectedId, setSelectedId] = useState(null);
+
+  // ── টেবিল কলাম কাস্টমাইজেশন — localStorage থেকে load ──
+  const [visibleColKeys, setVisibleColKeys] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LS_COL_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // validate — শুধু valid key রাখো
+        const validKeys = TABLE_COLUMN_DEFS.map(c => c.key);
+        const filtered = parsed.filter(k => validKeys.includes(k));
+        if (filtered.length > 0) return filtered;
+      }
+    } catch { /* ignore */ }
+    return [...DEFAULT_VISIBLE_KEYS];
+  });
+
+  // ── কলাম পরিবর্তন হলে localStorage-এ সেভ ──
+  const handleColChange = (keys) => {
+    setVisibleColKeys(keys);
+    try { localStorage.setItem(LS_COL_KEY, JSON.stringify(keys)); } catch { /* ignore */ }
+  };
+
+  // ── TABLE_COLUMN_DEFS থেকে label resolve (i18n) — ColumnCustomizer-এ পাঠানোর জন্য ──
+  const tableColumnsWithLabel = TABLE_COLUMN_DEFS.map(c => ({
+    ...c,
+    label: c.labelKey === "ID" ? "ID" : tr(c.labelKey),
+  }));
 
   // ── Server-side pagination ও search state ──
   const [searchQ, setSearchQ] = useState("");
@@ -641,6 +698,13 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
         <select value={filterSchool} onChange={e => { setFilterSchool(e.target.value); setPage(1); }} className="px-3 py-1.5 rounded-lg text-xs outline-none" style={{ background: t.inputBg, border: `1px solid ${filterSchool !== "All" ? t.emerald : t.inputBorder}`, color: filterSchool !== "All" ? t.emerald : t.text }}>
           {schools.map(s => <option key={s} value={s}>{s === "All" ? `${tr("common.all")} ${tr("students.school")}` : s}</option>)}
         </select>
+        {/* ── কলাম কাস্টমাইজার — filter bar-এর শেষে ── */}
+        <ColumnCustomizer
+          columns={tableColumnsWithLabel}
+          visibleKeys={visibleColKeys}
+          onChange={handleColChange}
+          defaultKeys={DEFAULT_VISIBLE_KEYS}
+        />
       </div>
 
       {/* ── টেবিল বিশ্লেষণ — কুইক স্ট্যাটস, গ্রুপ বাই, শর্তভিত্তিক ফর্ম্যাটিং ── */}
@@ -705,13 +769,12 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   <input type="checkbox" checked={selectedIds.size === paginated.length && paginated.length > 0}
                     onChange={selectAll} className="rounded" style={{ accentColor: t.cyan }} />
                 </th>
-                {[
-                  { label: "ID", key: "id" }, { label: tr("common.name"), key: "name_en" }, { label: tr("common.phone"), key: "phone" },
-                  { label: tr("students.branch"), key: "branch" }, { label: tr("students.country"), key: "country" }, { label: tr("students.school"), key: "school" },
-                  { label: tr("students.batch"), key: "batch" }, { label: tr("common.status"), key: "status" }, { label: tr("common.type"), key: "type" },
-                ].map(col => (
-                  <SortHeader key={col.key} label={col.label} sortKey={col.key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-                ))}
+                {visibleColKeys.map(key => {
+                  const def = TABLE_COLUMN_DEFS.find(c => c.key === key);
+                  if (!def) return null;
+                  const label = def.labelKey === "ID" ? "ID" : tr(def.labelKey);
+                  return <SortHeader key={key} label={label} sortKey={key} currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />;
+                })}
                 <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{tr("common.actions")}</th>
               </tr>
             </thead>
@@ -728,25 +791,61 @@ export default function StudentsPage({ students, setStudents, reloadData, stepCo
                   <td className="py-3 px-2" onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} className="rounded" style={{ accentColor: t.cyan }} />
                   </td>
-                  <td className="py-3 px-3 font-mono text-[10px]" style={{ color: t.muted }} onClick={() => setSelectedId(s.id)}>{s.id}</td>
-                  <td className="py-3 px-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: `${t.cyan}15`, color: t.cyan }}>
-                        {s.name_en.charAt(0)}
-                      </div>
-                      <div>
-                        <span className="font-medium block">{s.name_en}</span>
-                        <span className="text-[9px] block" style={{ color: t.muted }}>{s.name_bn}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatPhoneDisplay(s.phone)}</td>
-                  <td className="py-3 px-3"><Badge color={t.purple} size="xs">{s.branch || "—"}</Badge></td>
-                  <td className="py-3 px-3"><Badge color={s.country === "Japan" ? t.rose : s.country === "Germany" ? t.amber : t.emerald} size="xs">{s.country}</Badge></td>
-                  <td className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.school}</td>
-                  <td className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.batch}</td>
-                  <td className="py-3 px-3"><StatusBadge status={s.status} /></td>
-                  <td className="py-3 px-3"><Badge color={s.type === "own" ? t.cyan : t.amber} size="xs">{s.type}</Badge></td>
+                  {/* ── ডায়নামিক কলাম সেল — visibleColKeys অনুযায়ী রেন্ডার ── */}
+                  {visibleColKeys.map(key => {
+                    switch (key) {
+                      case "id":
+                        return <td key={key} className="py-3 px-3 font-mono text-[10px]" style={{ color: t.muted }}>{s.id}</td>;
+                      case "name_en":
+                        return (
+                          <td key={key} className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: `${t.cyan}15`, color: t.cyan }}>
+                                {(s.name_en || "?").charAt(0)}
+                              </div>
+                              <div>
+                                <span className="font-medium block">{s.name_en}</span>
+                                {s.name_bn && <span className="text-[9px] block" style={{ color: t.muted }}>{s.name_bn}</span>}
+                              </div>
+                            </div>
+                          </td>
+                        );
+                      case "phone":
+                        return <td key={key} className="py-3 px-3 font-mono text-[11px]" style={{ color: t.textSecondary }}>{formatPhoneDisplay(s.phone)}</td>;
+                      case "branch":
+                        return <td key={key} className="py-3 px-3"><Badge color={t.purple} size="xs">{s.branch || "—"}</Badge></td>;
+                      case "country":
+                        return <td key={key} className="py-3 px-3"><Badge color={s.country === "Japan" ? t.rose : s.country === "Germany" ? t.amber : t.emerald} size="xs">{s.country || "—"}</Badge></td>;
+                      case "school":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.school || "—"}</td>;
+                      case "batch":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.batch || "—"}</td>;
+                      case "status":
+                        return <td key={key} className="py-3 px-3"><StatusBadge status={s.status} /></td>;
+                      case "type":
+                        return <td key={key} className="py-3 px-3"><Badge color={s.type === "own" ? t.cyan : t.amber} size="xs">{s.type || "—"}</Badge></td>;
+                      case "email":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.email || "—"}</td>;
+                      case "dob":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.dob || "—"}</td>;
+                      case "gender":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.gender || "—"}</td>;
+                      case "passport_number":
+                        return <td key={key} className="py-3 px-3 font-mono text-[10px]" style={{ color: t.textSecondary }}>{s.passport_number || s.passport || "—"}</td>;
+                      case "counselor":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.counselor || "—"}</td>;
+                      case "source":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.source || "—"}</td>;
+                      case "visa_type":
+                        return <td key={key} className="py-3 px-3"><Badge color={t.amber} size="xs">{s.visa_type || "—"}</Badge></td>;
+                      case "intake":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s.intake || "—"}</td>;
+                      case "created":
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.muted }}>{s.created_at?.slice?.(0, 10) || s.created || "—"}</td>;
+                      default:
+                        return <td key={key} className="py-3 px-3 text-[10px]" style={{ color: t.textSecondary }}>{s[key] || "—"}</td>;
+                    }
+                  })}
                   <td className="py-3 px-3" onClick={e => e.stopPropagation()}>
                     <button onClick={() => setSelectedId(s.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>{tr("students.viewDetails")}</button>
                   </td>

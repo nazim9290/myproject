@@ -51,7 +51,11 @@
     "conflictError": "This data was modified by someone else — please refresh",
     "deleteConfirmTitle": "Delete Confirmation",
     "deleteConfirmMessage": "This action cannot be undone.",
-    "yesDelete": "Yes, Delete"
+    "yesDelete": "Yes, Delete",
+    "columns": "Columns",
+    "columnSettings": "Column Settings",
+    "resetDefault": "Default",
+    "dragToReorder": "Drag to reorder"
   },
   "nav": {
     "dashboard": "Dashboard",
