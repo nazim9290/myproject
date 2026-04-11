@@ -1237,6 +1237,23 @@ export default function SuperAdminPage() {
                               </select>
                             </div>
                           </div>
+                          {/* ── Owner Password Reset ── */}
+                          <div className="flex items-center gap-3 mb-3 p-3 rounded-lg" style={{ background: `${t.rose}08`, border: `1px solid ${t.rose}20` }}>
+                            <div className="flex-1">
+                              <label className="text-[10px] uppercase tracking-wider" style={{ color: t.muted }}>Owner Password Reset</label>
+                              <input type="text" value={form.new_password || ""} onChange={e => setForm({ ...form, new_password: e.target.value })}
+                                placeholder="New password (min 8 chars)" className="w-full mt-1 px-3 py-1.5 rounded-lg text-xs outline-none" style={is} />
+                            </div>
+                            <button onClick={async () => {
+                              if (!form.new_password || form.new_password.length < 8) { toast.error("Password minimum 8 characters"); return; }
+                              try {
+                                const res = await api.patch(`/super-admin/agencies/${agency.id}/reset-password`, { password: form.new_password });
+                                if (res.error) { toast.error(res.error); } else { toast.success("Password reset successful"); setForm({ ...form, new_password: "" }); }
+                              } catch (err) { toast.error(err.message || "Failed"); }
+                            }} className="px-3 py-1.5 rounded-lg text-xs font-medium mt-4 shrink-0" style={{ background: t.rose, color: "#fff" }}>
+                              🔑 Reset Password
+                            </button>
+                          </div>
                           <div className="flex gap-2">
                             <button onClick={() => { updateAgency(agency.id, { name: form.name, name_bn: form.name_bn, phone: form.phone, email: form.email, address: form.address, subdomain: form.subdomain, plan: form.plan }); }}
                               className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: t.emerald, color: "#000" }}>💾 {tr("common.save")}</button>
