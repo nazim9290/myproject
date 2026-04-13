@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Edit3, Save, Trash2, Check, User, FileCheck, Globe, ChevronLeft, ChevronRight, AlertTriangle, Plus, Clock, MessageSquare, CreditCard, X, LayoutDashboard, Users, GraduationCap, BookOpen, Link as LinkIcon, StickyNote, Briefcase } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -27,6 +27,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const t = useTheme();
   const toast = useToast();
   const { t: tr } = useLanguage();
+
+  // ── Optimistic Lock — fresh updated_at সবসময় ref-এ রাখো ──
+  // parent state re-fetch-এ overwrite হলেও ref সঠিক থাকবে
+  const latestUpdatedAt = useRef(student.updated_at);
+  // prop পরিবর্তন হলে ref sync করো (শুধু যদি prop-এর value নতুন হয়)
+  useEffect(() => { if (student.updated_at) latestUpdatedAt.current = student.updated_at; }, [student.updated_at]);
 
   // ── Pipeline label helper — tr() দিয়ে translated, fallback: data file-এর label ──
   const pipeLabel = (code) => { const v = tr(`pipeline.${code}`); return v !== `pipeline.${code}` ? v : (PIPELINE_STATUSES.find(s => s.code === code)?.label || code); };
@@ -88,7 +94,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         // ── Sponsor data — DB থেকে load (decrypt হয়ে আসে) ──
         if (data.sponsor) { setSponsor(data.sponsor); setSponsorForm(data.sponsor); }
         // ── fresh updated_at নাও — optimistic lock-এ stale timestamp 409 ঠেকাতে ──
-        if (data.updated_at && onUpdate) onUpdate({ ...student, ...data, updated_at: data.updated_at }, true);
+        if (data.updated_at) latestUpdatedAt.current = data.updated_at;
       }
     }).catch(() => {});
   }, [student.id]);
@@ -319,8 +325,10 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   // Status change — API-তেও save (optimistic lock সহ)
   const changeStatus = async (newStatus, msg) => {
     try {
-      const res = await api.patch(`/students/${student.id}`, { status: newStatus, updated_at: student.updated_at });
-      const updated = { ...student, status: newStatus, updated_at: res?.updated_at || new Date().toISOString() };
+      const res = await api.patch(`/students/${student.id}`, { status: newStatus, updated_at: latestUpdatedAt.current });
+      const freshTs = res?.updated_at || new Date().toISOString();
+      latestUpdatedAt.current = freshTs;
+      const updated = { ...student, status: newStatus, updated_at: freshTs };
       onUpdate(updated);
       const stepLabel = pipeLabel(newStatus);
       logActivity(msg || `Status → ${stepLabel}`, "status");
@@ -355,10 +363,12 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const handleSectionSave = async () => {
     try {
       // শুধু ঐ সেকশনের fields পাঠাও — updated_at সহ concurrent edit check
-      const res = await api.patch(`/students/${student.id}`, { ...sectionForm, updated_at: student.updated_at });
+      const res = await api.patch(`/students/${student.id}`, { ...sectionForm, updated_at: latestUpdatedAt.current });
       // সফল হলে — নতুন updated_at সহ student আপডেট করো
+      const freshTs = res?.updated_at || new Date().toISOString();
+      latestUpdatedAt.current = freshTs;
       // skipPatch=true — backend-এ ইতিমধ্যে save হয়ে গেছে, আবার PATCH করার দরকার নেই
-      const updatedStudent = { ...student, ...sectionForm, updated_at: res?.updated_at || new Date().toISOString() };
+      const updatedStudent = { ...student, ...sectionForm, updated_at: freshTs };
       onUpdate(updatedStudent, true);
       setEditSection(null);
       logActivity(tr("success.updated"), "edit");
