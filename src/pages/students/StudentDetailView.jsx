@@ -28,11 +28,9 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const toast = useToast();
   const { t: tr } = useLanguage();
 
-  // ── Optimistic Lock — fresh updated_at সবসময় ref-এ রাখো ──
-  // parent state re-fetch-এ overwrite হলেও ref সঠিক থাকবে
+  // ── Optimistic Lock — fresh updated_at শুধু API response থেকে ref-এ রাখো ──
+  // parent prop re-fetch থেকে sync করো না — শুধু detail load + save response থেকে update হবে
   const latestUpdatedAt = useRef(student.updated_at);
-  // prop পরিবর্তন হলে ref sync করো (শুধু যদি prop-এর value নতুন হয়)
-  useEffect(() => { if (student.updated_at) latestUpdatedAt.current = student.updated_at; }, [student.updated_at]);
 
   // ── Pipeline label helper — tr() দিয়ে translated, fallback: data file-এর label ──
   const pipeLabel = (code) => { const v = tr(`pipeline.${code}`); return v !== `pipeline.${code}` ? v : (PIPELINE_STATUSES.find(s => s.code === code)?.label || code); };
@@ -329,7 +327,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
       const freshTs = res?.updated_at || new Date().toISOString();
       latestUpdatedAt.current = freshTs;
       const updated = { ...student, status: newStatus, updated_at: freshTs };
-      onUpdate(updated);
+      onUpdate(updated, true); // skipPatch — PATCH ইতিমধ্যে হয়ে গেছে, দ্বিতীয়বার পাঠানো লাগবে না
       const stepLabel = pipeLabel(newStatus);
       logActivity(msg || `Status → ${stepLabel}`, "status");
       toast.success(`${stepLabel} — ${tr("success.updated")}`);
