@@ -940,8 +940,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
             </div>
           </div>
 
-          {/* Column selection */}
-          <div className="mb-3">
+          {/* Column selection — Custom template থাকলে দরকার নেই (mapping থেকে আসে) */}
+          {!templateName && <div className="mb-3">
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.columnSelection")}</label>
             <div className="flex flex-wrap gap-1.5">
               {INTERVIEW_COLUMNS.map(col => {
@@ -960,7 +960,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 );
               })}
             </div>
-          </div>
+          </div>}
 
           {/* ── যোগ্য প্রার্থী ফিল্টার ── */}
           {intakeReqs.length > 0 && (() => {
