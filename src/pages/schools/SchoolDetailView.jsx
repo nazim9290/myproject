@@ -73,6 +73,38 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [eligibleSearch, setEligibleSearch] = useState("");
   const [addingStudentId, setAddingStudentId] = useState(null); // submission তৈরি হচ্ছে
 
+  // ── Match Data — education + JP exam data bulk fetch (eligible section open হলে) ──
+  const [matchData, setMatchData] = useState({ education: [], jp_exams: [], loaded: false });
+  useEffect(() => {
+    if (activeSection !== "eligible") return;
+    if (matchData.loaded) return;
+    // সব student-এর education ও JP exam data একবারে আনো
+    api.get("/students/match-data").then(data => {
+      if (data) setMatchData({ education: data.education || [], jp_exams: data.jp_exams || [], loaded: true });
+    }).catch(() => {});
+  }, [activeSection]);
+
+  // ── Student-এ match data merge করো (education, jp_exams) ──
+  const enrichedStudents = useMemo(() => {
+    if (!matchData.loaded) return students || [];
+    // student_id → education/jp_exams map তৈরি
+    const eduMap = {};
+    (matchData.education || []).forEach(e => {
+      if (!eduMap[e.student_id]) eduMap[e.student_id] = [];
+      eduMap[e.student_id].push(e);
+    });
+    const jpMap = {};
+    (matchData.jp_exams || []).forEach(j => {
+      if (!jpMap[j.student_id]) jpMap[j.student_id] = [];
+      jpMap[j.student_id].push(j);
+    });
+    return (students || []).map(s => ({
+      ...s,
+      student_education: eduMap[s.id] || s.student_education || [],
+      student_jp_exams: jpMap[s.id] || s.student_jp_exams || [],
+    }));
+  }, [students, matchData]);
+
   // ── Smart Matching — intake requirements অনুযায়ী student eligibility check ──
   const intakeReqs = useMemo(() => {
     const reqs = school.intake_requirements || [];
@@ -187,28 +219,42 @@ export default function SchoolDetailView({ school, students, onBack }) {
 
   // ── Eligible students list — smart filter ──
   const eligibleStudents = useMemo(() => {
-    // pipeline-এ VISITOR, FOLLOW_UP, CANCELLED বাদ
-    const base = (students || []).filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED", "COMPLETED", "ARRIVED"].includes(s.status));
+    // enrichedStudents ব্যবহার করো — education + JP exam data সহ
+    const base = enrichedStudents.filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED", "COMPLETED", "ARRIVED"].includes(s.status));
 
     // Region filter — student-এর preferred_region match করলে বা preference না থাকলে eligible
     const regionFiltered = base.filter(s => {
-      if (!school.region) return true; // school-এর region না থাকলে সবাই eligible
-      if (!s.preferred_region) return true; // student-এর preference না থাকলে সবাই eligible
+      if (!school.region) return true;
+      if (!s.preferred_region) return true;
       return s.preferred_region === school.region;
     });
 
-    // Requirements filter — intake select করা থাকলে
+    // Requirements filter
     let matched = regionFiltered;
     if (activeReq) {
+      // নির্দিষ্ট intake সিলেক্ট — ঐ intake-এর requirements দিয়ে filter
       matched = regionFiltered.map(s => {
         const m = calcMatchScore(s, activeReq);
         return { ...s, _match: m };
-      }).filter(s => {
-        // সব requirement পূরণ হলে eligible (score === total)
-        // অথবা কোনো requirement না থাকলে সবাই eligible
-        return s._match.total === 0 || s._match.score === s._match.total;
-      });
+      }).filter(s => s._match.total === 0 || s._match.score === s._match.total);
+    } else if (intakeReqs.length > 0) {
+      // "সব সেশন" — যেকোনো একটা intake-এর requirements পূরণ করলে eligible
+      matched = regionFiltered.map(s => {
+        // প্রতিটি intake-এর বিপরীতে check — সবচেয়ে ভালো match রাখো
+        let bestMatch = { score: 0, total: 0, details: [] };
+        let bestIntake = "";
+        for (const req of intakeReqs) {
+          const m = calcMatchScore(s, req);
+          if (m.total === 0) continue; // কোনো requirement নেই — skip
+          if (m.score === m.total) { bestMatch = m; bestIntake = req.month; break; } // full match → done
+          if (m.score > bestMatch.score) { bestMatch = m; bestIntake = req.month; }
+        }
+        // কোনো intake-এই requirement নেই → null match (eligible)
+        if (intakeReqs.every(r => calcMatchScore(s, r).total === 0)) bestMatch = { score: 0, total: 0, details: [] };
+        return { ...s, _match: bestMatch, _matchIntake: bestIntake };
+      }).filter(s => s._match.total === 0 || s._match.score === s._match.total);
     } else {
+      // কোনো intake requirement সেট করা হয়নি — সবাই eligible
       matched = regionFiltered.map(s => ({ ...s, _match: calcMatchScore(s, null) }));
     }
 
