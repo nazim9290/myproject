@@ -943,22 +943,48 @@ export default function SchoolDetailView({ school, students, onBack }) {
           {/* Column selection — Custom template থাকলে দরকার নেই (mapping থেকে আসে) */}
           {!templateName && <div className="mb-3">
             <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.columnSelection")}</label>
+            {/* ── সিলেক্ট করা columns — drag & drop reorder ── */}
+            {interviewCols.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2 p-2 rounded-lg min-h-[32px]" style={{ background: `${t.cyan}05`, border: `1px dashed ${t.cyan}30` }}>
+                {interviewCols.map((key, idx) => {
+                  const col = INTERVIEW_COLUMNS.find(c => c.key === key);
+                  if (!col) return null;
+                  return (
+                    <div key={key} draggable
+                      onDragStart={e => { e.dataTransfer.setData("colIdx", String(idx)); e.currentTarget.style.opacity = "0.5"; }}
+                      onDragEnd={e => { e.currentTarget.style.opacity = "1"; }}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => {
+                        e.preventDefault();
+                        const fromIdx = parseInt(e.dataTransfer.getData("colIdx"));
+                        if (isNaN(fromIdx) || fromIdx === idx) return;
+                        setInterviewCols(prev => {
+                          const arr = [...prev];
+                          const [moved] = arr.splice(fromIdx, 1);
+                          arr.splice(idx, 0, moved);
+                          return arr;
+                        });
+                      }}
+                      className="flex items-center gap-1 px-2 py-1 rounded text-[10px] cursor-grab active:cursor-grabbing select-none"
+                      style={{ background: `${t.cyan}15`, border: `1px solid ${t.cyan}40`, color: t.cyan }}>
+                      <span className="text-[8px] opacity-50">⠿</span>
+                      <span>{tr(col.labelKey)}</span>
+                      <button onClick={e => { e.stopPropagation(); setInterviewCols(prev => prev.filter(k => k !== key)); }}
+                        className="ml-0.5 opacity-50 hover:opacity-100" style={{ color: t.rose }}>✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* ── বাকি columns — ক্লিক করে add ── */}
             <div className="flex flex-wrap gap-1.5">
-              {INTERVIEW_COLUMNS.map(col => {
-                const selected = interviewCols.includes(col.key);
-                return (
-                  <button key={col.key} onClick={() => setInterviewCols(prev =>
-                    selected ? prev.filter(k => k !== col.key) : [...prev, col.key]
-                  )} className="px-2 py-1 rounded text-[10px] transition"
-                  style={{
-                    background: selected ? `${t.cyan}15` : t.inputBg,
-                    border: `1px solid ${selected ? t.cyan : t.inputBorder}`,
-                    color: selected ? t.cyan : t.muted,
-                  }}>
-                    {selected ? "✓ " : ""}{tr(col.labelKey)}
-                  </button>
-                );
-              })}
+              {INTERVIEW_COLUMNS.filter(col => !interviewCols.includes(col.key)).map(col => (
+                <button key={col.key} onClick={() => setInterviewCols(prev => [...prev, col.key])}
+                  className="px-2 py-1 rounded text-[10px] transition"
+                  style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.muted }}>
+                  + {tr(col.labelKey)}
+                </button>
+              ))}
             </div>
           </div>}
 
