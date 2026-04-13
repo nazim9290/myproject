@@ -1065,7 +1065,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
       </Card>
       {/* ══════════ STUDENT PREVIEW MODAL ══════════ */}
       {(previewStudent || previewLoading) && (
-        <Modal title={previewStudent?.name_en || "স্টুডেন্ট ডিটেলস"} onClose={() => { setPreviewStudent(null); setPreviewLoading(false); }} size="lg">
+        <Modal isOpen={true} title={previewStudent?.name_en || "স্টুডেন্ট ডিটেলস"} onClose={() => { setPreviewStudent(null); setPreviewLoading(false); }} size="lg">
           {previewLoading ? (
             <div className="flex items-center justify-center py-10">
               <Clock size={20} className="animate-spin" style={{ color: t.cyan }} />
