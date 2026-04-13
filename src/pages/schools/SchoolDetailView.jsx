@@ -238,24 +238,30 @@ export default function SchoolDetailView({ school, students, onBack }) {
     } else if (intakeReqs.length > 0) {
       // "সব সেশন" — সবচেয়ে ভালো intake match খোঁজো
       matched = regionFiltered.map(s => {
-        let bestMatch = { score: 0, total: 0, details: [] };
+        let bestMatch = null;
         let bestIntake = "";
         for (const req of intakeReqs) {
           const m = calcMatchScore(s, req);
-          if (m.total === 0) continue;
-          if (m.score === m.total) { bestMatch = m; bestIntake = req.month; break; }
-          if (m.score > bestMatch.score) { bestMatch = m; bestIntake = req.month; }
+          if (m.total === 0) continue; // এই intake-এ কোনো requirement নেই
+          // সবচেয়ে ভালো match রাখো (বেশি score, বা সমান score-এ কম total)
+          if (!bestMatch || m.score > bestMatch.score) {
+            bestMatch = m; bestIntake = req.month;
+          }
+          if (m.score === m.total) break; // full match পেয়ে গেছি
         }
-        if (intakeReqs.every(r => calcMatchScore(s, r).total === 0)) bestMatch = { score: 0, total: 0, details: [] };
+        // কোনো intake-এই requirement match করেনি বা requirements নেই
+        if (!bestMatch) bestMatch = { score: 0, total: 0, details: [] };
         return { ...s, _match: bestMatch, _matchIntake: bestIntake };
       });
     } else {
       matched = regionFiltered.map(s => ({ ...s, _match: calcMatchScore(s, null) }));
     }
 
-    // ── showAllStudents toggle — default: শুধু যোগ্য (full match), toggle: সব দেখান ──
+    // ── showAllStudents toggle — default: শুধু যোগ্য, toggle: সব দেখান ──
+    // যোগ্য = সব requirement পূরণ (score === total AND total > 0)
+    // data না থাকলে ineligible (total > 0 but score < total)
     if (!showAllStudents) {
-      matched = matched.filter(s => s._match.total === 0 || s._match.score === s._match.total);
+      matched = matched.filter(s => s._match.total > 0 && s._match.score === s._match.total);
     }
 
     // ইতিমধ্যে এই school-এ submit হয়ে যাওয়া students বাদ
@@ -688,13 +694,16 @@ export default function SchoolDetailView({ school, students, onBack }) {
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[10px]" style={{ color: t.muted }}>{s.id}</span>
                         {s.batch && <span className="text-[10px]" style={{ color: t.muted }}>• {s.batch}</span>}
-                        {/* Match details — JP level, Education, Age ব্যাজ */}
-                        {(m.details || []).map(d => (
-                          <span key={d.key} className="text-[9px] px-1 py-0.5 rounded"
-                            style={{ background: d.ok ? `${t.emerald}10` : `${t.rose}10`, color: d.ok ? t.emerald : t.rose }}>
-                            {d.key === "jp" ? "JP" : d.key === "edu" ? "📚" : "🎂"} {d.label}
-                          </span>
-                        ))}
+                        {/* Match details — সব requirement-এর badge দেখাও */}
+                        {(m.details || []).map(d => {
+                          const icon = { jp: "🇯🇵", edu: "📚", ssc: "📝", hsc: "📝", age: "🎂" }[d.key] || "•";
+                          return (
+                            <span key={d.key} className="text-[9px] px-1 py-0.5 rounded"
+                              style={{ background: d.ok ? `${t.emerald}10` : `${t.rose}10`, color: d.ok ? t.emerald : t.rose }}>
+                              {icon} {d.label}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
 
