@@ -74,6 +74,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [eligibleSearch, setEligibleSearch] = useState("");
   const [addingStudentId, setAddingStudentId] = useState(null); // submission তৈরি হচ্ছে
   const [showAllStudents, setShowAllStudents] = useState(false); // false = শুধু যোগ্য, true = সব (ineligible সহ)
+  const [selectedEligible, setSelectedEligible] = useState([]); // eligible list-এ সিলেক্ট করা students
+  const [generatingFromEligible, setGeneratingFromEligible] = useState(false);
 
   // ── Match Data — education + JP exam data bulk fetch (eligible section open হলে) ──
   const [matchData, setMatchData] = useState({ education: [], jp_exams: [], loaded: false });
@@ -488,6 +490,34 @@ export default function SchoolDetailView({ school, students, onBack }) {
     setGenerating(false);
   };
 
+  // ── Eligible list থেকে interview list download ──
+  const downloadEligibleList = async () => {
+    const ids = selectedEligible.length > 0 ? selectedEligible : eligibleStudents.map(s => s.id);
+    if (ids.length === 0) { toast.error(tr("schools.selectAtLeastOne")); return; }
+    setGeneratingFromEligible(true);
+    try {
+      // Agency name auto-fetch (যদি আগে না আনা হয়ে থাকে)
+      let agency = agencyName;
+      if (!agency) {
+        const a = await api.get("/agency/me").catch(() => null);
+        if (a?.name) { agency = a.name; setAgencyName(a.name); }
+      }
+      const res = await fetch(`${API_URL}/schools/${school.id}/interview-list`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ student_ids: ids, format: "row", agency_name: agency, staff_name: staffName, columns: DEFAULT_COLS }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+      const blob = await res.blob();
+      Object.assign(document.createElement("a"), {
+        href: URL.createObjectURL(blob),
+        download: `Interview_${school.name_en}_${ids.length}students.xlsx`
+      }).click();
+      toast.exported(`Interview List — ${ids.length}`);
+    } catch (err) { toast.error(err.message); }
+    setGeneratingFromEligible(false);
+  };
+
   // Status config — tr() দিয়ে localized
   const STATUS_CONFIG = {
     submitted: { label: tr("schools.status.submitted"), color: t.cyan, icon: Send },
@@ -682,6 +712,13 @@ export default function SchoolDetailView({ school, students, onBack }) {
                     onMouseLeave={e => { e.currentTarget.style.background = bgDefault; e.currentTarget.style.opacity = isFullMatch ? 1 : 0.7; }}
                     onClick={() => openStudentPreview(s.id)}>
 
+                    {/* Checkbox — interview list-এ সিলেক্ট */}
+                    <div className="w-4 h-4 rounded border flex items-center justify-center text-[10px] shrink-0 cursor-pointer"
+                      onClick={e => { e.stopPropagation(); setSelectedEligible(prev => prev.includes(s.id) ? prev.filter(id => id !== s.id) : [...prev, s.id]); }}
+                      style={{ borderColor: selectedEligible.includes(s.id) ? t.cyan : t.muted, background: selectedEligible.includes(s.id) ? t.cyan : "transparent", color: "#fff" }}>
+                      {selectedEligible.includes(s.id) && "✓"}
+                    </div>
+
                     {/* স্টুডেন্ট তথ্য */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -724,6 +761,25 @@ export default function SchoolDetailView({ school, students, onBack }) {
             </div>
           ) : (
             <EmptyState icon={Users} message={tr("schools.noEligibleStudents") || "কোনো যোগ্য স্টুডেন্ট পাওয়া যায়নি"} />
+          )}
+
+          {/* ── Download Action Bar ── */}
+          {eligibleStudents.length > 0 && (
+            <div className="flex items-center justify-between pt-3 mt-2" style={{ borderTop: `1px solid ${t.border}` }}>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setSelectedEligible(
+                  selectedEligible.length === eligibleStudents.length ? [] : eligibleStudents.map(s => s.id)
+                )} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>
+                  {selectedEligible.length === eligibleStudents.length ? "সব বাদ দিন" : "সব সিলেক্ট"}
+                </button>
+                <span className="text-[10px]" style={{ color: t.muted }}>
+                  {selectedEligible.length > 0 ? `${selectedEligible.length} জন সিলেক্ট` : `${eligibleStudents.length} জন যোগ্য`}
+                </span>
+              </div>
+              <Button icon={Download} size="xs" onClick={downloadEligibleList} disabled={generatingFromEligible}>
+                {generatingFromEligible ? "তৈরি হচ্ছে..." : `.xlsx ${selectedEligible.length > 0 ? `(${selectedEligible.length})` : "(সব)"}`}
+              </Button>
+            </div>
           )}
 
           {/* ── Region তথ্য ── */}
