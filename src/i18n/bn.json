@@ -1400,7 +1400,9 @@
     "eligibleStudents": "যোগ্য স্টুডেন্ট",
     "eligible": "যোগ্য",
     "noEligibleStudents": "কোনো যোগ্য স্টুডেন্ট পাওয়া যায়নি",
-    "addToSchool": "এই স্কুলে যোগ করুন"
+    "addToSchool": "এই স্কুলে যোগ করুন",
+    "minGpaSsc": "SSC সর্বনিম্ন GPA",
+    "minGpaHsc": "HSC সর্বনিম্ন GPA"
   },
   "agents": {
     "title": "এজেন্ট",

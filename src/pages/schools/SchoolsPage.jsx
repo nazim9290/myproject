@@ -280,12 +280,6 @@ export default function SchoolsPage({ students }) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.minJpLevel")}</label>
-                  <select value={form.min_jp_level || ""} onChange={e => sf("min_jp_level", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
-                    <option value="">—</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>NAT 5</option><option>NAT 4</option>
-                  </select>
-                </div>
-                <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.interviewType")}</label>
                   <select value={form.interview_type || ""} onChange={e => sf("interview_type", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
                     <option value="">—</option><option>Online</option><option>In-person</option><option>Written + Online</option><option>None</option>

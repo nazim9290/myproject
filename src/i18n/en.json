@@ -1853,7 +1853,9 @@
     "eligibleStudents": "Eligible Students",
     "eligible": "Eligible",
     "noEligibleStudents": "No eligible students found",
-    "addToSchool": "Add to this school"
+    "addToSchool": "Add to this school",
+    "minGpaSsc": "Min. GPA (SSC)",
+    "minGpaHsc": "Min. GPA (HSC)"
   },
   "courses": {
     "title": "Language Course",

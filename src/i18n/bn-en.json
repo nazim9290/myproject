@@ -1853,7 +1853,9 @@
     "eligibleStudents": "যোগ্য Students",
     "eligible": "Eligible",
     "noEligibleStudents": "কোনো eligible student পাওয়া যায়নি",
-    "addToSchool": "এই School-এ যোগ করুন"
+    "addToSchool": "এই School-এ যোগ করুন",
+    "minGpaSsc": "SSC Min. GPA",
+    "minGpaHsc": "HSC Min. GPA"
   },
   "courses": {
     "title": "Language Course",
