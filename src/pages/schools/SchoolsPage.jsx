@@ -365,7 +365,7 @@ export default function SchoolsPage({ students }) {
                             <span className="text-[9px]" style={{ color: t.muted }}>{tr("schools.deadline")}</span>
                           </div>
                           {/* ── সেশন-ভিত্তিক রিকোয়ারমেন্ট ── */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                             <div>
                               <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.minJpLevel")}</label>
                               <select value={req.min_jp_level || ""} onChange={e => updateReq("min_jp_level", e.target.value)}
@@ -379,6 +379,16 @@ export default function SchoolsPage({ students }) {
                                 className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none" style={is}>
                                 <option value="">—</option><option>SSC</option><option>HSC</option><option>Diploma</option><option>Honours</option><option>Masters</option>
                               </select>
+                            </div>
+                            <div>
+                              <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.minGpaSsc") || "SSC সর্বনিম্ন GPA"}</label>
+                              <input type="number" step="0.01" min="0" max="5" value={req.min_gpa_ssc || ""} onChange={e => updateReq("min_gpa_ssc", e.target.value ? +e.target.value : "")}
+                                className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none" style={is} placeholder="2.50" />
+                            </div>
+                            <div>
+                              <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.minGpaHsc") || "HSC সর্বনিম্ন GPA"}</label>
+                              <input type="number" step="0.01" min="0" max="5" value={req.min_gpa_hsc || ""} onChange={e => updateReq("min_gpa_hsc", e.target.value ? +e.target.value : "")}
+                                className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none" style={is} placeholder="2.50" />
                             </div>
                             <div>
                               <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.minAge") || "সর্বনিম্ন বয়স"}</label>

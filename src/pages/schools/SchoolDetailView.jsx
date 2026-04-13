@@ -110,16 +110,20 @@ export default function SchoolDetailView({ school, students, onBack }) {
     return { level: best, rank: bestRank };
   };
 
-  // ── Student-এর সর্বোচ্চ education level বের করো ──
+  // ── Student-এর সর্বোচ্চ education level + GPA বের করো ──
   const getStudentEducation = (s) => {
     const edu = s.student_education || s.education || [];
     let best = "";
     let bestRank = 0;
+    let sscGpa = null, hscGpa = null;
     edu.forEach(e => {
       const r = EDUCATION_RANK[e.level] || 0;
       if (r > bestRank) { bestRank = r; best = e.level; }
+      // SSC/HSC GPA track করো
+      if (e.level === "SSC" && e.gpa) sscGpa = parseFloat(e.gpa);
+      if (e.level === "HSC" && e.gpa) hscGpa = parseFloat(e.gpa);
     });
-    return { level: best, rank: bestRank };
+    return { level: best, rank: bestRank, sscGpa, hscGpa };
   };
 
   // ── Matching score calculate — কতটুকু match হয়েছে ──
@@ -138,12 +142,26 @@ export default function SchoolDetailView({ school, students, onBack }) {
     }
 
     // Education check
+    const { level: eduLevel, rank: eduRank, sscGpa, hscGpa } = getStudentEducation(s);
     if (req.min_education) {
       total++;
-      const { level, rank } = getStudentEducation(s);
       const reqRank = EDUCATION_RANK[req.min_education] || 0;
-      if (rank >= reqRank) { score++; details.push({ key: "edu", ok: true, label: level || "—" }); }
-      else { details.push({ key: "edu", ok: false, label: `${level || "নেই"} (${req.min_education} দরকার)` }); }
+      if (eduRank >= reqRank) { score++; details.push({ key: "edu", ok: true, label: eduLevel || "—" }); }
+      else { details.push({ key: "edu", ok: false, label: `${eduLevel || "নেই"} (${req.min_education} দরকার)` }); }
+    }
+
+    // SSC GPA check
+    if (req.min_gpa_ssc) {
+      total++;
+      if (sscGpa !== null && sscGpa >= req.min_gpa_ssc) { score++; details.push({ key: "ssc", ok: true, label: `SSC ${sscGpa}` }); }
+      else { details.push({ key: "ssc", ok: false, label: `SSC ${sscGpa ?? "নেই"} (${req.min_gpa_ssc} দরকার)` }); }
+    }
+
+    // HSC GPA check
+    if (req.min_gpa_hsc) {
+      total++;
+      if (hscGpa !== null && hscGpa >= req.min_gpa_hsc) { score++; details.push({ key: "hsc", ok: true, label: `HSC ${hscGpa}` }); }
+      else { details.push({ key: "hsc", ok: false, label: `HSC ${hscGpa ?? "নেই"} (${req.min_gpa_hsc} দরকার)` }); }
     }
 
     // Age check
@@ -505,6 +523,8 @@ export default function SchoolDetailView({ school, students, onBack }) {
               </span>
               {activeReq.min_jp_level && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}15`, color: t.cyan }}>JP: {activeReq.min_jp_level}+</span>}
               {activeReq.min_education && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>শিক্ষা: {activeReq.min_education}+</span>}
+              {activeReq.min_gpa_ssc && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.amber}15`, color: t.amber }}>SSC: {activeReq.min_gpa_ssc}+</span>}
+              {activeReq.min_gpa_hsc && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.amber}15`, color: t.amber }}>HSC: {activeReq.min_gpa_hsc}+</span>}
               {(activeReq.min_age || activeReq.max_age) && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.emerald}15`, color: t.emerald }}>বয়স: {activeReq.min_age || "—"}~{activeReq.max_age || "—"}</span>}
             </div>
           )}
