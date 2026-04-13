@@ -138,8 +138,10 @@ export default function SchoolDetailView({ school, students, onBack }) {
     let best = s.jp_level || "";
     let bestRank = JP_LEVEL_RANK[best] || 0;
     exams.forEach(ex => {
-      const r = JP_LEVEL_RANK[ex.jp_level] || 0;
-      if (r > bestRank) { bestRank = r; best = ex.jp_level; }
+      // DB column "level", কিন্তু কিছু জায়গায় "jp_level" — দুটোই চেক
+      const lvl = ex.jp_level || ex.level || "";
+      const r = JP_LEVEL_RANK[lvl] || 0;
+      if (r > bestRank) { bestRank = r; best = lvl; }
     });
     return { level: best, rank: bestRank };
   };
@@ -1175,9 +1177,9 @@ export default function SchoolDetailView({ school, students, onBack }) {
                     <div className="space-y-1">
                       {jpExams.map((ex, i) => (
                         <div key={i} className="flex items-center gap-3 text-[11px] px-2 py-1.5 rounded-lg" style={{ background: t.inputBg }}>
-                          <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${t.rose}15`, color: t.rose }}>{ex.jp_level}</span>
+                          <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${t.rose}15`, color: t.rose }}>{ex.jp_level || ex.level}</span>
                           <span>{ex.exam_type || "JLPT"}</span>
-                          {ex.jp_score && <span style={{ color: t.muted }}>স্কোর: {ex.jp_score}</span>}
+                          {(ex.jp_score || ex.score) && <span style={{ color: t.muted }}>স্কোর: {ex.jp_score || ex.score}</span>}
                           {ex.exam_date && <span style={{ color: t.muted }}>{formatDateDisplay(ex.exam_date)}</span>}
                         </div>
                       ))}
