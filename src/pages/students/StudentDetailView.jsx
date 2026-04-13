@@ -87,6 +87,8 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
         if (Array.isArray(data.jp_study)) setJpStudy(data.jp_study);
         // ── Sponsor data — DB থেকে load (decrypt হয়ে আসে) ──
         if (data.sponsor) { setSponsor(data.sponsor); setSponsorForm(data.sponsor); }
+        // ── fresh updated_at নাও — optimistic lock-এ stale timestamp 409 ঠেকাতে ──
+        if (data.updated_at && onUpdate) onUpdate({ ...student, ...data, updated_at: data.updated_at }, true);
       }
     }).catch(() => {});
   }, [student.id]);
