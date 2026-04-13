@@ -449,21 +449,11 @@ export default function SchoolsPage({ students }) {
                       </div>
                     </div>
 
-                    {/* তথ্য grid — শহর, ইমিগ্রেশন, লেভেল, ইন্টারভিউ, ফি */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
+                    {/* তথ্য grid — শহর, ফি, ইন্টারভিউ */}
+                    <div className="grid grid-cols-2 gap-1.5 mb-2">
                       <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
-                        <MapPin size={12} /> {school.city || "—"}
+                        <MapPin size={11} /> {school.city || "—"}
                       </div>
-                      {school.immigration_bureau && (
-                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
-                          🏛 {school.immigration_bureau}
-                        </div>
-                      )}
-                      {school.min_jp_level && (
-                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
-                          📖 {school.min_jp_level}
-                        </div>
-                      )}
                       {school.interview_type && (
                         <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
                           🎤 {school.interview_type}
@@ -471,22 +461,37 @@ export default function SchoolsPage({ students }) {
                       )}
                       {school.shoukai_fee > 0 && (
                         <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
-                          💴 ¥{Number(school.shoukai_fee).toLocaleString()}
+                          💴 ¥{Number(school.shoukai_fee).toLocaleString()} /紹介
                         </div>
                       )}
                       {school.tuition_y1 > 0 && (
                         <div className="flex items-center gap-1.5 text-[11px]" style={{ color: t.textSecondary }}>
-                          🎓 ¥{Number(school.tuition_y1).toLocaleString()}
+                          🎓 ¥{Number(school.tuition_y1).toLocaleString()} /年
                         </div>
                       )}
                     </div>
 
-                    {/* ইন্টেক, অঞ্চল ও ডরমিটরি */}
-                    <div className="flex items-center gap-2 flex-wrap">
+                    {/* ইন্টেক, অঞ্চল, ডরমিটরি ও requirements ব্যাজ */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-2">
                       {school.region && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>{school.region}</span>}
                       {intakeMonths && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.amber}15`, color: t.amber }}>📅 {intakeMonths}</span>}
                       {school.has_dormitory && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.emerald}15`, color: t.emerald }}>🏠 {tr("schools.dormitory")}</span>}
                     </div>
+                    {/* Intake requirements সারসংক্ষেপ */}
+                    {(() => {
+                      const reqs = school.intake_requirements || [];
+                      const parsed = typeof reqs === "string" ? ((() => { try { return JSON.parse(reqs); } catch { return []; } })()) : reqs;
+                      if (!parsed.length) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {parsed.map(r => (
+                            <span key={r.month} className="text-[8px] px-1 py-0.5 rounded" style={{ background: `${t.cyan}08`, color: t.muted }}>
+                              {r.month}: {[r.min_jp_level, r.min_education, r.min_gpa_ssc && `SSC≥${r.min_gpa_ssc}`, r.min_gpa_hsc && `HSC≥${r.min_gpa_hsc}`, (r.min_age || r.max_age) && `${r.min_age||""}~${r.max_age||""}`].filter(Boolean).join(" • ") || "—"}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
 
                     {/* ফুটার — রেফার ও পৌঁছেছে */}
                     <div className="flex items-center justify-between pt-3 mt-3" style={{ borderTop: `1px solid ${t.border}` }}>

@@ -1402,7 +1402,30 @@
     "noEligibleStudents": "কোনো যোগ্য স্টুডেন্ট পাওয়া যায়নি",
     "addToSchool": "এই স্কুলে যোগ করুন",
     "minGpaSsc": "SSC সর্বনিম্ন GPA",
-    "minGpaHsc": "HSC সর্বনিম্ন GPA"
+    "minGpaHsc": "HSC সর্বনিম্ন GPA",
+    "submissionDeleted": "সাবমিশন মুছে ফেলা হয়েছে",
+    "col": {
+      "serial": "ক্রমিক",
+      "familyName": "পদবি",
+      "givenName": "নাম",
+      "fullName": "পুরো নাম",
+      "gender": "লিঙ্গ",
+      "dobAge": "জন্ম তারিখ ও বয়স",
+      "nationality": "জাতীয়তা",
+      "education": "শিক্ষা",
+      "gpa": "GPA",
+      "jpLevel": "JP লেভেল",
+      "jpStudyHours": "JP পড়ার ঘণ্টা",
+      "occupation": "পেশা",
+      "pastVisa": "পূর্ববর্তী ভিসা",
+      "sponsor": "স্পনসর",
+      "sponsorRelation": "স্পনসর সম্পর্ক",
+      "passportNo": "পাসপোর্ট নং",
+      "intakeSemester": "ইনটেক",
+      "coeApplied": "COE আবেদন",
+      "textbookLesson": "টেক্সটবুক লেসন",
+      "goal": "লক্ষ্য"
+    }
   },
   "agents": {
     "title": "এজেন্ট",

@@ -304,6 +304,33 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [generating, setGenerating] = useState(false);
   const [interviewSearch, setInterviewSearch] = useState("");
   const [staffName, setStaffName] = useState("");
+  const [adminUsers, setAdminUsers] = useState([]); // staff dropdown-এর জন্য
+
+  // ── Agency info + admin users auto-load — interview section open হলে ──
+  useEffect(() => {
+    if (activeSection !== "interview") return;
+    // Agency নাম auto-fill
+    if (!agencyName) {
+      api.get("/agency/me").then(a => { if (a?.name) setAgencyName(a.name); }).catch(() => {});
+    }
+    // Admin/staff users load — staff dropdown-এ দেখাবো
+    if (adminUsers.length === 0) {
+      api.get("/users").then(data => {
+        const users = Array.isArray(data) ? data : data?.data || [];
+        setAdminUsers(users);
+        // Current user-কে default staff হিসেবে সেট
+        if (!staffName) {
+          const me = localStorage.getItem("agencyos_user");
+          if (me) {
+            try {
+              const u = JSON.parse(me);
+              setStaffName(u.name || u.display_name || "");
+            } catch {}
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [activeSection]);
   const [interviewCols, setInterviewCols] = useState(DEFAULT_COLS);
   const [templateName, setTemplateName] = useState(school.interview_template_name || school.interview_template || "");
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
@@ -759,8 +786,16 @@ export default function SchoolDetailView({ school, students, onBack }) {
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.staffName")}</label>
-              <input value={staffName} onChange={e => setStaffName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="担当者名" />
+              {adminUsers.length > 1 ? (
+                <select value={staffName} onChange={e => setStaffName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                  <option value="">— {tr("schools.selectOne") || "সিলেক্ট করুন"} —</option>
+                  {adminUsers.map(u => <option key={u.id} value={u.name || u.display_name}>{u.name || u.display_name} ({u.role})</option>)}
+                </select>
+              ) : (
+                <input value={staffName} onChange={e => setStaffName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="担当者名" />
+              )}
             </div>
           </div>
 

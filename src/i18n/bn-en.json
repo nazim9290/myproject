@@ -1855,7 +1855,30 @@
     "noEligibleStudents": "কোনো eligible student পাওয়া যায়নি",
     "addToSchool": "এই School-এ যোগ করুন",
     "minGpaSsc": "SSC Min. GPA",
-    "minGpaHsc": "HSC Min. GPA"
+    "minGpaHsc": "HSC Min. GPA",
+    "submissionDeleted": "Submission deleted",
+    "col": {
+      "serial": "No.",
+      "familyName": "Family Name",
+      "givenName": "Given Name",
+      "fullName": "Full Name",
+      "gender": "Gender",
+      "dobAge": "DOB ও Age",
+      "nationality": "Nationality",
+      "education": "Education",
+      "gpa": "GPA",
+      "jpLevel": "JP Level",
+      "jpStudyHours": "JP Study Hours",
+      "occupation": "Occupation",
+      "pastVisa": "Past Visa",
+      "sponsor": "Sponsor",
+      "sponsorRelation": "Sponsor Relation",
+      "passportNo": "Passport No",
+      "intakeSemester": "Intake",
+      "coeApplied": "COE Applied",
+      "textbookLesson": "Textbook Lesson",
+      "goal": "Goal"
+    }
   },
   "courses": {
     "title": "Language Course",

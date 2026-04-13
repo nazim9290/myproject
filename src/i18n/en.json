@@ -1855,7 +1855,30 @@
     "noEligibleStudents": "No eligible students found",
     "addToSchool": "Add to this school",
     "minGpaSsc": "Min. GPA (SSC)",
-    "minGpaHsc": "Min. GPA (HSC)"
+    "minGpaHsc": "Min. GPA (HSC)",
+    "submissionDeleted": "Submission deleted",
+    "col": {
+      "serial": "No.",
+      "familyName": "Family Name",
+      "givenName": "Given Name",
+      "fullName": "Full Name",
+      "gender": "Gender",
+      "dobAge": "DOB & Age",
+      "nationality": "Nationality",
+      "education": "Education",
+      "gpa": "GPA",
+      "jpLevel": "JP Level",
+      "jpStudyHours": "JP Study Hours",
+      "occupation": "Occupation",
+      "pastVisa": "Past Visa",
+      "sponsor": "Sponsor",
+      "sponsorRelation": "Sponsor Relation",
+      "passportNo": "Passport No",
+      "intakeSemester": "Intake",
+      "coeApplied": "COE Applied",
+      "textbookLesson": "Textbook Lesson",
+      "goal": "Goal"
+    }
   },
   "courses": {
     "title": "Language Course",
