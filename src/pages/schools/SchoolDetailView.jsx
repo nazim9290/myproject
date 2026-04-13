@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
@@ -536,6 +537,19 @@ export default function SchoolDetailView({ school, students, onBack }) {
     } catch (err) { toast.error(err.message); }
   };
 
+  // ── Student Preview Modal — eligible student ক্লিক করলে detail দেখাবে ──
+  const [previewStudent, setPreviewStudent] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const openStudentPreview = async (studentId) => {
+    setPreviewLoading(true);
+    setPreviewStudent(null);
+    try {
+      const data = await api.get(`/students/${studentId}`);
+      setPreviewStudent(data);
+    } catch (err) { toast.error(err.message); }
+    setPreviewLoading(false);
+  };
+
   // ── Submission delete ──
   const [deleteSubId, setDeleteSubId] = useState(null);
   const deleteSubmission = async (subId) => {
@@ -638,10 +652,11 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 const m = s._match || {};
                 const isAdding = addingStudentId === s.id;
                 return (
-                  <div key={s.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition"
+                  <div key={s.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition cursor-pointer"
                     style={{ background: m.regionMatch ? `${t.emerald}06` : "transparent" }}
                     onMouseEnter={e => e.currentTarget.style.background = m.regionMatch ? `${t.emerald}10` : t.hoverBg}
-                    onMouseLeave={e => e.currentTarget.style.background = m.regionMatch ? `${t.emerald}06` : "transparent"}>
+                    onMouseLeave={e => e.currentTarget.style.background = m.regionMatch ? `${t.emerald}06` : "transparent"}
+                    onClick={() => openStudentPreview(s.id)}>
 
                     {/* স্টুডেন্ট তথ্য */}
                     <div className="flex-1 min-w-0">
@@ -668,7 +683,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                     </div>
 
                     {/* + বাটন — এই স্কুলে submission হিসেবে add */}
-                    <button onClick={() => addEligibleToSchool(s.id)} disabled={isAdding}
+                    <button onClick={e => { e.stopPropagation(); addEligibleToSchool(s.id); }} disabled={isAdding}
                       className="p-1.5 rounded-lg transition shrink-0"
                       style={{ background: `${t.cyan}15`, color: t.cyan }}
                       onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}25`}
@@ -1048,6 +1063,119 @@ export default function SchoolDetailView({ school, students, onBack }) {
           </div>
         )}
       </Card>
+      {/* ══════════ STUDENT PREVIEW MODAL ══════════ */}
+      {(previewStudent || previewLoading) && (
+        <Modal title={previewStudent?.name_en || "স্টুডেন্ট ডিটেলস"} onClose={() => { setPreviewStudent(null); setPreviewLoading(false); }} size="lg">
+          {previewLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Clock size={20} className="animate-spin" style={{ color: t.cyan }} />
+              <span className="ml-2 text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</span>
+            </div>
+          ) : previewStudent && (() => {
+            const s = previewStudent;
+            const edu = s.student_education || [];
+            const jpExams = s.student_jp_exams || [];
+            const sponsor = s.sponsor || (s.sponsors && s.sponsors[0]) || null;
+            const age = s.dob ? Math.floor((Date.now() - new Date(s.dob)) / 31557600000) : null;
+
+            // ── ফিল্ড group — label:value pairs ──
+            const personalFields = [
+              ["নাম", s.name_en], ["কাতাকানা", s.name_katakana], ["জন্ম তারিখ", s.dob ? `${formatDateDisplay(s.dob)}${age ? ` (${age} বছর)` : ""}` : ""],
+              ["লিঙ্গ", s.gender], ["জাতীয়তা", s.nationality || "Bangladeshi"], ["রক্তের গ্রুপ", s.blood_group],
+              ["ফোন", s.phone], ["ইমেইল", s.email], ["পেশা", s.occupation],
+              ["বৈবাহিক অবস্থা", s.marital_status], ["জন্মস্থান", s.birth_place],
+            ];
+            const passportFields = [
+              ["পাসপোর্ট", s.passport_number || s.passport], ["ইস্যু", formatDateDisplay(s.passport_issue)], ["মেয়াদ", formatDateDisplay(s.passport_expiry)],
+              ["বাবার নাম", s.father_name_en || s.father_name], ["মায়ের নাম", s.mother_name_en || s.mother_name],
+              ["স্থায়ী ঠিকানা", s.permanent_address], ["বর্তমান ঠিকানা", s.current_address],
+            ];
+            const destFields = [
+              ["দেশ", s.country], ["স্কুল", s.school], ["ব্যাচ", s.batch], ["ইনটেক", s.intake],
+              ["ভিসা টাইপ", s.visa_type], ["পছন্দের অঞ্চল", s.preferred_region], ["ব্রাঞ্চ", s.branch],
+            ];
+
+            const FieldGrid = ({ fields }) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1.5">
+                {fields.filter(([, v]) => v).map(([label, val]) => (
+                  <div key={label} className="flex justify-between text-[11px] py-0.5">
+                    <span style={{ color: t.muted }}>{label}</span>
+                    <span className="font-medium text-right ml-2 truncate max-w-[60%]">{val}</span>
+                  </div>
+                ))}
+              </div>
+            );
+
+            return (
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                {/* ── ব্যক্তিগত তথ্য ── */}
+                <div>
+                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>ব্যক্তিগত তথ্য</h4>
+                  <FieldGrid fields={personalFields} />
+                </div>
+
+                {/* ── পাসপোর্ট ও পরিবার ── */}
+                <div>
+                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>পাসপোর্ট ও পরিবার</h4>
+                  <FieldGrid fields={passportFields} />
+                </div>
+
+                {/* ── গন্তব্য তথ্য ── */}
+                <div>
+                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.emerald }}>গন্তব্য তথ্য</h4>
+                  <FieldGrid fields={destFields} />
+                </div>
+
+                {/* ── শিক্ষাগত যোগ্যতা ── */}
+                {edu.length > 0 && (
+                  <div>
+                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.purple }}>শিক্ষাগত যোগ্যতা</h4>
+                    <div className="space-y-1">
+                      {edu.map((e, i) => (
+                        <div key={i} className="flex items-center gap-3 text-[11px] px-2 py-1.5 rounded-lg" style={{ background: t.inputBg }}>
+                          <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${t.purple}15`, color: t.purple }}>{e.level}</span>
+                          <span className="flex-1">{e.school_name || "—"}</span>
+                          {e.gpa && <span className="font-mono font-bold" style={{ color: t.cyan }}>GPA {e.gpa}</span>}
+                          {e.passing_year && <span style={{ color: t.muted }}>{e.passing_year}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── জাপানিজ পরীক্ষা ── */}
+                {jpExams.length > 0 && (
+                  <div>
+                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.rose }}>জাপানিজ পরীক্ষা</h4>
+                    <div className="space-y-1">
+                      {jpExams.map((ex, i) => (
+                        <div key={i} className="flex items-center gap-3 text-[11px] px-2 py-1.5 rounded-lg" style={{ background: t.inputBg }}>
+                          <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${t.rose}15`, color: t.rose }}>{ex.jp_level}</span>
+                          <span>{ex.exam_type || "JLPT"}</span>
+                          {ex.jp_score && <span style={{ color: t.muted }}>স্কোর: {ex.jp_score}</span>}
+                          {ex.exam_date && <span style={{ color: t.muted }}>{formatDateDisplay(ex.exam_date)}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── স্পনসর ── */}
+                {sponsor && (
+                  <div>
+                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>স্পনসর</h4>
+                    <FieldGrid fields={[
+                      ["নাম", sponsor.name || sponsor.name_en], ["সম্পর্ক", sponsor.relationship],
+                      ["ফোন", sponsor.phone], ["পেশা/কোম্পানি", sponsor.company_name],
+                      ["আয় (১ম বছর)", sponsor.annual_income_y1 ? `৳${Number(sponsor.annual_income_y1).toLocaleString("en-IN")}` : ""],
+                    ]} />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
     </div>
   );
 }
