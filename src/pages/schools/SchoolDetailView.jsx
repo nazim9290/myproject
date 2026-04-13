@@ -80,7 +80,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
   // ── Match Data — education + JP exam data bulk fetch (eligible section open হলে) ──
   const [matchData, setMatchData] = useState({ education: [], jp_exams: [], loaded: false });
   useEffect(() => {
-    if (activeSection !== "eligible") return;
+    if (activeSection !== "eligible" && activeSection !== "interview") return;
     if (matchData.loaded) return;
     // সব student-এর education ও JP exam data একবারে আনো
     api.get("/students/match-data").then(data => {
@@ -464,10 +464,43 @@ export default function SchoolDetailView({ school, students, onBack }) {
     } catch (err) { toast.error(err.message); }
   };
 
-  const allStudents = (students || []).filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
-  const interviewFiltered = interviewSearch
-    ? allStudents.filter(s => (s.name_en || "").toLowerCase().includes(interviewSearch.toLowerCase()) || s.id.toLowerCase().includes(interviewSearch.toLowerCase()))
-    : allStudents;
+  // ── Interview list-এ "শুধু যোগ্য" filter state ──
+  const [interviewEligibleOnly, setInterviewEligibleOnly] = useState(false);
+  const [interviewIntakeFilter, setInterviewIntakeFilter] = useState("");
+
+  const allStudents = enrichedStudents.filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
+
+  // Interview student list — eligibility filter + search
+  const interviewFiltered = useMemo(() => {
+    let list = allStudents;
+
+    // "শুধু যোগ্য" mode — smart matching apply
+    if (interviewEligibleOnly && intakeReqs.length > 0) {
+      const reqToUse = interviewIntakeFilter
+        ? intakeReqs.find(r => r.month === interviewIntakeFilter) || null
+        : null;
+
+      list = list.map(s => {
+        if (reqToUse) return { ...s, _match: calcMatchScore(s, reqToUse) };
+        // সব সেশন — best match
+        let bestMatch = null;
+        for (const req of intakeReqs) {
+          const m = calcMatchScore(s, req);
+          if (m.total === 0) continue;
+          if (!bestMatch || m.score > bestMatch.score) bestMatch = m;
+          if (m.score === m.total) break;
+        }
+        return { ...s, _match: bestMatch || { score: 0, total: 0, details: [] } };
+      }).filter(s => s._match.total > 0 && s._match.score === s._match.total);
+    }
+
+    // Search filter
+    if (interviewSearch) {
+      const q = interviewSearch.toLowerCase();
+      list = list.filter(s => (s.name_en || "").toLowerCase().includes(q) || s.id.toLowerCase().includes(q));
+    }
+    return list;
+  }, [allStudents, interviewEligibleOnly, interviewIntakeFilter, intakeReqs, interviewSearch]);
 
   // Generate interview list
   const generateInterviewList = async () => {
@@ -624,14 +657,9 @@ export default function SchoolDetailView({ school, students, onBack }) {
           </div>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{school.name_jp} • {school.city}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button icon={Filter} size="xs" variant={activeSection === "eligible" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "eligible" ? null : "eligible")}>
-            {tr("schools.eligibleStudents") || "যোগ্য স্টুডেন্ট"}
-          </Button>
-          <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
-            {tr("schools.interviewList")}
-          </Button>
-        </div>
+        <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
+          {tr("schools.interviewList")}
+        </Button>
       </div>
 
       {/* ══════════ ELIGIBLE STUDENTS — SMART MATCHING ══════════ */}
@@ -919,6 +947,32 @@ export default function SchoolDetailView({ school, students, onBack }) {
             </div>
           </div>
 
+          {/* ── যোগ্য প্রার্থী ফিল্টার ── */}
+          {intakeReqs.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 p-2 rounded-xl" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}15` }}>
+              <Filter size={12} style={{ color: t.emerald }} />
+              <button onClick={() => setInterviewEligibleOnly(!interviewEligibleOnly)}
+                className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition"
+                style={{
+                  background: interviewEligibleOnly ? t.emerald : t.inputBg,
+                  color: interviewEligibleOnly ? "#000" : t.muted,
+                  border: `1px solid ${interviewEligibleOnly ? t.emerald : t.inputBorder}`,
+                }}>
+                {interviewEligibleOnly ? "✓ শুধু যোগ্য প্রার্থী" : "সব স্টুডেন্ট"}
+              </button>
+              {interviewEligibleOnly && (
+                <select value={interviewIntakeFilter} onChange={e => setInterviewIntakeFilter(e.target.value)}
+                  className="px-2 py-1 rounded-lg text-[10px] outline-none" style={is}>
+                  <option value="">সব সেশন</option>
+                  {(school.intakes || []).map(ik => (
+                    <option key={ik.month || ik} value={ik.month || ik}>{ik.month || ik}</option>
+                  ))}
+                </select>
+              )}
+              <span className="text-[10px] ml-auto" style={{ color: t.muted }}>{interviewFiltered.length} জন</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-3">
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg flex-1" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={14} style={{ color: t.muted }} />
@@ -932,19 +986,40 @@ export default function SchoolDetailView({ school, students, onBack }) {
             </button>
           </div>
 
-          <div className="space-y-1 max-h-[250px] overflow-y-auto mb-3">
-            {interviewFiltered.map(s => (
-              <div key={s.id} onClick={() => setSelectedForInterview(prev =>
-                prev.includes(s.id) ? prev.filter(id => id !== s.id) : [...prev, s.id]
-              )} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition"
-                style={{ background: selectedForInterview.includes(s.id) ? `${t.cyan}10` : "transparent" }}>
-                <div className="w-4 h-4 rounded border flex items-center justify-center text-[10px]"
-                  style={{ borderColor: selectedForInterview.includes(s.id) ? t.cyan : t.muted, background: selectedForInterview.includes(s.id) ? t.cyan : "transparent", color: "#fff" }}>
-                  {selectedForInterview.includes(s.id) && "✓"}
+          <div className="space-y-1 max-h-[300px] overflow-y-auto mb-3">
+            {interviewFiltered.map(s => {
+              const m = s._match || {};
+              const details = m.details || [];
+              return (
+                <div key={s.id} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition"
+                  style={{ background: selectedForInterview.includes(s.id) ? `${t.cyan}10` : "transparent" }}
+                  onMouseEnter={e => { if (!selectedForInterview.includes(s.id)) e.currentTarget.style.background = t.hoverBg; }}
+                  onMouseLeave={e => { if (!selectedForInterview.includes(s.id)) e.currentTarget.style.background = "transparent"; }}>
+                  {/* Checkbox */}
+                  <div className="w-4 h-4 rounded border flex items-center justify-center text-[10px] shrink-0"
+                    onClick={() => setSelectedForInterview(prev => prev.includes(s.id) ? prev.filter(id => id !== s.id) : [...prev, s.id])}
+                    style={{ borderColor: selectedForInterview.includes(s.id) ? t.cyan : t.muted, background: selectedForInterview.includes(s.id) ? t.cyan : "transparent", color: "#fff" }}>
+                    {selectedForInterview.includes(s.id) && "✓"}
+                  </div>
+                  {/* Info + badges — ক্লিক করলে preview */}
+                  <div className="flex-1 min-w-0" onClick={() => openStudentPreview(s.id)}>
+                    <p className="text-xs font-medium">{s.name_en}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className="text-[10px]" style={{ color: t.muted }}>{s.id} • {s.batch || "—"}</span>
+                      {details.map(d => {
+                        const icon = { jp: "🇯🇵", edu: "📚", ssc: "📝", hsc: "📝", age: "🎂" }[d.key] || "•";
+                        return (
+                          <span key={d.key} className="text-[8px] px-1 py-0.5 rounded"
+                            style={{ background: d.ok ? `${t.emerald}10` : `${t.rose}10`, color: d.ok ? t.emerald : t.rose }}>
+                            {icon} {d.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1"><p className="text-xs font-medium">{s.name_en}</p><p className="text-[10px]" style={{ color: t.muted }}>{s.id} • {s.batch || "—"}</p></div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="flex justify-between items-center pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
