@@ -14,6 +14,7 @@ import SortHeader from "../../components/ui/SortHeader";
 import useSortable from "../../hooks/useSortable";
 import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { SUB_STATUS } from "../../data/mockData";
+import { JAPAN_REGIONS, INTAKE_MONTHS } from "../../data/japanRegions";
 import SchoolDetailView from "./SchoolDetailView";
 import { api } from "../../hooks/useAPI";
 
@@ -22,8 +23,9 @@ const BLANK_SCHOOL = {
   contact_person: "", contact_email: "", contact_phone: "",
   shoukai_fee: "", tuition_y1: "", tuition_y2: "", admission_fee: "",
   min_jp_level: "", interview_type: "", has_dormitory: false,
-  immigration_bureau: "",
+  immigration_bureau: "", region: "",
   intakes: [], // [{month: "April", deadline: "2026-01-15"}, ...]
+  intake_requirements: [], // [{month, year, min_jp_level, min_education, min_age, max_age, seats}]
   gdrive_url: "", website: "", notes: "",
 };
 
@@ -108,11 +110,12 @@ export default function SchoolsPage({ students }) {
       contact_person: school.contact_person || "", contact_email: school.contact_email || "", contact_phone: school.contact_phone || "",
       shoukai_fee: school.shoukai_fee || "", tuition_y1: school.tuition_y1 || "", tuition_y2: school.tuition_y2 || "", admission_fee: school.admission_fee || "",
       min_jp_level: school.min_jp_level || "", interview_type: school.interview_type || "", has_dormitory: school.has_dormitory || false,
-      immigration_bureau: school.immigration_bureau || "",
+      immigration_bureau: school.immigration_bureau || "", region: school.region || "",
       intakes: school.intakes || (school.deadline_april || school.deadline_october ? [
         ...(school.deadline_april ? [{ month: "April", deadline: school.deadline_april }] : []),
         ...(school.deadline_october ? [{ month: "October", deadline: school.deadline_october }] : []),
       ] : []),
+      intake_requirements: school.intake_requirements || [],
       gdrive_url: school.gdrive_url || "", website: school.website || "", notes: school.notes || "",
     });
     setEditingId(school.id); setShowForm(true);
@@ -126,7 +129,7 @@ export default function SchoolsPage({ students }) {
       payload[k] = payload[k] ? Number(payload[k]) : null;
     });
     // Empty string → null for optional text fields
-    ["contact_person", "contact_email", "contact_phone", "website", "gdrive_url", "notes", "min_jp_level", "interview_type"].forEach(k => {
+    ["contact_person", "contact_email", "contact_phone", "website", "gdrive_url", "notes", "min_jp_level", "interview_type", "region", "immigration_bureau"].forEach(k => {
       if (payload[k] === "") payload[k] = null;
     });
     try {
@@ -289,6 +292,13 @@ export default function SchoolsPage({ students }) {
                   </select>
                 </div>
                 <div>
+                  <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.region") || "অঞ্চল"}</label>
+                  <select value={form.region || ""} onChange={e => sf("region", e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is}>
+                    <option value="">—</option>
+                    {JAPAN_REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+                <div>
                   <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("schools.immigrationBureau")}</label>
                   <input value={form.immigration_bureau || ""} onChange={e => sf("immigration_bureau", e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={is} placeholder="Tokyo, Osaka, Fukuoka..." />
@@ -307,13 +317,15 @@ export default function SchoolsPage({ students }) {
               <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>{tr("schools.intakesDeadlines")}</p>
               <div className="mb-4">
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {["January", "April", "July", "October"].map(month => {
+                  {INTAKE_MONTHS.map(month => {
                     const intakes = form.intakes || [];
                     const exists = intakes.find(i => i.month === month);
                     return (
                       <button key={month} onClick={() => {
                         if (exists) {
                           sf("intakes", intakes.filter(i => i.month !== month));
+                          // intake_requirements থেকেও মুছে দাও
+                          sf("intake_requirements", (form.intake_requirements || []).filter(r => r.month !== month));
                         } else {
                           sf("intakes", [...intakes, { month, deadline: "" }]);
                         }
@@ -330,18 +342,58 @@ export default function SchoolsPage({ students }) {
                   })}
                 </div>
                 {(form.intakes || []).length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {(form.intakes || []).map((intake, idx) => (
-                      <div key={intake.month} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: t.inputBg }}>
-                        <span className="text-xs font-medium w-20" style={{ color: t.amber }}>{intake.month}</span>
-                        <DateInput value={intake.deadline || ""} onChange={v => {
-                          const updated = [...(form.intakes || [])];
-                          updated[idx] = { ...updated[idx], deadline: v };
-                          sf("intakes", updated);
-                        }} size="sm" className="flex-1" />
-                        <span className="text-[9px]" style={{ color: t.muted }}>{tr("schools.deadline")}</span>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    {(form.intakes || []).map((intake, idx) => {
+                      // এই intake-এর requirements খোঁজো
+                      const req = (form.intake_requirements || []).find(r => r.month === intake.month) || {};
+                      const updateReq = (field, val) => {
+                        const reqs = [...(form.intake_requirements || [])];
+                        const ri = reqs.findIndex(r => r.month === intake.month);
+                        if (ri >= 0) { reqs[ri] = { ...reqs[ri], [field]: val }; }
+                        else { reqs.push({ month: intake.month, [field]: val }); }
+                        sf("intake_requirements", reqs);
+                      };
+                      return (
+                        <div key={intake.month} className="p-3 rounded-xl" style={{ background: `${t.amber}06`, border: `1px solid ${t.amber}15` }}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: `${t.amber}20`, color: t.amber }}>{intake.month}</span>
+                            <DateInput value={intake.deadline || ""} onChange={v => {
+                              const updated = [...(form.intakes || [])];
+                              updated[idx] = { ...updated[idx], deadline: v };
+                              sf("intakes", updated);
+                            }} size="sm" className="flex-1" />
+                            <span className="text-[9px]" style={{ color: t.muted }}>{tr("schools.deadline")}</span>
+                          </div>
+                          {/* ── সেশন-ভিত্তিক রিকোয়ারমেন্ট ── */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div>
+                              <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.minJpLevel")}</label>
+                              <select value={req.min_jp_level || ""} onChange={e => updateReq("min_jp_level", e.target.value)}
+                                className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none" style={is}>
+                                <option value="">—</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>NAT 5</option><option>NAT 4</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.minEducation") || "সর্বনিম্ন শিক্ষা"}</label>
+                              <select value={req.min_education || ""} onChange={e => updateReq("min_education", e.target.value)}
+                                className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none" style={is}>
+                                <option value="">—</option><option>SSC</option><option>HSC</option><option>Diploma</option><option>Honours</option><option>Masters</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.minAge") || "সর্বনিম্ন বয়স"}</label>
+                              <input type="number" value={req.min_age || ""} onChange={e => updateReq("min_age", e.target.value ? +e.target.value : "")}
+                                className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none" style={is} placeholder="18" />
+                            </div>
+                            <div>
+                              <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("schools.maxAge") || "সর্বোচ্চ বয়স"}</label>
+                              <input type="number" value={req.max_age || ""} onChange={e => updateReq("max_age", e.target.value ? +e.target.value : "")}
+                                className="w-full px-2 py-1.5 rounded-lg text-[11px] outline-none" style={is} placeholder="30" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 {(form.intakes || []).length === 0 && <p className="text-[10px]" style={{ color: t.muted }}>{tr("schools.selectIntake")}</p>}
@@ -425,8 +477,9 @@ export default function SchoolsPage({ students }) {
                       )}
                     </div>
 
-                    {/* ইন্টেক ও ডরমিটরি */}
+                    {/* ইন্টেক, অঞ্চল ও ডরমিটরি */}
                     <div className="flex items-center gap-2 flex-wrap">
+                      {school.region && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.purple}15`, color: t.purple }}>{school.region}</span>}
                       {intakeMonths && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.amber}15`, color: t.amber }}>📅 {intakeMonths}</span>}
                       {school.has_dormitory && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: `${t.emerald}15`, color: t.emerald }}>🏠 {tr("schools.dormitory")}</span>}
                     </div>

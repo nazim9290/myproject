@@ -212,6 +212,7 @@
     "f_fatherName": "বাবার নাম",
     "f_motherName": "মায়ের নাম",
     "f_country": "দেশ",
+    "f_preferredRegion": "পছন্দের অঞ্চল (জাপান)",
     "f_school": "স্কুল / বিশ্ববিদ্যালয়",
     "f_batch": "ব্যাচ",
     "f_intake": "ইনটেক",
@@ -1389,7 +1390,17 @@
     "templateUpload": "Template Upload",
     "templateUploaded": "Template Uploaded",
     "totalSubmissions": "Total Submissions",
-    "uploading": "Uploading"
+    "uploading": "Uploading",
+    "region": "অঞ্চল",
+    "minEducation": "সর্বনিম্ন শিক্ষা",
+    "minAge": "সর্বনিম্ন বয়স",
+    "maxAge": "সর্বোচ্চ বয়স",
+    "requirements": "রিকোয়ারমেন্ট",
+    "allIntakes": "সব সেশন",
+    "eligibleStudents": "যোগ্য স্টুডেন্ট",
+    "eligible": "যোগ্য",
+    "noEligibleStudents": "কোনো যোগ্য স্টুডেন্ট পাওয়া যায়নি",
+    "addToSchool": "এই স্কুলে যোগ করুন"
   },
   "agents": {
     "title": "এজেন্ট",

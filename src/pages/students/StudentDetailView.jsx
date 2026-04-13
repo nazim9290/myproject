@@ -11,6 +11,7 @@ import PhoneInput, { formatPhoneDisplay } from "../../components/ui/PhoneInput";
 import DateInput, { formatDateDisplay } from "../../components/ui/DateInput";
 import { PIPELINE_STATUSES } from "../../data/students";
 import { FEE_CATEGORIES, CATEGORY_CONFIG } from "../../data/mockData";
+import { JAPAN_REGIONS } from "../../data/japanRegions";
 import { api } from "../../hooks/useAPI";
 
 // ── Pipeline step configs — prop থেকে dynamic ভাবে আসবে (Admin সেটিংস থেকে) ──
@@ -495,6 +496,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   ];
 
   const destinationExtraFields = [
+    { label: tr("students.f_preferredRegion") || "পছন্দের অঞ্চল", key: "preferred_region" },
     { label: tr("students.f_intake"), key: "intake" },
     { label: tr("students.f_visaType"), key: "visa_type", type: "select", options: ["","Language Student","SSW","TITP","Engineer/Specialist","Graduation","Masters","Visitor","Dependent"] },
     { label: tr("students.f_branch"), key: "branch", type: "branch_select" },
@@ -510,6 +512,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
   const getConditionalDestFields = (formData) => {
     const base = [
       { label: tr("students.f_country"), key: "country", type: "select", options: ["Japan","Germany","Korea","Canada","UK","USA","Australia","China","Malaysia"] },
+      { label: tr("students.f_preferredRegion") || "পছন্দের অঞ্চল", key: "preferred_region", type: "select", options: ["", ...JAPAN_REGIONS.map(r => r.value)] },
       { label: tr("students.f_school"), key: "school", type: "school_select" },
       { label: tr("students.f_batch"), key: "batch", type: "batch_select" },
       { label: tr("students.f_intake"), key: "intake" },
@@ -575,7 +578,7 @@ export default function StudentDetailView({ student, onBack, onUpdate, onDelete,
     fields.forEach(f => { formData[f.key] = student[f.key] || ""; });
     // destination section — conditional fields-এর key গুলোও include করো (agent_id, partner_id, counselor)
     if (section === "destination") {
-      ["agent_id", "partner_id", "counselor", "student_type", "source", "country", "school", "school_id", "batch", "batch_id", "intake", "visa_type", "branch"].forEach(k => {
+      ["agent_id", "partner_id", "counselor", "student_type", "source", "country", "school", "school_id", "batch", "batch_id", "intake", "visa_type", "branch", "preferred_region"].forEach(k => {
         if (formData[k] === undefined) formData[k] = student[k] || "";
       });
     }

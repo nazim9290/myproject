@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, FileText, Plus, Save, X, Download, Search, Users, AlertTriangle, CheckCircle, Clock, Send } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { ArrowLeft, FileText, Plus, Save, X, Download, Search, Users, AlertTriangle, CheckCircle, Clock, Send, Filter, Star } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -8,6 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import { SUB_STATUS } from "../../data/mockData";
+import { JAPAN_REGIONS, JP_LEVEL_RANK, EDUCATION_RANK, INTAKE_MONTHS } from "../../data/japanRegions";
 import { api } from "../../hooks/useAPI";
 
 import { API_URL } from "../../lib/api";
@@ -64,8 +65,172 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const countryColor = school.country === "Japan" ? t.rose : school.country === "Germany" ? t.amber : t.cyan;
   const is = { background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text };
 
-  // ── Active section: interview | resume | null ──
+  // ── Active section: interview | eligible | null ──
   const [activeSection, setActiveSection] = useState(null);
+
+  // ── Eligible Students (Smart Matching) state ──
+  const [eligibleIntake, setEligibleIntake] = useState(""); // কোন intake-এর requirements দিয়ে filter
+  const [eligibleSearch, setEligibleSearch] = useState("");
+  const [addingStudentId, setAddingStudentId] = useState(null); // submission তৈরি হচ্ছে
+
+  // ── Smart Matching — intake requirements অনুযায়ী student eligibility check ──
+  const intakeReqs = useMemo(() => {
+    const reqs = school.intake_requirements || [];
+    if (typeof reqs === "string") try { return JSON.parse(reqs); } catch { return []; }
+    return reqs;
+  }, [school.intake_requirements]);
+
+  // নির্দিষ্ট intake-এর requirement
+  const activeReq = useMemo(() => {
+    if (!eligibleIntake) return null;
+    return intakeReqs.find(r => r.month === eligibleIntake) || null;
+  }, [intakeReqs, eligibleIntake]);
+
+  // ── Student বয়স calculate ──
+  const calcAge = (dob) => {
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (isNaN(d)) return null;
+    const now = new Date();
+    let age = now.getFullYear() - d.getFullYear();
+    if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) age--;
+    return age;
+  };
+
+  // ── Student-এর সর্বোচ্চ JP level বের করো (jp_exams থেকে) ──
+  const getStudentJpLevel = (s) => {
+    // সরাসরি student object-এ jp_level থাকতে পারে বা student_jp_exams array-তে
+    const exams = s.student_jp_exams || s.jp_exams || [];
+    let best = s.jp_level || "";
+    let bestRank = JP_LEVEL_RANK[best] || 0;
+    exams.forEach(ex => {
+      const r = JP_LEVEL_RANK[ex.jp_level] || 0;
+      if (r > bestRank) { bestRank = r; best = ex.jp_level; }
+    });
+    return { level: best, rank: bestRank };
+  };
+
+  // ── Student-এর সর্বোচ্চ education level বের করো ──
+  const getStudentEducation = (s) => {
+    const edu = s.student_education || s.education || [];
+    let best = "";
+    let bestRank = 0;
+    edu.forEach(e => {
+      const r = EDUCATION_RANK[e.level] || 0;
+      if (r > bestRank) { bestRank = r; best = e.level; }
+    });
+    return { level: best, rank: bestRank };
+  };
+
+  // ── Matching score calculate — কতটুকু match হয়েছে ──
+  const calcMatchScore = (s, req) => {
+    if (!req) return { score: 0, total: 0, details: [] };
+    const details = [];
+    let score = 0, total = 0;
+
+    // JP Level check
+    if (req.min_jp_level) {
+      total++;
+      const { level, rank } = getStudentJpLevel(s);
+      const reqRank = JP_LEVEL_RANK[req.min_jp_level] || 0;
+      if (rank >= reqRank) { score++; details.push({ key: "jp", ok: true, label: level || "—" }); }
+      else { details.push({ key: "jp", ok: false, label: `${level || "নেই"} (${req.min_jp_level} দরকার)` }); }
+    }
+
+    // Education check
+    if (req.min_education) {
+      total++;
+      const { level, rank } = getStudentEducation(s);
+      const reqRank = EDUCATION_RANK[req.min_education] || 0;
+      if (rank >= reqRank) { score++; details.push({ key: "edu", ok: true, label: level || "—" }); }
+      else { details.push({ key: "edu", ok: false, label: `${level || "নেই"} (${req.min_education} দরকার)` }); }
+    }
+
+    // Age check
+    const age = calcAge(s.dob);
+    if (req.min_age || req.max_age) {
+      total++;
+      if (age === null) {
+        details.push({ key: "age", ok: false, label: "DOB নেই" });
+      } else {
+        const minOk = !req.min_age || age >= req.min_age;
+        const maxOk = !req.max_age || age <= req.max_age;
+        if (minOk && maxOk) { score++; details.push({ key: "age", ok: true, label: `${age} বছর` }); }
+        else { details.push({ key: "age", ok: false, label: `${age} বছর (${req.min_age || "—"}~${req.max_age || "—"})` }); }
+      }
+    }
+
+    // Region match — bonus (total-এ count করে না, কিন্তু priority দেয়)
+    const regionMatch = s.preferred_region && school.region && s.preferred_region === school.region;
+    const noRegionPref = !s.preferred_region; // কোনো preference নেই = সব school-এ eligible
+
+    return { score, total, details, regionMatch, noRegionPref, age };
+  };
+
+  // ── Eligible students list — smart filter ──
+  const eligibleStudents = useMemo(() => {
+    // pipeline-এ VISITOR, FOLLOW_UP, CANCELLED বাদ
+    const base = (students || []).filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED", "COMPLETED", "ARRIVED"].includes(s.status));
+
+    // Region filter — student-এর preferred_region match করলে বা preference না থাকলে eligible
+    const regionFiltered = base.filter(s => {
+      if (!school.region) return true; // school-এর region না থাকলে সবাই eligible
+      if (!s.preferred_region) return true; // student-এর preference না থাকলে সবাই eligible
+      return s.preferred_region === school.region;
+    });
+
+    // Requirements filter — intake select করা থাকলে
+    let matched = regionFiltered;
+    if (activeReq) {
+      matched = regionFiltered.map(s => {
+        const m = calcMatchScore(s, activeReq);
+        return { ...s, _match: m };
+      }).filter(s => {
+        // সব requirement পূরণ হলে eligible (score === total)
+        // অথবা কোনো requirement না থাকলে সবাই eligible
+        return s._match.total === 0 || s._match.score === s._match.total;
+      });
+    } else {
+      matched = regionFiltered.map(s => ({ ...s, _match: calcMatchScore(s, null) }));
+    }
+
+    // ইতিমধ্যে এই school-এ submit হয়ে যাওয়া students বাদ
+    const submittedIds = new Set(subs.map(sub => sub.student_id));
+    matched = matched.filter(s => !submittedIds.has(s.id));
+
+    // Search filter
+    if (eligibleSearch) {
+      const q = eligibleSearch.toLowerCase();
+      matched = matched.filter(s => (s.name_en || "").toLowerCase().includes(q) || s.id.toLowerCase().includes(q));
+    }
+
+    // Sort — region match আগে, তারপর match score
+    matched.sort((a, b) => {
+      const aRegion = a._match?.regionMatch ? 1 : 0;
+      const bRegion = b._match?.regionMatch ? 1 : 0;
+      if (aRegion !== bRegion) return bRegion - aRegion;
+      return (b._match?.score || 0) - (a._match?.score || 0);
+    });
+
+    return matched;
+  }, [students, school, subs, activeReq, eligibleSearch]);
+
+  // ── Eligible student → submission হিসেবে add ──
+  const addEligibleToSchool = async (studentId) => {
+    setAddingStudentId(studentId);
+    try {
+      const saved = await api.post("/submissions", {
+        school_id: school.id,
+        student_id: studentId,
+        submission_number: subs.filter(s => s.student_id === studentId).length + 1,
+        intake: eligibleIntake || "",
+        status: "submitted",
+      });
+      setSubs(prev => [saved, ...prev]);
+      toast.success(tr("schools.submissionAdded"));
+    } catch (err) { toast.error(err.message); }
+    setAddingStudentId(null);
+  };
 
   // ── Interview List state ──
   const showInterviewList = activeSection === "interview";
@@ -302,10 +467,129 @@ export default function SchoolDetailView({ school, students, onBack }) {
           </div>
           <p className="text-xs mt-0.5" style={{ color: t.muted }}>{school.name_jp} • {school.city}</p>
         </div>
-        <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
-          {tr("schools.interviewList")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button icon={Filter} size="xs" variant={activeSection === "eligible" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "eligible" ? null : "eligible")}>
+            {tr("schools.eligibleStudents") || "যোগ্য স্টুডেন্ট"}
+          </Button>
+          <Button icon={Users} size="xs" variant={activeSection === "interview" ? "default" : "ghost"} onClick={() => setActiveSection(activeSection === "interview" ? null : "interview")}>
+            {tr("schools.interviewList")}
+          </Button>
+        </div>
       </div>
+
+      {/* ══════════ ELIGIBLE STUDENTS — SMART MATCHING ══════════ */}
+      {activeSection === "eligible" && (
+        <Card delay={0}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <Filter size={14} style={{ color: t.emerald }} />
+              {tr("schools.eligibleStudents") || "যোগ্য স্টুডেন্ট"} — {school.name_en}
+            </h3>
+            <div className="flex items-center gap-2">
+              {/* Intake select — কোন session-এর requirements দিয়ে filter */}
+              <select value={eligibleIntake} onChange={e => setEligibleIntake(e.target.value)}
+                className="px-3 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                <option value="">{tr("schools.allIntakes") || "সব সেশন"}</option>
+                {(school.intakes || []).map(ik => (
+                  <option key={ik.month || ik} value={ik.month || ik}>{ik.month || ik}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* ── এই intake-এর requirements দেখাও ── */}
+          {activeReq && (
+            <div className="flex flex-wrap gap-2 mb-3 p-2 rounded-xl" style={{ background: `${t.amber}08`, border: `1px solid ${t.amber}15` }}>
+              <span className="text-[10px] font-bold" style={{ color: t.amber }}>
+                {eligibleIntake} {tr("schools.requirements") || "রিকোয়ারমেন্ট"}:
+              </span>
+              {activeReq.min_jp_level && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.cyan}15`, color: t.cyan }}>JP: {activeReq.min_jp_level}+</span>}
+              {activeReq.min_education && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.purple}15`, color: t.purple }}>শিক্ষা: {activeReq.min_education}+</span>}
+              {(activeReq.min_age || activeReq.max_age) && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${t.emerald}15`, color: t.emerald }}>বয়স: {activeReq.min_age || "—"}~{activeReq.max_age || "—"}</span>}
+            </div>
+          )}
+          {!activeReq && eligibleIntake && (
+            <p className="text-[10px] mb-3 px-2" style={{ color: t.muted }}>
+              {eligibleIntake} সেশনের জন্য কোনো রিকোয়ারমেন্ট সেট করা হয়নি — সব স্টুডেন্ট দেখানো হচ্ছে
+            </p>
+          )}
+
+          {/* ── সার্চ বার ── */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg flex-1" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
+              <Search size={14} style={{ color: t.muted }} />
+              <input value={eligibleSearch} onChange={e => setEligibleSearch(e.target.value)}
+                className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
+                placeholder={tr("schools.searchStudentPlaceholder") || "নাম বা ID দিয়ে খুঁজুন..."} />
+            </div>
+            <span className="text-[10px] px-2" style={{ color: t.muted }}>
+              {eligibleStudents.length} জন {tr("schools.eligible") || "যোগ্য"}
+            </span>
+          </div>
+
+          {/* ── যোগ্য স্টুডেন্ট লিস্ট ── */}
+          {eligibleStudents.length > 0 ? (
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
+              {eligibleStudents.map(s => {
+                const m = s._match || {};
+                const isAdding = addingStudentId === s.id;
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition"
+                    style={{ background: m.regionMatch ? `${t.emerald}06` : "transparent" }}
+                    onMouseEnter={e => e.currentTarget.style.background = m.regionMatch ? `${t.emerald}10` : t.hoverBg}
+                    onMouseLeave={e => e.currentTarget.style.background = m.regionMatch ? `${t.emerald}06` : "transparent"}>
+
+                    {/* স্টুডেন্ট তথ্য */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-medium truncate">{s.name_en}</p>
+                        {/* Region match badge */}
+                        {m.regionMatch && (
+                          <span className="text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5" style={{ background: `${t.emerald}15`, color: t.emerald }}>
+                            <Star size={8} /> {s.preferred_region}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px]" style={{ color: t.muted }}>{s.id}</span>
+                        {s.batch && <span className="text-[10px]" style={{ color: t.muted }}>• {s.batch}</span>}
+                        {/* Match details — JP level, Education, Age ব্যাজ */}
+                        {(m.details || []).map(d => (
+                          <span key={d.key} className="text-[9px] px-1 py-0.5 rounded"
+                            style={{ background: d.ok ? `${t.emerald}10` : `${t.rose}10`, color: d.ok ? t.emerald : t.rose }}>
+                            {d.key === "jp" ? "JP" : d.key === "edu" ? "📚" : "🎂"} {d.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* + বাটন — এই স্কুলে submission হিসেবে add */}
+                    <button onClick={() => addEligibleToSchool(s.id)} disabled={isAdding}
+                      className="p-1.5 rounded-lg transition shrink-0"
+                      style={{ background: `${t.cyan}15`, color: t.cyan }}
+                      onMouseEnter={e => e.currentTarget.style.background = `${t.cyan}25`}
+                      onMouseLeave={e => e.currentTarget.style.background = `${t.cyan}15`}
+                      title={tr("schools.addToSchool") || "এই স্কুলে যোগ করুন"}>
+                      {isAdding ? <Clock size={14} className="animate-spin" /> : <Plus size={14} />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState icon={Users} message={tr("schools.noEligibleStudents") || "কোনো যোগ্য স্টুডেন্ট পাওয়া যায়নি"} />
+          )}
+
+          {/* ── Region তথ্য ── */}
+          {school.region && (
+            <p className="text-[9px] mt-3 pt-2" style={{ color: t.muted, borderTop: `1px solid ${t.border}` }}>
+              📍 স্কুল অঞ্চল: <strong style={{ color: t.purple }}>{school.region}</strong>
+              {" • "}★ চিহ্নিত স্টুডেন্টরা এই অঞ্চল পছন্দ করেছে
+              {" • "}অঞ্চল preference না থাকলে সব স্কুলে eligible
+            </p>
+          )}
+        </Card>
+      )}
 
       {/* ══════════ INTERVIEW LIST GENERATOR ══════════ */}
       {showInterviewList && (
@@ -472,6 +756,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
               { label: tr("schools.website"), value: school.website },
               { label: tr("schools.shoukaiFeePerStudent"), value: school.shoukai_fee ? `¥${Number(school.shoukai_fee).toLocaleString()}` : "N/A" },
               { label: tr("schools.minJpLevel"), value: school.min_jp_level || "—" },
+              { label: tr("schools.region") || "অঞ্চল", value: school.region || "—" },
             ].map((f) => (
               <div key={f.label} className="flex justify-between text-xs">
                 <span style={{ color: t.muted }}>{f.label}</span>

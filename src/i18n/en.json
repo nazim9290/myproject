@@ -212,6 +212,7 @@
     "f_fatherName": "Father's Name",
     "f_motherName": "Mother's Name",
     "f_country": "Country",
+    "f_preferredRegion": "Preferred Region (Japan)",
     "f_school": "School / University",
     "f_batch": "Batch",
     "f_intake": "Intake",
@@ -1842,7 +1843,17 @@
     "templateUpload": "Template Upload",
     "templateUploaded": "Template Uploaded",
     "totalSubmissions": "Total Submissions",
-    "uploading": "Uploading"
+    "uploading": "Uploading",
+    "region": "Region",
+    "minEducation": "Min. Education",
+    "minAge": "Min. Age",
+    "maxAge": "Max. Age",
+    "requirements": "Requirements",
+    "allIntakes": "All Sessions",
+    "eligibleStudents": "Eligible Students",
+    "eligible": "Eligible",
+    "noEligibleStudents": "No eligible students found",
+    "addToSchool": "Add to this school"
   },
   "courses": {
     "title": "Language Course",

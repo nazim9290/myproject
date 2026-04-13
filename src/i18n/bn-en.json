@@ -212,6 +212,7 @@
     "f_fatherName": "বাবার নাম",
     "f_motherName": "মায়ের নাম",
     "f_country": "Country",
+    "f_preferredRegion": "Preferred Region (Japan)",
     "f_school": "School / University",
     "f_batch": "Batch",
     "f_intake": "Intake",
@@ -1842,7 +1843,17 @@
     "templateUpload": "Template Upload",
     "templateUploaded": "Template Uploaded",
     "totalSubmissions": "Total Submissions",
-    "uploading": "Uploading"
+    "uploading": "Uploading",
+    "region": "Region",
+    "minEducation": "সর্বনিম্ন Education",
+    "minAge": "সর্বনিম্ন Age",
+    "maxAge": "সর্বোচ্চ Age",
+    "requirements": "Requirements",
+    "allIntakes": "সব Session",
+    "eligibleStudents": "যোগ্য Students",
+    "eligible": "Eligible",
+    "noEligibleStudents": "কোনো eligible student পাওয়া যায়নি",
+    "addToSchool": "এই School-এ যোগ করুন"
   },
   "courses": {
     "title": "Language Course",
