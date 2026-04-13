@@ -9,7 +9,7 @@ import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import { SUB_STATUS } from "../../data/mockData";
-import { JAPAN_REGIONS, JP_LEVEL_RANK, EDUCATION_RANK, INTAKE_MONTHS } from "../../data/japanRegions";
+import { JAPAN_REGIONS, JP_LEVEL_RANK, EDUCATION_RANK, INTAKE_MONTHS, isSSCLevel, isHSCLevel } from "../../data/japanRegions";
 import { api } from "../../hooks/useAPI";
 
 import { API_URL } from "../../lib/api";
@@ -73,6 +73,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
   const [eligibleIntake, setEligibleIntake] = useState(""); // কোন intake-এর requirements দিয়ে filter
   const [eligibleSearch, setEligibleSearch] = useState("");
   const [addingStudentId, setAddingStudentId] = useState(null); // submission তৈরি হচ্ছে
+  const [showAllStudents, setShowAllStudents] = useState(false); // false = শুধু যোগ্য, true = সব (ineligible সহ)
 
   // ── Match Data — education + JP exam data bulk fetch (eligible section open হলে) ──
   const [matchData, setMatchData] = useState({ education: [], jp_exams: [], loaded: false });
@@ -152,9 +153,9 @@ export default function SchoolDetailView({ school, students, onBack }) {
     edu.forEach(e => {
       const r = EDUCATION_RANK[e.level] || 0;
       if (r > bestRank) { bestRank = r; best = e.level; }
-      // SSC/HSC GPA track করো
-      if (e.level === "SSC" && e.gpa) sscGpa = parseFloat(e.gpa);
-      if (e.level === "HSC" && e.gpa) hscGpa = parseFloat(e.gpa);
+      // SSC/HSC GPA track — composite names হ্যান্ডেল (SSC/Dakhil, HSC/Alim/Diploma)
+      if (isSSCLevel(e.level) && e.gpa) sscGpa = parseFloat(e.gpa);
+      if (isHSCLevel(e.level) && e.gpa) hscGpa = parseFloat(e.gpa);
     });
     return { level: best, rank: bestRank, sscGpa, hscGpa };
   };
@@ -230,33 +231,31 @@ export default function SchoolDetailView({ school, students, onBack }) {
       return s.preferred_region === school.region;
     });
 
-    // Requirements filter
+    // Requirements filter — সব student-কে score দাও
     let matched = regionFiltered;
     if (activeReq) {
-      // নির্দিষ্ট intake সিলেক্ট — ঐ intake-এর requirements দিয়ে filter
-      matched = regionFiltered.map(s => {
-        const m = calcMatchScore(s, activeReq);
-        return { ...s, _match: m };
-      }).filter(s => s._match.total === 0 || s._match.score === s._match.total);
+      matched = regionFiltered.map(s => ({ ...s, _match: calcMatchScore(s, activeReq) }));
     } else if (intakeReqs.length > 0) {
-      // "সব সেশন" — যেকোনো একটা intake-এর requirements পূরণ করলে eligible
+      // "সব সেশন" — সবচেয়ে ভালো intake match খোঁজো
       matched = regionFiltered.map(s => {
-        // প্রতিটি intake-এর বিপরীতে check — সবচেয়ে ভালো match রাখো
         let bestMatch = { score: 0, total: 0, details: [] };
         let bestIntake = "";
         for (const req of intakeReqs) {
           const m = calcMatchScore(s, req);
-          if (m.total === 0) continue; // কোনো requirement নেই — skip
-          if (m.score === m.total) { bestMatch = m; bestIntake = req.month; break; } // full match → done
+          if (m.total === 0) continue;
+          if (m.score === m.total) { bestMatch = m; bestIntake = req.month; break; }
           if (m.score > bestMatch.score) { bestMatch = m; bestIntake = req.month; }
         }
-        // কোনো intake-এই requirement নেই → null match (eligible)
         if (intakeReqs.every(r => calcMatchScore(s, r).total === 0)) bestMatch = { score: 0, total: 0, details: [] };
         return { ...s, _match: bestMatch, _matchIntake: bestIntake };
-      }).filter(s => s._match.total === 0 || s._match.score === s._match.total);
+      });
     } else {
-      // কোনো intake requirement সেট করা হয়নি — সবাই eligible
       matched = regionFiltered.map(s => ({ ...s, _match: calcMatchScore(s, null) }));
+    }
+
+    // ── showAllStudents toggle — default: শুধু যোগ্য (full match), toggle: সব দেখান ──
+    if (!showAllStudents) {
+      matched = matched.filter(s => s._match.total === 0 || s._match.score === s._match.total);
     }
 
     // ইতিমধ্যে এই school-এ submit হয়ে যাওয়া students বাদ
@@ -269,8 +268,12 @@ export default function SchoolDetailView({ school, students, onBack }) {
       matched = matched.filter(s => (s.name_en || "").toLowerCase().includes(q) || s.id.toLowerCase().includes(q));
     }
 
-    // Sort — region match আগে, তারপর match score
+    // Sort — full match আগে, তারপর region match, তারপর partial score
     matched.sort((a, b) => {
+      // Full match vs partial
+      const aFull = a._match.total === 0 || a._match.score === a._match.total ? 1 : 0;
+      const bFull = b._match.total === 0 || b._match.score === b._match.total ? 1 : 0;
+      if (aFull !== bFull) return bFull - aFull;
       const aRegion = a._match?.regionMatch ? 1 : 0;
       const bRegion = b._match?.regionMatch ? 1 : 0;
       if (aRegion !== bRegion) return bRegion - aRegion;
@@ -278,7 +281,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
     });
 
     return matched;
-  }, [students, school, subs, activeReq, eligibleSearch]);
+  }, [enrichedStudents, school, subs, activeReq, intakeReqs, eligibleSearch, showAllStudents]);
 
   // ── Eligible student → submission হিসেবে add ──
   const addEligibleToSchool = async (studentId) => {
@@ -632,7 +635,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
             </p>
           )}
 
-          {/* ── সার্চ বার ── */}
+          {/* ── সার্চ বার + toggle ── */}
           <div className="flex items-center gap-2 mb-3">
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg flex-1" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
               <Search size={14} style={{ color: t.muted }} />
@@ -640,8 +643,18 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 className="bg-transparent outline-none text-xs flex-1" style={{ color: t.text }}
                 placeholder={tr("schools.searchStudentPlaceholder") || "নাম বা ID দিয়ে খুঁজুন..."} />
             </div>
-            <span className="text-[10px] px-2" style={{ color: t.muted }}>
-              {eligibleStudents.length} জন {tr("schools.eligible") || "যোগ্য"}
+            {/* Toggle — শুধু যোগ্য / সব দেখান */}
+            <button onClick={() => setShowAllStudents(!showAllStudents)}
+              className="text-[10px] px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition"
+              style={{
+                background: showAllStudents ? `${t.amber}15` : `${t.emerald}15`,
+                color: showAllStudents ? t.amber : t.emerald,
+                border: `1px solid ${showAllStudents ? t.amber : t.emerald}30`,
+              }}>
+              {showAllStudents ? "সব দেখানো হচ্ছে" : "শুধু যোগ্য"}
+            </button>
+            <span className="text-[10px] px-2 whitespace-nowrap" style={{ color: t.muted }}>
+              {eligibleStudents.length} জন
             </span>
           </div>
 
@@ -651,11 +664,14 @@ export default function SchoolDetailView({ school, students, onBack }) {
               {eligibleStudents.map(s => {
                 const m = s._match || {};
                 const isAdding = addingStudentId === s.id;
+                const isFullMatch = m.total === 0 || m.score === m.total;
+                const bgDefault = !isFullMatch ? `${t.rose}04` : m.regionMatch ? `${t.emerald}06` : "transparent";
+                const bgHover = !isFullMatch ? `${t.rose}08` : m.regionMatch ? `${t.emerald}10` : t.hoverBg;
                 return (
                   <div key={s.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition cursor-pointer"
-                    style={{ background: m.regionMatch ? `${t.emerald}06` : "transparent" }}
-                    onMouseEnter={e => e.currentTarget.style.background = m.regionMatch ? `${t.emerald}10` : t.hoverBg}
-                    onMouseLeave={e => e.currentTarget.style.background = m.regionMatch ? `${t.emerald}06` : "transparent"}
+                    style={{ background: bgDefault, opacity: isFullMatch ? 1 : 0.7 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = bgHover; e.currentTarget.style.opacity = 1; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = bgDefault; e.currentTarget.style.opacity = isFullMatch ? 1 : 0.7; }}
                     onClick={() => openStudentPreview(s.id)}>
 
                     {/* স্টুডেন্ট তথ্য */}

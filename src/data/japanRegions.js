@@ -27,14 +27,18 @@ export const JP_LEVEL_RANK = {
 };
 
 // ── Education level hierarchy — matching comparison-এ ব্যবহৃত ──
+// DB-তে composite names থাকতে পারে (SSC/Dakhil, HSC/Alim/Diploma ইত্যাদি)
 export const EDUCATION_RANK = {
-  "SSC": 1,
-  "HSC": 2,
+  "SSC": 1, "SSC/Dakhil": 1, "Dakhil": 1,
+  "HSC": 2, "HSC/Alim/Diploma": 2, "Alim": 2,
   "Diploma": 3,
-  "Honours": 4,
-  "Bachelors": 4,
-  "Masters": 5,
+  "Honours": 4, "Honours/Degree": 4, "Bachelors": 4, "Degree": 4,
+  "Masters": 5, "Masters/B.Sc": 5,
 };
+
+// ── Education level → SSC/HSC category detect ──
+export const isSSCLevel = (level) => ["SSC", "SSC/Dakhil", "Dakhil"].includes(level);
+export const isHSCLevel = (level) => ["HSC", "HSC/Alim/Diploma", "Alim", "Diploma"].includes(level);
 
 // ── Intake months ──
 export const INTAKE_MONTHS = ["January", "April", "July", "October"];
