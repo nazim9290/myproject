@@ -509,6 +509,17 @@ export default function SchoolDetailView({ school, students, onBack }) {
     } catch (err) { toast.error(err.message); }
   };
 
+  // ── Submission delete ──
+  const [deleteSubId, setDeleteSubId] = useState(null);
+  const deleteSubmission = async (subId) => {
+    try {
+      await api.del(`/submissions/${subId}`);
+      setSubs(prev => prev.filter(s => s.id !== subId));
+      setDeleteSubId(null);
+      toast.success(tr("schools.submissionDeleted") || "সাবমিশন মুছে ফেলা হয়েছে");
+    } catch (err) { toast.error(err.message); }
+  };
+
   // KPI calculations
   const totalSubs = subs.length;
   const issuesSubs = subs.filter(s => s.status === "issues_found").length;
@@ -939,6 +950,20 @@ export default function SchoolDetailView({ school, students, onBack }) {
                       className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.amber, background: `${t.amber}10` }}>
                       + {tr("schools.issue")}
                     </button>
+
+                    {/* Delete button — inline confirm */}
+                    {deleteSubId === sub.id ? (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => deleteSubmission(sub.id)} className="text-[10px] px-2 py-1 rounded-lg font-medium"
+                          style={{ background: t.rose, color: "#fff" }}>{tr("common.delete")}</button>
+                        <button onClick={() => setDeleteSubId(null)} className="text-[10px] px-1 py-1" style={{ color: t.muted }}>{tr("common.no") || "না"}</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setDeleteSubId(sub.id)} className="text-[10px] px-1.5 py-1 rounded-lg transition opacity-40 hover:opacity-100"
+                        style={{ color: t.rose }} title={tr("common.delete")}>
+                        <X size={12} />
+                      </button>
+                    )}
                   </div>
 
                   {/* Feedback form */}
