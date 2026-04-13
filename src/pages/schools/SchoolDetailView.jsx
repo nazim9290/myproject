@@ -464,18 +464,17 @@ export default function SchoolDetailView({ school, students, onBack }) {
     } catch (err) { toast.error(err.message); }
   };
 
-  // ── Interview list-এ "শুধু যোগ্য" filter state ──
+  // ── Interview list filter state ──
   const [interviewEligibleOnly, setInterviewEligibleOnly] = useState(false);
   const [interviewIntakeFilter, setInterviewIntakeFilter] = useState("");
 
   const allStudents = enrichedStudents.filter(s => !["VISITOR", "FOLLOW_UP", "CANCELLED"].includes(s.status));
 
-  // Interview student list — eligibility filter + search
+  // Interview student list — সবাইকে match score দাও, sort করো, filter option
   const interviewFiltered = useMemo(() => {
+    // সব student-কে match score দাও (requirements থাকলে)
     let list = allStudents;
-
-    // "শুধু যোগ্য" mode — smart matching apply
-    if (interviewEligibleOnly && intakeReqs.length > 0) {
+    if (intakeReqs.length > 0) {
       const reqToUse = interviewIntakeFilter
         ? intakeReqs.find(r => r.month === interviewIntakeFilter) || null
         : null;
@@ -491,7 +490,12 @@ export default function SchoolDetailView({ school, students, onBack }) {
           if (m.score === m.total) break;
         }
         return { ...s, _match: bestMatch || { score: 0, total: 0, details: [] } };
-      }).filter(s => s._match.total > 0 && s._match.score === s._match.total);
+      });
+    }
+
+    // "শুধু যোগ্য" ক্লিক করলে শুধু full match
+    if (interviewEligibleOnly) {
+      list = list.filter(s => s._match && s._match.total > 0 && s._match.score === s._match.total);
     }
 
     // Search filter
@@ -499,6 +503,17 @@ export default function SchoolDetailView({ school, students, onBack }) {
       const q = interviewSearch.toLowerCase();
       list = list.filter(s => (s.name_en || "").toLowerCase().includes(q) || s.id.toLowerCase().includes(q));
     }
+
+    // Sort — যোগ্যরা আগে (full match → partial → no match)
+    list.sort((a, b) => {
+      const am = a._match || { score: 0, total: 0 };
+      const bm = b._match || { score: 0, total: 0 };
+      const aFull = am.total > 0 && am.score === am.total ? 2 : am.total > 0 ? 1 : 0;
+      const bFull = bm.total > 0 && bm.score === bm.total ? 2 : bm.total > 0 ? 1 : 0;
+      if (aFull !== bFull) return bFull - aFull;
+      return (bm.score || 0) - (am.score || 0);
+    });
+
     return list;
   }, [allStudents, interviewEligibleOnly, interviewIntakeFilter, intakeReqs, interviewSearch]);
 
@@ -948,19 +963,20 @@ export default function SchoolDetailView({ school, students, onBack }) {
           </div>
 
           {/* ── যোগ্য প্রার্থী ফিল্টার ── */}
-          {intakeReqs.length > 0 && (
-            <div className="flex items-center gap-2 mb-3 p-2 rounded-xl" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}15` }}>
-              <Filter size={12} style={{ color: t.emerald }} />
-              <button onClick={() => setInterviewEligibleOnly(!interviewEligibleOnly)}
-                className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition"
-                style={{
-                  background: interviewEligibleOnly ? t.emerald : t.inputBg,
-                  color: interviewEligibleOnly ? "#000" : t.muted,
-                  border: `1px solid ${interviewEligibleOnly ? t.emerald : t.inputBorder}`,
-                }}>
-                {interviewEligibleOnly ? "✓ শুধু যোগ্য প্রার্থী" : "সব স্টুডেন্ট"}
-              </button>
-              {interviewEligibleOnly && (
+          {intakeReqs.length > 0 && (() => {
+            const eligibleCount = interviewFiltered.filter(s => s._match && s._match.total > 0 && s._match.score === s._match.total).length;
+            return (
+              <div className="flex items-center gap-2 mb-3 p-2 rounded-xl" style={{ background: `${t.emerald}06`, border: `1px solid ${t.emerald}15` }}>
+                <Filter size={12} style={{ color: t.emerald }} />
+                <button onClick={() => setInterviewEligibleOnly(!interviewEligibleOnly)}
+                  className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition"
+                  style={{
+                    background: interviewEligibleOnly ? t.emerald : t.inputBg,
+                    color: interviewEligibleOnly ? "#000" : t.muted,
+                    border: `1px solid ${interviewEligibleOnly ? t.emerald : t.inputBorder}`,
+                  }}>
+                  {interviewEligibleOnly ? "✓ শুধু যোগ্য" : "সব দেখানো হচ্ছে"}
+                </button>
                 <select value={interviewIntakeFilter} onChange={e => setInterviewIntakeFilter(e.target.value)}
                   className="px-2 py-1 rounded-lg text-[10px] outline-none" style={is}>
                   <option value="">সব সেশন</option>
@@ -968,10 +984,12 @@ export default function SchoolDetailView({ school, students, onBack }) {
                     <option key={ik.month || ik} value={ik.month || ik}>{ik.month || ik}</option>
                   ))}
                 </select>
-              )}
-              <span className="text-[10px] ml-auto" style={{ color: t.muted }}>{interviewFiltered.length} জন</span>
-            </div>
-          )}
+                <span className="text-[10px] ml-auto" style={{ color: t.muted }}>
+                  <span style={{ color: t.emerald, fontWeight: 600 }}>{eligibleCount}</span> যোগ্য / {interviewFiltered.length} জন
+                </span>
+              </div>
+            );
+          })()}
 
           <div className="flex items-center gap-2 mb-3">
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg flex-1" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}>
