@@ -243,6 +243,47 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [examForm, setExamForm] = useState({ examType: "JLPT", level: "N5", date: today });
   const [showExamForm, setShowExamForm] = useState(false);
 
+  // ── Bulk JLPT Registration — একসাথে multiple students register ──
+  const [bulkRegisterMode, setBulkRegisterMode] = useState(false);
+  const [bulkRegisterForm, setBulkRegisterForm] = useState({ examType: "JLPT", level: "N5", date: today });
+  const [bulkSelected, setBulkSelected] = useState([]); // studentId array
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  const saveBulkRegistration = async () => {
+    if (bulkSelected.length === 0) { toast.error(tr("courses.selectAtLeastOne") || "কমপক্ষে একজন সিলেক্ট করুন"); return; }
+    setBulkSaving(true);
+    try {
+      const { api } = await import("../../hooks/useAPI");
+      // সব সিলেক্ট করা student-এর জন্য parallel registration
+      const results = await Promise.allSettled(
+        bulkSelected.map(studentId => {
+          const student = bStudents.find(s => s.studentId === studentId);
+          return api.post(`/students/${studentId}/exam-result`, {
+            exam_id: student?.examId || null,
+            exam_type: bulkRegisterForm.examType,
+            level: bulkRegisterForm.level,
+            score: null, result: null,
+            exam_date: bulkRegisterForm.date || null,
+          });
+        })
+      );
+      // সফল registrations-এর জন্য local state update
+      setBStudents(prev => prev.map(s => {
+        if (!bulkSelected.includes(s.studentId)) return s;
+        const idx = bulkSelected.indexOf(s.studentId);
+        const res = results[idx];
+        if (res.status !== "fulfilled") return s;
+        return { ...s, examId: res.value?.id || s.examId, examType: bulkRegisterForm.examType, jlptLevel: bulkRegisterForm.level, jlptStatus: "Preparing" };
+      }));
+      const successCount = results.filter(r => r.status === "fulfilled").length;
+      const failCount = results.length - successCount;
+      toast.success(`${successCount} ${tr("courses.personsStudent")} ${tr("courses.registerSuccess")}${failCount > 0 ? ` (${failCount} ${tr("courses.registerFailed")})` : ""}`);
+      setBulkSelected([]);
+      setBulkRegisterMode(false);
+    } catch (err) { console.error("[Bulk Register]", err); toast.error(tr("courses.registerFailed")); }
+    setBulkSaving(false);
+  };
+
   // ── Quick JLPT Registration — Students tab থেকে সরাসরি register ──
   const [registerModal, setRegisterModal] = useState(null); // { studentId, name, examType, level, date }
   const openRegisterModal = (bs) => {
@@ -477,9 +518,62 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   CSV ({filtered.length})
                 </Button>
               )}
+              <Button size="xs" variant={bulkRegisterMode ? "default" : "ghost"}
+                onClick={() => { setBulkRegisterMode(!bulkRegisterMode); setBulkSelected([]); }}>
+                🎯 {tr("courses.bulkRegister")}
+              </Button>
               <Button icon={Plus} size="xs" onClick={() => setShowEnroll(v => !v)}>{tr("courses.addStudent")}</Button>
             </div>
           </div>
+
+          {/* ── Bulk Registration Form ── */}
+          {bulkRegisterMode && (
+            <div className="mb-3 p-3 rounded-xl" style={{ background: `${t.emerald}08`, border: `1px solid ${t.emerald}30` }}>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.emerald }}>
+                🎯 {tr("courses.bulkRegisterHint")}
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
+                <div>
+                  <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("courses.examType")}</label>
+                  <select value={bulkRegisterForm.examType} onChange={e => setBulkRegisterForm(p => ({ ...p, examType: e.target.value }))}
+                    className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                    <option>JLPT</option><option>NAT</option><option>JFT</option><option>J-TEST</option><option>JLCT</option><option>TopJ</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("courses.level")}</label>
+                  <select value={bulkRegisterForm.level} onChange={e => setBulkRegisterForm(p => ({ ...p, level: e.target.value }))}
+                    className="w-full px-2 py-1.5 rounded-lg text-xs outline-none"
+                    style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                    <option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[9px] uppercase tracking-wider block mb-0.5" style={{ color: t.muted }}>{tr("courses.examDate")}</label>
+                  <DateInput value={bulkRegisterForm.date} onChange={v => setBulkRegisterForm(p => ({ ...p, date: v }))} size="sm" />
+                </div>
+                <div className="flex items-end gap-2">
+                  <button onClick={() => setBulkSelected(bulkSelected.length === filtered.length ? [] : filtered.map(s => s.studentId))}
+                    className="text-[10px] px-2 py-1.5 rounded-lg transition"
+                    style={{ background: `${t.cyan}15`, color: t.cyan, border: `1px solid ${t.cyan}30` }}>
+                    {bulkSelected.length === filtered.length ? tr("schools.deselectAll") : tr("schools.selectAll")}
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center pt-2" style={{ borderTop: `1px solid ${t.emerald}20` }}>
+                <p className="text-[10px]" style={{ color: t.muted }}>
+                  {bulkSelected.length > 0 ? `${bulkSelected.length} ${tr("courses.personsStudent")} ${tr("courses.selected") || "সিলেক্ট"}` : tr("courses.bulkSelectHint")}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="xs" icon={X} onClick={() => { setBulkRegisterMode(false); setBulkSelected([]); }}>{tr("courses.cancel")}</Button>
+                  <Button icon={Save} size="xs" onClick={saveBulkRegistration} disabled={bulkSaving || bulkSelected.length === 0}>
+                    {bulkSaving ? tr("courses.saving") || "..." : `${tr("courses.save")} (${bulkSelected.length})`}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── JLPT Filter Tabs ── */}
           <div className="flex flex-wrap gap-1.5 mb-3 p-2 rounded-xl" style={{ background: `${t.cyan}04`, border: `1px solid ${t.cyan}15` }}>
@@ -553,11 +647,18 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                     const tc = bs.lastTest >= 80 ? t.emerald : bs.lastTest >= 60 ? t.amber : bs.lastTest ? t.rose : t.muted;
                     const sc = bs.jlptStatus === "Passed" ? t.emerald : bs.jlptStatus === "Preparing" ? t.amber : bs.jlptStatus === "Dropped" ? t.rose : t.muted;
                     return (
-                      <tr key={bs.studentId} style={{ borderBottom: `1px solid ${t.border}` }}
-                        onMouseEnter={e => e.currentTarget.style.background = t.hoverBg}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <tr key={bs.studentId} style={{ borderBottom: `1px solid ${t.border}`, background: bulkRegisterMode && bulkSelected.includes(bs.studentId) ? `${t.emerald}08` : "transparent" }}
+                        onMouseEnter={e => { if (!(bulkRegisterMode && bulkSelected.includes(bs.studentId))) e.currentTarget.style.background = t.hoverBg; }}
+                        onMouseLeave={e => { if (!(bulkRegisterMode && bulkSelected.includes(bs.studentId))) e.currentTarget.style.background = "transparent"; }}>
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
+                            {bulkRegisterMode && (
+                              <div className="w-4 h-4 rounded border flex items-center justify-center text-[10px] shrink-0 cursor-pointer"
+                                onClick={() => setBulkSelected(prev => prev.includes(bs.studentId) ? prev.filter(id => id !== bs.studentId) : [...prev, bs.studentId])}
+                                style={{ borderColor: bulkSelected.includes(bs.studentId) ? t.emerald : t.muted, background: bulkSelected.includes(bs.studentId) ? t.emerald : "transparent", color: "#fff" }}>
+                                {bulkSelected.includes(bs.studentId) && "✓"}
+                              </div>
+                            )}
                             <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: `${t.cyan}15`, color: t.cyan }}>
                               {bs.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                             </div>
