@@ -453,6 +453,14 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                 </button>
               );
             })}
+            {/* Hint + JLPT/NAT tab shortcut */}
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-[9px]" style={{ color: t.muted }}>💡 {tr("courses.jlptFilterHint")}</span>
+              <button onClick={() => setActiveTab("exams")} className="text-[9px] px-2 py-0.5 rounded-lg font-medium"
+                style={{ background: `${t.rose}15`, color: t.rose, border: `1px solid ${t.rose}30` }}>
+                JLPT/NAT →
+              </button>
+            </div>
           </div>
 
           {showEnroll && (

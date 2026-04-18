@@ -1931,6 +1931,7 @@
     "exportNoStudents": "Export-এর জন্য কোনো স্টুডেন্ট নেই",
     "csvHeaders": "ক্রম,ID,নাম,হাজিরা,লাস্ট টেস্ট,পরীক্ষা,লেভেল,স্কোর,ফলাফল",
     "exportLabel": "JLPT {{filter}} ({{count}} জন)",
+    "jlptFilterHint": "Exam তথ্য আপডেট করুন JLPT/NAT ট্যাব থেকে অথবা Student Detail → জাপানিজ পরীক্ষা থেকে",
     "newBatch": "নতুন ব্যাচ",
     "createNewBatch": "নতুন ব্যাচ তৈরি করুন",
     "saveBatch": "ব্যাচ সংরক্ষণ",

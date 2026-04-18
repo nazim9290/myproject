@@ -1931,6 +1931,7 @@
     "exportNoStudents": "No students to export",
     "csvHeaders": "No.,ID,Name,Attendance,Last Test,Exam,Level,Score,Result",
     "exportLabel": "JLPT {{filter}} ({{count}} students)",
+    "jlptFilterHint": "Update exam info from JLPT/NAT tab or Student Detail → Japanese Exams",
     "newBatch": "New Batch",
     "createNewBatch": "Create New Batch",
     "saveBatch": "Save Batch",
