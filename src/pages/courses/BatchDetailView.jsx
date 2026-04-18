@@ -459,27 +459,25 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
 
       {/* ── Students tab ── */}
       {activeTab === "students" && (() => {
-        // JLPT filter logic
-        const getJlptCategory = (s) => {
-          // Passed/Failed/Registered/Preparing = result অনুযায়ী
-          if (!s.examType) return "not_registered"; // কোনো exam entry নেই
-          if (s.jlptStatus === "Passed") return "passed";
-          if (s.jlptStatus === "Failed") return "failed";
-          if (s.jlptStatus === "Registered") return "registered_status";
-          return "preparing"; // exam entry আছে কিন্তু result pending
-        };
+        // JLPT filter logic — প্রতিটা category explicit
         const filterStudents = (list) => {
           if (jlptFilter === "all") return list;
-          if (jlptFilter === "registered") return list.filter(s => !!s.examType);
-          return list.filter(s => getJlptCategory(s) === jlptFilter);
+          if (jlptFilter === "not_registered") return list.filter(s => !s.examType);
+          if (jlptFilter === "passed") return list.filter(s => s.jlptStatus === "Passed");
+          if (jlptFilter === "failed") return list.filter(s => s.jlptStatus === "Failed");
+          if (jlptFilter === "preparing") return list.filter(s => s.examType && s.jlptStatus === "Preparing");
+          if (jlptFilter === "registered") return list.filter(s => s.jlptStatus === "Registered");
+          return list;
         };
         const filtered = filterStudents(bStudents);
         const counts = {
           all: bStudents.length,
           passed: bStudents.filter(s => s.jlptStatus === "Passed").length,
           failed: bStudents.filter(s => s.jlptStatus === "Failed").length,
-          preparing: bStudents.filter(s => s.examType && s.jlptStatus !== "Passed" && s.jlptStatus !== "Failed").length,
-          registered: bStudents.filter(s => !!s.examType).length,
+          // Preparing = exam entry আছে কিন্তু status explicitly "Preparing" (বা null/undefined), Registered/Passed/Failed বাদ
+          preparing: bStudents.filter(s => s.examType && s.jlptStatus === "Preparing").length,
+          // Registered = explicit "Registered" status (নতুন)
+          registered: bStudents.filter(s => s.jlptStatus === "Registered").length,
           not_registered: bStudents.filter(s => !s.examType).length,
         };
 
