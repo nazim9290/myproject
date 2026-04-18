@@ -294,7 +294,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
       if (filterBranch !== "All") params.branch = filterBranch;
       // viewTab অনুযায়ী status filter — "active" = Interested,Thinking
       if (viewTab === "active") {
-        params.status_in = "Interested,Thinking";
+        params.status_in = "Interested,Thinking,Follow-up,Ready";
       }
       // statusFilter button — নির্দিষ্ট status সিলেক্ট করা হলে
       if (statusFilter !== "All") {
@@ -350,7 +350,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
 
   // KPI counts — current page data থেকে (approximate)
   const todayCount = visitors.filter(v => v.date === todayStr).length;
-  const needFU = visitors.filter(v => (v.status==="Interested"||v.status==="Thinking") && daysDiff(v.lastFollowUp||v.date) > 3).length;
+  const needFU = visitors.filter(v => ["Interested","Thinking","Follow-up","Ready"].includes(v.status) && daysDiff(v.lastFollowUp||v.date) > 3).length;
 
   // === ACTIONS ===
   const updateVisitor = async (id, updates) => {
@@ -492,7 +492,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
     { v: "Thinking", l: tr("visitors.thinking"), c: t.amber, i: "🟡" },
     { v: "Not Interested", l: tr("visitors.notInterested"), c: t.muted, i: "⚪" },
   ];
-  const stsColor = (s) => s==="Interested"?t.emerald:s==="Thinking"?t.amber:t.muted;
+  const stsColor = (s) => s==="Interested"?t.emerald:s==="Thinking"?t.amber:s==="Follow-up"?t.cyan:s==="Ready"?t.purple:s==="Enrolled"?t.emerald:t.muted;
   const is = { background: t.inputBg, border: "1px solid "+t.inputBorder, color: t.text };
 
   // ═══ DETAIL VIEW ═══
@@ -609,11 +609,20 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             },
           ];
 
-          const sMap = { "Interested": 0, "Thinking": 1, "Not Interested": -1 };
+          // সব visitor status → pipeline step mapping
+          const sMap = {
+            "Interested": 0,
+            "Thinking": 1,
+            "Follow-up": 2,
+            "Ready": 3,
+            "Enrolled": 4,
+            "converted": 4,
+            "Not Interested": -1,
+          };
           const hasFollowUp = v.lastFollowUp || v.last_follow_up;
           let currentStep = sMap[v.status] ?? 0;
-          if (hasFollowUp && currentStep >= 1) currentStep = Math.max(currentStep, 2);
-          if (v.status === "converted" || v.status === "Enrolled") currentStep = 4;
+          // Thinking status + follow-up log থাকলে → Follow-up step-এ advance (auto)
+          if (hasFollowUp && currentStep === 1) currentStep = 2;
           const currentPipe = VISITOR_PIPELINE[Math.max(0, Math.min(currentStep, VISITOR_PIPELINE.length - 1))];
 
           return (
@@ -699,7 +708,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
                       ) : (
                         <button onClick={()=>{
                           if (currentPipe.nextAction === "Thinking") changeStatus(v.id, "Thinking");
-                          else if (currentPipe.nextAction === "follow-up") markFollowUp(v.id);
+                          else if (currentPipe.nextAction === "follow-up") { changeStatus(v.id, "Follow-up"); markFollowUp(v.id); }
                           else if (currentPipe.nextAction === "ready") { changeStatus(v.id, "Ready"); toast.success(tr("visitors.readyForEnroll")); }
                         }}
                           className="w-full py-2.5 rounded-xl text-xs font-semibold transition-all"
@@ -826,8 +835,15 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
           <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);setPage(1);}} className="flex-1 bg-transparent text-xs outline-none" style={{color:t.text}} placeholder={tr("visitors.searchPlaceholder")}/>
           {searchQ && <button onClick={()=>setSearchQ("")}><X size={12} style={{color:t.muted}}/></button>}
         </div>
-        {["All","Interested","Thinking","Not Interested"].map(f=>{
-          return <button key={f} onClick={()=>{setStatusFilter(f);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs transition" style={{background:statusFilter===f?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#e2e8f0"):"transparent",color:statusFilter===f?t.text:t.muted,fontWeight:statusFilter===f?600:400}}>{f==="All"?tr("common.all"):f==="Interested"?tr("visitors.interested"):f==="Not Interested"?tr("visitors.notInterested"):f==="Thinking"?tr("visitors.thinking"):f}</button>;
+        {["All","Interested","Thinking","Follow-up","Ready","Not Interested"].map(f=>{
+          const lbl = f==="All"?tr("common.all")
+            :f==="Interested"?tr("visitors.interested")
+            :f==="Thinking"?tr("visitors.thinking")
+            :f==="Follow-up"?tr("visitors.pipe_followUpOngoing")
+            :f==="Ready"?tr("visitors.pipe_ready")
+            :f==="Not Interested"?tr("visitors.notInterested")
+            :f;
+          return <button key={f} onClick={()=>{setStatusFilter(f);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs transition" style={{background:statusFilter===f?(t.mode==="dark"?"rgba(255,255,255,0.1)":"#e2e8f0"):"transparent",color:statusFilter===f?t.text:t.muted,fontWeight:statusFilter===f?600:400}}>{lbl}</button>;
         })}
         <select value={filterBranch} onChange={e=>{setFilterBranch(e.target.value);setPage(1);}} className="px-3 py-1.5 rounded-lg text-xs outline-none ml-auto" style={{background:t.inputBg,border:`1px solid ${filterBranch!=="All"?t.cyan:t.inputBorder}`,color:filterBranch!=="All"?t.cyan:t.text}}>
           {allBranches.map(b=><option key={b} value={b}>{b==="All"?tr("students.allBranches"):b}</option>)}
@@ -885,7 +901,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
             const mc=v.interested_countries&&v.interested_countries.length>1;
             const days=daysDiff(v.date);
             const fuD=daysDiff(v.lastFollowUp);
-            const fuBad=(v.status==="Interested"||v.status==="Thinking")&&fuD>3;
+            const fuBad=["Interested","Thinking","Follow-up","Ready"].includes(v.status)&&fuD>3;
             const isMenu=openMenuId===v.id;
             // ── শর্তভিত্তিক সারি রং — conditionalFormat রুল অনুযায়ী ──
             const condStyle = getRowStyle("visitors", v);
@@ -927,7 +943,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
               <td className="py-3 px-3" onClick={e=>e.stopPropagation()}>
                 <div className="flex items-center gap-1">
                   <button onClick={()=>setDetailId(v.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.purple+"15",color:t.purple}} title={tr("visitors.viewDetails")}>👁 {tr("visitors.details")}</button>
-                  {(v.status==="Interested"||v.status==="Thinking")&&<button onClick={()=>markFollowUp(v.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.cyan+"15",color:t.cyan}} title={tr("visitors.followUpDone")}>📞</button>}
+                  {["Interested","Thinking","Follow-up","Ready"].includes(v.status)&&<button onClick={()=>markFollowUp(v.id)} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.cyan+"15",color:t.cyan}} title={tr("visitors.followUpDone")}>📞</button>}
                   {v.status!=="Not Interested"&&<button onClick={()=>setConfirmAction({type:"convert",visitor:v})} className="px-2 py-1 rounded text-[9px] font-medium" style={{background:t.emerald+"15",color:t.emerald}}>🎓 {tr("students.enrolled")}</button>}
                 </div>
               </td>
