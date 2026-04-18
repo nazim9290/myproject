@@ -170,13 +170,16 @@ export default function SchoolDetailView({ school, students, onBack }) {
     const details = [];
     let score = 0, total = 0;
 
+    // i18n-এ placeholder replace helper
+    const fmt = (key, vars) => { let s = tr(key); for (const k in vars) s = s.replace(`{{${k}}}`, vars[k]); return s; };
+
     // JP Level check
     if (req.min_jp_level) {
       total++;
       const { level, rank } = getStudentJpLevel(s);
       const reqRank = JP_LEVEL_RANK[req.min_jp_level] || 0;
       if (rank >= reqRank) { score++; details.push({ key: "jp", ok: true, label: level || "—" }); }
-      else { details.push({ key: "jp", ok: false, label: `${level || "নেই"} (${req.min_jp_level} দরকার)` }); }
+      else { details.push({ key: "jp", ok: false, label: fmt("schools.jpMissing", { req: req.min_jp_level }) }); }
     }
 
     // Education check
@@ -185,21 +188,21 @@ export default function SchoolDetailView({ school, students, onBack }) {
       total++;
       const reqRank = EDUCATION_RANK[req.min_education] || 0;
       if (eduRank >= reqRank) { score++; details.push({ key: "edu", ok: true, label: eduLevel || "—" }); }
-      else { details.push({ key: "edu", ok: false, label: `${eduLevel || "নেই"} (${req.min_education} দরকার)` }); }
+      else { details.push({ key: "edu", ok: false, label: fmt("schools.eduMissing", { req: req.min_education }) }); }
     }
 
     // SSC GPA check
     if (req.min_gpa_ssc) {
       total++;
       if (sscGpa !== null && sscGpa >= req.min_gpa_ssc) { score++; details.push({ key: "ssc", ok: true, label: `SSC ${sscGpa}` }); }
-      else { details.push({ key: "ssc", ok: false, label: `SSC ${sscGpa ?? "নেই"} (${req.min_gpa_ssc} দরকার)` }); }
+      else { details.push({ key: "ssc", ok: false, label: sscGpa !== null ? `SSC ${sscGpa} (${req.min_gpa_ssc}+)` : fmt("schools.sscMissing", { req: req.min_gpa_ssc }) }); }
     }
 
     // HSC GPA check
     if (req.min_gpa_hsc) {
       total++;
       if (hscGpa !== null && hscGpa >= req.min_gpa_hsc) { score++; details.push({ key: "hsc", ok: true, label: `HSC ${hscGpa}` }); }
-      else { details.push({ key: "hsc", ok: false, label: `HSC ${hscGpa ?? "নেই"} (${req.min_gpa_hsc} দরকার)` }); }
+      else { details.push({ key: "hsc", ok: false, label: hscGpa !== null ? `HSC ${hscGpa} (${req.min_gpa_hsc}+)` : fmt("schools.hscMissing", { req: req.min_gpa_hsc }) }); }
     }
 
     // Age check
@@ -207,12 +210,12 @@ export default function SchoolDetailView({ school, students, onBack }) {
     if (req.min_age || req.max_age) {
       total++;
       if (age === null) {
-        details.push({ key: "age", ok: false, label: "DOB নেই" });
+        details.push({ key: "age", ok: false, label: tr("schools.ageMissing") });
       } else {
         const minOk = !req.min_age || age >= req.min_age;
         const maxOk = !req.max_age || age <= req.max_age;
-        if (minOk && maxOk) { score++; details.push({ key: "age", ok: true, label: `${age} বছর` }); }
-        else { details.push({ key: "age", ok: false, label: `${age} বছর (${req.min_age || "—"}~${req.max_age || "—"})` }); }
+        if (minOk && maxOk) { score++; details.push({ key: "age", ok: true, label: fmt("schools.ageInRange", { age }) }); }
+        else { details.push({ key: "age", ok: false, label: fmt("schools.ageOutOfRange", { age, min: req.min_age || "—", max: req.max_age || "—" }) }); }
       }
     }
 
@@ -712,7 +715,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
           )}
           {!activeReq && eligibleIntake && (
             <p className="text-[10px] mb-3 px-2" style={{ color: t.muted }}>
-              {eligibleIntake} সেশনের জন্য কোনো রিকোয়ারমেন্ট সেট করা হয়নি — সব স্টুডেন্ট দেখানো হচ্ছে
+              {tr("schools.intakeNoReqNotice").replace("{{intake}}", eligibleIntake)}
             </p>
           )}
 
@@ -732,7 +735,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 color: showAllStudents ? t.amber : t.emerald,
                 border: `1px solid ${showAllStudents ? t.amber : t.emerald}30`,
               }}>
-              {showAllStudents ? "সব দেখানো হচ্ছে" : "শুধু যোগ্য"}
+              {showAllStudents ? tr("schools.showingAll") : tr("schools.onlyEligible")}
             </button>
             <span className="text-[10px] px-2 whitespace-nowrap" style={{ color: t.muted }}>
               {eligibleStudents.length} জন
@@ -813,14 +816,14 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 <button onClick={() => setSelectedEligible(
                   selectedEligible.length === eligibleStudents.length ? [] : eligibleStudents.map(s => s.id)
                 )} className="text-[10px] px-2 py-1 rounded-lg" style={{ color: t.cyan, background: `${t.cyan}10` }}>
-                  {selectedEligible.length === eligibleStudents.length ? "সব বাদ দিন" : "সব সিলেক্ট"}
+                  {selectedEligible.length === eligibleStudents.length ? tr("schools.deselectAll") : tr("schools.selectAll")}
                 </button>
                 <span className="text-[10px]" style={{ color: t.muted }}>
                   {selectedEligible.length > 0 ? `${selectedEligible.length} জন সিলেক্ট` : `${eligibleStudents.length} জন যোগ্য`}
                 </span>
               </div>
               <Button icon={Download} size="xs" onClick={downloadEligibleList} disabled={generatingFromEligible}>
-                {generatingFromEligible ? "তৈরি হচ্ছে..." : `.xlsx ${selectedEligible.length > 0 ? `(${selectedEligible.length})` : "(সব)"}`}
+                {generatingFromEligible ? tr("schools.generating") : `.xlsx ${selectedEligible.length > 0 ? `(${selectedEligible.length})` : `(${tr("courses.jlptFilterAll")})`}`}
               </Button>
             </div>
           )}
@@ -828,9 +831,9 @@ export default function SchoolDetailView({ school, students, onBack }) {
           {/* ── Region তথ্য ── */}
           {school.region && (
             <p className="text-[9px] mt-3 pt-2" style={{ color: t.muted, borderTop: `1px solid ${t.border}` }}>
-              📍 স্কুল অঞ্চল: <strong style={{ color: t.purple }}>{school.region}</strong>
-              {" • "}★ চিহ্নিত স্টুডেন্টরা এই অঞ্চল পছন্দ করেছে
-              {" • "}অঞ্চল preference না থাকলে সব স্কুলে eligible
+              📍 {tr("schools.schoolRegion")}: <strong style={{ color: t.purple }}>{school.region}</strong>
+              {" • "}{tr("schools.regionMatchHint")}
+              {" • "}{tr("schools.noRegionPrefHint")}
             </p>
           )}
         </Card>
@@ -1001,7 +1004,7 @@ export default function SchoolDetailView({ school, students, onBack }) {
                     color: interviewEligibleOnly ? "#000" : t.muted,
                     border: `1px solid ${interviewEligibleOnly ? t.emerald : t.inputBorder}`,
                   }}>
-                  {interviewEligibleOnly ? "✓ শুধু যোগ্য" : "সব দেখানো হচ্ছে"}
+                  {interviewEligibleOnly ? `✓ ${tr("schools.onlyEligible")}` : tr("schools.showingAll")}
                 </button>
                 <select value={interviewIntakeFilter} onChange={e => setInterviewIntakeFilter(e.target.value)}
                   className="px-2 py-1 rounded-lg text-[10px] outline-none" style={is}>
@@ -1267,11 +1270,11 @@ export default function SchoolDetailView({ school, students, onBack }) {
       </Card>
       {/* ══════════ STUDENT PREVIEW MODAL ══════════ */}
       {(previewStudent || previewLoading) && (
-        <Modal isOpen={true} title={previewStudent?.name_en || "স্টুডেন্ট ডিটেলস"} onClose={() => { setPreviewStudent(null); setPreviewLoading(false); }} size="lg">
+        <Modal isOpen={true} title={previewStudent?.name_en || tr("schools.studentDetails")} onClose={() => { setPreviewStudent(null); setPreviewLoading(false); }} size="lg">
           {previewLoading ? (
             <div className="flex items-center justify-center py-10">
               <Clock size={20} className="animate-spin" style={{ color: t.cyan }} />
-              <span className="ml-2 text-xs" style={{ color: t.muted }}>লোড হচ্ছে...</span>
+              <span className="ml-2 text-xs" style={{ color: t.muted }}>{tr("schools.loading")}</span>
             </div>
           ) : previewStudent && (() => {
             const s = previewStudent;
@@ -1281,20 +1284,21 @@ export default function SchoolDetailView({ school, students, onBack }) {
             const age = s.dob ? Math.floor((Date.now() - new Date(s.dob)) / 31557600000) : null;
 
             // ── ফিল্ড group — label:value pairs ──
+            const yrs = tr("schools.yearsOld");
             const personalFields = [
-              ["নাম", s.name_en], ["কাতাকানা", s.name_katakana], ["জন্ম তারিখ", s.dob ? `${formatDateDisplay(s.dob)}${age ? ` (${age} বছর)` : ""}` : ""],
-              ["লিঙ্গ", s.gender], ["জাতীয়তা", s.nationality || "Bangladeshi"], ["রক্তের গ্রুপ", s.blood_group],
-              ["ফোন", s.phone], ["ইমেইল", s.email], ["পেশা", s.occupation],
-              ["বৈবাহিক অবস্থা", s.marital_status], ["জন্মস্থান", s.birth_place],
+              [tr("schools.fName"), s.name_en], [tr("schools.fKatakana"), s.name_katakana], [tr("schools.fDob"), s.dob ? `${formatDateDisplay(s.dob)}${age ? ` (${age} ${yrs})` : ""}` : ""],
+              [tr("schools.fGender"), s.gender], [tr("schools.fNationality"), s.nationality || "Bangladeshi"], [tr("schools.fBloodGroup"), s.blood_group],
+              [tr("schools.fPhone"), s.phone], [tr("schools.fEmail"), s.email], [tr("schools.fOccupation"), s.occupation],
+              [tr("schools.fMaritalStatus"), s.marital_status], [tr("schools.fBirthPlace"), s.birth_place],
             ];
             const passportFields = [
-              ["পাসপোর্ট", s.passport_number || s.passport], ["ইস্যু", formatDateDisplay(s.passport_issue)], ["মেয়াদ", formatDateDisplay(s.passport_expiry)],
-              ["বাবার নাম", s.father_name_en || s.father_name], ["মায়ের নাম", s.mother_name_en || s.mother_name],
-              ["স্থায়ী ঠিকানা", s.permanent_address], ["বর্তমান ঠিকানা", s.current_address],
+              [tr("schools.fPassport"), s.passport_number || s.passport], [tr("schools.fIssue"), formatDateDisplay(s.passport_issue)], [tr("schools.fExpiry"), formatDateDisplay(s.passport_expiry)],
+              [tr("schools.fFatherName"), s.father_name_en || s.father_name], [tr("schools.fMotherName"), s.mother_name_en || s.mother_name],
+              [tr("schools.fPermAddress"), s.permanent_address], [tr("schools.fCurrAddress"), s.current_address],
             ];
             const destFields = [
-              ["দেশ", s.country], ["স্কুল", s.school], ["ব্যাচ", s.batch], ["ইনটেক", s.intake],
-              ["ভিসা টাইপ", s.visa_type], ["পছন্দের অঞ্চল", s.preferred_region], ["ব্রাঞ্চ", s.branch],
+              [tr("schools.fCountry"), s.country], [tr("schools.fSchool"), s.school], [tr("schools.fBatch"), s.batch], [tr("schools.fIntake"), s.intake],
+              [tr("schools.fVisaType"), s.visa_type], [tr("schools.fPreferredRegion"), s.preferred_region], [tr("schools.fBranch"), s.branch],
             ];
 
             const FieldGrid = ({ fields }) => (
@@ -1312,26 +1316,26 @@ export default function SchoolDetailView({ school, students, onBack }) {
               <div className="space-y-4 max-h-[70vh] overflow-y-auto">
                 {/* ── ব্যক্তিগত তথ্য ── */}
                 <div>
-                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>ব্যক্তিগত তথ্য</h4>
+                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.cyan }}>{tr("schools.personalInfo")}</h4>
                   <FieldGrid fields={personalFields} />
                 </div>
 
                 {/* ── পাসপোর্ট ও পরিবার ── */}
                 <div>
-                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>পাসপোর্ট ও পরিবার</h4>
+                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>{tr("schools.passportFamily")}</h4>
                   <FieldGrid fields={passportFields} />
                 </div>
 
                 {/* ── গন্তব্য তথ্য ── */}
                 <div>
-                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.emerald }}>গন্তব্য তথ্য</h4>
+                  <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.emerald }}>{tr("schools.destinationInfo")}</h4>
                   <FieldGrid fields={destFields} />
                 </div>
 
                 {/* ── শিক্ষাগত যোগ্যতা ── */}
                 {edu.length > 0 && (
                   <div>
-                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.purple }}>শিক্ষাগত যোগ্যতা</h4>
+                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.purple }}>{tr("schools.educationQualification")}</h4>
                     <div className="space-y-1">
                       {edu.map((e, i) => (
                         <div key={i} className="flex items-center gap-3 text-[11px] px-2 py-1.5 rounded-lg" style={{ background: t.inputBg }}>
@@ -1348,13 +1352,13 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 {/* ── জাপানিজ পরীক্ষা ── */}
                 {jpExams.length > 0 && (
                   <div>
-                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.rose }}>জাপানিজ পরীক্ষা</h4>
+                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.rose }}>{tr("schools.japaneseExams")}</h4>
                     <div className="space-y-1">
                       {jpExams.map((ex, i) => (
                         <div key={i} className="flex items-center gap-3 text-[11px] px-2 py-1.5 rounded-lg" style={{ background: t.inputBg }}>
                           <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ background: `${t.rose}15`, color: t.rose }}>{ex.jp_level || ex.level}</span>
                           <span>{ex.exam_type || "JLPT"}</span>
-                          {(ex.jp_score || ex.score) && <span style={{ color: t.muted }}>স্কোর: {ex.jp_score || ex.score}</span>}
+                          {(ex.jp_score || ex.score) && <span style={{ color: t.muted }}>{tr("schools.col.gpa") ? "" : ""}{ex.jp_score || ex.score}</span>}
                           {ex.exam_date && <span style={{ color: t.muted }}>{formatDateDisplay(ex.exam_date)}</span>}
                         </div>
                       ))}
@@ -1365,11 +1369,11 @@ export default function SchoolDetailView({ school, students, onBack }) {
                 {/* ── স্পনসর ── */}
                 {sponsor && (
                   <div>
-                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>স্পনসর</h4>
+                    <h4 className="text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.amber }}>{tr("schools.sponsorInfo")}</h4>
                     <FieldGrid fields={[
-                      ["নাম", sponsor.name || sponsor.name_en], ["সম্পর্ক", sponsor.relationship],
-                      ["ফোন", sponsor.phone], ["পেশা/কোম্পানি", sponsor.company_name],
-                      ["আয় (১ম বছর)", sponsor.annual_income_y1 ? `৳${Number(sponsor.annual_income_y1).toLocaleString("en-IN")}` : ""],
+                      [tr("schools.fName"), sponsor.name || sponsor.name_en], [tr("schools.fRelationship"), sponsor.relationship],
+                      [tr("schools.fPhone"), sponsor.phone], [tr("schools.fCompany"), sponsor.company_name],
+                      [tr("schools.fIncomeY1"), sponsor.annual_income_y1 ? `৳${Number(sponsor.annual_income_y1).toLocaleString("en-IN")}` : ""],
                     ]} />
                   </div>
                 )}

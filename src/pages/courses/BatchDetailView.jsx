@@ -399,25 +399,25 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
 
         // CSV export for filtered list
         const exportFiltered = () => {
-          if (filtered.length === 0) { toast.error("কোনো স্টুডেন্ট নেই export-এর জন্য"); return; }
+          if (filtered.length === 0) { toast.error(tr("courses.exportNoStudents")); return; }
           const rows = filtered.map((s, i) => [i+1, s.studentId, s.name, s.attendance + "%", s.lastTest ?? "", s.examType || "", s.jlptLevel || "", s.jlptScore ?? "", s.jlptStatus || ""].join(","));
-          const csv = "ক্রম,ID,নাম,হাজিরা,লাস্ট টেস্ট,পরীক্ষা,লেভেল,স্কোর,ফলাফল\n" + rows.join("\n");
+          const csv = tr("courses.csvHeaders") + "\n" + rows.join("\n");
           const blob = new Blob([String.fromCharCode(0xFEFF) + csv], { type: "text/csv;charset=utf-8" });
           const a = Object.assign(document.createElement("a"), {
             href: URL.createObjectURL(blob),
             download: `${batch.name || "Batch"}_JLPT_${jlptFilter}_${filtered.length}.csv`
           });
           a.click();
-          toast.exported(`JLPT ${jlptFilter} (${filtered.length} জন)`);
+          toast.exported(tr("courses.exportLabel").replace("{{filter}}", jlptFilter).replace("{{count}}", filtered.length));
         };
 
         const FILTER_TABS = [
-          { key: "all", label: "সব", color: t.cyan, count: counts.all },
-          { key: "registered", label: "রেজিস্টার্ড", color: t.purple, count: counts.registered },
-          { key: "passed", label: "✓ পাশ", color: t.emerald, count: counts.passed },
-          { key: "failed", label: "✗ ফেল", color: t.rose, count: counts.failed },
-          { key: "preparing", label: "প্রস্তুতি", color: t.amber, count: counts.preparing },
-          { key: "not_registered", label: "রেজিস্টার নেই", color: t.muted, count: counts.not_registered },
+          { key: "all", label: tr("courses.jlptFilterAll"), color: t.cyan, count: counts.all },
+          { key: "registered", label: tr("courses.jlptFilterRegistered"), color: t.purple, count: counts.registered },
+          { key: "passed", label: tr("courses.jlptFilterPassed"), color: t.emerald, count: counts.passed },
+          { key: "failed", label: tr("courses.jlptFilterFailed"), color: t.rose, count: counts.failed },
+          { key: "preparing", label: tr("courses.jlptFilterPreparing"), color: t.amber, count: counts.preparing },
+          { key: "not_registered", label: tr("courses.jlptFilterNotRegistered"), color: t.muted, count: counts.not_registered },
         ];
 
         return (
@@ -483,7 +483,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
           )}
 
           {bStudents.length === 0 ? <EmptyState icon={Users} title={tr("courses.noStudentInBatch")} subtitle={tr("courses.addStudentHint")} /> : filtered.length === 0 ? (
-            <EmptyState icon={Users} title="এই ফিল্টারে কোনো স্টুডেন্ট নেই" subtitle="অন্য ফিল্টার চেষ্টা করুন" />
+            <EmptyState icon={Users} title={tr("courses.filterEmptyTitle")} subtitle={tr("courses.filterEmptySubtitle")} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
