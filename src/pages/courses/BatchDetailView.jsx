@@ -49,7 +49,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                 base.examType = exam.exam_type || null;
                 base.jlptLevel = exam.level || null;
                 base.jlptScore = exam.score ? parseInt(exam.score) : null;
-                base.jlptStatus = exam.result === "Passed" ? "Passed" : exam.result === "Failed" ? "Failed" : "Preparing";
+                base.jlptStatus = exam.result === "Passed" ? "Passed" : exam.result === "Failed" ? "Failed" : exam.result === "Registered" ? "Registered" : "Preparing";
               }
             } catch (err) { console.error("[Batch] Student detail load error:", err); }
             return base;
@@ -262,7 +262,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             exam_id: student?.examId || null,
             exam_type: bulkRegisterForm.examType,
             level: bulkRegisterForm.level,
-            score: null, result: null,
+            score: null, result: "Registered",
             exam_date: bulkRegisterForm.date || null,
           });
         })
@@ -273,7 +273,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
         const idx = bulkSelected.indexOf(s.studentId);
         const res = results[idx];
         if (res.status !== "fulfilled") return s;
-        return { ...s, examId: res.value?.id || s.examId, examType: bulkRegisterForm.examType, jlptLevel: bulkRegisterForm.level, jlptStatus: "Preparing" };
+        return { ...s, examId: res.value?.id || s.examId, examType: bulkRegisterForm.examType, jlptLevel: bulkRegisterForm.level, jlptStatus: "Registered" };
       }));
       const successCount = results.filter(r => r.status === "fulfilled").length;
       const failCount = results.length - successCount;
@@ -299,16 +299,16 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
     if (!registerModal) return;
     try {
       const { api } = await import("../../hooks/useAPI");
-      // result=null → Preparing/Registered state
+      // result="Registered" → explicit registration confirmed status
       const resp = await api.post(`/students/${registerModal.studentId}/exam-result`, {
         exam_id: registerModal.examId,
         exam_type: registerModal.examType,
         level: registerModal.level,
-        score: null, result: null,
+        score: null, result: "Registered",
         exam_date: registerModal.date || null,
       });
       setBStudents(prev => prev.map(s => s.studentId === registerModal.studentId
-        ? { ...s, examId: resp?.id || s.examId, examType: registerModal.examType, jlptLevel: registerModal.level, jlptStatus: "Preparing" }
+        ? { ...s, examId: resp?.id || s.examId, examType: registerModal.examType, jlptLevel: registerModal.level, jlptStatus: "Registered" }
         : s));
       toast.success(tr("courses.registerSuccess"));
       setRegisterModal(null);
@@ -461,12 +461,12 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       {activeTab === "students" && (() => {
         // JLPT filter logic
         const getJlptCategory = (s) => {
-          // Registered = JLPT exam entry আছে (result যাই হোক)
-          // Passed/Failed/Preparing = result অনুযায়ী
+          // Passed/Failed/Registered/Preparing = result অনুযায়ী
           if (!s.examType) return "not_registered"; // কোনো exam entry নেই
           if (s.jlptStatus === "Passed") return "passed";
           if (s.jlptStatus === "Failed") return "failed";
-          return "preparing"; // exam registered কিন্তু result pending
+          if (s.jlptStatus === "Registered") return "registered_status";
+          return "preparing"; // exam entry আছে কিন্তু result pending
         };
         const filterStudents = (list) => {
           if (jlptFilter === "all") return list;
@@ -645,7 +645,11 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   {filtered.map(bs => {
                     const ac = bs.attendance >= 85 ? t.emerald : bs.attendance >= 70 ? t.amber : t.rose;
                     const tc = bs.lastTest >= 80 ? t.emerald : bs.lastTest >= 60 ? t.amber : bs.lastTest ? t.rose : t.muted;
-                    const sc = bs.jlptStatus === "Passed" ? t.emerald : bs.jlptStatus === "Preparing" ? t.amber : bs.jlptStatus === "Dropped" ? t.rose : t.muted;
+                    const sc = bs.jlptStatus === "Passed" ? t.emerald
+                      : bs.jlptStatus === "Failed" ? t.rose
+                      : bs.jlptStatus === "Registered" ? t.purple
+                      : bs.jlptStatus === "Preparing" ? t.amber
+                      : t.muted;
                     return (
                       <tr key={bs.studentId} style={{ borderBottom: `1px solid ${t.border}`, background: bulkRegisterMode && bulkSelected.includes(bs.studentId) ? `${t.emerald}08` : "transparent" }}
                         onMouseEnter={e => { if (!(bulkRegisterMode && bulkSelected.includes(bs.studentId))) e.currentTarget.style.background = t.hoverBg; }}
@@ -679,7 +683,13 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                         <td className="py-3 px-3 font-mono">{bs.jlptScore ?? "—"}</td>
                         <td className="py-3 px-3">
                           {bs.examType ? (
-                            <Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? tr("courses.passed") : bs.jlptStatus === "Failed" ? tr("courses.fail") || "Fail" : bs.jlptStatus === "Preparing" ? tr("courses.registered") : tr("courses.notStarted")}</Badge>
+                            <Badge color={sc} size="xs">
+                              {bs.jlptStatus === "Passed" ? tr("courses.passed")
+                                : bs.jlptStatus === "Failed" ? (tr("courses.fail") || "Fail")
+                                : bs.jlptStatus === "Registered" ? tr("courses.registered")
+                                : bs.jlptStatus === "Preparing" ? tr("courses.preparing")
+                                : tr("courses.notStarted")}
+                            </Badge>
                           ) : <Badge color={t.muted} size="xs">{tr("courses.jlptFilterNotRegistered")}</Badge>}
                         </td>
                         <td className="py-3 px-3">
@@ -948,6 +958,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                       className="w-20 px-2 py-1.5 rounded-lg text-xs text-center outline-none" style={is} />
                     <select value={examUpdates[bs.studentId]?.result || "Preparing"} onChange={e => setExamUpdates(p => ({ ...p, [bs.studentId]: { ...p[bs.studentId], result: e.target.value } }))}
                       className="px-2 py-1.5 rounded-lg text-xs outline-none" style={is}>
+                      <option value="Registered">{tr("courses.registered")}</option>
                       <option value="Passed">{tr("courses.pass")}</option>
                       <option value="Failed">{tr("courses.failed")}</option>
                       <option value="Preparing">{tr("courses.preparing")}</option>
