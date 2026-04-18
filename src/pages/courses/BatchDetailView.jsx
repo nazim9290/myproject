@@ -5,6 +5,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import Card from "../../components/ui/Card";
+import Modal from "../../components/ui/Modal";
 import { Badge } from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
@@ -241,6 +242,50 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
   const [examUpdates, setExamUpdates] = useState({});
   const [examForm, setExamForm] = useState({ examType: "JLPT", level: "N5", date: today });
   const [showExamForm, setShowExamForm] = useState(false);
+
+  // ── Quick JLPT Registration — Students tab থেকে সরাসরি register ──
+  const [registerModal, setRegisterModal] = useState(null); // { studentId, name, examType, level, date }
+  const openRegisterModal = (bs) => {
+    setRegisterModal({
+      studentId: bs.studentId, name: bs.name,
+      examType: bs.examType || "JLPT",
+      level: bs.jlptLevel || "N5",
+      date: today, // default: today
+      examId: bs.examId || null,
+    });
+  };
+  const saveRegistration = async () => {
+    if (!registerModal) return;
+    try {
+      const { api } = await import("../../hooks/useAPI");
+      // result=null → Preparing/Registered state
+      const resp = await api.post(`/students/${registerModal.studentId}/exam-result`, {
+        exam_id: registerModal.examId,
+        exam_type: registerModal.examType,
+        level: registerModal.level,
+        score: null, result: null,
+        exam_date: registerModal.date || null,
+      });
+      setBStudents(prev => prev.map(s => s.studentId === registerModal.studentId
+        ? { ...s, examId: resp?.id || s.examId, examType: registerModal.examType, jlptLevel: registerModal.level, jlptStatus: "Preparing" }
+        : s));
+      toast.success(tr("courses.registerSuccess"));
+      setRegisterModal(null);
+    } catch (err) { console.error("[Register]", err); toast.error(tr("courses.registerFailed")); }
+  };
+
+  // ── Registration remove ──
+  const removeRegistration = async (bs) => {
+    if (!bs.examId) return;
+    try {
+      const { api } = await import("../../hooks/useAPI");
+      await api.del(`/students/${bs.studentId}/jp-exams/${bs.examId}`);
+      setBStudents(prev => prev.map(s => s.studentId === bs.studentId
+        ? { ...s, examId: null, examType: null, jlptLevel: null, jlptScore: null, jlptStatus: "Preparing" }
+        : s));
+      toast.success(tr("courses.registerRemoved"));
+    } catch (err) { toast.error(tr("courses.registerFailed")); }
+  };
   const saveExamResults = async () => {
     // DB-তে student_jp_exams table-এ save/update
     try {
@@ -497,8 +542,8 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {[tr("courses.student"),tr("courses.attendance"),tr("courses.lastTest"),tr("courses.exam"),tr("courses.level"),tr("courses.score"),tr("common.status")].map(h => (
-                      <th key={h} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
+                    {[tr("courses.student"),tr("courses.attendance"),tr("courses.lastTest"),tr("courses.exam"),tr("courses.level"),tr("courses.score"),tr("common.status"),""].map((h, i) => (
+                      <th key={i} className="text-left py-3 px-3 text-[10px] uppercase tracking-wider font-medium" style={{ color: t.muted }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -531,7 +576,28 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                         <td className="py-3 px-3" style={{ color: t.textSecondary }}>{bs.examType || "—"}</td>
                         <td className="py-3 px-3">{bs.jlptLevel ? <Badge color={t.purple} size="xs">{bs.jlptLevel}</Badge> : <span style={{ color: t.muted }}>—</span>}</td>
                         <td className="py-3 px-3 font-mono">{bs.jlptScore ?? "—"}</td>
-                        <td className="py-3 px-3"><Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? tr("courses.passed") : bs.jlptStatus === "Preparing" ? tr("courses.preparing") : bs.jlptStatus === "Dropped" ? tr("courses.dropped") : tr("courses.notStarted")}</Badge></td>
+                        <td className="py-3 px-3">
+                          {bs.examType ? (
+                            <Badge color={sc} size="xs">{bs.jlptStatus === "Passed" ? tr("courses.passed") : bs.jlptStatus === "Failed" ? tr("courses.fail") || "Fail" : bs.jlptStatus === "Preparing" ? tr("courses.registered") : tr("courses.notStarted")}</Badge>
+                          ) : <Badge color={t.muted} size="xs">{tr("courses.jlptFilterNotRegistered")}</Badge>}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1">
+                            {bs.examType ? (
+                              <>
+                                <button onClick={() => openRegisterModal(bs)} className="text-[10px] px-1.5 py-0.5 rounded transition"
+                                  style={{ color: t.cyan, background: `${t.cyan}10` }} title={tr("courses.edit")}>✎</button>
+                                <button onClick={() => removeRegistration(bs)} className="text-[10px] px-1.5 py-0.5 rounded transition"
+                                  style={{ color: t.rose, background: `${t.rose}10` }} title={tr("courses.removeRegistration")}>✕</button>
+                              </>
+                            ) : (
+                              <button onClick={() => openRegisterModal(bs)} className="text-[10px] px-2 py-1 rounded-lg font-medium transition"
+                                style={{ color: t.emerald, background: `${t.emerald}10`, border: `1px solid ${t.emerald}30` }}>
+                                + {tr("courses.registerJlpt")}
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -815,6 +881,39 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             })}
           </div>
         </Card>
+      )}
+
+      {/* ── JLPT Registration Modal ── */}
+      {registerModal && (
+        <Modal isOpen={true} title={tr("courses.registerModalTitle").replace("{{name}}", registerModal.name)}
+          onClose={() => setRegisterModal(null)} size="sm">
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.examType")}</label>
+              <select value={registerModal.examType} onChange={e => setRegisterModal(p => ({ ...p, examType: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                <option>JLPT</option><option>NAT</option><option>JFT</option><option>J-TEST</option><option>JLCT</option><option>TopJ</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.level")}</label>
+              <select value={registerModal.level} onChange={e => setRegisterModal(p => ({ ...p, level: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }}>
+                <option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: t.muted }}>{tr("courses.examDate")}</label>
+              <DateInput value={registerModal.date} onChange={v => setRegisterModal(p => ({ ...p, date: v }))} size="md" />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button variant="ghost" size="xs" icon={X} onClick={() => setRegisterModal(null)}>{tr("courses.cancel")}</Button>
+              <Button icon={Save} size="xs" onClick={saveRegistration}>{tr("courses.save")}</Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
