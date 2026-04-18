@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search, Edit3, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Users, FileText, Plus, Save, X, Check, Search, Edit3, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../context/ToastContext";
@@ -22,6 +22,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
 
   const [bStudents, setBStudents] = useState([]);
   const [bTests, setBTests] = useState([]);
+  const [jlptFilter, setJlptFilter] = useState("all"); // all | passed | failed | preparing | registered | not_registered
 
   // ── API থেকে batch-এর enrolled students + exam + attendance লোড ──
   useEffect(() => {
@@ -371,11 +372,87 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
       </div>
 
       {/* ── Students tab ── */}
-      {activeTab === "students" && (
+      {activeTab === "students" && (() => {
+        // JLPT filter logic
+        const getJlptCategory = (s) => {
+          // Registered = JLPT exam entry আছে (result যাই হোক)
+          // Passed/Failed/Preparing = result অনুযায়ী
+          if (!s.examType) return "not_registered"; // কোনো exam entry নেই
+          if (s.jlptStatus === "Passed") return "passed";
+          if (s.jlptStatus === "Failed") return "failed";
+          return "preparing"; // exam registered কিন্তু result pending
+        };
+        const filterStudents = (list) => {
+          if (jlptFilter === "all") return list;
+          if (jlptFilter === "registered") return list.filter(s => !!s.examType);
+          return list.filter(s => getJlptCategory(s) === jlptFilter);
+        };
+        const filtered = filterStudents(bStudents);
+        const counts = {
+          all: bStudents.length,
+          passed: bStudents.filter(s => s.jlptStatus === "Passed").length,
+          failed: bStudents.filter(s => s.jlptStatus === "Failed").length,
+          preparing: bStudents.filter(s => s.examType && s.jlptStatus !== "Passed" && s.jlptStatus !== "Failed").length,
+          registered: bStudents.filter(s => !!s.examType).length,
+          not_registered: bStudents.filter(s => !s.examType).length,
+        };
+
+        // CSV export for filtered list
+        const exportFiltered = () => {
+          if (filtered.length === 0) { toast.error("কোনো স্টুডেন্ট নেই export-এর জন্য"); return; }
+          const rows = filtered.map((s, i) => [i+1, s.studentId, s.name, s.attendance + "%", s.lastTest ?? "", s.examType || "", s.jlptLevel || "", s.jlptScore ?? "", s.jlptStatus || ""].join(","));
+          const csv = "ক্রম,ID,নাম,হাজিরা,লাস্ট টেস্ট,পরীক্ষা,লেভেল,স্কোর,ফলাফল\n" + rows.join("\n");
+          const blob = new Blob([String.fromCharCode(0xFEFF) + csv], { type: "text/csv;charset=utf-8" });
+          const a = Object.assign(document.createElement("a"), {
+            href: URL.createObjectURL(blob),
+            download: `${batch.name || "Batch"}_JLPT_${jlptFilter}_${filtered.length}.csv`
+          });
+          a.click();
+          toast.exported(`JLPT ${jlptFilter} (${filtered.length} জন)`);
+        };
+
+        const FILTER_TABS = [
+          { key: "all", label: "সব", color: t.cyan, count: counts.all },
+          { key: "registered", label: "রেজিস্টার্ড", color: t.purple, count: counts.registered },
+          { key: "passed", label: "✓ পাশ", color: t.emerald, count: counts.passed },
+          { key: "failed", label: "✗ ফেল", color: t.rose, count: counts.failed },
+          { key: "preparing", label: "প্রস্তুতি", color: t.amber, count: counts.preparing },
+          { key: "not_registered", label: "রেজিস্টার নেই", color: t.muted, count: counts.not_registered },
+        ];
+
+        return (
         <Card delay={100}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold" style={{ color: t.textSecondary }}>{bStudents.length} {tr("courses.personsStudent")}</p>
-            <Button icon={Plus} size="xs" onClick={() => setShowEnroll(v => !v)}>{tr("courses.addStudent")}</Button>
+            <p className="text-xs font-semibold" style={{ color: t.textSecondary }}>
+              {filtered.length}/{bStudents.length} {tr("courses.personsStudent")}
+            </p>
+            <div className="flex items-center gap-2">
+              {filtered.length > 0 && jlptFilter !== "all" && (
+                <Button icon={Download} size="xs" variant="ghost" onClick={exportFiltered}>
+                  CSV ({filtered.length})
+                </Button>
+              )}
+              <Button icon={Plus} size="xs" onClick={() => setShowEnroll(v => !v)}>{tr("courses.addStudent")}</Button>
+            </div>
+          </div>
+
+          {/* ── JLPT Filter Tabs ── */}
+          <div className="flex flex-wrap gap-1.5 mb-3 p-2 rounded-xl" style={{ background: `${t.cyan}04`, border: `1px solid ${t.cyan}15` }}>
+            {FILTER_TABS.map(tab => {
+              const active = jlptFilter === tab.key;
+              return (
+                <button key={tab.key} onClick={() => setJlptFilter(tab.key)}
+                  className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5"
+                  style={{
+                    background: active ? tab.color : t.inputBg,
+                    color: active ? "#000" : tab.color,
+                    border: `1px solid ${active ? tab.color : tab.color + "30"}`,
+                  }}>
+                  {tab.label}
+                  <span className="text-[9px] px-1 py-0.5 rounded-full font-bold" style={{ background: active ? "rgba(0,0,0,0.2)" : `${tab.color}20` }}>{tab.count}</span>
+                </button>
+              );
+            })}
           </div>
 
           {showEnroll && (
@@ -405,7 +482,9 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             </div>
           )}
 
-          {bStudents.length === 0 ? <EmptyState icon={Users} title={tr("courses.noStudentInBatch")} subtitle={tr("courses.addStudentHint")} /> : (
+          {bStudents.length === 0 ? <EmptyState icon={Users} title={tr("courses.noStudentInBatch")} subtitle={tr("courses.addStudentHint")} /> : filtered.length === 0 ? (
+            <EmptyState icon={Users} title="এই ফিল্টারে কোনো স্টুডেন্ট নেই" subtitle="অন্য ফিল্টার চেষ্টা করুন" />
+          ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
@@ -416,7 +495,7 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
                   </tr>
                 </thead>
                 <tbody>
-                  {bStudents.map(bs => {
+                  {filtered.map(bs => {
                     const ac = bs.attendance >= 85 ? t.emerald : bs.attendance >= 70 ? t.amber : t.rose;
                     const tc = bs.lastTest >= 80 ? t.emerald : bs.lastTest >= 60 ? t.amber : bs.lastTest ? t.rose : t.muted;
                     const sc = bs.jlptStatus === "Passed" ? t.emerald : bs.jlptStatus === "Preparing" ? t.amber : bs.jlptStatus === "Dropped" ? t.rose : t.muted;
@@ -453,7 +532,8 @@ export default function BatchDetailView({ batch, students: allStudents = [], onB
             </div>
           )}
         </Card>
-      )}
+        );
+      })()}
 
       {/* ── Attendance tab ── */}
       {activeTab === "attendance" && (
