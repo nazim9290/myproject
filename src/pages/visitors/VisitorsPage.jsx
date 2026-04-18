@@ -700,7 +700,7 @@ export default function VisitorsPage({ visitors, setVisitors, onConvertToStudent
                         <button onClick={()=>{
                           if (currentPipe.nextAction === "Thinking") changeStatus(v.id, "Thinking");
                           else if (currentPipe.nextAction === "follow-up") markFollowUp(v.id);
-                          else if (currentPipe.nextAction === "ready") toast.success(tr("visitors.readyForEnroll"));
+                          else if (currentPipe.nextAction === "ready") { changeStatus(v.id, "Ready"); toast.success(tr("visitors.readyForEnroll")); }
                         }}
                           className="w-full py-2.5 rounded-xl text-xs font-semibold transition-all"
                           style={{background: currentPipe.color+"15", color: currentPipe.color, border:`1px solid ${currentPipe.color}30`}}>
